@@ -101,6 +101,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
     )
     currency_id = fields.Many2one(
         related="company_id.currency_id",
+        string="币种",
         store=True,
         readonly=True,
     )
@@ -1794,6 +1795,7 @@ class SudoChinaVatPeriodReconciliationIssue(models.Model):
     )
     currency_id = fields.Many2one(
         related="run_id.currency_id",
+        string="币种",
         store=True,
         readonly=True,
     )
