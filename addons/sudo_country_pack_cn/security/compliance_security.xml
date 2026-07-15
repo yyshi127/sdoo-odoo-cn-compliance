@@ -113,6 +113,22 @@
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
 
+    <record id="cn_cit_filing_record_company_rule" model="ir.rule">
+        <field name="name">China CIT filing records: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_filing_record"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_cit_filing_line_company_rule" model="ir.rule">
+        <field name="name">China CIT filing lines: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_filing_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
     <record id="cn_tax_payment_record_company_rule" model="ir.rule">
         <field name="name">China tax payment records: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_tax_payment_record"/>

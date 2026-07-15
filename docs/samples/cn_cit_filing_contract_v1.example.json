@@ -1,0 +1,50 @@
+{
+  "schema": "sdoo.cn.tax-data.v1",
+  "dataset_type": "cit_filing",
+  "source_schema": "controlled-example-cit-return",
+  "source_schema_version": "2026.1",
+  "record_count": 1,
+  "records": [
+    {
+      "source_record_key": "CIT-2025-ANNUAL-001",
+      "taxpayer_name": "示例公司",
+      "taxpayer_id": "91440101MA5D123451",
+      "period_start": "2025-01-01",
+      "period_end": "2025-12-31",
+      "currency_code": "CNY",
+      "jurisdiction_code": "440100",
+      "jurisdiction_name": "示例主管税务机关",
+      "tax_year": 2025,
+      "return_period_type": "annual_reconciliation",
+      "return_type_code": "CIT-ANNUAL",
+      "return_status": "accepted",
+      "submitted_at": "2026-05-20T09:00:00+08:00",
+      "submission_reference": "EXAMPLE-CIT-ACK-001",
+      "revision_number": 0,
+      "accounting_profit_amount": "1000000.00",
+      "adjustment_increase_amount": "50000.00",
+      "adjustment_decrease_amount": "20000.00",
+      "taxable_income_amount": "1030000.00",
+      "tax_payable_amount": "257500.00",
+      "tax_relief_amount": "0.00",
+      "tax_credit_amount": "0.00",
+      "prepaid_tax_amount": "250000.00",
+      "payable_amount": "7500.00",
+      "refundable_amount": "0.00",
+      "lines": [
+        {
+          "line_code": "A100000-13",
+          "line_name": "利润总额",
+          "amount_type": "accounting",
+          "current_amount": "1000000.00"
+        },
+        {
+          "line_code": "A100000-31",
+          "line_name": "应补所得税额",
+          "amount_type": "payable",
+          "current_amount": "7500.00"
+        }
+      ]
+    }
+  ]
+}

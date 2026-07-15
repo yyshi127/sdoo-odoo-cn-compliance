@@ -49,6 +49,39 @@ def filing_payload():
     }
 
 
+def cit_filing_payload():
+    return {
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": "cit_filing",
+        "source_schema": "controlled-test-cit-return",
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [
+            {
+                "source_record_key": "CIT-2025-ANNUAL",
+                "taxpayer_id": "91440101MA5D123451",
+                "period_start": "2025-01-01",
+                "period_end": "2025-12-31",
+                "currency_code": "CNY",
+                "tax_year": 2025,
+                "return_period_type": "annual_reconciliation",
+                "return_type_code": "CIT-ANNUAL",
+                "taxable_income_amount": "0.00",
+                "payable_amount": "0.00",
+                "refundable_amount": "0.00",
+                "lines": [
+                    {
+                        "line_code": "A100000-19",
+                        "line_name": "应纳税所得额",
+                        "amount_type": "taxable_income",
+                        "current_amount": "0.00",
+                    }
+                ],
+            }
+        ],
+    }
+
+
 class TestTaxDataContract(unittest.TestCase):
     def test_valid_filing_contract_preserves_zero_text(self):
         result = CONTRACT.load_tax_data_contract(encoded(filing_payload()))
@@ -139,6 +172,35 @@ class TestTaxDataContract(unittest.TestCase):
         with self.assertRaisesRegex(
             CONTRACT.TaxDataContractError,
             "duplicate line_code",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_cit_filing_contract_preserves_zero_and_lines(self):
+        result = CONTRACT.load_tax_data_contract(encoded(cit_filing_payload()))
+
+        self.assertEqual(result.dataset_type, "cit_filing")
+        self.assertEqual(result.records[0]["taxable_income_amount"], "0.00")
+        self.assertEqual(result.records[0]["lines"][0]["current_amount"], "0.00")
+
+    def test_duplicate_cit_line_code_is_rejected(self):
+        payload = cit_filing_payload()
+        payload["records"][0]["lines"].append(
+            dict(payload["records"][0]["lines"][0])
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "duplicate line_code",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_unknown_cit_line_field_is_rejected(self):
+        payload = cit_filing_payload()
+        payload["records"][0]["lines"][0]["calculated_by_system"] = True
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "unknown fields: calculated_by_system",
         ):
             CONTRACT.load_tax_data_contract(encoded(payload))
 

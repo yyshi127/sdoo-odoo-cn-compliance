@@ -19,6 +19,21 @@ _TAX_PARSE_RUN_MARKER = object()
 _TAX_NORMALIZED_RECORD_MARKER = object()
 TAX_DATA_MAPPING_KEY = "sdoo_cn_controlled_tax_json"
 TAX_DATA_MAPPING_VERSION = "1.0"
+TAX_DATA_RECORD_MODELS = {
+    "vat_filing": "sudo.cn.vat.filing.record",
+    "cit_filing": "sudo.cn.cit.filing.record",
+    "tax_payment": "sudo.cn.tax.payment.record",
+}
+TAX_DATA_COUNT_FIELDS = {
+    "vat_filing": "vat_filing_count",
+    "cit_filing": "cit_filing_count",
+    "tax_payment": "tax_payment_count",
+}
+TAX_DATA_KIND_LABELS = {
+    "vat_filing": "增值税申报",
+    "cit_filing": "企业所得税申报",
+    "tax_payment": "税款缴纳",
+}
 
 
 def _safe_text(value, limit=None):
@@ -153,6 +168,7 @@ class SudoChinaTaxDataParseRun(models.Model):
     warning_record_count = fields.Integer(string="警告记录数", readonly=True)
     error_record_count = fields.Integer(string="异常记录数", readonly=True)
     vat_filing_count = fields.Integer(string="增值税申报数", readonly=True)
+    cit_filing_count = fields.Integer(string="企业所得税申报数", readonly=True)
     tax_payment_count = fields.Integer(string="税款缴纳数", readonly=True)
     output_checksum = fields.Char(string="规范化输出 SHA-256", readonly=True)
     error_code = fields.Char(string="失败代码", readonly=True)
@@ -161,6 +177,12 @@ class SudoChinaTaxDataParseRun(models.Model):
         "sudo.cn.vat.filing.record",
         "parse_run_id",
         string="规范化增值税申报",
+        readonly=True,
+    )
+    cit_filing_record_ids = fields.One2many(
+        "sudo.cn.cit.filing.record",
+        "parse_run_id",
+        string="规范化企业所得税申报",
         readonly=True,
     )
     tax_payment_record_ids = fields.One2many(
@@ -206,6 +228,7 @@ class SudoChinaTaxDataParseRun(models.Model):
                     "warning_record_count": 0,
                     "error_record_count": 0,
                     "vat_filing_count": 0,
+                    "cit_filing_count": 0,
                     "tax_payment_count": 0,
                     "output_checksum": False,
                     "error_code": False,
@@ -244,8 +267,8 @@ class SudoChinaTaxDataParseRun(models.Model):
         self._require_manager()
         dataset.ensure_one()
         input_attachment.ensure_one()
-        if dataset.dataset_type not in ("vat_filing", "tax_payment"):
-            raise UserError(_("当前导入契约仅适用于增值税申报或税款缴纳数据集。"))
+        if dataset.dataset_type not in TAX_DATA_RECORD_MODELS:
+            raise UserError(_("当前导入契约不支持该申报缴税数据集类型。"))
         if dataset.state != "sealed":
             raise UserError(_("只有当前已封存的数据集可以导入。"))
         if dataset._current_integrity_state() != "verified":
@@ -382,11 +405,7 @@ class SudoChinaTaxDataParseRun(models.Model):
                 "DATASET_TYPE_MISMATCH",
                 _("标准化契约类型与数据集类型不一致。"),
             )
-        model_name = (
-            "sudo.cn.vat.filing.record"
-            if self.dataset_type == "vat_filing"
-            else "sudo.cn.tax.payment.record"
-        )
+        model_name = TAX_DATA_RECORD_MODELS[self.dataset_type]
         record_model = self.env[model_name]
         previous_runs = self.browse()
         try:
@@ -434,28 +453,22 @@ class SudoChinaTaxDataParseRun(models.Model):
                     "valid_record_count": valid_count,
                     "warning_record_count": warning_count,
                     "error_record_count": error_count,
-                    "vat_filing_count": (
-                        len(created) if self.dataset_type == "vat_filing" else 0
-                    ),
-                    "tax_payment_count": (
-                        len(created) if self.dataset_type == "tax_payment" else 0
-                    ),
+                    "vat_filing_count": 0,
+                    "cit_filing_count": 0,
+                    "tax_payment_count": 0,
                     "output_checksum": output_checksum,
                     "error_code": False,
                     "result_summary": _(
                         "已生成 %(count)s 条规范化%(kind)s记录：正常 "
                         "%(valid)s，警告 %(warning)s，异常 %(error)s。",
                         count=len(created),
-                        kind=(
-                            _("增值税申报")
-                            if self.dataset_type == "vat_filing"
-                            else _("税款缴纳")
-                        ),
+                        kind=_(TAX_DATA_KIND_LABELS[self.dataset_type]),
                         valid=valid_count,
                         warning=warning_count,
                         error=error_count,
                     ),
                 }
+                values[TAX_DATA_COUNT_FIELDS[self.dataset_type]] = len(created)
                 self.with_context(
                     cn_tax_parse_run_transition=_TAX_PARSE_RUN_MARKER
                 ).write(values)
@@ -1562,6 +1575,10 @@ class SudoChinaExternalDataset(models.Model):
         string="规范化增值税申报数",
         compute="_compute_tax_data_result_counts",
     )
+    normalized_cit_filing_count = fields.Integer(
+        string="规范化企业所得税申报数",
+        compute="_compute_tax_data_result_counts",
+    )
     normalized_tax_payment_count = fields.Integer(
         string="规范化税款缴纳数",
         compute="_compute_tax_data_result_counts",
@@ -1577,6 +1594,7 @@ class SudoChinaExternalDataset(models.Model):
         "tax_data_parse_run_ids.state",
         "tax_data_parse_run_ids.started_at",
         "tax_data_parse_run_ids.vat_filing_count",
+        "tax_data_parse_run_ids.cit_filing_count",
         "tax_data_parse_run_ids.tax_payment_count",
         "state",
         "integrity_state",
@@ -1596,14 +1614,17 @@ class SudoChinaExternalDataset(models.Model):
             dataset.normalized_vat_filing_count = (
                 current.vat_filing_count if current else 0
             )
+            dataset.normalized_cit_filing_count = (
+                current.cit_filing_count if current else 0
+            )
             dataset.normalized_tax_payment_count = (
                 current.tax_payment_count if current else 0
             )
 
     def action_import_tax_data(self):
         self.ensure_one()
-        if self.dataset_type not in ("vat_filing", "tax_payment"):
-            raise UserError(_("只有增值税申报或税款缴纳数据集可以使用此导入。"))
+        if self.dataset_type not in TAX_DATA_RECORD_MODELS:
+            raise UserError(_("当前数据集类型不能使用申报缴税受控导入。"))
         return {
             "type": "ir.actions.act_window",
             "name": _("导入申报与缴税数据"),
@@ -1624,11 +1645,13 @@ class SudoChinaExternalDataset(models.Model):
 
     def action_view_normalized_tax_records(self):
         self.ensure_one()
-        action_ref = (
-            "sudo_country_pack_cn.action_cn_vat_filing_records"
-            if self.dataset_type == "vat_filing"
-            else "sudo_country_pack_cn.action_cn_tax_payment_records"
-        )
+        action_ref = {
+            "vat_filing": "sudo_country_pack_cn.action_cn_vat_filing_records",
+            "cit_filing": "sudo_country_pack_cn.action_cn_cit_filing_records",
+            "tax_payment": "sudo_country_pack_cn.action_cn_tax_payment_records",
+        }.get(self.dataset_type)
+        if not action_ref:
+            raise UserError(_("当前数据集没有规范化申报缴税台账。"))
         action = self.env.ref(action_ref).read()[0]
         action["domain"] = [("dataset_id", "=", self.id)]
         action["context"] = {}
@@ -1645,7 +1668,7 @@ class SudoChinaTaxDataImportWizard(models.TransientModel):
         string="外部数据集",
         required=True,
         check_company=True,
-        domain="[('dataset_type', 'in', ('vat_filing', 'tax_payment')), "
+        domain="[('dataset_type', 'in', ('vat_filing', 'cit_filing', 'tax_payment')), "
         "('state', '=', 'sealed')]",
     )
     company_id = fields.Many2one(

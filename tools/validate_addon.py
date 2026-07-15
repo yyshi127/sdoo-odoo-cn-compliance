@@ -223,6 +223,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("formal compliance report capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
+    if features.get("cit_filing_normalization") is not True:
+        fail("controlled CIT filing normalization capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -1110,12 +1112,16 @@ def validate_tax_data_normalization() -> None:
     view_relative_path = "views/tax_data_normalization_views.xml"
     if view_relative_path not in manifest.get("data", []):
         fail("tax data normalization views must be loaded by the manifest")
+    if "views/cit_filing_views.xml" not in manifest.get("data", []):
+        fail("CIT filing normalization views must be loaded by the manifest")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
     )
     if "from . import tax_data_normalization" not in model_init:
         fail("tax data normalization models must be imported")
+    if "from . import cit_filing_normalization" not in model_init:
+        fail("CIT filing normalization models must be imported")
 
     service_init = (ADDON_ROOT / "services" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1125,10 +1131,16 @@ def validate_tax_data_normalization() -> None:
 
     contract_path = ADDON_ROOT / "services" / "tax_data_contract.py"
     model_path = ADDON_ROOT / "models" / "tax_data_normalization.py"
-    if not contract_path.is_file() or not model_path.is_file():
+    cit_model_path = ADDON_ROOT / "models" / "cit_filing_normalization.py"
+    if (
+        not contract_path.is_file()
+        or not model_path.is_file()
+        or not cit_model_path.is_file()
+    ):
         fail("tax data normalization implementation is incomplete")
     contract_content = contract_path.read_text(encoding="utf-8")
     model_content = model_path.read_text(encoding="utf-8")
+    cit_model_content = cit_model_path.read_text(encoding="utf-8")
     for required in (
         "sdoo.cn.tax-data.v1",
         "duplicate JSON key",
@@ -1156,6 +1168,28 @@ def validate_tax_data_normalization() -> None:
     ):
         if required not in model_content:
             fail(f"tax data normalization contract is missing {required}")
+    for required in (
+        '"cit_filing"',
+        "_CIT_FILING_FIELDS",
+        "_validate_cit_lines",
+    ):
+        if required not in contract_content:
+            fail(f"CIT filing data contract is missing {required}")
+    for required in (
+        '_name = "sudo.cn.cit.filing.record"',
+        '_name = "sudo.cn.cit.filing.line"',
+        '"annual_reconciliation"',
+        '"quarterly_prepayment"',
+        "has_accounting_profit_amount",
+        "has_taxable_income_amount",
+        "has_payable_amount",
+        "has_refundable_amount",
+        "MISSING_CIT_TAXABLE_INCOME",
+        "MISSING_CIT_SETTLEMENT_AMOUNT",
+        "_TAX_NORMALIZED_RECORD_MARKER",
+    ):
+        if required not in cit_model_content:
+            fail(f"CIT filing normalization contract is missing {required}")
 
     access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
     with access_path.open(encoding="utf-8", newline="") as handle:
@@ -1164,6 +1198,8 @@ def validate_tax_data_normalization() -> None:
         "model_sudo_cn_tax_data_parse_run",
         "model_sudo_cn_vat_filing_record",
         "model_sudo_cn_vat_filing_line",
+        "model_sudo_cn_cit_filing_record",
+        "model_sudo_cn_cit_filing_line",
         "model_sudo_cn_tax_payment_record",
     }
     expected_groups = {
@@ -1210,7 +1246,8 @@ def validate_tax_data_normalization() -> None:
         fail("every governed tax data model requires a company record rule")
 
     view_path = ADDON_ROOT / view_relative_path
-    if not view_path.is_file():
+    cit_view_path = ADDON_ROOT / "views" / "cit_filing_views.xml"
+    if not view_path.is_file() or not cit_view_path.is_file():
         fail("tax data normalization UI is missing")
     view_content = view_path.read_text(encoding="utf-8")
     for required_id in (
@@ -1229,6 +1266,24 @@ def validate_tax_data_normalization() -> None:
     ):
         if f'id="{required_id}"' not in view_content:
             fail(f"tax data normalization UI is missing {required_id}")
+    cit_view_content = cit_view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_tax_data_parse_run_form_cit",
+        "view_cn_cit_filing_record_search",
+        "view_cn_cit_filing_record_list",
+        "view_cn_cit_filing_record_form",
+        "action_cn_cit_filing_records",
+        "menu_cn_cit_filing_records",
+        "view_cn_external_dataset_form_cit_results",
+    ):
+        if f'id="{required_id}"' not in cit_view_content:
+            fail(f"CIT filing normalization UI is missing {required_id}")
+    for boundary_text in (
+        "不自动计算税率、优惠、应纳税额或法定截止日",
+        "字段一致也不构成税务合规结论",
+    ):
+        if boundary_text not in cit_view_content:
+            fail(f"CIT filing UI boundary is missing: {boundary_text}")
 
     pure_test_path = REPOSITORY_ROOT / "tools" / "test_tax_data_contract.py"
     runtime_test_path = ADDON_ROOT / "tests" / "test_tax_data_normalization.py"
@@ -1240,8 +1295,8 @@ def validate_tax_data_normalization() -> None:
         and node.name.startswith("test_")
         for node in ast.walk(test_tree)
     )
-    if test_methods < 10:
-        fail("tax data normalization requires at least ten runtime tests")
+    if test_methods < 13:
+        fail("tax data normalization requires at least thirteen runtime tests")
 
 
 def validate_vat_period_reconciliation() -> None:

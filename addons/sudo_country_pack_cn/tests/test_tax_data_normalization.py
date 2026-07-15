@@ -123,6 +123,52 @@ class TestChinaTaxDataNormalization(TransactionCase):
         record.update(overrides)
         return record
 
+    def _cit_filing_record(self, suffix="1", **overrides):
+        record = {
+            "source_record_key": f"CIT-2025-ANNUAL-{suffix}",
+            "taxpayer_name": self.company.name,
+            "taxpayer_id": self.company.partner_id.vat,
+            "jurisdiction_code": "440100",
+            "jurisdiction_name": "测试主管税务机关",
+            "tax_year": 2025,
+            "return_period_type": "annual_reconciliation",
+            "return_type_code": "CIT-ANNUAL",
+            "return_status": "accepted",
+            "period_start": "2025-01-01",
+            "period_end": "2025-12-31",
+            "submitted_at": "2026-05-20T09:00:00+08:00",
+            "submission_reference": f"CIT-ACK-{suffix}",
+            "revision_number": 0,
+            "currency_code": "CNY",
+            "accounting_profit_amount": "1000000.00",
+            "adjustment_increase_amount": "50000.00",
+            "adjustment_decrease_amount": "20000.00",
+            "taxable_income_amount": "1030000.00",
+            "tax_payable_amount": "257500.00",
+            "tax_relief_amount": "0.00",
+            "tax_credit_amount": "0.00",
+            "prepaid_tax_amount": "250000.00",
+            "payable_amount": "7500.00",
+            "refundable_amount": "0.00",
+            "lines": [
+                {
+                    "line_code": "A100000-13",
+                    "line_name": "利润总额",
+                    "amount_type": "accounting",
+                    "current_amount": "1000000.00",
+                },
+                {
+                    "line_code": "A100000-31",
+                    "line_name": "应补所得税额",
+                    "amount_type": "payable",
+                    "current_amount": "7500.00",
+                    "tax_rate": "0.25",
+                },
+            ],
+        }
+        record.update(overrides)
+        return record
+
     def _contract(self, dataset_type, records):
         return {
             "schema": "sdoo.cn.tax-data.v1",
@@ -145,6 +191,8 @@ class TestChinaTaxDataNormalization(TransactionCase):
         company=None,
         reviewer=None,
         seal=True,
+        period_start="2026-06-01",
+        period_end="2026-06-30",
     ):
         profile = profile or self.profile
         company = company or profile.company_id
@@ -166,8 +214,8 @@ class TestChinaTaxDataNormalization(TransactionCase):
             {
                 "profile_id": profile.id,
                 "dataset_type": dataset_type,
-                "period_start": "2026-06-01",
-                "period_end": "2026-06-30",
+                "period_start": period_start,
+                "period_end": period_end,
                 "coverage_scope": "full",
                 "scope_note": "覆盖测试税款所属期的受控标准化数据。",
                 "source_channel": "official_export",
@@ -213,6 +261,8 @@ class TestChinaTaxDataNormalization(TransactionCase):
             "sudo.cn.tax.data.parse.run",
             "sudo.cn.vat.filing.record",
             "sudo.cn.vat.filing.line",
+            "sudo.cn.cit.filing.record",
+            "sudo.cn.cit.filing.line",
             "sudo.cn.tax.payment.record",
         ):
             with self.assertRaises(AccessError):
@@ -322,6 +372,94 @@ class TestChinaTaxDataNormalization(TransactionCase):
         self.assertEqual(record.payer_account_masked, "****1234")
         self.assertEqual(record.amount, 100.0)
         self.assertEqual(record.principal_amount, 100.0)
+
+    def test_valid_cit_filing_preserves_separate_amounts_and_zero(self):
+        dataset = self._dataset(
+            "cit_filing",
+            [self._cit_filing_record("valid")],
+            suffix="cit-valid",
+            period_start="2025-01-01",
+            period_end="2025-12-31",
+        )
+        run = self._start(dataset)
+
+        self.assertTrue(self._process(run))
+
+        record = run.cit_filing_record_ids
+        self.assertEqual(run.state, "succeeded")
+        self.assertEqual(run.cit_filing_count, 1)
+        self.assertEqual(record.quality_state, "valid")
+        self.assertEqual(record.tax_year, 2025)
+        self.assertEqual(record.return_period_type, "annual_reconciliation")
+        self.assertTrue(record.has_tax_relief_amount)
+        self.assertEqual(record.tax_relief_amount, 0.0)
+        self.assertEqual(record.adjustment_increase_amount, 50000.0)
+        self.assertEqual(record.adjustment_decrease_amount, 20000.0)
+        self.assertEqual(record.payable_amount, 7500.0)
+        self.assertEqual(record.refundable_amount, 0.0)
+        self.assertEqual(len(record.line_ids), 2)
+        self.assertEqual(len(record.record_checksum), 64)
+        dataset.invalidate_recordset()
+        self.assertEqual(dataset.normalized_cit_filing_count, 1)
+        action = dataset.action_view_normalized_tax_records()
+        self.assertEqual(action["res_model"], "sudo.cn.cit.filing.record")
+        self.assertEqual(action["domain"], [("dataset_id", "=", dataset.id)])
+        import_action = dataset.action_import_tax_data()
+        self.assertEqual(
+            import_action["res_model"], "sudo.cn.tax.data.import.wizard"
+        )
+
+    def test_cit_missing_required_summary_is_visible_error(self):
+        payload = self._cit_filing_record(
+            "missing-summary",
+            tax_year="bad-year",
+            return_type_code=None,
+        )
+        payload.pop("taxable_income_amount")
+        payload.pop("payable_amount")
+        payload.pop("refundable_amount")
+        dataset = self._dataset(
+            "cit_filing",
+            [payload],
+            suffix="cit-missing-summary",
+            period_start="2025-01-01",
+            period_end="2025-12-31",
+        )
+        run = self._start(dataset)
+
+        self.assertTrue(self._process(run))
+
+        record = run.cit_filing_record_ids
+        codes = {issue["code"] for issue in record.issue_json}
+        self.assertEqual(record.quality_state, "error")
+        self.assertIn("INVALID_CIT_TAX_YEAR", codes)
+        self.assertIn("MISSING_CIT_RETURN_TYPE", codes)
+        self.assertIn("MISSING_CIT_TAXABLE_INCOME", codes)
+        self.assertIn("MISSING_CIT_SETTLEMENT_AMOUNT", codes)
+
+    def test_cit_source_replacement_and_records_are_immutable(self):
+        dataset = self._dataset(
+            "cit_filing",
+            [self._cit_filing_record("replacement")],
+            suffix="cit-replacement",
+            period_start="2025-01-01",
+            period_end="2025-12-31",
+        )
+        first = self._start(dataset)
+        self.assertTrue(self._process(first))
+        second = self._start(dataset)
+        self.assertTrue(self._process(second))
+
+        first.invalidate_recordset()
+        self.assertEqual(first.state, "superseded")
+        self.assertFalse(first.cit_filing_record_ids.is_current_result)
+        self.assertTrue(second.cit_filing_record_ids.is_current_result)
+        with self.assertRaises(AccessError):
+            second.cit_filing_record_ids.write({"payable_amount": 1.0})
+        with self.assertRaises(AccessError):
+            second.cit_filing_record_ids.line_ids.write(
+                {"line_name": "CHANGED"}
+            )
 
     def test_unmasked_account_is_not_persisted(self):
         dataset = self._dataset(
@@ -448,6 +586,19 @@ class TestChinaTaxDataNormalization(TransactionCase):
             self.read_only_user
         ).search([("id", "=", own_run.vat_filing_record_ids.id)])
         self.assertTrue(visible)
+        own_cit_dataset = self._dataset(
+            "cit_filing",
+            [self._cit_filing_record("own")],
+            suffix="own-company-cit",
+            period_start="2025-01-01",
+            period_end="2025-12-31",
+        )
+        own_cit_run = self._start(own_cit_dataset)
+        self.assertTrue(self._process(own_cit_run))
+        visible_cit = self.env["sudo.cn.cit.filing.record"].with_user(
+            self.read_only_user
+        ).search([("id", "=", own_cit_run.cit_filing_record_ids.id)])
+        self.assertTrue(visible_cit)
         with self.assertRaises(AccessError):
             self.env["sudo.cn.tax.data.parse.run"].with_user(
                 self.read_only_user
@@ -511,3 +662,26 @@ class TestChinaTaxDataNormalization(TransactionCase):
             self.read_only_user
         ).search([("id", "=", other_run.vat_filing_record_ids.id)])
         self.assertFalse(hidden)
+        other_cit_record = self._cit_filing_record(
+            "other",
+            taxpayer_name=other_company.name,
+            taxpayer_id=other_company.partner_id.vat,
+        )
+        other_cit_dataset = self._dataset(
+            "cit_filing",
+            [other_cit_record],
+            suffix="other-company-cit",
+            profile=other_profile,
+            company=other_company,
+            reviewer=other_manager,
+            period_start="2025-01-01",
+            period_end="2025-12-31",
+        )
+        other_cit_run = self._start(other_cit_dataset, reviewer=other_manager)
+        self.assertTrue(
+            self._process(other_cit_run, reviewer=other_manager)
+        )
+        hidden_cit = self.env["sudo.cn.cit.filing.record"].with_user(
+            self.read_only_user
+        ).search([("id", "=", other_cit_run.cit_filing_record_ids.id)])
+        self.assertFalse(hidden_cit)

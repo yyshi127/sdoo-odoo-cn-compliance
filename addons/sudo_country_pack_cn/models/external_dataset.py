@@ -10,6 +10,7 @@ _DATASET_TRANSITION_MARKER = object()
 DATASET_TYPES = (
     ("electronic_invoice", "电子发票与电子凭证"),
     ("vat_filing", "增值税申报数据"),
+    ("cit_filing", "企业所得税申报数据"),
     ("tax_payment", "税款缴纳数据"),
     ("iit_withholding", "个人所得税扣缴数据"),
     ("bank_evidence", "银行与支付证据"),

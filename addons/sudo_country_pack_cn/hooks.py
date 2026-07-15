@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.19.0"
+PACK_VERSION = "19.0.1.20.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -124,6 +124,7 @@ def country_pack_capabilities():
             "vat_adjustment_report": True,
             "formal_compliance_report": True,
             "vat_filing_payment_archive": True,
+            "cit_filing_normalization": True,
             "multi_company": True,
         },
         "governance": {

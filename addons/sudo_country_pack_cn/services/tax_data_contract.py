@@ -4,7 +4,9 @@ import json
 
 
 CONTRACT_SCHEMA = "sdoo.cn.tax-data.v1"
-SUPPORTED_DATASET_TYPES = frozenset({"vat_filing", "tax_payment"})
+SUPPORTED_DATASET_TYPES = frozenset(
+    {"vat_filing", "cit_filing", "tax_payment"}
+)
 MAX_CONTRACT_BYTES = 20 * 1024 * 1024
 MAX_RECORDS = 10000
 MAX_LINES_PER_FILING = 500
@@ -67,7 +69,42 @@ _TAX_PAYMENT_FIELDS = _COMMON_RECORD_FIELDS | frozenset(
         "receipt_reference",
     }
 )
+_CIT_FILING_FIELDS = _COMMON_RECORD_FIELDS | frozenset(
+    {
+        "jurisdiction_code",
+        "jurisdiction_name",
+        "tax_year",
+        "return_period_type",
+        "return_type_code",
+        "return_status",
+        "submitted_at",
+        "submission_reference",
+        "revision_number",
+        "correction_reference",
+        "accounting_profit_amount",
+        "adjustment_increase_amount",
+        "adjustment_decrease_amount",
+        "taxable_income_amount",
+        "tax_payable_amount",
+        "tax_relief_amount",
+        "tax_credit_amount",
+        "prepaid_tax_amount",
+        "payable_amount",
+        "refundable_amount",
+        "lines",
+    }
+)
 _VAT_LINE_FIELDS = frozenset(
+    {
+        "line_code",
+        "line_name",
+        "amount_type",
+        "current_amount",
+        "ytd_amount",
+        "tax_rate",
+    }
+)
+_CIT_LINE_FIELDS = frozenset(
     {
         "line_code",
         "line_name",
@@ -162,6 +199,44 @@ def _validate_vat_lines(record, record_index):
         line_codes.add(line_code)
 
 
+def _validate_cit_lines(record, record_index):
+    lines = record.get("lines", [])
+    if lines is None:
+        lines = []
+    if not isinstance(lines, list):
+        raise TaxDataContractError(
+            f"records[{record_index}].lines must be a list"
+        )
+    if len(lines) > MAX_LINES_PER_FILING:
+        raise TaxDataContractError(
+            f"records[{record_index}].lines exceeds "
+            f"{MAX_LINES_PER_FILING} entries"
+        )
+    line_codes = set()
+    for line_index, line in enumerate(lines):
+        if not isinstance(line, dict):
+            raise TaxDataContractError(
+                f"records[{record_index}].lines[{line_index}] "
+                "must be an object"
+            )
+        _unknown_fields(
+            line,
+            _CIT_LINE_FIELDS,
+            f"records[{record_index}].lines[{line_index}]",
+        )
+        line_code = _text(
+            line.get("line_code"),
+            f"records[{record_index}].lines[{line_index}].line_code",
+            128,
+        )
+        if line_code in line_codes:
+            raise TaxDataContractError(
+                f"records[{record_index}] contains duplicate line_code "
+                f"{line_code}"
+            )
+        line_codes.add(line_code)
+
+
 def load_tax_data_contract(
     raw,
     *,
@@ -216,11 +291,11 @@ def load_tax_data_contract(
         raise TaxDataContractError(
             "record_count does not match the number of records"
         )
-    allowed_fields = (
-        _VAT_FILING_FIELDS
-        if dataset_type == "vat_filing"
-        else _TAX_PAYMENT_FIELDS
-    )
+    allowed_fields = {
+        "vat_filing": _VAT_FILING_FIELDS,
+        "cit_filing": _CIT_FILING_FIELDS,
+        "tax_payment": _TAX_PAYMENT_FIELDS,
+    }[dataset_type]
     source_keys = set()
     normalized_records = []
     for index, record in enumerate(records):
@@ -239,6 +314,8 @@ def load_tax_data_contract(
         source_keys.add(source_key)
         if dataset_type == "vat_filing":
             _validate_vat_lines(record, index)
+        elif dataset_type == "cit_filing":
+            _validate_cit_lines(record, index)
         normalized_records.append(dict(record, source_record_key=source_key))
     canonical = {
         "schema": CONTRACT_SCHEMA,
