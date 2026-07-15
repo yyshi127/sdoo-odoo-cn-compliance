@@ -113,6 +113,34 @@ def validate_hooks(manifest: dict[str, object]) -> None:
             fail(f"filing type missing for {template['code']}")
 
 
+def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
+    path = ADDON_ROOT / "data" / "country_pack_data.xml"
+    root = ElementTree.parse(path).getroot()
+    records = [
+        record
+        for record in root.findall(".//record")
+        if record.attrib.get("model") == "sudo.compliance.country.pack"
+    ]
+    if len(records) != 1:
+        fail("China country pack metadata must contain exactly one record")
+    fields = record_fields(records[0])
+    if field_text(fields, "version", records[0].attrib["id"]) != manifest[
+        "version"
+    ]:
+        fail("country pack data version must match the manifest")
+    capabilities = literal_eval_field(
+        fields["capability_json"],
+        records[0].attrib["id"],
+    )
+    if not isinstance(capabilities, dict):
+        fail("country pack capabilities must be a dictionary")
+    features = capabilities.get("features", {})
+    if features.get("external_dataset") is not True:
+        fail("controlled external dataset capability must be declared")
+    if features.get("reconciliation") is not False:
+        fail("reconciliation must remain disabled until it is implemented")
+
+
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
     path = ADDON_ROOT / "data" / "compliance_fact_data.xml"
     root = ElementTree.parse(path).getroot()
@@ -411,19 +439,30 @@ def validate_upgrade_migration(
     source_ids: set[str],
     version_source_refs: dict[str, set[str]],
 ) -> None:
-    migration_path = (
+    current_migration_path = (
         ADDON_ROOT
         / "migrations"
         / str(manifest["version"])
         / "post-migration.py"
     )
-    if not migration_path.is_file():
+    if not current_migration_path.is_file():
         fail("current version requires a post-migration script")
-    content = migration_path.read_text(encoding="utf-8")
-    tree = ast.parse(content, filename=str(migration_path))
-    links = literal_assignments(tree).get("RULE_SOURCE_LINKS")
-    if not isinstance(links, dict):
-        fail("upgrade migration must declare RULE_SOURCE_LINKS")
+    current_content = current_migration_path.read_text(encoding="utf-8")
+    if "update_country_pack_metadata" not in current_content:
+        fail("current migration must refresh country pack metadata")
+
+    link_migrations = []
+    for migration_path in sorted(
+        (ADDON_ROOT / "migrations").glob("*/post-migration.py")
+    ):
+        content = migration_path.read_text(encoding="utf-8")
+        tree = ast.parse(content, filename=str(migration_path))
+        links = literal_assignments(tree).get("RULE_SOURCE_LINKS")
+        if isinstance(links, dict):
+            link_migrations.append((content, links))
+    if len(link_migrations) != 1:
+        fail("exactly one upgrade migration must govern rule source links")
+    content, links = link_migrations[0]
     normalized_links = {
         version_id: set(candidates)
         for version_id, candidates in links.items()
@@ -485,10 +524,87 @@ def validate_taxpayer_classification_security() -> None:
         fail("taxpayer classification rule must enforce allowed companies")
 
 
+def validate_external_dataset_security() -> None:
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    model_rows = [
+        row
+        for row in rows
+        if row["model_id:id"] == "model_sudo_cn_external_dataset"
+    ]
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    if {row["group_id:id"] for row in model_rows} != expected_groups:
+        fail("China external dataset ACL groups are incomplete")
+    user_row = next(
+        row
+        for row in model_rows
+        if row["group_id:id"].endswith("group_compliance_user")
+    )
+    user_permissions = [
+        user_row[key]
+        for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+    ]
+    if user_permissions != ["1", "0", "0", "0"]:
+        fail("compliance users must have read-only external dataset access")
+    manager_row = next(
+        row
+        for row in model_rows
+        if row["group_id:id"].endswith("group_compliance_manager")
+    )
+    manager_permissions = [
+        manager_row[key]
+        for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+    ]
+    if manager_permissions != ["1", "1", "1", "1"]:
+        fail("compliance managers require controlled dataset maintenance access")
+
+    rule_path = ADDON_ROOT / "security" / "compliance_security.xml"
+    root = ElementTree.parse(rule_path).getroot()
+    company_rules = []
+    for record in root.findall(".//record"):
+        if record.attrib.get("model") != "ir.rule":
+            continue
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        if (
+            model_field is not None
+            and model_field.attrib.get("ref")
+            == "model_sudo_cn_external_dataset"
+        ):
+            company_rules.append(fields)
+    if len(company_rules) != 1:
+        fail("external datasets require one company record rule")
+    domain = field_text(company_rules[0], "domain_force", "company rule")
+    if "company_ids" not in domain or "company_id" not in domain:
+        fail("external dataset rule must enforce allowed companies")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import external_dataset" not in model_init:
+        fail("external dataset model must be imported")
+    view_content = (
+        ADDON_ROOT / "views" / "compliance_integration_views.xml"
+    ).read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_external_dataset_list",
+        "view_cn_external_dataset_form",
+        "action_cn_external_datasets",
+        "menu_cn_external_datasets",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"external dataset UI is missing {required_id}")
+
+
 def main() -> int:
     validate_text_and_syntax()
     manifest = validate_manifest()
     validate_hooks(manifest)
+    validate_country_pack_metadata(manifest)
     fact_keys, fact_ids = validate_fact_definitions()
     source_ids = validate_official_source_candidates()
     version_source_refs = validate_rule_drafts(
@@ -498,6 +614,7 @@ def main() -> int:
     )
     validate_upgrade_migration(manifest, source_ids, version_source_refs)
     validate_taxpayer_classification_security()
+    validate_external_dataset_security()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
 

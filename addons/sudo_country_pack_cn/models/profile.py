@@ -13,6 +13,11 @@ class SudoComplianceProfile(models.Model):
         "profile_id",
         string="中国纳税人身份快照",
     )
+    cn_external_dataset_ids = fields.One2many(
+        "sudo.cn.external.dataset",
+        "profile_id",
+        string="中国外部监管数据集",
+    )
 
     @api.depends("country_id.code")
     def _compute_is_china_profile(self):

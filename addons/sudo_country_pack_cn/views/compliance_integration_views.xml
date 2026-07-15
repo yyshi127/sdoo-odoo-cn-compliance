@@ -1,5 +1,222 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="view_cn_external_dataset_search" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.search</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="arch" type="xml">
+            <search string="外部监管数据">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="profile_id"/>
+                <field name="source_system_name"/>
+                <field name="source_reference"/>
+                <filter name="draft" string="待完善"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="sealed" string="当前已封存"
+                        domain="[('state', '=', 'sealed')]"/>
+                <filter name="authenticity_issue" string="真实性未通过"
+                        domain="[('authenticity_state', 'in',
+                                 ('not_checked', 'official_tool_failed', 'unavailable'))]"/>
+                <separator/>
+                <filter name="group_dataset_type" string="数据集类型"
+                        context="{'group_by': 'dataset_type'}"/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_external_dataset_list" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.list</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="arch" type="xml">
+            <list string="外部监管数据"
+                  decoration-danger="integrity_state == 'checksum_mismatch' or authenticity_state == 'official_tool_failed'"
+                  decoration-warning="state == 'draft' or review_control_state == 'exception'"
+                  decoration-muted="state == 'superseded'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="profile_id" optional="hide"/>
+                <field name="dataset_type"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="coverage_scope" widget="badge"/>
+                <field name="declared_record_count" sum="记录数"/>
+                <field name="source_system_name" optional="show"/>
+                <field name="authenticity_state" widget="badge"
+                       decoration-success="authenticity_state == 'official_tool_passed'"
+                       decoration-danger="authenticity_state == 'official_tool_failed'"
+                       decoration-warning="authenticity_state in ('not_checked', 'unavailable')"/>
+                <field name="review_control_state" widget="badge"
+                       decoration-success="review_control_state == 'independent'"
+                       decoration-warning="review_control_state in ('pending', 'exception')"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"
+                       decoration-warning="integrity_state == 'unsealed'"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sealed'"
+                       decoration-warning="state == 'draft'"
+                       decoration-muted="state == 'superseded'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_external_dataset_form" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="arch" type="xml">
+            <form string="外部监管数据集">
+                <header>
+                    <button name="action_seal" type="object"
+                            string="复核并封存" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_create_replacement" type="object"
+                            string="创建替代版本"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'sealed' or replacement_ids"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,sealed,superseded"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="封存后资料已变化"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <widget name="web_ribbon" title="已被替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        封存只证明来源、范围、附件和复核轨迹已被受控记录，不代表税务机关已认可数据真实性或税法结论。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="authenticity_state != 'official_tool_failed'">
+                        真实性验证失败。本数据集可作为异常证据保留，但不得作为已验证监管数据使用。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="review_control_state != 'exception'">
+                        本数据集使用了采集人与封存人为同一人的受控例外，后续评估必须披露该限制。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group readonly="state != 'draft'">
+                        <group>
+                            <field name="profile_id"
+                                   domain="[('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   readonly="1"/>
+                            <field name="country_id" invisible="1"/>
+                            <field name="dataset_type"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="coverage_scope"/>
+                        </group>
+                        <group>
+                            <field name="source_channel"/>
+                            <field name="source_system_name"/>
+                            <field name="source_reference"/>
+                            <field name="source_generated_at"/>
+                            <field name="data_format"/>
+                            <field name="acquired_at"/>
+                            <field name="acquired_by_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group readonly="state != 'draft'">
+                        <group string="数据规模声明">
+                            <field name="declared_record_count"/>
+                            <field name="currency_id" options="{'no_create': True}"/>
+                            <field name="declared_total_amount"/>
+                            <field name="declared_tax_amount"/>
+                        </group>
+                        <group string="数据保护">
+                            <field name="contains_sensitive_data"/>
+                            <field name="data_control_note"
+                                   invisible="not contains_sensitive_data"
+                                   placeholder="记录访问限制、脱敏、授权边界和保存期限..."/>
+                        </group>
+                    </group>
+                    <group string="来源与范围" readonly="state != 'draft'">
+                        <field name="authorization_basis"
+                               placeholder="说明企业自有、客户授权、接口授权或其他合法取得依据..."/>
+                        <field name="scope_note"
+                               placeholder="说明覆盖口径、缺失范围、筛选条件和仍未消除的不确定性..."/>
+                    </group>
+                    <group string="源文件">
+                        <field name="source_attachment_ids"
+                               widget="many2many_binary" nolabel="1"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <group string="真实性验证" readonly="state != 'draft'">
+                        <group>
+                            <field name="authenticity_state"/>
+                            <field name="authenticity_method"
+                                   invisible="authenticity_state not in ('official_tool_passed', 'official_tool_failed')"/>
+                            <field name="authenticity_reference"
+                                   invisible="authenticity_state not in ('official_tool_passed', 'official_tool_failed')"/>
+                        </group>
+                        <group>
+                            <field name="authenticity_evidence_attachment_ids"
+                                   widget="many2many_binary" nolabel="1"
+                                   invisible="authenticity_state not in ('official_tool_passed', 'official_tool_failed')"/>
+                        </group>
+                    </group>
+                    <group string="封存与版本">
+                        <group readonly="state != 'draft'">
+                            <field name="supersedes_id"
+                                   domain="[('profile_id', '=', profile_id), ('dataset_type', '=', dataset_type), ('state', '=', 'sealed')]"
+                                   options="{'no_create': True}"/>
+                            <field name="separation_exception_reason"
+                                   placeholder="仅在确无第二复核人时填写不少于 20 字的受控例外理由..."/>
+                        </group>
+                        <group>
+                            <field name="review_control_state" widget="badge"
+                                   readonly="1"/>
+                            <field name="integrity_state" widget="badge"
+                                   readonly="1"/>
+                            <field name="sealed_at" readonly="1"
+                                   invisible="not sealed_at"/>
+                            <field name="sealed_by_id" readonly="1"
+                                   invisible="not sealed_by_id"/>
+                            <field name="seal_checksum" readonly="1"
+                                   invisible="not seal_checksum"/>
+                        </group>
+                    </group>
+                    <group string="替代版本" invisible="not replacement_ids">
+                        <field name="replacement_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="state" widget="badge"/>
+                                <field name="sealed_at"/>
+                                <field name="sealed_by_id"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_external_datasets" model="ir.actions.act_window">
+        <field name="name">外部监管数据</field>
+        <field name="res_model">sudo.cn.external.dataset</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_external_dataset_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">登记第一份受控外部数据集</p>
+            <p>记录依法取得的发票、申报、缴税或其他监管数据，并保留范围、验证和封存轨迹。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_external_datasets" name="外部监管数据"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_external_datasets" sequence="45"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
     <record id="view_cn_taxpayer_classification_list" model="ir.ui.view">
         <field name="name">sudo.cn.taxpayer.classification.list</field>
         <field name="model">sudo.cn.taxpayer.classification</field>
@@ -160,6 +377,34 @@
                             <field name="integrity_state" widget="badge"
                                    decoration-success="integrity_state == 'verified'"
                                    decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="外部监管数据" invisible="not is_china_profile">
+                    <field name="cn_external_dataset_ids"
+                           context="{'default_profile_id': id}">
+                        <list decoration-danger="integrity_state == 'checksum_mismatch' or authenticity_state == 'official_tool_failed'"
+                              decoration-warning="state == 'draft' or review_control_state == 'exception'"
+                              decoration-muted="state == 'superseded'">
+                            <field name="dataset_type"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="coverage_scope" widget="badge"/>
+                            <field name="declared_record_count"/>
+                            <field name="authenticity_state" widget="badge"
+                                   decoration-success="authenticity_state == 'official_tool_passed'"
+                                   decoration-danger="authenticity_state == 'official_tool_failed'"
+                                   decoration-warning="authenticity_state in ('not_checked', 'unavailable')"/>
+                            <field name="review_control_state" widget="badge"
+                                   decoration-success="review_control_state == 'independent'"
+                                   decoration-warning="review_control_state in ('pending', 'exception')"/>
+                            <field name="integrity_state" widget="badge"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'sealed'"
+                                   decoration-warning="state == 'draft'"
+                                   decoration-muted="state == 'superseded'"/>
                         </list>
                     </field>
                 </page>
