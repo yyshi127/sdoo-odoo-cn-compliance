@@ -137,6 +137,10 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
     features = capabilities.get("features", {})
     if features.get("external_dataset") is not True:
         fail("controlled external dataset capability must be declared")
+    if features.get("einvoice_normalized_ledger") is not True:
+        fail("normalized electronic invoice ledger must be declared")
+    if features.get("einvoice_xbrl_parser") is not False:
+        fail("XBRL parser must remain disabled until its adapter is delivered")
     if features.get("reconciliation") is not False:
         fail("reconciliation must remain disabled until it is implemented")
 
@@ -600,6 +604,88 @@ def validate_external_dataset_security() -> None:
             fail(f"external dataset UI is missing {required_id}")
 
 
+def validate_invoice_normalization_security() -> None:
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    model_names = {
+        "model_sudo_cn_external_parse_run",
+        "model_sudo_cn_einvoice_document",
+        "model_sudo_cn_einvoice_accounting_document",
+        "model_sudo_cn_einvoice_accounting_entry",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in model_names:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"normalized invoice ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        permissions = [
+            user_row[key]
+            for key in (
+                "perm_read",
+                "perm_write",
+                "perm_create",
+                "perm_unlink",
+            )
+        ]
+        if permissions != ["1", "0", "0", "0"]:
+            fail(f"normalized invoice users must be read-only: {model_name}")
+        manager_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_manager")
+        )
+        if manager_row["perm_unlink"] != "0":
+            fail(f"normalized invoice records must not be deleted: {model_name}")
+
+    rule_path = ADDON_ROOT / "security" / "compliance_security.xml"
+    root = ElementTree.parse(rule_path).getroot()
+    ruled_models = []
+    for record in root.findall(".//record"):
+        if record.attrib.get("model") != "ir.rule":
+            continue
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in model_names:
+            continue
+        domain = field_text(fields, "domain_force", model_ref)
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"normalized invoice rule lacks company isolation: {model_ref}")
+        ruled_models.append(model_ref)
+    if set(ruled_models) != model_names:
+        fail("every normalized invoice model requires one company record rule")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import invoice_normalization" not in model_init:
+        fail("invoice normalization models must be imported")
+    view_path = ADDON_ROOT / "views" / "invoice_normalization_views.xml"
+    if not view_path.is_file():
+        fail("invoice normalization UI file is missing")
+    view_content = view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_external_parse_run_list",
+        "view_cn_external_parse_run_form",
+        "view_cn_einvoice_document_list",
+        "view_cn_einvoice_document_form",
+        "action_cn_external_parse_runs",
+        "action_cn_einvoice_documents",
+        "menu_cn_einvoice_documents",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"invoice normalization UI is missing {required_id}")
+
+
 def main() -> int:
     validate_text_and_syntax()
     manifest = validate_manifest()
@@ -615,6 +701,7 @@ def main() -> int:
     validate_upgrade_migration(manifest, source_ids, version_source_refs)
     validate_taxpayer_classification_security()
     validate_external_dataset_security()
+    validate_invoice_normalization_security()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
 

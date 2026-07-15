@@ -230,6 +230,26 @@ class SudoChinaExternalDataset(models.Model):
         readonly=True,
         copy=False,
     )
+    parse_run_ids = fields.One2many(
+        "sudo.cn.external.parse.run",
+        "dataset_id",
+        string="解析运行",
+        readonly=True,
+        copy=False,
+    )
+    parse_run_count = fields.Integer(
+        string="解析运行数",
+        compute="_compute_parse_result_counts",
+    )
+    normalized_document_count = fields.Integer(
+        string="规范化电子发票数",
+        compute="_compute_parse_result_counts",
+    )
+    current_parse_run_id = fields.Many2one(
+        "sudo.cn.external.parse.run",
+        string="当前解析结果",
+        compute="_compute_parse_result_counts",
+    )
 
     _record_count_nonnegative = models.Constraint(
         "CHECK(declared_record_count >= 0)",
@@ -316,6 +336,33 @@ class SudoChinaExternalDataset(models.Model):
                 dataset.review_control_state = "exception"
             else:
                 dataset.review_control_state = "independent"
+
+    @api.depends(
+        "parse_run_ids",
+        "parse_run_ids.state",
+        "parse_run_ids.started_at",
+        "parse_run_ids.document_count",
+        "state",
+        "integrity_state",
+    )
+    def _compute_parse_result_counts(self):
+        for dataset in self:
+            dataset.parse_run_count = len(dataset.parse_run_ids)
+            eligible = (
+                dataset.state == "sealed"
+                and dataset._current_integrity_state() == "verified"
+            )
+            current_runs = dataset.parse_run_ids.filtered(
+                lambda run: eligible and run.state == "succeeded"
+            ).sorted(
+                key=lambda run: (run.started_at, run.id),
+                reverse=True,
+            )
+            current = current_runs[:1]
+            dataset.current_parse_run_id = current
+            dataset.normalized_document_count = (
+                current.document_count if current else 0
+            )
 
     @api.model
     def _attachment_payload(self, attachments):
@@ -760,3 +807,20 @@ class SudoChinaExternalDataset(models.Model):
             ).id,
             "target": "current",
         }
+
+    def action_view_parse_runs(self):
+        self.ensure_one()
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_cn_external_parse_runs"
+        ).read()[0]
+        action["domain"] = [("dataset_id", "=", self.id)]
+        action["context"] = {"default_dataset_id": self.id}
+        return action
+
+    def action_view_normalized_documents(self):
+        self.ensure_one()
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_cn_einvoice_documents"
+        ).read()[0]
+        action["domain"] = [("dataset_id", "=", self.id)]
+        return action

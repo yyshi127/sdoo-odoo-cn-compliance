@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_external_parse_run_search" model="ir.ui.view">
+        <field name="name">sudo.cn.external.parse.run.search</field>
+        <field name="model">sudo.cn.external.parse.run</field>
+        <field name="arch" type="xml">
+            <search string="数据解析记录">
+                <field name="name"/>
+                <field name="dataset_id"/>
+                <field name="company_id"/>
+                <field name="parser_key"/>
+                <field name="parser_version"/>
+                <filter name="running" string="解析中"
+                        domain="[('state', '=', 'running')]"/>
+                <filter name="succeeded" string="当前成功结果"
+                        domain="[('state', '=', 'succeeded')]"/>
+                <filter name="failed" string="失败"
+                        domain="[('state', '=', 'failed')]"/>
+                <separator/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_external_parse_run_list" model="ir.ui.view">
+        <field name="name">sudo.cn.external.parse.run.list</field>
+        <field name="model">sudo.cn.external.parse.run</field>
+        <field name="arch" type="xml">
+            <list string="数据解析记录"
+                  create="0" edit="0" delete="0"
+                  decoration-success="state == 'succeeded'"
+                  decoration-danger="state == 'failed'"
+                  decoration-warning="state == 'running'"
+                  decoration-muted="state == 'superseded'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="dataset_id"/>
+                <field name="parser_key"/>
+                <field name="parser_version"/>
+                <field name="taxonomy_version" optional="show"/>
+                <field name="started_at"/>
+                <field name="started_by_id"/>
+                <field name="finished_at" optional="show"/>
+                <field name="document_count" sum="文档数"/>
+                <field name="warning_document_count" optional="show"/>
+                <field name="error_document_count" optional="show"/>
+                <field name="parser_warning_count" optional="hide"/>
+                <field name="parser_error_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'succeeded'"
+                       decoration-danger="state == 'failed'"
+                       decoration-warning="state == 'running'"
+                       decoration-muted="state == 'superseded'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_external_parse_run_form" model="ir.ui.view">
+        <field name="name">sudo.cn.external.parse.run.form</field>
+        <field name="model">sudo.cn.external.parse.run</field>
+        <field name="arch" type="xml">
+            <form string="数据解析记录" create="0" edit="0" delete="0">
+                <header>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="running,succeeded,failed,superseded"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        本次解析失败且没有替代上一份成功结果。请根据失败代码修复输入、分类标准包或解析器后重新运行。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="error_document_count == 0">
+                        解析器执行成功，但部分规范化文档存在字段或金额错误；这些记录不能作为可靠勾稽依据。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="dataset_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="input_attachment_id"/>
+                            <field name="input_sha256"/>
+                            <field name="dataset_seal_checksum"/>
+                        </group>
+                        <group>
+                            <field name="parser_key"/>
+                            <field name="parser_version"/>
+                            <field name="parser_distribution"/>
+                            <field name="started_at"/>
+                            <field name="started_by_id"/>
+                            <field name="finished_at" invisible="not finished_at"/>
+                        </group>
+                    </group>
+                    <group string="分类标准包">
+                        <group>
+                            <field name="taxonomy_namespace"/>
+                            <field name="taxonomy_version"/>
+                        </group>
+                        <group>
+                            <field name="taxonomy_checksum"/>
+                            <field name="taxonomy_source_reference"/>
+                        </group>
+                    </group>
+                    <group string="解析结果">
+                        <group>
+                            <field name="source_fact_count"/>
+                            <field name="document_count"/>
+                            <field name="valid_document_count"/>
+                            <field name="warning_document_count"/>
+                            <field name="error_document_count"/>
+                        </group>
+                        <group>
+                            <field name="parser_warning_count"/>
+                            <field name="parser_error_count"/>
+                            <field name="parser_log_checksum"/>
+                            <field name="output_checksum"/>
+                            <field name="error_code" invisible="not error_code"/>
+                        </group>
+                    </group>
+                    <field name="result_summary"/>
+                    <notebook>
+                        <page string="规范化电子发票">
+                            <field name="document_ids">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="quality_state == 'error'"
+                                      decoration-warning="quality_state == 'warning'">
+                                    <field name="invoice_number"/>
+                                    <field name="request_time"/>
+                                    <field name="seller_name"/>
+                                    <field name="seller_tax_id"/>
+                                    <field name="currency_id"/>
+                                    <field name="total_amount"/>
+                                    <field name="quality_state" widget="badge"
+                                           decoration-success="quality_state == 'valid'"
+                                           decoration-warning="quality_state == 'warning'"
+                                           decoration-danger="quality_state == 'error'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_einvoice_document_search" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.document.search</field>
+        <field name="model">sudo.cn.einvoice.document</field>
+        <field name="arch" type="xml">
+            <search string="规范化电子发票">
+                <field name="invoice_number"/>
+                <field name="seller_name"/>
+                <field name="seller_tax_id"/>
+                <field name="accounting_entity_name"/>
+                <field name="accounting_entity_tax_id"/>
+                <field name="dataset_id"/>
+                <filter name="current" string="当前有效解析结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="quality_error" string="数据错误"
+                        domain="[('quality_state', '=', 'error')]"/>
+                <filter name="quality_warning" string="数据警告"
+                        domain="[('quality_state', '=', 'warning')]"/>
+                <separator/>
+                <filter name="group_seller" string="销售方"
+                        context="{'group_by': 'seller_tax_id'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+                <filter name="group_quality" string="数据质量"
+                        context="{'group_by': 'quality_state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_einvoice_document_list" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.document.list</field>
+        <field name="model">sudo.cn.einvoice.document</field>
+        <field name="arch" type="xml">
+            <list string="规范化电子发票" create="0" edit="0" delete="0"
+                  decoration-danger="quality_state == 'error'"
+                  decoration-warning="quality_state == 'warning'"
+                  decoration-muted="not is_current_result">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="invoice_number"/>
+                <field name="invoice_type_code" optional="hide"/>
+                <field name="request_time"/>
+                <field name="seller_name"/>
+                <field name="seller_tax_id"/>
+                <field name="accounting_entity_name" optional="hide"/>
+                <field name="accounting_entity_tax_id" optional="hide"/>
+                <field name="currency_id"/>
+                <field name="untaxed_amount" sum="不含税合计"/>
+                <field name="tax_amount" sum="税额合计"/>
+                <field name="total_amount" sum="价税合计"/>
+                <field name="is_red" optional="show"/>
+                <field name="source_coverage_scope" widget="badge"
+                       optional="show"/>
+                <field name="source_authenticity_state" widget="badge"
+                       decoration-success="source_authenticity_state == 'official_tool_passed'"
+                       decoration-danger="source_authenticity_state == 'official_tool_failed'"
+                       decoration-warning="source_authenticity_state in ('not_checked', 'unavailable')"/>
+                <field name="quality_state" widget="badge"
+                       decoration-success="quality_state == 'valid'"
+                       decoration-warning="quality_state == 'warning'"
+                       decoration-danger="quality_state == 'error'"/>
+                <field name="is_current_result" widget="boolean"/>
+                <field name="dataset_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_einvoice_document_form" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.document.form</field>
+        <field name="model">sudo.cn.einvoice.document</field>
+        <field name="arch" type="xml">
+            <form string="规范化电子发票" create="0" edit="0" delete="0">
+                <sheet>
+                    <widget name="web_ribbon" title="非当前解析结果"
+                            bg_color="text-bg-secondary"
+                            invisible="is_current_result"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="quality_state != 'error'">
+                        该记录存在字段、金额或会计凭证数据错误，不能作为可靠勾稽依据。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="quality_state != 'warning'">
+                        该记录可读取，但存在需要在勾稽和报告中披露的数据缺口。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="source_authenticity_state in ('official_tool_passed', 'not_applicable')">
+                        规范化字段校验不等于源文件真实性验证；当前源数据真实性尚未通过，或已记录验证失败。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="invoice_number"/>
+                            <field name="invoice_type_code"/>
+                            <field name="request_time"/>
+                            <field name="seller_name"/>
+                            <field name="seller_tax_id"/>
+                        </group>
+                        <group>
+                            <field name="accounting_entity_name"/>
+                            <field name="accounting_entity_tax_id"/>
+                            <field name="currency_id"/>
+                            <field name="untaxed_amount"/>
+                            <field name="tax_amount"/>
+                            <field name="total_amount"/>
+                        </group>
+                    </group>
+                    <group string="业务和使用状态">
+                        <group>
+                            <field name="is_red"/>
+                            <field name="is_booked"/>
+                            <field name="is_checked"/>
+                            <field name="is_paid"/>
+                        </group>
+                        <group>
+                            <field name="contract_number"/>
+                            <field name="bank_receipt_number"/>
+                            <field name="usage_confirmation"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="会计凭证信息">
+                            <field name="accounting_document_ids">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="balance_difference != 0">
+                                    <field name="sequence"/>
+                                    <field name="voucher_number"/>
+                                    <field name="posting_date"/>
+                                    <field name="accounting_period"/>
+                                    <field name="debit_total" sum="借方合计"/>
+                                    <field name="credit_total" sum="贷方合计"/>
+                                    <field name="balance_difference"/>
+                                </list>
+                                <form string="电子发票会计凭证信息"
+                                      create="0" edit="0" delete="0">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="voucher_number"/>
+                                                <field name="posting_date"/>
+                                                <field name="accounting_period"/>
+                                            </group>
+                                            <group>
+                                                <field name="currency_id"/>
+                                                <field name="debit_total"/>
+                                                <field name="credit_total"/>
+                                                <field name="balance_difference"/>
+                                            </group>
+                                        </group>
+                                        <field name="summary"/>
+                                        <field name="entry_ids">
+                                            <list create="0" edit="0" delete="0">
+                                                <field name="sequence"/>
+                                                <field name="direction"/>
+                                                <field name="general_ledger_subject"/>
+                                                <field name="subsidiary_ledger_subject"/>
+                                                <field name="amount" sum="入账金额"/>
+                                            </list>
+                                        </field>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="数据质量与溯源">
+                            <group>
+                                <group>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="is_current_result"/>
+                                    <field name="source_coverage_scope" widget="badge"/>
+                                    <field name="source_authenticity_state"
+                                           widget="badge"/>
+                                    <field name="source_review_control_state"
+                                           widget="badge"/>
+                                    <field name="source_integrity_state"
+                                           widget="badge"/>
+                                    <field name="source_document_key"/>
+                                    <field name="source_fact_count"/>
+                                    <field name="source_fact_digest"/>
+                                </group>
+                                <group>
+                                    <field name="dataset_id"/>
+                                    <field name="parse_run_id"/>
+                                    <field name="document_checksum"/>
+                                </group>
+                            </group>
+                            <field name="issue_json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_external_parse_runs" model="ir.actions.act_window">
+        <field name="name">数据解析记录</field>
+        <field name="res_model">sudo.cn.external.parse.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_external_parse_run_search"/>
+    </record>
+
+    <record id="action_cn_einvoice_documents" model="ir.actions.act_window">
+        <field name="name">电子发票台账</field>
+        <field name="res_model">sudo.cn.einvoice.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_einvoice_document_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_einvoice_documents" name="电子发票台账"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_einvoice_documents" sequence="46"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <menuitem id="menu_cn_external_parse_runs" name="数据解析记录"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_external_parse_runs" sequence="47"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <record id="view_cn_external_dataset_form_parse_results" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form.parse.results</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_external_dataset_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[contains(@class, 'oe_title')]"
+                   position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_parse_runs" type="object"
+                            class="oe_stat_button" icon="fa-code"
+                            invisible="parse_run_count == 0">
+                        <field name="parse_run_count" widget="statinfo"
+                               string="解析运行"/>
+                    </button>
+                    <button name="action_view_normalized_documents" type="object"
+                            class="oe_stat_button" icon="fa-file-text-o"
+                            invisible="normalized_document_count == 0">
+                        <field name="normalized_document_count" widget="statinfo"
+                               string="规范化发票"/>
+                    </button>
+                </div>
+            </xpath>
+            <field name="integrity_state" position="after">
+                <field name="current_parse_run_id" readonly="1"
+                       invisible="not current_parse_run_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>

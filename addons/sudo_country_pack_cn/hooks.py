@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.5.0"
+PACK_VERSION = "19.0.1.6.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -111,6 +111,8 @@ def country_pack_capabilities():
         "features": {
             "jurisdiction": False,
             "external_dataset": True,
+            "einvoice_normalized_ledger": True,
+            "einvoice_xbrl_parser": False,
             "reconciliation": False,
             "filing_control": True,
             "controlled_ai": True,

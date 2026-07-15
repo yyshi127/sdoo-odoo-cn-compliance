@@ -13,4 +13,32 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
+
+    <record id="cn_external_parse_run_company_rule" model="ir.rule">
+        <field name="name">China external parse runs: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_external_parse_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_einvoice_document_company_rule" model="ir.rule">
+        <field name="name">China electronic invoices: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_einvoice_document"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_einvoice_accounting_document_company_rule" model="ir.rule">
+        <field name="name">China invoice accounting references: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_einvoice_accounting_document"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_einvoice_accounting_entry_company_rule" model="ir.rule">
+        <field name="name">China invoice accounting entries: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_einvoice_accounting_entry"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
 </odoo>
