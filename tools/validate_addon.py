@@ -39,6 +39,14 @@ OFFICIAL_SOURCE_HOSTS = {
     "wb.flk.npc.gov.cn",
     "www.mof.gov.cn",
 }
+ALLOWED_CN_RULE_NATURES = {
+    "statutory_requirement",
+    "tax_calculation",
+    "filing_deadline",
+    "internal_control",
+    "data_readiness",
+}
+CONTROL_RULE_NATURES = {"internal_control", "data_readiness"}
 
 
 def fail(message: str) -> None:
@@ -356,6 +364,14 @@ def validate_rule_drafts(
         fail("China rule codes must be unique")
     if any(not code.startswith("CN-") for code in codes):
         fail("all China rule codes must start with CN-")
+    for xml_id, fields in rules.items():
+        nature = field_text(fields, "cn_rule_nature", xml_id)
+        if nature not in ALLOWED_CN_RULE_NATURES:
+            fail(f"invalid China rule nature on {xml_id}: {nature}")
+        if nature not in CONTROL_RULE_NATURES:
+            fail(
+                f"packaged draft controls cannot claim statutory status: {xml_id}"
+            )
 
     version_case_results: dict[str, set[str]] = {
         xml_id: set() for xml_id in versions
@@ -475,6 +491,8 @@ def validate_upgrade_migration(
     current_content = current_migration_path.read_text(encoding="utf-8")
     if "update_country_pack_metadata" not in current_content:
         fail("current migration must refresh country pack metadata")
+    if "backfill_cn_rule_natures" not in current_content:
+        fail("current migration must backfill governed China rule natures")
 
     link_migrations = []
     for migration_path in sorted(

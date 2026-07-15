@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_compliance_rule_list_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.list.cn.governance</field>
+        <field name="model">sudo.compliance.rule</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_list"/>
+        <field name="arch" type="xml">
+            <field name="domain_key" position="after">
+                <field name="cn_rule_nature" widget="badge" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_rule_form_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.form.cn.governance</field>
+        <field name="model">sudo.compliance.rule</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+                <div class="alert alert-danger" role="alert"
+                     invisible="not cn_is_china_rule or cn_rule_nature">
+                    中国规则必须先明确规则性质，才能进入发布治理流程。
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="cn_rule_nature not in ('data_readiness', 'internal_control')">
+                    数据准备度和内部控制规则用于识别资料或流程问题，不等同于违法、少缴税、申报错误或税务机关认定。
+                </div>
+            </xpath>
+            <field name="country_id" position="after">
+                <field name="cn_is_china_rule" invisible="1"/>
+                <field name="cn_rule_nature" widget="badge"
+                       invisible="not cn_is_china_rule"
+                       readonly="version_ids"/>
+            </field>
+            <xpath expr="//field[@name='version_ids']/list/field[@name='evaluator_type']"
+                   position="before">
+                <field name="cn_rule_nature" widget="badge" optional="show"/>
+                <field name="cn_release_state" widget="badge" optional="show"
+                       decoration-success="cn_release_state == 'active'"
+                       decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
+                       decoration-muted="cn_release_state == 'retired'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_rule_version_list_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.version.list.cn.governance</field>
+        <field name="model">sudo.compliance.rule.version</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_version_list"/>
+        <field name="arch" type="xml">
+            <field name="evaluator_type" position="before">
+                <field name="cn_rule_nature" widget="badge" optional="show"/>
+                <field name="cn_release_state" widget="badge" optional="show"
+                       decoration-success="cn_release_state == 'active'"
+                       decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
+                       decoration-muted="cn_release_state == 'retired'"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_rule_version_form_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.version.form.cn.governance</field>
+        <field name="model">sudo.compliance.rule.version</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_version_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_submit_review']" position="attributes">
+                <attribute name="invisible">state != 'draft' or professional_review_state != 'approved' or (cn_is_china_rule and not cn_governance_ready)</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_approve']" position="attributes">
+                <attribute name="invisible">state != 'pending_review' or (cn_is_china_rule and not cn_governance_ready)</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_activate']" position="attributes">
+                <attribute name="invisible">state != 'approved' or (cn_is_china_rule and not cn_governance_ready)</attribute>
+            </xpath>
+            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+                <div class="alert alert-danger" role="alert"
+                     invisible="not cn_is_china_rule or cn_rule_nature">
+                    该中国规则尚未明确规则性质，禁止进入批准和发布流程。
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="cn_rule_nature not in ('data_readiness', 'internal_control')">
+                    该版本属于数据准备度或内部控制检查。即使测试通过，也不能据此宣称企业不存在违法、少缴税或申报错误。
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not cn_is_china_rule or cn_governance_ready">
+                    <strong>发布阻断事项</strong>
+                    <field name="cn_release_blockers" nolabel="1" readonly="1"/>
+                </div>
+            </xpath>
+            <field name="next_review_date" position="after">
+                <field name="cn_is_china_rule" invisible="1"/>
+                <field name="cn_rule_nature" widget="badge" readonly="1"
+                       invisible="not cn_is_china_rule"/>
+                <field name="cn_release_state" widget="badge" readonly="1"
+                       invisible="not cn_is_china_rule"
+                       decoration-success="cn_release_state == 'active'"
+                       decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
+                       decoration-muted="cn_release_state == 'retired'"/>
+                <field name="cn_governance_ready" readonly="1"
+                       invisible="not cn_is_china_rule"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_search_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.search.cn.governance</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_search"/>
+        <field name="arch" type="xml">
+            <field name="rule_id" position="after">
+                <field name="cn_rule_nature" optional="hide"/>
+            </field>
+            <filter name="professional_warning" position="after">
+                <filter name="cn_control_or_readiness" string="内部控制/数据准备度"
+                        domain="[('cn_rule_nature', 'in', ('internal_control', 'data_readiness'))]"/>
+            </filter>
+            <filter name="group_rule" position="after">
+                <filter name="group_cn_rule_nature" string="规则性质"
+                        context="{'group_by': 'cn_rule_nature'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_list_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.list.cn.governance</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_list"/>
+        <field name="arch" type="xml">
+            <field name="rule_id" position="after">
+                <field name="cn_rule_nature" widget="badge" optional="show"
+                       decoration-info="cn_rule_nature in ('internal_control', 'data_readiness')"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_form_cn_governance" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.form.cn.governance</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+                <div class="alert alert-info" role="alert"
+                     invisible="cn_rule_nature not in ('data_readiness', 'internal_control')">
+                    <strong>结论边界：</strong>
+                    这是数据准备度或内部控制结果，不等同于违法、少缴税、申报错误或税务机关认定；必须结合正式规则、企业适用性和人工专业复核。
+                </div>
+            </xpath>
+            <field name="rule_version_id" position="after">
+                <field name="cn_rule_nature" widget="badge" readonly="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>

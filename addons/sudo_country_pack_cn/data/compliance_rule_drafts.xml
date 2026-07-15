@@ -6,6 +6,7 @@
         <field name="code">CN-BASE-REG-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.IDENTITY</field>
+        <field name="cn_rule_nature">data_readiness</field>
         <field name="description">检查合规档案是否具有唯一有效的统一社会信用代码受控登记和登记证明附件线索。附件存在不代表登记真实性已核验。</field>
     </record>
     <record id="rule_version_cn_base_reg_001_draft" model="sudo.compliance.rule.version">
@@ -63,6 +64,7 @@
         <field name="code">CN-ACC-PERIOD-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.ACCOUNTING</field>
+        <field name="cn_rule_nature">internal_control</field>
         <field name="description">检查评估期间是否存在草稿会计凭证。该结果只表示 Odoo 过账准备度，不判断会计处理或纳税申报是否合法。</field>
     </record>
     <record id="rule_version_cn_acc_period_001_draft" model="sudo.compliance.rule.version">
@@ -112,6 +114,7 @@
         <field name="code">CN-VAT-INV-READY-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.VAT_INVOICE</field>
+        <field name="cn_rule_nature">data_readiness</field>
         <field name="description">检查已过账业务发票的收入、成本和费用行是否维护 Odoo 税码。该控制不判断发票真伪、税率或抵扣资格。</field>
     </record>
     <record id="rule_version_cn_vat_inv_ready_001_draft" model="sudo.compliance.rule.version">
@@ -165,6 +168,7 @@
         <field name="code">CN-ACC-EVIDENCE-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.ACCOUNTING</field>
+        <field name="cn_rule_nature">internal_control</field>
         <field name="description">检查已过账业务发票是否存在二进制附件线索。附件存在不代表原始凭证真实、合法、完整或已专业核验。</field>
     </record>
     <record id="rule_version_cn_acc_evidence_001_draft" model="sudo.compliance.rule.version">
@@ -218,6 +222,7 @@
         <field name="code">CN-PROFILE-TAX-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.IDENTITY</field>
+        <field name="cn_rule_nature">data_readiness</field>
         <field name="description">检查评估日是否存在唯一、有效、经管理人员核验且附件内容未变化的中国纳税人身份快照。该控制不自行判断企业应属于何种纳税人类型。</field>
     </record>
     <record id="rule_version_cn_profile_tax_001_draft" model="sudo.compliance.rule.version">
@@ -267,6 +272,7 @@
         <field name="code">CN-DATA-EINV-RECON-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.VAT_INVOICE</field>
+        <field name="cn_rule_nature">data_readiness</field>
         <field name="description">检查评估期间是否存在唯一、完整且已完成事项复核的当前账票勾稽结果。该控制只评价内部数据准备和复核流程，不判断发票抵扣、税前扣除或申报合规。</field>
     </record>
     <record id="rule_version_cn_einvoice_reconciliation_ready_001_draft" model="sudo.compliance.rule.version">
@@ -338,6 +344,7 @@
         <field name="code">CN-DATA-VAT-RECON-001</field>
         <field name="country_id" ref="base.cn"/>
         <field name="domain_key">CN.FILING_PAYMENT</field>
+        <field name="cn_rule_nature">data_readiness</field>
         <field name="description">检查评估期间账务、电子发票、增值税申报和税款缴纳受控口径是否具备比较条件且没有金额差异。该控制不自动判断少缴税、违法或申报正确。</field>
     </record>
     <record id="rule_version_cn_vat_reconciliation_ready_001_draft" model="sudo.compliance.rule.version">

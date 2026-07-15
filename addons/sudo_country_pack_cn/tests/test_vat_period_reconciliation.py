@@ -700,6 +700,7 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
                 "code": "CN-TEST-VAT-RECON-E2E",
                 "country_id": self.country.id,
                 "domain_key": "CN.FILING_PAYMENT.TEST",
+                "cn_rule_nature": "data_readiness",
                 "description": "仅用于运行时验证规则扫描与整改复扫闭环。",
             }
         )
@@ -1307,6 +1308,7 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         assessment.with_user(self.reviewer).action_run_now()
         finding = assessment.finding_ids
         self.assertEqual(finding.result, "fail")
+        self.assertEqual(finding.cn_rule_nature, "data_readiness")
         self.assertFalse(finding.source_warning)
         self.assertFalse(finding.professional_warning)
         snapshots = {

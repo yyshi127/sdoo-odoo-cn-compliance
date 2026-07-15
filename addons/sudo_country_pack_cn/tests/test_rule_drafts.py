@@ -88,6 +88,107 @@ class TestChinaRuleDrafts(TransactionCase):
             )
         )
 
+    def test_packaged_rules_have_explicit_non_statutory_natures(self):
+        expected = {
+            "CN-BASE-REG-001": "data_readiness",
+            "CN-ACC-PERIOD-001": "internal_control",
+            "CN-VAT-INV-READY-001": "data_readiness",
+            "CN-ACC-EVIDENCE-001": "internal_control",
+            "CN-PROFILE-TAX-001": "data_readiness",
+            "CN-DATA-EINV-RECON-001": "data_readiness",
+            "CN-DATA-VAT-RECON-001": "data_readiness",
+        }
+        actual = {
+            version.rule_id.code: version.cn_rule_nature
+            for version in self.versions
+        }
+
+        self.assertEqual(actual, expected)
+        self.assertTrue(all(self.versions.mapped("requires_human_review")))
+        self.assertTrue(
+            all(
+                "cn_rule_nature" in version._checksum_payload()
+                for version in self.versions
+            )
+        )
+
+    def test_release_readiness_exposes_all_current_blockers(self):
+        self.assertEqual(
+            set(self.versions.mapped("cn_release_state")),
+            {"source_governance"},
+        )
+        self.assertFalse(any(self.versions.mapped("cn_governance_ready")))
+        for version in self.versions:
+            self.assertIn("官方来源", version.cn_release_blockers)
+            self.assertIn("规则测试", version.cn_release_blockers)
+            self.assertIn("专业签核", version.cn_release_blockers)
+
+    def test_rule_nature_is_immutable_after_a_version_exists(self):
+        rule = self.versions[0].rule_id
+        replacement = (
+            "internal_control"
+            if rule.cn_rule_nature == "data_readiness"
+            else "data_readiness"
+        )
+
+        with self.assertRaisesRegex(UserError, "不能改写规则性质"):
+            rule.write({"cn_rule_nature": replacement})
+
+    def test_china_publish_gate_requires_rule_nature(self):
+        rule = self.env["sudo.compliance.rule"].create(
+            {
+                "name": "未分类中国测试规则",
+                "code": "CN-TEST-NATURE-MISSING",
+                "country_id": self.env.ref("base.cn").id,
+                "domain_key": "CN.TEST",
+            }
+        )
+        version = self.env["sudo.compliance.rule.version"].create(
+            {
+                "rule_id": rule.id,
+                "version": "DRAFT-TEST",
+                "effective_from": "2026-01-01",
+                "next_review_date": "2026-12-31",
+                "evaluator_type": "manual",
+                "requires_human_review": True,
+            }
+        )
+
+        with self.assertRaisesRegex(UserError, "必须明确规则性质"):
+            version._check_publish_gate()
+
+    def test_control_rule_publish_gate_requires_human_review(self):
+        rule = self.env["sudo.compliance.rule"].create(
+            {
+                "name": "无人工复核边界测试规则",
+                "code": "CN-TEST-REVIEW-MISSING",
+                "country_id": self.env.ref("base.cn").id,
+                "domain_key": "CN.TEST",
+                "cn_rule_nature": "data_readiness",
+            }
+        )
+        version = self.env["sudo.compliance.rule.version"].create(
+            {
+                "rule_id": rule.id,
+                "version": "DRAFT-TEST",
+                "effective_from": "2026-01-01",
+                "next_review_date": "2026-12-31",
+                "evaluator_type": "manual",
+                "requires_human_review": False,
+            }
+        )
+
+        with self.assertRaisesRegex(UserError, "必须设置人工复核"):
+            version._check_publish_gate()
+
+    def test_overdue_official_source_blocks_china_publish_gate(self):
+        version = self.versions[0]
+        source = version.authority_source_ids[0]
+        source.write({"next_review_date": "2000-01-01"})
+
+        with self.assertRaisesRegex(UserError, "超过复核日期"):
+            version._check_publish_gate()
+
     def test_official_url_candidates_remain_ungoverned_drafts(self):
         self.assertEqual(set(self.sources.mapped("status")), {"draft"})
         self.assertEqual(set(self.sources.mapped("snapshot_kind")), {"other"})

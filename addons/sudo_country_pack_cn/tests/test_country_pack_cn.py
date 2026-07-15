@@ -55,6 +55,12 @@ class TestChinaCountryPack(TransactionCase):
         self.assertTrue(features["external_dataset"])
         self.assertTrue(features["reconciliation"])
         self.assertTrue(features["reconciliation_fact_bridge"])
+        self.assertTrue(features["rule_nature_governance"])
+        self.assertTrue(
+            self.country_pack.capability_json["governance"][
+                "rule_release_requires_nature_classification"
+            ]
+        )
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )
