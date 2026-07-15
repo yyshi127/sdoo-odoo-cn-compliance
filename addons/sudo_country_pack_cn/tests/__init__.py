@@ -6,3 +6,4 @@ from . import test_taxpayer_classification
 from . import test_invoice_normalization
 from . import test_invoice_reconciliation
 from . import test_tax_data_normalization
+from . import test_vat_period_reconciliation

@@ -158,6 +158,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("XBRL parser must remain disabled until its adapter is delivered")
     if features.get("reconciliation") is not True:
         fail("electronic invoice reconciliation capability must be declared")
+    if features.get("vat_period_reconciliation") is not True:
+        fail("VAT period reconciliation capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -978,6 +980,155 @@ def validate_tax_data_normalization() -> None:
         fail("tax data normalization requires at least ten runtime tests")
 
 
+def validate_vat_period_reconciliation() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/vat_period_reconciliation_cron.xml",
+        "views/vat_period_reconciliation_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("VAT period reconciliation files must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import vat_period_reconciliation" not in model_init:
+        fail("VAT period reconciliation models must be imported")
+
+    model_path = ADDON_ROOT / "models" / "vat_period_reconciliation.py"
+    if not model_path.is_file():
+        fail("VAT period reconciliation model is missing")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        "VAT_PERIOD_ENGINE_VERSION",
+        "models.UniqueIndex",
+        "FOR UPDATE SKIP LOCKED",
+        "amount_tax_signed",
+        'groups="account.group_account_readonly"',
+        "accounting_snapshot_checksum",
+        "einvoice_snapshot_checksum",
+        "filing_snapshot_checksum",
+        "payment_snapshot_checksum",
+        "result_checksum",
+        "MISSING_COMPANY_TAX_ID",
+        "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
+        "DUPLICATE_CURRENT_EINVOICE",
+        "DUPLICATE_CURRENT_VAT_PAYMENT",
+        "AMBIGUOUS_CURRENT_VAT_FILING",
+        "SOURCE_COVERAGE_NOT_FULL",
+        "LEDGER_EINVOICE_OUTPUT_DIFFERENCE",
+        "LEDGER_EINVOICE_INPUT_DIFFERENCE",
+        "LEDGER_FILING_OUTPUT_DIFFERENCE",
+        "LEDGER_FILING_INPUT_DIFFERENCE",
+        "FILING_PAYMENT_DIFFERENCE",
+        "insufficient_data",
+        "四方勾稽一致，不等于合规结论",
+        "cn_vat_period_reconciliation.queued",
+        "cn_vat_period_reconciliation.succeeded",
+    ):
+        if required not in model_content:
+            fail(f"VAT period reconciliation contract is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    governed_models = {
+        "model_sudo_cn_vat_period_reconciliation_run",
+        "model_sudo_cn_vat_period_reconciliation_issue",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in governed_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"VAT period ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        if [
+            user_row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ] != ["1", "0", "0", "0"]:
+            fail(f"VAT period users must be read-only: {model_name}")
+        manager_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_manager")
+        )
+        if manager_row["perm_unlink"] != "0":
+            fail(f"VAT period audit records must not be deleted: {model_name}")
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in governed_models:
+            continue
+        domain = field_text(fields, "domain_force", record.attrib["id"])
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"VAT period rule lacks company isolation: {model_ref}")
+        ruled_models.add(model_ref)
+    if ruled_models != governed_models:
+        fail("every governed VAT period model requires a company record rule")
+
+    cron_content = (
+        ADDON_ROOT / "data" / "vat_period_reconciliation_cron.xml"
+    ).read_text(encoding="utf-8")
+    if "_cron_process_runs(limit=1)" not in cron_content:
+        fail("VAT period reconciliation must use a bounded native Odoo queue")
+
+    view_path = ADDON_ROOT / "views" / "vat_period_reconciliation_views.xml"
+    if not view_path.is_file():
+        fail("VAT period reconciliation UI is missing")
+    view_content = view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_vat_period_reconciliation_run_list",
+        "view_cn_vat_period_reconciliation_run_form",
+        "view_cn_vat_period_reconciliation_issue_list",
+        "view_cn_vat_period_reconciliation_issue_form",
+        "view_cn_vat_period_reconciliation_wizard_form",
+        "action_cn_vat_period_reconciliation_runs",
+        "action_cn_vat_period_reconciliation_issues",
+        "action_cn_vat_period_reconciliation_start",
+        "menu_cn_vat_period_reconciliation_runs",
+        "menu_cn_vat_period_reconciliation_start",
+        "menu_cn_vat_period_reconciliation_issues",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"VAT period reconciliation UI is missing {required_id}")
+    for boundary_text in (
+        "不等于税务合规结论",
+        "不自动等同于税务风险",
+        "不会把缺失解释为通过",
+        "四方金额一致，但仍有需要复核的数据限制",
+        "执行时点快照",
+    ):
+        if boundary_text not in view_content:
+            fail(f"VAT period UI boundary is missing: {boundary_text}")
+
+    test_path = ADDON_ROOT / "tests" / "test_vat_period_reconciliation.py"
+    if not test_path.is_file():
+        fail("VAT period reconciliation runtime tests are missing")
+    test_tree = ast.parse(test_path.read_text(encoding="utf-8"))
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 15:
+        fail("VAT period reconciliation requires at least fifteen runtime tests")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -1133,6 +1284,7 @@ def main() -> int:
     validate_invoice_normalization_security()
     validate_invoice_reconciliation()
     validate_tax_data_normalization()
+    validate_vat_period_reconciliation()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

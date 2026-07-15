@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_vat_period_reconciliation_run_search"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.run.search</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <search string="增值税期间四方勾稽">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <filter name="current" string="最新成功结果"
+                        domain="[('state', '=', 'succeeded')]"/>
+                <filter name="insufficient" string="数据不足"
+                        domain="[('conclusion_state', '=', 'insufficient_data')]"/>
+                <filter name="differences" string="存在差异"
+                        domain="[('conclusion_state', '=', 'differences')]"/>
+                <filter name="aligned" string="勾稽一致"
+                        domain="[('conclusion_state', '=', 'aligned')]"/>
+                <filter name="failed" string="失败"
+                        domain="[('state', '=', 'failed')]"/>
+                <separator/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_period" string="期间结束"
+                        context="{'group_by': 'period_end'}"/>
+                <filter name="group_conclusion" string="勾稽结论"
+                        context="{'group_by': 'conclusion_state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_run_list"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.run.list</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <list string="增值税期间四方勾稽" create="0" edit="0" delete="0"
+                  decoration-danger="state == 'failed' or conclusion_state == 'insufficient_data'"
+                  decoration-warning="state in ('queued', 'processing') or conclusion_state == 'differences' or (conclusion_state == 'aligned' and warning_issue_count &gt; 0)"
+                  decoration-success="conclusion_state == 'aligned' and warning_issue_count == 0"
+                  decoration-muted="state in ('cancelled', 'superseded')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="accounting_source_state" widget="badge"/>
+                <field name="einvoice_source_state" widget="badge"/>
+                <field name="filing_source_state" widget="badge"/>
+                <field name="payment_source_state" widget="badge"/>
+                <field name="blocking_issue_count" sum="阻断"/>
+                <field name="difference_issue_count" sum="差异"/>
+                <field name="warning_issue_count" sum="警告" optional="show"/>
+                <field name="conclusion_state" widget="badge"
+                       decoration-danger="conclusion_state == 'insufficient_data'"
+                       decoration-warning="conclusion_state == 'differences'"
+                       decoration-success="conclusion_state == 'aligned'"/>
+                <field name="requested_at" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'queued'"
+                       decoration-warning="state == 'processing'"
+                       decoration-success="state == 'succeeded'"
+                       decoration-danger="state == 'failed'"
+                       decoration-muted="state in ('cancelled', 'superseded')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_run_form"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.run.form</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <form string="增值税期间四方勾稽" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_cancel" type="object" string="取消批次"
+                            class="btn-secondary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'queued'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="queued,processing,succeeded,failed,cancelled,superseded"/>
+                </header>
+                <sheet>
+                    <field name="has_einvoice_output_tax_amount" invisible="1"/>
+                    <field name="has_einvoice_input_tax_amount" invisible="1"/>
+                    <field name="has_filing_output_tax_amount" invisible="1"/>
+                    <field name="has_filing_input_tax_amount" invisible="1"/>
+                    <field name="has_filing_payable_amount" invisible="1"/>
+                    <field name="has_payment_amount" invisible="1"/>
+                    <field name="has_ledger_einvoice_output_difference"
+                           invisible="1"/>
+                    <field name="has_ledger_einvoice_input_difference"
+                           invisible="1"/>
+                    <field name="has_ledger_filing_output_difference"
+                           invisible="1"/>
+                    <field name="has_ledger_filing_input_difference"
+                           invisible="1"/>
+                    <field name="has_filing_payment_difference" invisible="1"/>
+                    <widget name="web_ribbon" title="已被新结果替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        四方勾稽运行失败。本次失败不会替代上一份成功结果，请根据失败代码检查数据或配置后重新执行。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'insufficient_data'">
+                        <strong>数据不足，不能形成四方金额结论。</strong>
+                        请先处理下方阻断问题；系统没有把缺失、部分覆盖或主体不明解释为勾稽通过。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'differences'">
+                        <strong>存在待复核金额差异。</strong>
+                        差异只是受控口径之间的不一致，不自动等同于税务风险、少缴税或违法结论。
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'aligned' or warning_issue_count != 0">
+                        <strong>四方金额在当前受控口径下勾稽一致。</strong>
+                        该结果不等于税务合规结论，仍需规则评估、证据复核和专业签核。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'aligned' or warning_issue_count == 0">
+                        <strong>四方金额一致，但仍有需要复核的数据限制。</strong>
+                        请处理下方警告；金额一致不等于来源真实性、复核控制或税务合规已经确认。
+                    </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state not in ('succeeded', 'superseded')">
+                        本页保存的是执行时点快照。后续账务或受控来源发生变化不会改写本审计结果，请重新发起勾稽获得新结果。
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_issues" type="object"
+                                class="oe_stat_button" icon="fa-exclamation-triangle"
+                                invisible="issue_count == 0">
+                            <field name="issue_count" widget="statinfo"
+                                   string="勾稽问题"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="勾稽范围">
+                            <field name="profile_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="currency_id"/>
+                            <field name="vat_tax_type_code"/>
+                        </group>
+                        <group string="结论与问题">
+                            <field name="conclusion_state" widget="badge"
+                                   decoration-danger="conclusion_state == 'insufficient_data'"
+                                   decoration-warning="conclusion_state == 'differences'"
+                                   decoration-success="conclusion_state == 'aligned'"/>
+                            <field name="blocking_issue_count"/>
+                            <field name="difference_issue_count"/>
+                            <field name="warning_issue_count"/>
+                            <field name="engine_version"/>
+                        </group>
+                    </group>
+                    <group string="四方数据状态" col="4">
+                        <group string="账务">
+                            <field name="accounting_source_state" widget="badge"/>
+                            <field name="posted_accounting_move_count"/>
+                            <field name="draft_accounting_move_count"/>
+                        </group>
+                        <group string="电子发票">
+                            <field name="einvoice_source_state" widget="badge"/>
+                            <field name="einvoice_document_count"/>
+                        </group>
+                        <group string="增值税申报">
+                            <field name="filing_source_state" widget="badge"/>
+                            <field name="filing_record_count"/>
+                        </group>
+                        <group string="税款缴纳">
+                            <field name="payment_source_state" widget="badge"/>
+                            <field name="payment_record_count"/>
+                        </group>
+                    </group>
+                    <group string="四方金额口径" col="4">
+                        <group string="Odoo 已过账发票">
+                            <field name="ledger_output_tax_amount"/>
+                            <field name="ledger_input_tax_amount"/>
+                        </group>
+                        <group string="受控电子发票">
+                            <field name="einvoice_output_tax_amount"
+                                   invisible="not has_einvoice_output_tax_amount"/>
+                            <field name="einvoice_input_tax_amount"
+                                   invisible="not has_einvoice_input_tax_amount"/>
+                        </group>
+                        <group string="受控增值税申报">
+                            <field name="filing_output_tax_amount"
+                                   invisible="not has_filing_output_tax_amount"/>
+                            <field name="filing_input_tax_amount"
+                                   invisible="not has_filing_input_tax_amount"/>
+                            <field name="filing_payable_amount"
+                                   invisible="not has_filing_payable_amount"/>
+                        </group>
+                        <group string="受控税款缴纳">
+                            <field name="payment_amount"
+                                   invisible="not has_payment_amount"/>
+                        </group>
+                    </group>
+                    <group string="可比较口径差异">
+                        <group>
+                            <field name="ledger_einvoice_output_difference"
+                                   invisible="not has_ledger_einvoice_output_difference"/>
+                            <field name="ledger_einvoice_input_difference"
+                                   invisible="not has_ledger_einvoice_input_difference"/>
+                        </group>
+                        <group>
+                            <field name="ledger_filing_output_difference"
+                                   invisible="not has_ledger_filing_output_difference"/>
+                            <field name="ledger_filing_input_difference"
+                                   invisible="not has_ledger_filing_input_difference"/>
+                            <field name="filing_payment_difference"
+                                   invisible="not has_filing_payment_difference"/>
+                        </group>
+                    </group>
+                    <field name="result_summary"/>
+                    <notebook>
+                        <page string="问题与下一步">
+                            <field name="issue_ids">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="severity == 'blocking'"
+                                      decoration-warning="severity == 'review'"
+                                      decoration-muted="severity == 'info'">
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="has_difference"
+                                           column_invisible="1"/>
+                                    <field name="severity" widget="badge"
+                                           decoration-danger="severity == 'blocking'"
+                                           decoration-warning="severity == 'review'"/>
+                                    <field name="source_area" widget="badge"/>
+                                    <field name="issue_kind" widget="badge"/>
+                                    <field name="name"/>
+                                    <field name="affected_record_count"/>
+                                    <field name="difference_amount"
+                                           invisible="not has_difference"/>
+                                    <field name="action_hint"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="账务范围"
+                              groups="account.group_account_readonly">
+                            <field name="accounting_move_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <field name="move_type"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="partner_id"/>
+                                    <field name="currency_id"/>
+                                    <field name="amount_tax"/>
+                                    <field name="amount_total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="电子发票范围">
+                            <field name="einvoice_document_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="request_time"/>
+                                    <field name="invoice_number"/>
+                                    <field name="seller_name"/>
+                                    <field name="seller_tax_id"/>
+                                    <field name="currency_id"/>
+                                    <field name="tax_amount"/>
+                                    <field name="is_red" widget="badge"/>
+                                    <field name="quality_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="申报范围">
+                            <field name="filing_record_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="period_start"/>
+                                    <field name="period_end"/>
+                                    <field name="return_status" widget="badge"/>
+                                    <field name="revision_number"/>
+                                    <field name="currency_id"/>
+                                    <field name="output_tax_amount"/>
+                                    <field name="input_tax_amount"/>
+                                    <field name="tax_payable_amount"/>
+                                    <field name="quality_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="缴税范围">
+                            <field name="payment_record_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="payment_date"/>
+                                    <field name="payment_reference"/>
+                                    <field name="payment_status" widget="badge"/>
+                                    <field name="tax_type_code"/>
+                                    <field name="currency_id"/>
+                                    <field name="amount"/>
+                                    <field name="quality_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="执行与审计">
+                            <group>
+                                <group>
+                                    <field name="requested_at"/>
+                                    <field name="requested_by_id"/>
+                                    <field name="started_at"/>
+                                    <field name="finished_at"/>
+                                    <field name="error_code"
+                                           invisible="not error_code"/>
+                                </group>
+                                <group>
+                                    <field name="accounting_snapshot_checksum"/>
+                                    <field name="einvoice_snapshot_checksum"/>
+                                    <field name="filing_snapshot_checksum"/>
+                                    <field name="payment_snapshot_checksum"/>
+                                    <field name="result_checksum"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_issue_search"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.issue.search</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <search string="增值税勾稽问题">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="run_id"/>
+                <filter name="current" string="当前结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="blocking" string="阻断"
+                        domain="[('severity', '=', 'blocking')]"/>
+                <filter name="differences" string="金额差异"
+                        domain="[('issue_kind', '=', 'difference')]"/>
+                <separator/>
+                <filter name="group_area" string="来源区域"
+                        context="{'group_by': 'source_area'}"/>
+                <filter name="group_severity" string="严重级别"
+                        context="{'group_by': 'severity'}"/>
+                <filter name="group_run" string="勾稽批次"
+                        context="{'group_by': 'run_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_issue_list"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.issue.list</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <list string="增值税勾稽问题" create="0" edit="0" delete="0"
+                  decoration-danger="severity == 'blocking'"
+                  decoration-warning="severity == 'review'"
+                  decoration-muted="not is_current_result">
+                <field name="sequence" column_invisible="1"/>
+                <field name="has_left_amount" column_invisible="1"/>
+                <field name="has_right_amount" column_invisible="1"/>
+                <field name="has_difference" column_invisible="1"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="severity" widget="badge"
+                       decoration-danger="severity == 'blocking'"
+                       decoration-warning="severity == 'review'"/>
+                <field name="source_area" widget="badge"/>
+                <field name="issue_kind" widget="badge"/>
+                <field name="name"/>
+                <field name="affected_record_count"/>
+                <field name="left_amount" invisible="not has_left_amount"/>
+                <field name="right_amount" invisible="not has_right_amount"/>
+                <field name="difference_amount"
+                       invisible="not has_difference"/>
+                <field name="action_hint"/>
+                <field name="run_id" optional="show"/>
+                <field name="is_current_result" widget="boolean"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_issue_form"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.issue.form</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <form string="增值税勾稽问题" create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_left_amount" invisible="1"/>
+                    <field name="has_right_amount" invisible="1"/>
+                    <field name="has_difference" invisible="1"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="severity != 'blocking'">
+                        该问题阻断当前四方金额结论。请先补齐或修复数据，再重新执行期间勾稽。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="severity != 'review'">
+                        该问题需要授权人员复核，但系统不会自动把它解释为税务风险或违法结论。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="问题分类">
+                            <field name="severity" widget="badge"/>
+                            <field name="source_area" widget="badge"/>
+                            <field name="issue_kind" widget="badge"/>
+                            <field name="code"/>
+                            <field name="affected_record_count"/>
+                        </group>
+                        <group string="来源">
+                            <field name="run_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="is_current_result"/>
+                        </group>
+                    </group>
+                    <group string="金额口径" invisible="not has_difference">
+                        <group>
+                            <field name="left_label"/>
+                            <field name="left_amount"/>
+                        </group>
+                        <group>
+                            <field name="right_label"/>
+                            <field name="right_amount"/>
+                            <field name="difference_amount"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                        <field name="action_hint"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_wizard_form"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.wizard.form</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="发起增值税期间四方勾稽">
+                <div class="alert alert-info" role="alert">
+                    系统将比较 Odoo 已过账客户/供应商发票税额、受控电子发票、唯一有效增值税申报和有效缴税净额。数据不完整时会停止相应比较，不会把缺失解释为通过。
+                </div>
+                <group>
+                    <field name="profile_id" options="{'no_create': True}"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="period_start"/>
+                    <field name="period_end"/>
+                    <field name="vat_tax_type_code"/>
+                </group>
+                <footer>
+                    <button name="action_queue" type="object"
+                            string="提交后台勾稽" class="btn-primary"/>
+                    <button string="取消" special="cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_vat_period_reconciliation_runs"
+            model="ir.actions.act_window">
+        <field name="name">增值税四方勾稽</field>
+        <field name="res_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id"
+               ref="view_cn_vat_period_reconciliation_run_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <record id="action_cn_vat_period_reconciliation_issues"
+            model="ir.actions.act_window">
+        <field name="name">增值税勾稽问题</field>
+        <field name="res_model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id"
+               ref="view_cn_vat_period_reconciliation_issue_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <record id="action_cn_vat_period_reconciliation_start"
+            model="ir.actions.act_window">
+        <field name="name">发起增值税四方勾稽</field>
+        <field name="res_model">sudo.cn.vat.period.reconciliation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_cn_vat_period_reconciliation_runs"
+              name="增值税四方勾稽"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_vat_period_reconciliation_runs"
+              sequence="54"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <menuitem id="menu_cn_vat_period_reconciliation_start"
+              name="发起增值税四方勾稽"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_vat_period_reconciliation_start"
+              sequence="55"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <menuitem id="menu_cn_vat_period_reconciliation_issues"
+              name="增值税勾稽问题"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_vat_period_reconciliation_issues"
+              sequence="56"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

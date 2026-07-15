@@ -101,4 +101,24 @@
         <field name="groups"
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
+
+    <record id="cn_vat_period_reconciliation_run_company_rule"
+            model="ir.rule">
+        <field name="name">China VAT period reconciliation runs: allowed companies</field>
+        <field name="model_id"
+               ref="model_sudo_cn_vat_period_reconciliation_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_vat_period_reconciliation_issue_company_rule"
+            model="ir.rule">
+        <field name="name">China VAT period reconciliation issues: allowed companies</field>
+        <field name="model_id"
+               ref="model_sudo_cn_vat_period_reconciliation_issue"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
 </odoo>
