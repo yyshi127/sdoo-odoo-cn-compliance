@@ -101,6 +101,7 @@ class SudoComplianceRuleVersion(models.Model):
             ("review_boundary_required", "复核边界待设置"),
             ("source_governance", "官方来源待治理"),
             ("test_required", "规则测试待通过"),
+            ("review_packet_required", "专业复核包待完善"),
             ("professional_signoff", "专业签核待完成"),
             ("ready_for_review", "可提交技术复核"),
             ("technical_review", "技术复核中"),
@@ -127,6 +128,18 @@ class SudoComplianceRuleVersion(models.Model):
         store=True,
         readonly=True,
     )
+    cn_professional_review_ready = fields.Boolean(
+        string="可进行专业签核",
+        compute="_compute_cn_release_governance",
+        store=True,
+        readonly=True,
+    )
+    cn_professional_review_blockers = fields.Text(
+        string="专业签核前置缺口",
+        compute="_compute_cn_release_governance",
+        store=True,
+        readonly=True,
+    )
 
     @api.depends(
         "rule_id.country_id.code",
@@ -136,6 +149,8 @@ class SudoComplianceRuleVersion(models.Model):
         "professional_review_state",
         "requires_human_review",
         "test_case_ids",
+        "cn_review_packet_ready",
+        "cn_review_packet_blockers",
         "authority_source_ids.status",
         "authority_source_ids.content_hash",
         "authority_source_ids.snapshot_attachment_id",
@@ -149,9 +164,11 @@ class SudoComplianceRuleVersion(models.Model):
                 version.cn_release_state = False
                 version.cn_governance_ready = False
                 version.cn_release_blockers = False
+                version.cn_professional_review_ready = False
+                version.cn_professional_review_blockers = False
                 continue
 
-            blockers = []
+            pre_signoff_blockers = []
             invalid_sources = version.authority_source_ids.filtered(
                 lambda source: source.status != "valid"
                 or not source.content_hash
@@ -163,27 +180,44 @@ class SudoComplianceRuleVersion(models.Model):
                 )
             )
             if not version.cn_rule_nature:
-                blockers.append(_("未明确规则性质。"))
+                pre_signoff_blockers.append(_("未明确规则性质。"))
             if (
                 version.cn_rule_nature in _CONTROL_NATURES
                 and not version.requires_human_review
             ):
-                blockers.append(
+                pre_signoff_blockers.append(
                     _("内部控制和数据准备度规则必须要求人工复核。")
                 )
             if not version.authority_source_ids:
-                blockers.append(_("未关联官方来源。"))
+                pre_signoff_blockers.append(_("未关联官方来源。"))
             elif invalid_sources:
-                blockers.append(
+                pre_signoff_blockers.append(
                     _(
                         "官方来源尚未完成有效快照、哈希、独立复核或时效复核：%(sources)s",
                         sources=", ".join(invalid_sources.mapped("display_name")),
                     )
                 )
             if version.test_state != "passed" or not version.test_case_ids:
-                blockers.append(_("规则测试尚未全部通过。"))
+                pre_signoff_blockers.append(_("规则测试尚未全部通过。"))
+            if not version.cn_review_packet_ready:
+                pre_signoff_blockers.append(
+                    _(
+                        "中国专业复核包尚未完整：%(details)s",
+                        details=(
+                            version.cn_review_packet_blockers
+                            or _("未建立适用范围、结论边界和条款定位。")
+                        ),
+                    )
+                )
+
+            blockers = list(pre_signoff_blockers)
             if version.professional_review_state != "approved":
                 blockers.append(_("中国财税专业签核尚未完成或已失效。"))
+
+            version.cn_professional_review_ready = not pre_signoff_blockers
+            version.cn_professional_review_blockers = "\n".join(
+                "- %s" % blocker for blocker in pre_signoff_blockers
+            ) or _("专业签核前置材料完整，仍须由独立真人专业人员判断。")
 
             ready = not blockers and version.state != "retired"
             if version.state == "retired":
@@ -201,6 +235,8 @@ class SudoComplianceRuleVersion(models.Model):
                 release_state = "source_governance"
             elif version.test_state != "passed" or not version.test_case_ids:
                 release_state = "test_required"
+            elif not version.cn_review_packet_ready:
+                release_state = "review_packet_required"
             elif version.professional_review_state != "approved":
                 release_state = "professional_signoff"
             elif version.state == "draft":
@@ -230,6 +266,16 @@ class SudoComplianceRuleVersion(models.Model):
                 raise UserError(
                     _("内部控制和数据准备度规则发布前必须设置人工复核。")
                 )
+            if not version.cn_review_packet_ready:
+                raise UserError(
+                    _(
+                        "中国规则发布前必须完善专业复核包：%(details)s",
+                        details=(
+                            version.cn_review_packet_blockers
+                            or _("未建立适用范围、结论边界和条款定位。")
+                        ),
+                    )
+                )
             overdue_sources = version.authority_source_ids.filtered(
                 lambda source: source.next_review_date
                 and source.next_review_date < today
@@ -242,6 +288,20 @@ class SudoComplianceRuleVersion(models.Model):
                     )
                 )
         return super()._check_publish_gate()
+
+    def action_professional_signoff(self):
+        for version in self.filtered("cn_is_china_rule"):
+            if not version.cn_professional_review_ready:
+                raise UserError(
+                    _(
+                        "中国规则尚不能专业签核：%(details)s",
+                        details=(
+                            version.cn_professional_review_blockers
+                            or _("前置材料不完整。")
+                        ),
+                    )
+                )
+        return super().action_professional_signoff()
 
     def _checksum_payload(self):
         payload = super()._checksum_payload()

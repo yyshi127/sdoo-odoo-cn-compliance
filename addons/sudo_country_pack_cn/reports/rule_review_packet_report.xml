@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_report_cn_rule_review_packet" model="ir.actions.report">
+        <field name="name">中国规则专业复核包</field>
+        <field name="model">sudo.cn.rule.review.packet</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sudo_country_pack_cn.report_cn_rule_review_packet</field>
+        <field name="report_file">sudo_country_pack_cn.report_cn_rule_review_packet</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="print_report_name">'中国规则专业复核包-%s' % (object.rule_version_id.name or object.id)</field>
+    </record>
+
+    <template id="report_cn_rule_review_packet">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="packet">
+                <t t-set="version" t-value="packet.rule_version_id"/>
+                <t t-set="rule" t-value="version.rule_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>中国规则专业复核包</h2>
+                        <div class="alert alert-warning">
+                            <strong>候选草案，不得用于对外合规结论。</strong>
+                            本材料尚须官方来源独立复核、真人中国财税专业签核和技术审批。
+                        </div>
+
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>规则</th>
+                                    <td><span t-esc="rule.code"/> · <span t-esc="rule.name"/></td>
+                                    <th>版本</th>
+                                    <td><span t-esc="version.version"/></td>
+                                </tr>
+                                <tr>
+                                    <th>规则性质</th>
+                                    <td><span t-field="version.cn_rule_nature"/></td>
+                                    <th>复核包状态</th>
+                                    <td>
+                                        <span t-if="packet.readiness_state == 'ready'">候选材料完整</span>
+                                        <span t-else="">材料不完整</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>法律生效日</th>
+                                    <td><span t-field="version.effective_from"/></td>
+                                    <th>下次复核日</th>
+                                    <td><span t-field="version.next_review_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>候选包 SHA-256</th>
+                                    <td colspan="3" style="word-break: break-all">
+                                        <span t-esc="packet.candidate_checksum"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>一、适用范围与结论边界</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr><th style="width: 22%">适用范围</th><td><span t-esc="packet.scope_summary"/></td></tr>
+                                <tr><th>适用前提</th><td><span t-esc="packet.applicability_assumptions"/></td></tr>
+                                <tr><th>明确排除与限制</th><td><span t-esc="packet.exclusions_limitations"/></td></tr>
+                                <tr><th>结论边界</th><td><span t-esc="packet.conclusion_boundary"/></td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3>二、规则执行载荷</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr><th style="width: 22%">执行类型</th><td><span t-field="version.evaluator_type"/></td></tr>
+                                <tr><th>风险等级</th><td><span t-field="version.risk_level"/></td></tr>
+                                <tr><th>条件</th><td style="word-break: break-all"><span t-esc="version.condition_json"/></td></tr>
+                                <tr><th>失败结论</th><td><span t-esc="version.failure_message"/></td></tr>
+                                <tr><th>通过结论</th><td><span t-esc="version.pass_message"/></td></tr>
+                                <tr><th>信息不足</th><td><span t-esc="version.unknown_message"/></td></tr>
+                                <tr><th>整改建议</th><td><span t-esc="version.recommended_actions"/></td></tr>
+                                <tr><th>证据要求</th><td><span t-esc="version.evidence_required"/></td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3>三、官方来源与条款定位</h3>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>官方来源</th>
+                                    <th>来源状态</th>
+                                    <th>条款定位</th>
+                                    <th>引用性质</th>
+                                    <th>规则主张与适用说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="packet.citation_ids" t-as="citation">
+                                    <td>
+                                        <strong t-esc="citation.source_id.name"/>
+                                        <div style="word-break: break-all" t-esc="citation.source_id.official_url"/>
+                                        <div style="word-break: break-all">
+                                            SHA-256: <span t-esc="citation.source_id.content_hash or '尚未形成'"/>
+                                        </div>
+                                    </td>
+                                    <td><span t-field="citation.source_id.status"/></td>
+                                    <td><span t-esc="citation.locator"/></td>
+                                    <td><span t-field="citation.citation_type"/></td>
+                                    <td>
+                                        <div t-esc="citation.claim_summary"/>
+                                        <div class="text-muted" t-esc="citation.applicability_note"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>四、测试覆盖</h3>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>测试案例</th>
+                                    <th>评估日</th>
+                                    <th>预期</th>
+                                    <th>最近结果</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="version.test_case_ids" t-as="test_case">
+                                    <td><span t-esc="test_case.name"/></td>
+                                    <td><span t-field="test_case.evaluation_date"/></td>
+                                    <td><span t-field="test_case.expected_result"/></td>
+                                    <td>
+                                        <span t-if="test_case.last_result" t-field="test_case.last_result"/>
+                                        <span t-else="">尚未运行</span>
+                                    </td>
+                                    <td><span t-esc="test_case.source_case_note"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>五、待专业人员回答</h3>
+                        <p style="white-space: pre-wrap" t-esc="packet.reviewer_questions"/>
+
+                        <h3>六、独立签核记录</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr><th style="width: 22%">专业签核状态</th><td><span t-field="version.professional_review_state"/></td></tr>
+                                <tr><th>签核人</th><td><span t-esc="version.professional_reviewer_id.name or '待签核'"/></td></tr>
+                                <tr><th>专业资质</th><td><span t-esc="version.professional_qualification or '待填写'"/></td></tr>
+                                <tr><th>签核意见</th><td><span t-esc="version.professional_review_notes or '待填写'"/></td></tr>
+                                <tr><th>证据索引</th><td><span t-esc="version.professional_evidence_reference or '待填写'"/></td></tr>
+                                <tr><th>证据 SHA-256</th><td style="word-break: break-all"><span t-esc="version.professional_evidence_checksum or '待填写'"/></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -753,6 +753,28 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
                 "requires_human_review": True,
             }
         )
+        packet = self.env["sudo.cn.rule.review.packet"].with_user(
+            author
+        ).create(
+            {
+                "rule_version_id": version.id,
+                "scope_summary": "仅验证四方勾稽运行时测试期间。",
+                "applicability_assumptions": "测试来源和事实定义完整。",
+                "exclusions_limitations": "不构成真实中国税务结论。",
+                "conclusion_boundary": "仅验证系统治理闭环。",
+                "reviewer_questions": "确认测试载荷和结论边界。",
+            }
+        )
+        self.env["sudo.cn.rule.review.citation"].with_user(author).create(
+            {
+                "packet_id": packet.id,
+                "source_id": source.id,
+                "citation_type": "internal_control_rationale",
+                "locator": "运行时测试来源",
+                "claim_summary": "仅用于验证系统运行时控制。",
+                "applicability_note": "不得用于真实财税判断。",
+            }
+        )
         self.env["sudo.compliance.rule.test.case"].with_user(author).create(
             [
                 {

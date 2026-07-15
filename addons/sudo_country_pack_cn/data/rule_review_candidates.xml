@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Candidate review materials only. They are not professional opinions or approvals. -->
+    <record id="review_packet_cn_base_reg_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_base_reg_001_draft"/>
+        <field name="scope_summary">适用于在中国设立并纳入当前合规档案的企业主体；仅检查评估日是否存在唯一有效的统一社会信用代码登记记录和至少一份受控证明附件线索。</field>
+        <field name="applicability_assumptions">合规档案主体与 Odoo 公司一致，登记记录有效期覆盖评估日，附件可以调阅且未被替换。</field>
+        <field name="exclusions_limitations">不核验登记机关当前状态、号码真伪、税务登记状态、纳税人类型、税种、申报频率或实际纳税义务。</field>
+        <field name="conclusion_boundary">通过只表示身份数据和附件线索已经记录；失败只表示资料准备不足，均不构成登记违法或税务认定。</field>
+        <field name="reviewer_questions">请确认统一社会信用代码与当前税务登记身份的映射边界、可接受的官方证明类型、分支机构处理方式，以及“多证合一”后仍需保留的税务登记证据。</field>
+    </record>
+    <record id="review_citation_cn_base_reg_001_tax_collection" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_base_reg_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_tax_collection_law_2015_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第四条、第十五条至第十八条</field>
+        <field name="claim_summary">税收征收管理法规定纳税人概念、税务登记及登记证件使用框架；本控制据此保留身份材料线索，但法条本身没有把统一社会信用代码规定为本系统唯一判断字段。</field>
+        <field name="applicability_note">需由专业人员结合“多证合一”现行登记实践和企业主体类型确认接受的证据，不得仅凭 Odoo 字段形成税务登记结论。</field>
+    </record>
+
+    <record id="review_packet_cn_acc_period_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_acc_period_001_draft"/>
+        <field name="scope_summary">适用于评估期间内当前 Odoo 公司可见的会计凭证；检查评估快照中草稿凭证数量是否为零。</field>
+        <field name="applicability_assumptions">评估期间完整、公司上下文正确，Odoo 是纳入评估范围的账簿来源，草稿与过账状态含义未被定制改写。</field>
+        <field name="exclusions_limitations">不判断凭证业务真实性、会计科目和期间归属是否正确，也不判断外部系统、表外事项、关账期限或纳税申报是否完整。</field>
+        <field name="conclusion_boundary">零草稿只表示当前 Odoo 数据形成较稳定的内部评估基线；存在草稿只触发关账复核，不直接认定会计违法。</field>
+        <field name="reviewer_questions">请确认将“草稿凭证为零”作为内部关账门槛是否适当，哪些凭证类型应排除，以及是否需要按日记账、来源系统或锁定日期区分。</field>
+    </record>
+    <record id="review_citation_cn_acc_period_001_accounting_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_acc_period_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_accounting_law_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第九条、第十五条、第十七条、第二十五条</field>
+        <field name="claim_summary">会计法要求基于实际业务填制凭证、以审核凭证登记账簿、定期核对并建立内部会计监督制度；“草稿为零”是为稳定评估范围设计的内部控制代理，不是法条原文要求。</field>
+        <field name="applicability_note">需由专业人员确认该代理控制是否覆盖企业实际关账流程，并避免把系统过账状态等同于会计处理合法、真实或完整。</field>
+    </record>
+
+    <record id="review_packet_cn_vat_inv_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_vat_inv_ready_001_draft"/>
+        <field name="scope_summary">适用于评估期间已过账的 Odoo 客户发票和供应商账单业务行；检查收入、成本和费用相关行是否维护税码。</field>
+        <field name="applicability_assumptions">业务单据类型和行分类准确，税码字段是后续账票税款勾稽所使用的受控映射入口。</field>
+        <field name="exclusions_limitations">不验证税码选择正确性、发票真伪、应税交易性质、纳税人身份、税率、简易计税、优惠、进项抵扣资格或申报调整。</field>
+        <field name="conclusion_boundary">通过只表示税码映射字段不为空；失败只表示勾稽数据准备不足，不直接形成税额或违法结论。</field>
+        <field name="reviewer_questions">请确认应纳入检查的单据和业务行范围、零税率与免税等特殊税码处理、一般与小规模纳税人差异，以及无税码但合理的例外证据。</field>
+    </record>
+    <record id="review_citation_cn_vat_inv_ready_001_vat_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_inv_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_vat_law_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第八条、第十条至第十六条、第三十四条</field>
+        <field name="claim_summary">增值税法规定计税方法、税率、分别核算、销项和进项计算以及发票使用框架；维护 Odoo 税码是支撑这些判断的数据准备控制，并非法律直接规定的系统字段。</field>
+        <field name="applicability_note">税码完整不能替代交易定性、纳税人身份、优惠和抵扣条件判断，专业复核应确认规则仅检查字段存在性。</field>
+    </record>
+    <record id="review_citation_cn_vat_inv_ready_001_vat_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_inv_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_vat_regulation_order_826_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第五条、第十一条至第十三条</field>
+        <field name="claim_summary">实施条例细化专用发票列示、扣税凭证和进项税额范围，为税码映射后续复核提供法定背景。</field>
+        <field name="applicability_note">本控制没有验证扣税凭证种类、列示税额或折让退回处理，相关结论必须由后续正式规则和人工判断完成。</field>
+    </record>
+    <record id="review_citation_cn_vat_inv_ready_001_invoice_measures" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_inv_ready_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_invoice_measures_2023_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第十八条至第二十条</field>
+        <field name="claim_summary">发票管理办法规定经营业务开具、取得发票及不符合规定发票的报销边界，为业务发票数据治理提供背景。</field>
+        <field name="applicability_note">Odoo 税码存在不证明发票符合规定，也不证明发票可抵扣或可税前扣除。</field>
+    </record>
+
+    <record id="review_packet_cn_acc_evidence_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_acc_evidence_001_draft"/>
+        <field name="scope_summary">适用于评估期间已过账的 Odoo 业务发票；检查每张业务发票是否存在二进制附件或可追溯的受控档案线索。</field>
+        <field name="applicability_assumptions">附件或外部索引能够关联到具体业务发票，资料可调阅，保管位置和责任人可追溯。</field>
+        <field name="exclusions_limitations">不验证附件真实性、合法性、完整性、电子签名、验真结果、元数据、归档格式、保管期限、备份或销毁程序。</field>
+        <field name="conclusion_boundary">通过只表示存在证据线索；失败只表示当前系统证据准备不足，不能据此直接认定原始凭证或会计档案违法。</field>
+        <field name="reviewer_questions">请确认 Odoo 附件与外部档案索引的最低可接受证据、电子档案元数据和验签要求、不同凭证类别保管期限，以及委外档案系统的控制要求。</field>
+    </record>
+    <record id="review_citation_cn_acc_evidence_001_accounting_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_acc_evidence_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_accounting_law_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第十四条、第二十三条、第二十五条</field>
+        <field name="claim_summary">会计法规定原始凭证取得和审核、会计资料建档妥善保管及内部会计监督；附件线索检查是这些要求的内部准备度代理。</field>
+        <field name="applicability_note">附件存在不能代替原始凭证审核或档案管理，专业人员应确认代理控制的范围和例外。</field>
+    </record>
+    <record id="review_citation_cn_acc_evidence_001_archives" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_acc_evidence_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_accounting_archives_order_79_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第三条、第五条、第八条至第十二条</field>
+        <field name="claim_summary">会计档案管理办法界定电子会计档案，并规定真实、完整、可用、安全及电子资料归档、移交等条件。</field>
+        <field name="applicability_note">当前规则只检查线索存在，不覆盖办法列示的电子归档条件、元数据移交和安全控制。</field>
+    </record>
+    <record id="review_citation_cn_acc_evidence_001_evoucher" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_acc_evidence_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_electronic_voucher_standard_2025_candidate"/>
+        <field name="citation_type">technical_guidance</field>
+        <field name="locator">第一部分、第二部分、第三部分第（三）项</field>
+        <field name="claim_summary">财会〔2025〕9号说明电子凭证结构化数据在接收、报销、入账、归档全流程中的推广应用和分类实施路径。</field>
+        <field name="applicability_note">通知包含因地制宜和分类施策边界，附件线索检查不能被解释为企业已经完成电子凭证标准适配。</field>
+    </record>
+
+    <record id="review_packet_cn_profile_tax_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_profile_tax_001_draft"/>
+        <field name="scope_summary">适用于中国合规档案在评估日有效的纳税人身份快照；检查是否唯一、已由管理人员核验且证据校验和未变化。</field>
+        <field name="applicability_assumptions">身份资料来自可追溯的税务机关或受控导出，快照有效期和主管辖区正确，附件与核验时内容一致。</field>
+        <field name="exclusions_limitations">不自动判断一般或小规模纳税人、税费种认定、申报周期、优惠资格、扣缴义务、跨区域经营或税务机关最新状态。</field>
+        <field name="conclusion_boundary">通过仅表示身份快照治理流程完成；失败或未知表示资料不足，不能据此推定纳税人身份或税务违法。</field>
+        <field name="reviewer_questions">请确认身份来源材料的优先级、各税费种身份的有效期和冲突处理、主管税务辖区变化，以及快照多久必须重新取得和复核。</field>
+    </record>
+    <record id="review_citation_cn_profile_tax_001_tax_collection" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_profile_tax_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_tax_collection_law_2015_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第四条、第十五条至第十八条、第二十五条</field>
+        <field name="claim_summary">税收征收管理法规定纳税人和扣缴义务人概念、税务登记及如实申报框架，为维护可追溯身份资料提供法定背景。</field>
+        <field name="applicability_note">法条不能单独确定企业当前各税费种身份和申报频率，必须结合税务机关受控资料及其他现行规定。</field>
+    </record>
+
+    <record id="review_packet_cn_einvoice_reconciliation_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_einvoice_reconciliation_ready_001_draft"/>
+        <field name="scope_summary">适用于与评估期间完全一致的唯一当前成功账票勾稽批次；检查来源可用、数据缺口为零、待复核事项为零且确认依据未变化。</field>
+        <field name="applicability_assumptions">受控电子发票来源和 Odoo 会计范围完整，匹配规则版本固定，人工确认与审计指纹可以追溯。</field>
+        <field name="exclusions_limitations">不判断发票真实性、交易真实性、抵扣资格、税前扣除、红字合规、税率、跨期税务处理或纳税申报正确性。</field>
+        <field name="conclusion_boundary">通过只表示当前受控范围内的账票事项已完成复核；失败或未知只表示数据或复核流程尚未就绪。</field>
+        <field name="reviewer_questions">请确认账票勾稽的最低匹配字段、容差和跨期范围、无法匹配事项的关闭标准、红字与作废处理，以及是否应补充会计法等来源。</field>
+    </record>
+    <record id="review_citation_cn_einvoice_reconciliation_ready_001_vat_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_einvoice_reconciliation_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_vat_law_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第二十八条、第三十四条</field>
+        <field name="claim_summary">增值税法连接纳税义务发生时间与开票，并规定依法开具和使用增值税发票；账票勾稽是内部数据复核手段，不是法定结论本身。</field>
+        <field name="applicability_note">勾稽一致不能证明纳税义务时点、开票或税务处理正确，仍需逐项专业判断。</field>
+    </record>
+    <record id="review_citation_cn_einvoice_reconciliation_ready_001_invoice_measures" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_einvoice_reconciliation_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_invoice_measures_2023_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第十八条至第二十条</field>
+        <field name="claim_summary">发票管理办法规定经营业务开具和取得发票及不符合规定发票的报销边界，为账票数据复核提供背景。</field>
+        <field name="applicability_note">系统匹配结果不验证发票是否符合规定，人工关闭未匹配事项必须保留原因和证据。</field>
+    </record>
+
+    <record id="review_packet_cn_vat_reconciliation_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="scope_summary">适用于与评估期间完全一致的唯一当前成功增值税四方勾稽批次；比较受控账务、电子发票、申报和缴款口径及差异事项。</field>
+        <field name="applicability_assumptions">四类来源均已封存并覆盖完整期间，会计控制科目和申报调整映射有效，当前批次审计指纹完整。</field>
+        <field name="exclusions_limitations">不计算法定应纳税额，不验证申报表全部栏次、优惠、留抵、加计抵减、跨期、红字、退税、抵缴或税务机关入库状态。</field>
+        <field name="conclusion_boundary">金额一致只表示当前受控口径可勾稽；存在差异不能直接作为少缴税额，必须形成逐项调节和专业复核。</field>
+        <field name="reviewer_questions">请确认账务与申报比较口径、允许的差异类型和容差、红字与跨期处理、付款冲正退库、影响金额口径，以及是否应补充税收征管法和会计法来源。</field>
+    </record>
+    <record id="review_citation_cn_vat_reconciliation_ready_001_vat_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_vat_law_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第十四条至第十六条、第二十八条至第三十四条</field>
+        <field name="claim_summary">增值税法规定应纳税额、销项进项、纳税义务时间、计税期间、申报和发票框架；四方勾稽是内部比较手段，不替代法定计算与申报判断。</field>
+        <field name="applicability_note">比较口径必须结合纳税人身份、计税方法、调整事项和实际申报资料，由专业人员逐项确认。</field>
+    </record>
+    <record id="review_citation_cn_vat_reconciliation_ready_001_vat_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_vat_regulation_order_826_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第五条、第十一条至第十七条</field>
+        <field name="claim_summary">实施条例细化发票列示、扣税凭证、进项税额、折让退回和销售额处理，为差异调节提供背景。</field>
+        <field name="applicability_note">当前规则只读取受控勾稽结论，未逐项执行实施条例的计税和调整规则。</field>
+    </record>
+    <record id="review_citation_cn_vat_reconciliation_ready_001_invoice_measures" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_invoice_measures_2023_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第十八条至第二十条</field>
+        <field name="claim_summary">发票管理办法规定经营业务开具、取得和报销凭证边界，为发票侧数据来源和异常复核提供背景。</field>
+        <field name="applicability_note">发票金额与账务或申报一致不证明发票符合规定，差异为零也不能替代发票真实性和业务实质复核。</field>
+    </record>
+</odoo>

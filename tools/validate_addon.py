@@ -85,6 +85,12 @@ ALLOWED_CN_RULE_NATURES = {
     "data_readiness",
 }
 CONTROL_RULE_NATURES = {"internal_control", "data_readiness"}
+ALLOWED_CN_CITATION_TYPES = {
+    "direct_requirement",
+    "supporting_context",
+    "internal_control_rationale",
+    "technical_guidance",
+}
 
 
 def fail(message: str) -> None:
@@ -143,6 +149,9 @@ def validate_manifest() -> dict[str, object]:
     ordered_data = {
         "data/official_source_candidates.xml",
         "data/compliance_rule_drafts.xml",
+        "data/rule_review_candidates.xml",
+        "reports/rule_review_packet_report.xml",
+        "views/rule_review_packet_views.xml",
     }
     if not ordered_data.issubset(data_files):
         fail("manifest must load official sources and rule drafts")
@@ -150,6 +159,10 @@ def validate_manifest() -> dict[str, object]:
         "data/compliance_rule_drafts.xml"
     ):
         fail("official source candidates must load before rule drafts")
+    if data_files.index("data/compliance_rule_drafts.xml") > data_files.index(
+        "data/rule_review_candidates.xml"
+    ):
+        fail("rule drafts must load before professional review candidates")
     return manifest
 
 
@@ -519,6 +532,149 @@ def validate_rule_drafts(
         if not {"pass", "fail"}.issubset(results):
             fail(f"{version_id} must have pass and fail test cases")
     return version_source_refs
+
+
+def validate_rule_review_candidates(
+    source_ids: set[str],
+    version_source_refs: dict[str, set[str]],
+) -> None:
+    path = ADDON_ROOT / "data" / "rule_review_candidates.xml"
+    root = ElementTree.parse(path).getroot()
+    if root.attrib.get("noupdate") != "1":
+        fail("professional review candidates must be protected by noupdate")
+
+    packet_records = [
+        record
+        for record in root.findall(".//record")
+        if record.attrib.get("model") == "sudo.cn.rule.review.packet"
+    ]
+    citation_records = [
+        record
+        for record in root.findall(".//record")
+        if record.attrib.get("model") == "sudo.cn.rule.review.citation"
+    ]
+    if len(packet_records) != len(version_source_refs):
+        fail("every packaged China rule version requires one review packet")
+    if len(citation_records) != 14:
+        fail("packaged China review candidates require fourteen citations")
+
+    required_packet_fields = {
+        "scope_summary",
+        "applicability_assumptions",
+        "exclusions_limitations",
+        "conclusion_boundary",
+        "reviewer_questions",
+    }
+    forbidden_packet_fields = {
+        "professional_review_state",
+        "professional_reviewer_id",
+        "professional_reviewed_at",
+        "professional_qualification",
+        "professional_review_notes",
+        "professional_evidence_reference",
+        "professional_evidence_checksum",
+        "professional_rule_checksum",
+    }
+    packet_versions: dict[str, str] = {}
+    packet_citation_sources: dict[str, set[str]] = {}
+    for record in packet_records:
+        xml_id = record.attrib.get("id", "")
+        if not xml_id or xml_id in packet_versions:
+            fail("review packet XML IDs must be unique")
+        fields = record_fields(record)
+        version_field = fields.get("rule_version_id")
+        version_id = (
+            version_field.attrib.get("ref")
+            if version_field is not None
+            else None
+        )
+        if version_id not in version_source_refs:
+            fail(f"{xml_id} references an unknown China rule version")
+        if version_id in packet_versions.values():
+            fail(f"multiple review packets reference {version_id}")
+        packet_versions[xml_id] = version_id
+        packet_citation_sources[xml_id] = set()
+        for field_name in required_packet_fields:
+            value = field_text(fields, field_name, xml_id)
+            if value.lower() in {"tbd", "todo", "待补", "待定"}:
+                fail(f"{xml_id} contains placeholder review material")
+        populated_forbidden = forbidden_packet_fields & set(fields)
+        if populated_forbidden:
+            fail(
+                f"{xml_id} pre-populates professional sign-off fields: "
+                f"{sorted(populated_forbidden)}"
+            )
+
+    for record in citation_records:
+        xml_id = record.attrib.get("id", "")
+        fields = record_fields(record)
+        packet_field = fields.get("packet_id")
+        packet_id = (
+            packet_field.attrib.get("ref")
+            if packet_field is not None
+            else None
+        )
+        if packet_id not in packet_versions:
+            fail(f"{xml_id} references an unknown review packet")
+        source_field = fields.get("source_id")
+        source_id = (
+            source_field.attrib.get("ref")
+            if source_field is not None
+            else None
+        )
+        if source_id not in source_ids:
+            fail(f"{xml_id} references an unknown official source")
+        packet_citation_sources[packet_id].add(source_id)
+        citation_type = field_text(fields, "citation_type", xml_id)
+        if citation_type not in ALLOWED_CN_CITATION_TYPES:
+            fail(f"{xml_id} has an invalid citation type")
+        if citation_type == "direct_requirement":
+            fail(
+                f"packaged internal controls cannot claim a direct legal "
+                f"requirement: {xml_id}"
+            )
+        for field_name in (
+            "locator",
+            "claim_summary",
+            "applicability_note",
+        ):
+            field_text(fields, field_name, xml_id)
+
+    if set(packet_versions.values()) != set(version_source_refs):
+        fail("review packet coverage does not match packaged rule versions")
+    for packet_id, version_id in packet_versions.items():
+        if packet_citation_sources[packet_id] != version_source_refs[version_id]:
+            fail(
+                f"{packet_id} does not cite every official source linked to "
+                f"{version_id}"
+            )
+
+    model_content = (
+        ADDON_ROOT / "models" / "rule_review_packet.py"
+    ).read_text(encoding="utf-8")
+    for contract in (
+        'payload["cn_review_packet"]',
+        "cn_review_packet_updated",
+        "cn_rule_review_packet.updated",
+        "action_print_cn_review_packet",
+    ):
+        if contract not in model_content:
+            fail(f"professional review packet contract is missing {contract}")
+    governance_content = (
+        ADDON_ROOT / "models" / "rule_governance.py"
+    ).read_text(encoding="utf-8")
+    for contract in (
+        "review_packet_required",
+        "cn_professional_review_ready",
+        "中国规则尚不能专业签核",
+    ):
+        if contract not in governance_content:
+            fail(f"China professional sign-off gate is missing {contract}")
+    report_content = (
+        ADDON_ROOT / "reports" / "rule_review_packet_report.xml"
+    ).read_text(encoding="utf-8")
+    if "候选草案，不得用于对外合规结论" not in report_content:
+        fail("professional review report must show its candidate boundary")
 
 
 def validate_upgrade_migration(
@@ -1373,6 +1529,7 @@ def main() -> int:
         fact_ids,
         source_ids,
     )
+    validate_rule_review_candidates(source_ids, version_source_refs)
     validate_upgrade_migration(manifest, source_ids, version_source_refs)
     validate_taxpayer_classification_security()
     validate_external_dataset_security()

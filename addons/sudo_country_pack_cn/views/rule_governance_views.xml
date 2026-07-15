@@ -16,7 +16,7 @@
         <field name="model">sudo.compliance.rule</field>
         <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
                 <div class="alert alert-danger" role="alert"
                      invisible="not cn_is_china_rule or cn_rule_nature">
                     中国规则必须先明确规则性质，才能进入发布治理流程。
@@ -38,7 +38,7 @@
                 <field name="cn_release_state" widget="badge" optional="show"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
             </xpath>
@@ -55,7 +55,7 @@
                 <field name="cn_release_state" widget="badge" optional="show"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
             </field>
@@ -67,6 +67,14 @@
         <field name="model">sudo.compliance.rule.version</field>
         <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_version_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_professional_signoff']" position="before">
+                <button name="action_print_cn_review_packet" type="object"
+                        string="打印专业复核包" icon="fa-print"
+                        invisible="not cn_is_china_rule or not cn_review_packet_id"/>
+            </xpath>
+            <xpath expr="//button[@name='action_professional_signoff']" position="attributes">
+                <attribute name="invisible">state != 'draft' or professional_review_state != 'pending' or test_state != 'passed' or (cn_is_china_rule and not cn_professional_review_ready)</attribute>
+            </xpath>
             <xpath expr="//button[@name='action_submit_review']" position="attributes">
                 <attribute name="invisible">state != 'draft' or professional_review_state != 'approved' or (cn_is_china_rule and not cn_governance_ready)</attribute>
             </xpath>
@@ -76,7 +84,15 @@
             <xpath expr="//button[@name='action_activate']" position="attributes">
                 <attribute name="invisible">state != 'approved' or (cn_is_china_rule and not cn_governance_ready)</attribute>
             </xpath>
-            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box"
+                     invisible="not cn_is_china_rule or not cn_review_packet_id">
+                    <button name="action_open_cn_review_packet" type="object"
+                            class="oe_stat_button" icon="fa-file-text-o">
+                        <field name="cn_review_packet_state" widget="statinfo"
+                               string="专业复核包"/>
+                    </button>
+                </div>
                 <div class="alert alert-danger" role="alert"
                      invisible="not cn_is_china_rule or cn_rule_nature">
                     该中国规则尚未明确规则性质，禁止进入批准和发布流程。
@@ -90,6 +106,11 @@
                     <strong>发布阻断事项</strong>
                     <field name="cn_release_blockers" nolabel="1" readonly="1"/>
                 </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="not cn_is_china_rule or cn_review_packet_ready">
+                    <strong>专业复核包待完善</strong>
+                    <field name="cn_review_packet_blockers" nolabel="1" readonly="1"/>
+                </div>
             </xpath>
             <field name="next_review_date" position="after">
                 <field name="cn_is_china_rule" invisible="1"/>
@@ -99,12 +120,45 @@
                        invisible="not cn_is_china_rule"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
                 <field name="cn_governance_ready" readonly="1"
                        invisible="not cn_is_china_rule"/>
+                <field name="cn_review_packet_id" invisible="1"/>
+                <field name="cn_review_packet_state" widget="badge" readonly="1"
+                       invisible="not cn_is_china_rule"
+                       decoration-success="cn_review_packet_state == 'ready'"
+                       decoration-warning="cn_review_packet_state == 'incomplete'"
+                       decoration-danger="cn_review_packet_state == 'missing'"/>
+                <field name="cn_professional_review_ready" readonly="1"
+                       invisible="not cn_is_china_rule"/>
             </field>
+            <xpath expr="//page[.//field[@name='professional_evidence_reference']]"
+                   position="before">
+                <page string="中国专业复核材料" invisible="not cn_is_china_rule">
+                    <group>
+                        <group>
+                            <field name="cn_review_packet_id" readonly="1"
+                                   options="{'no_create': True}"/>
+                            <field name="cn_review_packet_state" widget="badge" readonly="1"
+                                   decoration-success="cn_review_packet_state == 'ready'"
+                                   decoration-warning="cn_review_packet_state == 'incomplete'"
+                                   decoration-danger="cn_review_packet_state == 'missing'"/>
+                            <field name="cn_professional_review_ready" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="cn_professional_review_blockers" readonly="1"
+                           invisible="cn_professional_review_ready"/>
+                    <button name="action_open_cn_review_packet" type="object"
+                            string="打开专业复核包" icon="fa-external-link"
+                            class="btn-primary"
+                            invisible="not cn_review_packet_id"/>
+                    <button name="action_print_cn_review_packet" type="object"
+                            string="打印专业复核包" icon="fa-print"
+                            invisible="not cn_review_packet_id"/>
+                </page>
+            </xpath>
         </field>
     </record>
 
@@ -144,7 +198,7 @@
         <field name="model">sudo.compliance.finding</field>
         <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[@class='oe_title']" position="before">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
                 <div class="alert alert-info" role="alert"
                      invisible="cn_rule_nature not in ('data_readiness', 'internal_control')">
                     <strong>结论边界：</strong>
