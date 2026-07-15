@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.0.0"
+PACK_VERSION = "19.0.1.1.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -15,7 +15,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-VAT",
         "name": "增值税申报与缴纳",
-        "domain_key": "VAT",
+        "domain_key": "CN.VAT_INVOICE",
         "authority": "主管税务机关",
         "filing_required": True,
         "filing_frequency": "other",
@@ -24,7 +24,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-CIT",
         "name": "企业所得税预缴与年度汇算清缴",
-        "domain_key": "CIT",
+        "domain_key": "CN.CIT",
         "authority": "主管税务机关",
         "filing_required": True,
         "filing_frequency": "other",
@@ -33,7 +33,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-IIT-WHT",
         "name": "个人所得税扣缴申报",
-        "domain_key": "IIT_WITHHOLDING",
+        "domain_key": "CN.PAYROLL_IIT",
         "authority": "主管税务机关",
         "filing_required": True,
         "filing_frequency": "other",
@@ -42,7 +42,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-SURCHARGE",
         "name": "附加税费申报",
-        "domain_key": "SURCHARGE",
+        "domain_key": "CN.OTHER_TAXES",
         "authority": "主管税务机关",
         "filing_required": True,
         "filing_frequency": "other",
@@ -51,7 +51,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-STAMP-DUTY",
         "name": "印花税申报",
-        "domain_key": "STAMP_DUTY",
+        "domain_key": "CN.OTHER_TAXES",
         "authority": "主管税务机关",
         "filing_required": True,
         "filing_frequency": "other",
@@ -60,7 +60,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-SOCIAL-INSURANCE",
         "name": "社会保险费申报缴纳",
-        "domain_key": "SOCIAL_INSURANCE",
+        "domain_key": "CN.PAYROLL_IIT",
         "authority": "主管征收及社会保险经办机构",
         "filing_required": True,
         "filing_frequency": "other",
@@ -69,7 +69,7 @@ CN_OBLIGATION_TEMPLATES = (
     {
         "code": "CN-RECORDS",
         "name": "财税资料与电子凭证留存",
-        "domain_key": "RECORD_KEEPING",
+        "domain_key": "CN.ACCOUNTING",
         "authority": "主管财政及税务机关",
         "filing_required": False,
         "filing_frequency": "ongoing",
@@ -86,29 +86,41 @@ def post_init_hook(env):
 
 def country_pack_capabilities():
     return {
-        "authorities": [
+        "schema_version": 1,
+        "setup_defaults": {
+            **SETUP_DEFAULTS,
+            "registration_label": "统一社会信用代码",
+        },
+        "authority_classes": [
             "财政部门",
             "税务机关",
             "市场监督管理部门",
             "社会保险经办机构",
         ],
         "domains": [
-            "vat",
+            "identity",
+            "accounting",
+            "vat_invoice",
             "cit",
-            "iit_withholding",
-            "surcharge",
-            "stamp_duty",
-            "social_insurance",
-            "record_keeping",
+            "payroll_iit",
+            "other_taxes",
+            "cross_border",
+            "filing_payment",
         ],
         "engine": "sudo.compliance.engine",
-        "source_governance": True,
-        "multi_company": True,
-        "ai_remediation": True,
-        "filing_control": True,
-        "setup_defaults": dict(SETUP_DEFAULTS),
-        "rule_release_requires_professional_signoff": True,
-        "candidate_obligations_only": True,
+        "features": {
+            "jurisdiction": False,
+            "external_dataset": False,
+            "reconciliation": False,
+            "filing_control": True,
+            "controlled_ai": True,
+            "source_governance": True,
+            "multi_company": True,
+        },
+        "governance": {
+            "rule_release_requires_professional_signoff": True,
+            "candidate_obligations_only": True,
+        },
     }
 
 

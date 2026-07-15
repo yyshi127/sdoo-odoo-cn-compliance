@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <record id="fact_cn_company_uscc_v1" model="sudo.compliance.fact.definition">
+        <field name="label">统一社会信用代码</field>
+        <field name="key">cn.company.unified_social_credit_code</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">string</field>
+        <field name="provider_key">cn.company.unified_social_credit_code</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.compliance.registration</field>
+        <field name="source_description">优先读取合规档案中评估日有效的受控登记记录；仅有公司字段时标记为数据不完整</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_active_controlled_registration</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_registration_evidence_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业登记证明附件线索数</field>
+        <field name="key">cn.company.registration_evidence_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.company.registration_evidence_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.compliance.registration</field>
+        <field name="source_description">有效登记记录关联的附件线索，仅表示附件存在，不表示内容已专业核验</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">registration_attachment_clue_count</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_fiscal_year_end_confirmed_v1" model="sudo.compliance.fact.definition">
+        <field name="label">财年结束日是否已核实</field>
+        <field name="key">cn.company.fiscal_year_end_confirmed</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">boolean</field>
+        <field name="provider_key">cn.company.fiscal_year_end_confirmed</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.compliance.profile</field>
+        <field name="source_description">合规档案中的财年结束日及受控核实状态</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">validated_confirmed_profile_fields</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_posted_move_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间已过账凭证数</field>
+        <field name="key">cn.account.posted_move_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.account.posted_move_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move</field>
+        <field name="source_description">评估公司和评估期间内全部已过账会计凭证</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">search_count_full_domain</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_unposted_move_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间未过账凭证数</field>
+        <field name="key">cn.account.unposted_move_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.account.unposted_move_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move</field>
+        <field name="source_description">评估公司和评估期间内全部草稿会计凭证</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">search_count_full_domain</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_posted_invoice_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间已过账业务发票数</field>
+        <field name="key">cn.account.posted_invoice_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.account.posted_invoice_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move</field>
+        <field name="source_description">评估公司和期间内全部已过账客户及供应商发票、退款和收据</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">search_count_full_domain</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_invoice_missing_attachment_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">已过账业务发票缺少附件线索数</field>
+        <field name="key">cn.evidence.invoice_missing_attachment_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.evidence.invoice_missing_attachment_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move</field>
+        <field name="source_description">期间内全部已过账业务发票与二进制附件的反连接计数；附件存在不表示发票真实性已验证</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">full_domain_attachment_antijoin</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_posted_invoice_line_without_tax_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">已过账业务发票中未分配税码的业务行数</field>
+        <field name="key">cn.vat_invoice.posted_line_without_tax_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.vat_invoice.posted_line_without_tax_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move.line</field>
+        <field name="source_description">期间内全部已过账业务发票的收入、成本和费用行与 Odoo 税码反连接计数；仅作为映射准备度信号</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">full_period_posted_invoice_tax_antijoin</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
+    <record id="fact_cn_partner_missing_tax_id_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">交易伙伴缺少税务登记号候选数量</field>
+        <field name="key">cn.master.transaction_partner_missing_tax_id_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.master.transaction_partner_missing_tax_id_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">res.partner</field>
+        <field name="source_description">期间内已过账业务发票涉及且未维护税务登记号的商业伙伴；仅为资料准备度候选信号，不代表违规</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">transaction_partner_tax_id_presence_signal</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+</odoo>

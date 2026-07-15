@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from .compliance_engine import USCC_REGISTRATION_TYPES
+
 
 class SudoComplianceProfile(models.Model):
     _inherit = "sudo.compliance.profile"
@@ -31,6 +33,43 @@ class SudoComplianceProfile(models.Model):
         from odoo.addons.sudo_country_pack_cn.hooks import seed_cn_obligations
 
         return seed_cn_obligations(self.env, china_profiles)
+
+    def _cn_activation_issues(self):
+        self.ensure_one()
+        if not self.is_china_profile:
+            return []
+        today = fields.Date.context_today(self)
+        registrations = self.registration_ids.filtered(
+            lambda registration: (
+                (registration.registration_type or "").strip().lower()
+                in USCC_REGISTRATION_TYPES
+                and registration.state == "active"
+                and (
+                    not registration.valid_from
+                    or registration.valid_from <= today
+                )
+                and (
+                    not registration.valid_to
+                    or registration.valid_to >= today
+                )
+                and bool(
+                    registration.registration_number
+                    and registration.registration_number.strip()
+                )
+            )
+        )
+        issues = []
+        if not registrations:
+            issues.append(_("未建立有效的统一社会信用代码受控登记记录"))
+        elif len(registrations) > 1:
+            issues.append(_("存在多个同时有效的统一社会信用代码登记记录"))
+        elif not registrations.evidence_attachment_ids:
+            issues.append(_("统一社会信用代码登记尚未上传证明附件线索"))
+        return issues
+
+    def _activation_issues(self):
+        self.ensure_one()
+        return super()._activation_issues() + self._cn_activation_issues()
 
     def action_seed_cn_obligations(self):
         china_profiles = self.filtered("is_china_profile")

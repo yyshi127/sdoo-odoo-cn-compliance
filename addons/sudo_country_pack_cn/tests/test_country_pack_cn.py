@@ -1,3 +1,4 @@
+from odoo import Command
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
@@ -41,12 +42,14 @@ class TestChinaCountryPack(TransactionCase):
     def test_country_pack_is_registered_without_published_rules(self):
         self.assertEqual(self.country_pack.code, "CN")
         self.assertEqual(self.country_pack.country_id, self.country_cn)
-        self.assertEqual(
-            self.country_pack.capability_json["setup_defaults"],
-            SETUP_DEFAULTS,
-        )
+        setup_defaults = self.country_pack.capability_json["setup_defaults"]
+        for key, value in SETUP_DEFAULTS.items():
+            self.assertEqual(setup_defaults[key], value)
+        self.assertEqual(setup_defaults["registration_label"], "统一社会信用代码")
         self.assertTrue(
-            self.country_pack.capability_json["candidate_obligations_only"]
+            self.country_pack.capability_json["governance"][
+                "candidate_obligations_only"
+            ]
         )
         self.assertFalse(
             self.env["sudo.compliance.rule"].search_count(
@@ -92,6 +95,43 @@ class TestChinaCountryPack(TransactionCase):
             )
         )
         self.assertTrue(profile._activation_issues())
+        self.assertEqual(
+            set(profile.obligation_ids.mapped("domain_key")),
+            {
+                "CN.ACCOUNTING",
+                "CN.CIT",
+                "CN.OTHER_TAXES",
+                "CN.PAYROLL_IIT",
+                "CN.VAT_INVOICE",
+            },
+        )
+
+    def test_china_activation_requires_controlled_registration_evidence(self):
+        profile = self._create_profile()
+        self.assertIn(
+            "未建立有效的统一社会信用代码受控登记记录",
+            profile._cn_activation_issues(),
+        )
+        registration = self.env["sudo.compliance.registration"].create(
+            {
+                "name": "统一社会信用代码登记",
+                "profile_id": profile.id,
+                "registration_type": "unified_social_credit_code",
+                "registration_number": "91310000TEST000004",
+                "authority": "市场监督管理部门",
+                "valid_from": "2000-01-01",
+                "state": "active",
+            }
+        )
+        self.assertIn(
+            "统一社会信用代码登记尚未上传证明附件线索",
+            profile._cn_activation_issues(),
+        )
+        attachment = self.env["ir.attachment"].create(
+            {"name": "business-license.txt", "raw": b"test evidence clue"}
+        )
+        registration.evidence_attachment_ids = [Command.set(attachment.ids)]
+        self.assertFalse(profile._cn_activation_issues())
 
     def test_leaving_china_clears_china_registration_defaults(self):
         wizard = self.env["sudo.compliance.setup.wizard"].new(
