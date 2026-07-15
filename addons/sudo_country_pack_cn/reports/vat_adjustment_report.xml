@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_report_cn_vat_adjustment" model="ir.actions.report">
+        <field name="name">中国增值税调节与税务影响复核报告</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sudo_country_pack_cn.report_cn_vat_adjustment</field>
+        <field name="report_file">sudo_country_pack_cn.report_cn_vat_adjustment</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="print_report_name">'增值税调节与税务影响复核-%s' % (object.name or object.id)</field>
+    </record>
+
+    <template id="report_cn_vat_adjustment">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="run">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>中国增值税调节与税务影响复核报告</h2>
+                        <div class="alert alert-warning">
+                            <strong>受控勾稽和专业复核工作底稿，不是纳税申报表或税务机关结论。</strong>
+                            原始勾稽差异可能相互重叠，不得直接相加。只有经独立复核的经济事项进入下方分项金额，少缴、多缴和期间错配影响不计算净额。
+                        </div>
+
+                        <h3>一、报告范围与审计指纹</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 18%">公司</th>
+                                    <td><span t-esc="run.company_id.name"/></td>
+                                    <th style="width: 18%">合规档案</th>
+                                    <td><span t-esc="run.profile_id.display_name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>期间</th>
+                                    <td><span t-field="run.period_start"/> 至 <span t-field="run.period_end"/></td>
+                                    <th>勾稽结论</th>
+                                    <td><span t-field="run.conclusion_state"/></td>
+                                </tr>
+                                <tr>
+                                    <th>账务比较口径</th>
+                                    <td><span t-field="run.accounting_basis"/></td>
+                                    <th>运行状态</th>
+                                    <td><span t-field="run.state"/></td>
+                                </tr>
+                                <tr>
+                                    <th>结果 SHA-256</th>
+                                    <td colspan="3" style="word-break: break-all">
+                                        <span t-esc="run.result_checksum or '未形成'"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>二、四方数据准备状态</h3>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>账务</th>
+                                    <th>电子发票</th>
+                                    <th>增值税申报</th>
+                                    <th>税款缴纳</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span t-field="run.accounting_source_state"/></td>
+                                    <td><span t-field="run.einvoice_source_state"/></td>
+                                    <td><span t-field="run.filing_source_state"/></td>
+                                    <td><span t-field="run.payment_source_state"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>三、账务与申报调节链</h3>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>税额口径</th>
+                                    <th>销项税额</th>
+                                    <th>进项税额</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Odoo 已过账发票税额</td>
+                                    <td><span t-field="run.invoice_output_tax_amount"/></td>
+                                    <td><span t-field="run.invoice_input_tax_amount"/></td>
+                                    <td>独立账票比较口径</td>
+                                </tr>
+                                <tr t-if="run.accounting_basis == 'control_accounts'">
+                                    <td>已核验增值税控制科目</td>
+                                    <td><span t-field="run.control_output_tax_amount"/></td>
+                                    <td><span t-field="run.control_input_tax_amount"/></td>
+                                    <td><span t-esc="run.control_account_mapping_count"/> 项映射，<span t-esc="run.control_account_line_count"/> 条分录</td>
+                                </tr>
+                                <tr t-if="run.accounting_basis == 'control_accounts'">
+                                    <td>已批准申报调整净额</td>
+                                    <td><span t-field="run.filing_output_adjustment_amount"/></td>
+                                    <td><span t-field="run.filing_input_adjustment_amount"/></td>
+                                    <td><span t-esc="run.filing_adjustment_count"/> 项受控调整</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>账务申报比较口径</strong></td>
+                                    <td><strong><span t-field="run.ledger_output_tax_amount"/></strong></td>
+                                    <td><strong><span t-field="run.ledger_input_tax_amount"/></strong></td>
+                                    <td>用于与受控申报数据勾稽</td>
+                                </tr>
+                                <tr>
+                                    <td>受控电子发票</td>
+                                    <td>
+                                        <span t-if="run.has_einvoice_output_tax_amount" t-field="run.einvoice_output_tax_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                    <td>
+                                        <span t-if="run.has_einvoice_input_tax_amount" t-field="run.einvoice_input_tax_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                    <td>受控外部发票口径</td>
+                                </tr>
+                                <tr>
+                                    <td>受控增值税申报</td>
+                                    <td>
+                                        <span t-if="run.has_filing_output_tax_amount" t-field="run.filing_output_tax_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                    <td>
+                                        <span t-if="run.has_filing_input_tax_amount" t-field="run.filing_input_tax_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                    <td>唯一有效申报记录</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>四、申报应纳与税款缴纳</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 28%">申报应纳税额</th>
+                                    <td>
+                                        <span t-if="run.has_filing_payable_amount" t-field="run.filing_payable_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>有效缴税净额</th>
+                                    <td>
+                                        <span t-if="run.has_payment_amount" t-field="run.payment_amount"/>
+                                        <span t-else="">未提供可比数据</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>申报与缴税差异</th>
+                                    <td>
+                                        <span t-if="run.has_filing_payment_difference" t-field="run.filing_payment_difference"/>
+                                        <span t-else="">当前不可比较</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>五、原始勾稽问题</h3>
+                        <p class="text-muted">
+                            以下差异分别表达不同来源或口径之间的关系，可能描述同一经济事项，故不设置差异总计。
+                        </p>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>级别</th>
+                                    <th>来源</th>
+                                    <th>问题</th>
+                                    <th>左侧口径</th>
+                                    <th>右侧口径</th>
+                                    <th>差异</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not run.issue_ids">
+                                    <td colspan="6">当前没有勾稽问题。</td>
+                                </tr>
+                                <tr t-foreach="run.issue_ids" t-as="issue">
+                                    <td><span t-field="issue.severity"/></td>
+                                    <td><span t-field="issue.source_area"/></td>
+                                    <td>
+                                        <strong t-esc="issue.name"/>
+                                        <div class="text-muted" t-esc="issue.code"/>
+                                    </td>
+                                    <td>
+                                        <span t-if="issue.has_left_amount">
+                                            <span t-esc="issue.left_label"/>：<span t-field="issue.left_amount"/>
+                                        </span>
+                                        <span t-else="">-</span>
+                                    </td>
+                                    <td>
+                                        <span t-if="issue.has_right_amount">
+                                            <span t-esc="issue.right_label"/>：<span t-field="issue.right_amount"/>
+                                        </span>
+                                        <span t-else="">-</span>
+                                    </td>
+                                    <td>
+                                        <span t-if="issue.has_difference" t-field="issue.difference_amount"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>六、经人工复核的税务影响</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>未完成复核事项</th>
+                                    <td><span t-esc="run.tax_impact_pending_count"/></td>
+                                    <th>已复核事项</th>
+                                    <td><span t-esc="run.tax_impact_reviewed_count"/></td>
+                                </tr>
+                                <tr>
+                                    <th>已复核但无法量化</th>
+                                    <td><span t-esc="run.tax_impact_unquantifiable_count"/></td>
+                                    <th>复核完整性异常</th>
+                                    <td><span t-esc="run.tax_impact_integrity_issue_count"/></td>
+                                </tr>
+                                <tr>
+                                    <th style="width: 25%">已复核潜在少缴税影响</th>
+                                    <td><span t-field="run.reviewed_underpayment_amount"/></td>
+                                    <th style="width: 25%">已复核潜在多缴税影响</th>
+                                    <td><span t-field="run.reviewed_overpayment_amount"/></td>
+                                </tr>
+                                <tr>
+                                    <th>已复核期间错配影响</th>
+                                    <td><span t-field="run.reviewed_timing_amount"/></td>
+                                    <th>净额</th>
+                                    <td><strong>不计算</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>影响方向</th>
+                                    <th>复核事项</th>
+                                    <th>量化状态</th>
+                                    <th>金额</th>
+                                    <th>来源数</th>
+                                    <th>复核与完整性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="run.tax_impact_case_count == 0">
+                                    <td colspan="6">尚未建立税务影响复核事项，报告不列示风险金额。</td>
+                                </tr>
+                                <t t-foreach="run.tax_impact_case_ids" t-as="case">
+                                    <tr t-if="case.state != 'cancelled'">
+                                        <td><span t-field="case.impact_direction"/></td>
+                                        <td>
+                                            <strong t-esc="case.title"/>
+                                            <div class="text-muted" t-esc="case.source_reference"/>
+                                            <div class="text-muted" style="word-break: break-all">
+                                                复核 SHA-256：<span t-esc="case.review_checksum or '尚未形成'"/>
+                                            </div>
+                                        </td>
+                                        <td><span t-field="case.quantification_state"/></td>
+                                        <td>
+                                            <span t-if="case.quantification_state in ('preliminary', 'reviewed')" t-field="case.impact_amount"/>
+                                            <span t-else="">不列金额</span>
+                                        </td>
+                                        <td><span t-esc="case.source_count"/></td>
+                                        <td>
+                                            <span t-field="case.state"/> / <span t-field="case.integrity_state"/>
+                                            <div t-if="case.reviewer_id" class="text-muted">
+                                                <span t-esc="case.reviewer_id.name"/>，<span t-field="case.reviewed_at"/>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <h3>七、结论边界与下一步</h3>
+                        <ul>
+                            <li>数据不足、待复核、无法量化和完整性异常事项均不会进入金额合计。</li>
+                            <li>已复核金额仍是当前证据和假设下的专业工作底稿，不等于税务机关认定或最终申报金额。</li>
+                            <li>整改、补证或来源更新后，应重新执行勾稽并建立新的可追溯复核事项。</li>
+                            <li>报告保留批次与复核 SHA-256，可用于后续审计追踪，但不能替代原始证据。</li>
+                        </ul>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

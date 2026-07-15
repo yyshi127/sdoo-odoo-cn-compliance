@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_tax_impact_case_search" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.impact.case.search</field>
+        <field name="model">sudo.cn.tax.impact.case</field>
+        <field name="arch" type="xml">
+            <search string="税务影响复核事项">
+                <field name="title"/>
+                <field name="source_reference"/>
+                <field name="profile_id"/>
+                <field name="assessment_id"/>
+                <field name="vat_run_id"/>
+                <filter name="pending" string="待完成复核"
+                        domain="[('state', 'in', ('draft', 'submitted'))]"/>
+                <filter name="reviewed" string="已复核"
+                        domain="[('state', '=', 'reviewed')]"/>
+                <filter name="underpayment" string="潜在少缴"
+                        domain="[('impact_direction', '=', 'potential_underpayment')]"/>
+                <filter name="overpayment" string="潜在多缴"
+                        domain="[('impact_direction', '=', 'potential_overpayment')]"/>
+                <filter name="timing" string="期间错配"
+                        domain="[('impact_direction', '=', 'timing_difference')]"/>
+                <filter name="unquantifiable" string="无法量化"
+                        domain="[('quantification_state', '=', 'not_quantifiable')]"/>
+                <separator/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_period" string="期间结束"
+                        context="{'group_by': 'period_end'}"/>
+                <filter name="group_direction" string="影响方向"
+                        context="{'group_by': 'impact_direction'}"/>
+                <filter name="group_state" string="复核状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_impact_case_list" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.impact.case.list</field>
+        <field name="model">sudo.cn.tax.impact.case</field>
+        <field name="arch" type="xml">
+            <list string="税务影响复核事项"
+                  decoration-danger="impact_direction == 'potential_underpayment' and state == 'reviewed'"
+                  decoration-info="state == 'submitted'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="title"/>
+                <field name="period_start" optional="show"/>
+                <field name="period_end" optional="show"/>
+                <field name="impact_direction" widget="badge"
+                       decoration-danger="impact_direction == 'potential_underpayment'"
+                       decoration-success="impact_direction in ('no_tax_impact', 'potential_overpayment')"
+                       decoration-warning="impact_direction == 'timing_difference'"/>
+                <field name="quantification_state" widget="badge"
+                       decoration-success="quantification_state == 'reviewed'"
+                       decoration-warning="quantification_state in ('not_assessed', 'preliminary')"/>
+                <field name="impact_amount"/>
+                <field name="source_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-success="state == 'reviewed'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="integrity_state" widget="badge" optional="show"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                <field name="reviewer_id" widget="many2one_avatar_user"
+                       optional="show"/>
+                <field name="source_reference" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_impact_case_form" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.impact.case.form</field>
+        <field name="model">sudo.cn.tax.impact.case</field>
+        <field name="arch" type="xml">
+            <form string="税务影响复核事项">
+                <header>
+                    <button name="action_submit" type="object"
+                            string="提交独立复核" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_review" type="object"
+                            string="确认复核结论" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_reject" type="object"
+                            string="退回补充"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_cancel" type="object"
+                            string="取消复核结论"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'reviewed'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,submitted,reviewed,cancelled"/>
+                </header>
+                <sheet>
+                    <field name="country_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <widget name="web_ribbon" title="资料完整性异常"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <widget name="web_ribbon" title="已取消"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'cancelled'"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'draft'">
+                        <strong>勾稽差异和规则发现只是复核线索。</strong>
+                        请按同一经济事项归并来源，记录计算、证据、假设与限制；系统不会直接把原始差异相加为少缴税金额。
+                    </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'submitted' or integrity_state != 'verified'">
+                        分析载荷已封存，等待不同人员复核。复核人必须核对来源、金额方向、计算过程和证据后再确认。
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'reviewed' or integrity_state != 'verified'">
+                        本事项已完成受控复核。金额仅表达当前证据下的税务影响，不替代申报、缴税或行政认定。
+                    </div>
+                    <div class="oe_title">
+                        <label for="title" string="税务影响复核事项"/>
+                        <h1><field name="title" readonly="state != 'draft'"/></h1>
+                    </div>
+                    <group>
+                        <group string="范围">
+                            <field name="profile_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="company_id" readonly="1"
+                                   groups="base.group_multi_company"/>
+                            <field name="period_start" readonly="state != 'draft'"/>
+                            <field name="period_end" readonly="state != 'draft'"/>
+                            <field name="source_reference"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group string="复核结论">
+                            <field name="impact_direction" widget="badge"
+                                   readonly="state != 'draft'"/>
+                            <field name="quantification_state" widget="badge"
+                                   readonly="state != 'draft'"/>
+                            <field name="impact_amount"
+                                   readonly="state != 'draft'"
+                                   invisible="quantification_state not in ('preliminary', 'reviewed')"/>
+                            <field name="source_count" readonly="1"/>
+                            <field name="integrity_state" widget="badge"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="sources" string="风险与勾稽来源">
+                            <div class="alert alert-info" role="alert">
+                                一项经济影响可以归并多条规则结果和勾稽问题；每条来源只能归入一份未取消的复核事项，以控制重复计算。
+                            </div>
+                            <group>
+                                <field name="assessment_id"
+                                       readonly="state != 'draft'"
+                                       options="{'no_create': True}"/>
+                                <field name="vat_run_id"
+                                       readonly="state != 'draft'"
+                                       options="{'no_create': True}"/>
+                            </group>
+                            <group string="规则风险来源">
+                                <field name="finding_ids"
+                                       readonly="state != 'draft'"
+                                       options="{'no_create': True}">
+                                    <list create="0" delete="0">
+                                        <field name="risk_level" widget="badge"/>
+                                        <field name="title"/>
+                                        <field name="result" widget="badge"/>
+                                        <field name="review_state" widget="badge"/>
+                                        <field name="checksum" optional="hide"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="增值税勾稽问题来源">
+                                <field name="reconciliation_issue_ids"
+                                       readonly="state != 'draft'"
+                                       options="{'no_create': True}">
+                                    <list create="0" delete="0">
+                                        <field name="severity" widget="badge"/>
+                                        <field name="source_area" widget="badge"/>
+                                        <field name="issue_kind" widget="badge"/>
+                                        <field name="name"/>
+                                        <field name="has_difference"
+                                               column_invisible="1"/>
+                                        <field name="difference_amount"
+                                               invisible="not has_difference"/>
+                                        <field name="code" optional="hide"/>
+                                    </list>
+                                </field>
+                            </group>
+                        </page>
+                        <page name="analysis" string="分析与证据">
+                            <group string="事实分析与计算过程">
+                                <field name="analysis" nolabel="1"
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="假设、限制与不确定性">
+                                <field name="assumptions_limitations" nolabel="1"
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="量化与复核证据">
+                                <field name="evidence_attachment_ids"
+                                       widget="many2many_binary" nolabel="1"
+                                       readonly="state != 'draft'"/>
+                            </group>
+                        </page>
+                        <page name="review" string="独立复核">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="prepared_by_id != reviewer_id or state != 'reviewed'">
+                                本事项采用同人复核例外；请确认下方理由充分并符合组织内部控制要求。
+                            </div>
+                            <group>
+                                <group string="编制与提交">
+                                    <field name="prepared_by_id"
+                                           widget="many2one_avatar_user"/>
+                                    <field name="submitted_by_id"
+                                           widget="many2one_avatar_user"/>
+                                    <field name="submitted_at"/>
+                                </group>
+                                <group string="复核记录">
+                                    <field name="reviewer_id"
+                                           widget="many2one_avatar_user"/>
+                                    <field name="reviewed_at"/>
+                                </group>
+                            </group>
+                            <group string="独立复核意见">
+                                <field name="review_notes" nolabel="1"
+                                       readonly="state != 'submitted'"
+                                       placeholder="核对事实、方向、计算、证据、限制和结论边界..."/>
+                            </group>
+                            <group string="同人复核例外理由">
+                                <field name="separation_exception_reason"
+                                       nolabel="1"
+                                       readonly="state != 'submitted'"/>
+                            </group>
+                        </page>
+                        <page name="audit" string="完整性与审计">
+                            <group>
+                                <field name="submission_checksum"/>
+                                <field name="review_checksum"/>
+                                <field name="integrity_state" widget="badge"/>
+                            </group>
+                            <p class="text-muted">
+                                校验和绑定分析载荷、来源结果、人工复核状态、附件内容和最终复核意见。来源或证据变化会显示完整性异常，不会静默改写历史结论。
+                            </p>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_tax_impact_cases" model="ir.actions.act_window">
+        <field name="name">税务影响复核</field>
+        <field name="res_model">sudo.cn.tax.impact.case</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_tax_impact_case_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">当前没有待复核税务影响事项</p>
+            <p>从规则风险或增值税勾稽问题建立事项，归并同一经济影响并完成独立复核。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_tax_impact_cases"
+              name="税务影响复核"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_tax_impact_cases"
+              sequence="57"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <record id="view_cn_vat_period_run_tax_impact" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.run.tax.impact</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_vat_period_reconciliation_run_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_create_tax_impact_case" type="object"
+                        string="建立税务影响事项"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state not in ('succeeded', 'superseded')"/>
+                <button name="action_print_vat_adjustment_report" type="object"
+                        string="打印调节与影响报告"
+                        invisible="state not in ('succeeded', 'superseded')"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_tax_impact_cases" type="object"
+                        class="oe_stat_button" icon="fa-balance-scale"
+                        invisible="tax_impact_case_count == 0">
+                    <field name="tax_impact_case_count" widget="statinfo"
+                           string="税务影响事项"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='result_summary']" position="before">
+                <field name="tax_impact_case_count" invisible="1"/>
+                <div class="alert alert-info" role="alert"
+                     invisible="tax_impact_case_count != 0 or state not in ('succeeded', 'superseded')">
+                    当前尚未形成税务影响复核事项。下方原始差异不会自动汇总为少缴税或多缴税金额。
+                </div>
+                <group string="经人工复核的税务影响" col="4"
+                       invisible="tax_impact_case_count == 0">
+                    <group>
+                        <field name="tax_impact_pending_count"/>
+                        <field name="tax_impact_reviewed_count"/>
+                        <field name="tax_impact_unquantifiable_count"/>
+                        <field name="tax_impact_integrity_issue_count"
+                               decoration-danger="tax_impact_integrity_issue_count &gt; 0"/>
+                    </group>
+                    <group>
+                        <field name="reviewed_underpayment_amount"/>
+                        <field name="reviewed_overpayment_amount"/>
+                        <field name="reviewed_timing_amount"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="tax_impact_cases" string="税务影响复核"
+                      invisible="tax_impact_case_count == 0">
+                    <div class="alert alert-warning" role="alert">
+                        三类金额分别列示，不计算净额。只有状态为“已复核”且量化状态为“已复核金额”的事项进入金额汇总。
+                    </div>
+                    <field name="tax_impact_case_ids" readonly="1">
+                        <list create="0" delete="0">
+                            <field name="impact_direction" widget="badge"/>
+                            <field name="title"/>
+                            <field name="quantification_state" widget="badge"/>
+                            <field name="impact_amount"/>
+                            <field name="source_count"/>
+                            <field name="state" widget="badge"/>
+                            <field name="integrity_state" widget="badge"/>
+                            <field name="reviewer_id"
+                                   widget="many2one_avatar_user"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_issue_tax_impact_form" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.issue.tax.impact.form</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_vat_period_reconciliation_issue_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[contains(@class, 'oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_open_tax_impact_cases" type="object"
+                            class="oe_stat_button" icon="fa-balance-scale"
+                            invisible="tax_impact_case_count == 0">
+                        <field name="tax_impact_case_count" widget="statinfo"
+                               string="税务影响事项"/>
+                    </button>
+                </div>
+                <button name="action_create_tax_impact_case" type="object"
+                        string="建立税务影响事项" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="tax_impact_case_count != 0"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_issue_tax_impact_list" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.issue.tax.impact.list</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.issue</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_vat_period_reconciliation_issue_list"/>
+        <field name="arch" type="xml">
+            <field name="is_current_result" position="before">
+                <field name="tax_impact_case_count" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_cn_tax_impact_form" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.cn.tax.impact.form</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_finding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[contains(@class, 'oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_open_cn_tax_impact_cases" type="object"
+                            class="oe_stat_button" icon="fa-balance-scale"
+                            invisible="cn_tax_impact_case_count == 0">
+                        <field name="cn_tax_impact_case_count" widget="statinfo"
+                               string="税务影响事项"/>
+                    </button>
+                </div>
+                <button name="action_create_cn_tax_impact_case" type="object"
+                        string="建立税务影响事项" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="result not in ('fail', 'unknown', 'error') or cn_tax_impact_case_count != 0"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_cn_tax_impact_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.cn.tax.impact.list</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_finding_list"/>
+        <field name="arch" type="xml">
+            <field name="assessment_id" position="before">
+                <field name="cn_tax_impact_case_count" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_report_cn_tax_impact_form" model="ir.ui.view">
+        <field name="name">sudo.compliance.report.cn.tax.impact.form</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_report_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='report_state']" position="before">
+                <button name="action_create_cn_tax_impact_case" type="object"
+                        string="建立税务影响事项"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state != 'completed'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_cn_tax_impact_cases" type="object"
+                        class="oe_stat_button" icon="fa-balance-scale"
+                        invisible="cn_tax_impact_case_count == 0">
+                    <field name="cn_tax_impact_case_count" widget="statinfo"
+                           string="税务影响事项"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <field name="company_currency_id" invisible="1"/>
+                <field name="cn_tax_impact_applicable" invisible="1"/>
+                <div class="alert alert-info" role="alert"
+                     invisible="not cn_tax_impact_applicable or cn_tax_impact_case_count != 0">
+                    本评估尚未形成经人工复核的税务影响金额。规则风险等级和原始勾稽差异不得替代专业量化。
+                </div>
+                <group string="中国税务影响复核" col="4"
+                       invisible="not cn_tax_impact_applicable or cn_tax_impact_case_count == 0">
+                    <group>
+                        <field name="cn_tax_impact_pending_count"/>
+                        <field name="cn_tax_impact_reviewed_count"/>
+                        <field name="cn_tax_impact_unquantifiable_count"/>
+                        <field name="cn_tax_impact_integrity_issue_count"
+                               decoration-danger="cn_tax_impact_integrity_issue_count &gt; 0"/>
+                    </group>
+                    <group>
+                        <field name="cn_reviewed_underpayment_amount"/>
+                        <field name="cn_reviewed_overpayment_amount"/>
+                        <field name="cn_reviewed_timing_amount"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="cn_tax_impact" string="税务影响复核"
+                      invisible="not cn_tax_impact_applicable or cn_tax_impact_case_count == 0">
+                    <div class="alert alert-warning" role="alert">
+                        少缴、多缴和期间错配影响分别列示，不进行净额抵销。待复核、无法量化或完整性异常事项不会进入金额合计。
+                    </div>
+                    <field name="cn_tax_impact_case_ids" readonly="1">
+                        <list create="0" delete="0">
+                            <field name="impact_direction" widget="badge"/>
+                            <field name="title"/>
+                            <field name="quantification_state" widget="badge"/>
+                            <field name="impact_amount"/>
+                            <field name="source_count"/>
+                            <field name="state" widget="badge"/>
+                            <field name="integrity_state" widget="badge"/>
+                            <field name="reviewer_id"
+                                   widget="many2one_avatar_user"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_report_cn_tax_impact_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.report.cn.tax.impact.list</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_report_list"/>
+        <field name="arch" type="xml">
+            <field name="review_pending_count" position="after">
+                <field name="cn_tax_impact_pending_count" optional="show"
+                       decoration-warning="cn_tax_impact_pending_count &gt; 0"/>
+                <field name="cn_reviewed_underpayment_amount" optional="show"
+                       decoration-danger="cn_reviewed_underpayment_amount &gt; 0"/>
+                <field name="cn_reviewed_overpayment_amount" optional="hide"/>
+                <field name="cn_reviewed_timing_amount" optional="hide"/>
+            </field>
+        </field>
+    </record>
+</odoo>

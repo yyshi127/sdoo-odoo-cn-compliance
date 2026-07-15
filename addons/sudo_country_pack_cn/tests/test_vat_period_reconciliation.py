@@ -601,6 +601,89 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
             }
         )
 
+    def _tax_impact_case(
+        self,
+        run,
+        issue,
+        suffix,
+        *,
+        impact_direction="potential_underpayment",
+        impact_amount=10.0,
+        quantification_state="preliminary",
+        assessment=None,
+        creator=None,
+        include_evidence=True,
+    ):
+        values = {
+            "title": f"税务影响复核测试事项 {suffix}",
+            "profile_id": self.profile.id,
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "vat_run_id": run.id,
+            "reconciliation_issue_ids": [Command.set(issue.ids)],
+            "impact_direction": impact_direction,
+            "quantification_state": quantification_state,
+            "impact_amount": impact_amount,
+            "analysis": (
+                "根据受控勾稽来源、账务记录和工作底稿逐项分析差异，"
+                "并按同一经济事项归并后形成当前初步金额。"
+            ),
+            "assumptions_limitations": (
+                "仅基于当前测试证据，尚不替代正式申报和税务机关认定。"
+            ),
+            "source_reference": f"TEST/CN/TAX-IMPACT/{suffix}",
+        }
+        if assessment:
+            values["assessment_id"] = assessment.id
+        case_model = self.env["sudo.cn.tax.impact.case"].with_company(
+            self.company
+        )
+        if creator:
+            case_model = case_model.with_user(creator)
+        else:
+            case_model = case_model.sudo()
+        case = case_model.create(values)
+        attachment_model = self.env["ir.attachment"].with_company(
+            self.company
+        )
+        if creator:
+            attachment_model = attachment_model.with_user(creator)
+        else:
+            attachment_model = attachment_model.sudo()
+        evidence = attachment_model.create(
+            {
+                "name": f"tax-impact-{suffix}.pdf",
+                "raw": f"controlled tax impact evidence {suffix}".encode(),
+                "mimetype": "application/pdf",
+                "res_model": case._name,
+                "res_id": case.id,
+            }
+        )
+        if include_evidence:
+            case.write(
+                {"evidence_attachment_ids": [Command.set(evidence.ids)]}
+            )
+        return case, evidence
+
+    def _review_tax_impact_case(self, case, reviewer=None):
+        reviewer = reviewer or self.reviewer
+        case.invalidate_recordset()
+        if case.state == "draft":
+            case.with_user(reviewer).with_company(
+                self.company
+            ).action_submit()
+        case.with_user(reviewer).with_company(self.company).write(
+            {
+                "review_notes": (
+                    "已逐项核对来源、影响方向、计算过程、证据和结论边界，"
+                    "同意按当前受控金额列入复核报告。"
+                )
+            }
+        )
+        case.with_user(reviewer).with_company(self.company).action_review()
+        case.invalidate_recordset()
+        return case
+
     def _fact(self, key, assessment=None):
         assessment = assessment or self._assessment()
         provider = self.env[
@@ -1350,6 +1433,28 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
             initial_run.blocking_issue_count,
         )
 
+        finding.with_user(self.reviewer).write(
+            {
+                "review_notes": (
+                    "已核对四方勾稽阻断事实和规则结论，确认需要补齐受控来源"
+                    "并建立整改任务。"
+                )
+            }
+        )
+        finding.with_user(self.reviewer).action_require_correction()
+        impact_action = finding.with_user(
+            self.reviewer
+        ).action_create_cn_tax_impact_case()
+        self.assertEqual(impact_action["view_mode"], "form")
+        self.assertEqual(
+            impact_action["context"]["default_assessment_id"],
+            assessment.id,
+        )
+        self.assertEqual(
+            impact_action["context"]["default_finding_ids"],
+            [(6, 0, finding.ids)],
+        )
+
         task_action = finding.with_user(self.reviewer).action_create_task()
         task = self.env["sudo.compliance.task"].browse(task_action["res_id"])
         task.with_user(self.reviewer).write(
@@ -1732,3 +1837,331 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
             "sudo.cn.vat.period.reconciliation.run"
         ].with_user(self.read_only_user).search([("id", "=", other_run.id)])
         self.assertFalse(hidden)
+        other_case = self.env["sudo.cn.tax.impact.case"].with_user(
+            other_manager
+        ).with_company(other_company).create(
+            {
+                "title": "其他公司税务影响隔离测试",
+                "profile_id": other_profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "vat_run_id": other_run.id,
+                "impact_direction": "undetermined",
+                "quantification_state": "not_assessed",
+                "impact_amount": 0.0,
+                "analysis": "验证普通合规用户不能读取未获授权公司的税务影响复核事项。",
+                "assumptions_limitations": "仅用于多公司记录规则隔离测试。",
+                "source_reference": "TEST/CN/TAX-IMPACT/OTHER-COMPANY",
+            }
+        )
+        hidden_case = self.env["sudo.cn.tax.impact.case"].with_user(
+            self.read_only_user
+        ).search([("id", "=", other_case.id)])
+        self.assertFalse(hidden_case)
+
+    def test_tax_impact_case_requires_sources_evidence_and_review(self):
+        self._seed_complete_sources(
+            "tax-impact-controlled",
+            einvoice_output_delta=10.0,
+        )
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        issue = run.issue_ids.filtered(
+            lambda item: item.code == "LEDGER_EINVOICE_OUTPUT_DIFFERENCE"
+        )
+        assessment = self._assessment()
+        assessment._engine_write({"state": "completed"})
+        action = issue.action_create_tax_impact_case()
+        self.assertEqual(action["view_mode"], "form")
+        self.assertEqual(action["context"]["default_vat_run_id"], run.id)
+        self.assertEqual(
+            action["context"]["default_reconciliation_issue_ids"],
+            [(6, 0, issue.ids)],
+        )
+
+        case, evidence = self._tax_impact_case(
+            run,
+            issue,
+            "controlled",
+            assessment=assessment,
+            include_evidence=False,
+        )
+        with self.assertRaisesRegex(UserError, "复核证据"):
+            case.with_user(self.reviewer).action_submit()
+
+        case.write(
+            {"evidence_attachment_ids": [Command.set(evidence.ids)]}
+        )
+        case.with_user(self.reviewer).action_submit()
+        case.invalidate_recordset()
+        self.assertEqual(case.state, "submitted")
+        self.assertEqual(case.integrity_state, "verified")
+        self.assertRegex(case.submission_checksum, r"^[0-9a-f]{64}$")
+        with self.assertRaises(AccessError):
+            case.write({"impact_amount": 11.0})
+
+        case.with_user(self.reviewer).write(
+            {
+                "review_notes": (
+                    "已核对来源、计算过程、影响方向和证据，确认当前金额"
+                    "可以作为受控专业复核工作底稿。"
+                )
+            }
+        )
+        case.with_user(self.reviewer).action_review()
+        case.invalidate_recordset()
+        self.assertEqual(case.state, "reviewed")
+        self.assertEqual(case.quantification_state, "reviewed")
+        self.assertEqual(case.integrity_state, "verified")
+        self.assertRegex(case.review_checksum, r"^[0-9a-f]{64}$")
+        self.assertAlmostEqual(run.reviewed_underpayment_amount, 10.0)
+        self.assertAlmostEqual(
+            assessment.cn_reviewed_underpayment_amount,
+            10.0,
+        )
+        self.assertEqual(assessment.cn_tax_impact_reviewed_count, 1)
+        self.assertEqual(
+            self.env["sudo.compliance.audit.event"].search_count(
+                [
+                    ("model_name", "=", case._name),
+                    ("record_id", "=", case.id),
+                    ("event_key", "=", "cn_tax_impact_case.reviewed"),
+                ]
+            ),
+            1,
+        )
+
+        evidence.write({"raw": b"tampered after final professional review"})
+        case.invalidate_recordset(["integrity_state"])
+        run.invalidate_recordset()
+        assessment.invalidate_recordset()
+        self.assertEqual(case.integrity_state, "checksum_mismatch")
+        self.assertEqual(run.tax_impact_integrity_issue_count, 1)
+        self.assertEqual(run.reviewed_underpayment_amount, 0.0)
+        self.assertEqual(
+            assessment.cn_tax_impact_integrity_issue_count,
+            1,
+        )
+        self.assertEqual(
+            assessment.cn_reviewed_underpayment_amount,
+            0.0,
+        )
+
+    def test_tax_impact_totals_are_reviewed_and_separate_not_net(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        self.assertGreaterEqual(len(run.issue_ids), 3)
+        self.assertEqual(run.reviewed_underpayment_amount, 0.0)
+        self.assertEqual(run.reviewed_overpayment_amount, 0.0)
+        self.assertEqual(run.reviewed_timing_amount, 0.0)
+
+        underpayment, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[0],
+            "underpayment",
+            impact_direction="potential_underpayment",
+            impact_amount=120.0,
+        )
+        underpayment.with_user(self.reviewer).action_submit()
+        self.assertEqual(run.tax_impact_pending_count, 1)
+        self.assertEqual(run.reviewed_underpayment_amount, 0.0)
+        self._review_tax_impact_case(underpayment)
+
+        overpayment, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[1],
+            "overpayment",
+            impact_direction="potential_overpayment",
+            impact_amount=35.0,
+        )
+        self._review_tax_impact_case(overpayment)
+        timing, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[2],
+            "timing",
+            impact_direction="timing_difference",
+            impact_amount=48.0,
+        )
+        self._review_tax_impact_case(timing)
+
+        self.assertEqual(run.tax_impact_pending_count, 0)
+        self.assertEqual(run.tax_impact_reviewed_count, 3)
+        self.assertAlmostEqual(run.reviewed_underpayment_amount, 120.0)
+        self.assertAlmostEqual(run.reviewed_overpayment_amount, 35.0)
+        self.assertAlmostEqual(run.reviewed_timing_amount, 48.0)
+        self.assertNotIn("net_tax_impact_amount", run._fields)
+
+    def test_unquantifiable_case_is_counted_without_amount(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        case, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[0],
+            "unquantifiable",
+            impact_direction="undetermined",
+            impact_amount=0.0,
+            quantification_state="not_quantifiable",
+        )
+        self._review_tax_impact_case(case)
+
+        self.assertEqual(case.quantification_state, "not_quantifiable")
+        self.assertEqual(run.tax_impact_unquantifiable_count, 1)
+        self.assertEqual(run.reviewed_underpayment_amount, 0.0)
+        self.assertEqual(run.reviewed_overpayment_amount, 0.0)
+        self.assertEqual(run.reviewed_timing_amount, 0.0)
+
+    def test_tax_impact_source_cannot_be_double_counted(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        issue = run.issue_ids[0]
+        first, _evidence = self._tax_impact_case(
+            run,
+            issue,
+            "first-owner",
+        )
+        with self.assertRaisesRegex(
+            ValidationError,
+            "只能归入一份",
+        ), self.env.cr.savepoint():
+            self._tax_impact_case(
+                run,
+                issue,
+                "duplicate-owner",
+            )
+
+        self._review_tax_impact_case(first)
+        first.with_user(self.reviewer).action_cancel()
+        replacement, _evidence = self._tax_impact_case(
+            run,
+            issue,
+            "replacement-owner",
+        )
+        self.assertEqual(replacement.state, "draft")
+        self.assertEqual(first.state, "cancelled")
+
+    def test_tax_impact_same_person_review_requires_exception(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        case, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[0],
+            "same-person",
+            creator=self.reviewer,
+        )
+        case.with_user(self.reviewer).action_submit()
+        case.with_user(self.reviewer).write(
+            {
+                "review_notes": (
+                    "已核对来源、计算过程、影响方向和测试证据，"
+                    "拟在受控例外下确认当前复核结论。"
+                )
+            }
+        )
+        with self.assertRaisesRegex(UserError, "例外理由"):
+            case.with_user(self.reviewer).action_review()
+
+        case.with_user(self.reviewer).write(
+            {
+                "separation_exception_reason": (
+                    "当前隔离测试环境仅配置一名复核管理员，已记录同人复核"
+                    "例外并保留完整工作底稿。"
+                )
+            }
+        )
+        case.with_user(self.reviewer).action_review()
+        self.assertEqual(case.state, "reviewed")
+        self.assertEqual(case.reviewer_id, self.reviewer)
+
+    def test_tax_impact_submission_detects_evidence_tampering(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        case, evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[0],
+            "tampering",
+        )
+        case.with_user(self.reviewer).action_submit()
+        evidence.write({"raw": b"changed after controlled submission"})
+        case.invalidate_recordset(["integrity_state"])
+        self.assertEqual(case.integrity_state, "checksum_mismatch")
+        case.with_user(self.reviewer).write(
+            {
+                "review_notes": (
+                    "已发现提交后的证据内容变化，当前资料不得直接确认复核。"
+                    "应退回重新形成受控载荷。"
+                )
+            }
+        )
+        with self.assertRaisesRegex(UserError, "重新提交"):
+            case.with_user(self.reviewer).action_review()
+
+    def test_tax_impact_period_and_company_sources_are_controlled(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        issue = run.issue_ids[0]
+        values = {
+            "title": "错误期间测试事项",
+            "profile_id": self.profile.id,
+            "period_start": "2026-05-01",
+            "period_end": "2026-05-31",
+            "vat_run_id": run.id,
+            "reconciliation_issue_ids": [Command.set(issue.ids)],
+            "impact_direction": "undetermined",
+            "quantification_state": "not_assessed",
+            "impact_amount": 0.0,
+            "analysis": "用于验证税务影响事项和来源期间必须完全一致的受控测试记录。",
+            "assumptions_limitations": "仅用于受控期间一致性测试。",
+            "source_reference": "TEST/CN/TAX-IMPACT/PERIOD",
+        }
+        with self.assertRaisesRegex(ValidationError, "期间必须"):
+            self.env["sudo.cn.tax.impact.case"].create(values)
+
+        own_case, _evidence = self._tax_impact_case(
+            run,
+            run.issue_ids[1],
+            "access-own",
+        )
+        visible = self.env["sudo.cn.tax.impact.case"].with_user(
+            self.read_only_user
+        ).search([("id", "=", own_case.id)])
+        self.assertEqual(visible, own_case)
+        with self.assertRaises(AccessError):
+            visible.write({"review_notes": "普通用户不得写入"})
+        with self.assertRaises(AccessError):
+            self.env["sudo.cn.tax.impact.case"].with_user(
+                self.read_only_user
+            ).create(values)
+
+    def test_vat_adjustment_report_preserves_conclusion_boundary(self):
+        self._seed_complete_sources(
+            "tax-impact-report",
+            einvoice_output_delta=10.0,
+        )
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        issue = run.issue_ids.filtered(
+            lambda item: item.code == "LEDGER_EINVOICE_OUTPUT_DIFFERENCE"
+        )
+        case, _evidence = self._tax_impact_case(
+            run,
+            issue,
+            "report",
+            impact_amount=10.0,
+        )
+        self._review_tax_impact_case(case)
+        report = self.env.ref(
+            "sudo_country_pack_cn.action_report_cn_vat_adjustment"
+        )
+        action = run.action_print_vat_adjustment_report()
+        html, _report_type = report._render_qweb_html(
+            report.report_name,
+            run.ids,
+        )
+
+        self.assertFalse(report.binding_model_id)
+        self.assertEqual(action["type"], "ir.actions.report")
+        self.assertIn("原始勾稽差异可能相互重叠".encode(), html)
+        self.assertIn("不计算净额".encode(), html)
+        self.assertIn("已复核潜在少缴税影响".encode(), html)
+        self.assertIn(run.result_checksum.encode(), html)
+        self.assertIn(case.review_checksum.encode(), html)

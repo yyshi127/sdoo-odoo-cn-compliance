@@ -137,4 +137,12 @@
         <field name="groups"
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
+
+    <record id="cn_tax_impact_case_company_rule" model="ir.rule">
+        <field name="name">China tax impact review cases: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_tax_impact_case"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
 </odoo>

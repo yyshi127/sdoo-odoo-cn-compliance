@@ -9,5 +9,6 @@ from . import taxpayer_classification
 from . import vat_accounting_scope
 from . import vat_period_reconciliation
 from . import reconciliation_assessment
+from . import tax_impact_review
 from . import rule_review_packet
 from . import rule_governance

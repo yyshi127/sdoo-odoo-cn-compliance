@@ -1380,6 +1380,138 @@ def validate_vat_period_reconciliation() -> None:
         fail("VAT period reconciliation requires at least fifteen runtime tests")
 
 
+def validate_tax_impact_review() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "reports/vat_adjustment_report.xml",
+        "views/tax_impact_review_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("tax impact review files must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import tax_impact_review" not in model_init:
+        fail("tax impact review models must be imported")
+    if model_init.index("from . import tax_impact_review") < model_init.index(
+        "from . import vat_period_reconciliation"
+    ):
+        fail("tax impact extensions must load after VAT reconciliation models")
+
+    model_path = ADDON_ROOT / "models" / "tax_impact_review.py"
+    if not model_path.is_file():
+        fail("tax impact review model is missing")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.tax.impact.case"',
+        '"sdoo.cn.tax-impact-review.v1"',
+        '("draft", "分析中")',
+        '("submitted", "待独立复核")',
+        '("reviewed", "已复核")',
+        "_check_unique_source_ownership",
+        "ORDER BY id FOR UPDATE",
+        "submission_checksum",
+        "review_checksum",
+        "checksum_mismatch",
+        "cn_tax_impact_case.submitted",
+        "cn_tax_impact_case.reviewed",
+        "reviewed_underpayment_amount",
+        "reviewed_overpayment_amount",
+        "reviewed_timing_amount",
+        "tax_impact_integrity_issue_count",
+        "action_print_vat_adjustment_report",
+    ):
+        if required not in model_content:
+            fail(f"tax impact review contract is missing {required}")
+    if "net_tax_impact_amount" in model_content:
+        fail("tax impact review must not publish a netted tax impact amount")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    model_rows = [
+        row
+        for row in rows
+        if row["model_id:id"] == "model_sudo_cn_tax_impact_case"
+    ]
+    if {
+        row["group_id:id"] for row in model_rows
+    } != {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }:
+        fail("tax impact review ACL groups are incomplete")
+    user_row = next(
+        row
+        for row in model_rows
+        if row["group_id:id"].endswith("group_compliance_user")
+    )
+    if [
+        user_row[key]
+        for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+    ] != ["1", "0", "0", "0"]:
+        fail("ordinary compliance users must have read-only tax impact access")
+
+    security = (
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).read_text(encoding="utf-8")
+    if (
+        'ref="model_sudo_cn_tax_impact_case"' not in security
+        or "[('company_id', 'in', company_ids)]" not in security
+    ):
+        fail("tax impact review requires an allowed-company record rule")
+
+    view_content = (
+        ADDON_ROOT / "views" / "tax_impact_review_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_tax_impact_case_list"',
+        'id="view_cn_tax_impact_case_form"',
+        'id="action_cn_tax_impact_cases"',
+        'id="menu_cn_tax_impact_cases"',
+        "系统不会直接把原始差异相加为少缴税金额",
+        "少缴、多缴和期间错配影响分别列示，不进行净额抵销",
+    ):
+        if required not in view_content:
+            fail(f"tax impact review UI is missing {required}")
+    if 'name="impact_amount" sum=' in view_content:
+        fail("tax impact list views must not aggregate mixed-direction amounts")
+
+    report_content = (
+        ADDON_ROOT / "reports" / "vat_adjustment_report.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '<field name="binding_model_id" eval="False"/>',
+        "原始勾稽差异可能相互重叠，不得直接相加",
+        "已复核潜在少缴税影响",
+        "已复核潜在多缴税影响",
+        "已复核期间错配影响",
+        "不计算净额",
+        "不是纳税申报表或税务机关结论",
+    ):
+        if required not in report_content:
+            fail(f"VAT adjustment report boundary is missing {required}")
+
+    test_content = (
+        ADDON_ROOT / "tests" / "test_vat_period_reconciliation.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_tax_impact_case_requires_sources_evidence_and_review",
+        "test_tax_impact_totals_are_reviewed_and_separate_not_net",
+        "test_unquantifiable_case_is_counted_without_amount",
+        "test_tax_impact_source_cannot_be_double_counted",
+        "test_tax_impact_same_person_review_requires_exception",
+        "test_tax_impact_submission_detects_evidence_tampering",
+        "test_tax_impact_period_and_company_sources_are_controlled",
+        "test_vat_adjustment_report_preserves_conclusion_boundary",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"tax impact runtime coverage is missing {test_name}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -1537,6 +1669,7 @@ def main() -> int:
     validate_invoice_reconciliation()
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
+    validate_tax_impact_review()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
