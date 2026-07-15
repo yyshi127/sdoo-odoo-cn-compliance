@@ -1,0 +1,48 @@
+# Python and Odoo runtime artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.log
+*.pid
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environments and editor state
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Databases, filestores, backups, and customer data
+*.dump
+*.backup
+*.sql
+*.sqlite*
+filestore/
+backups/
+customer-data/
+local-data/
+
+# Build and deployment artifacts
+*.tgz
+*.tar.gz
+*.zip
+dist/
+build/
+artifacts/
+tmp/
+
