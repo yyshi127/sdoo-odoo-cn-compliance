@@ -19,7 +19,7 @@ TEXT_SUFFIXES = {".csv", ".md", ".py", ".txt", ".xml", ".yml", ".yaml"}
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |OPENSSH )?PRIVATE KEY"),
     "credential assignment": re.compile(
-        r"(?i)(?:api[_-]?key|password|secret|token)\s*=\s*[^\s]"
+        r"(?i)\b(?:api[_-]?key|password|secret|token)\s*=\s*[^\s]"
     ),
 }
 OFFICIAL_SOURCE_HOSTS = {
@@ -144,8 +144,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("normalized electronic invoice ledger must be declared")
     if features.get("einvoice_xbrl_parser") is not False:
         fail("XBRL parser must remain disabled until its adapter is delivered")
-    if features.get("reconciliation") is not False:
-        fail("reconciliation must remain disabled until it is implemented")
+    if features.get("reconciliation") is not True:
+        fail("electronic invoice reconciliation capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -689,6 +689,142 @@ def validate_invoice_normalization_security() -> None:
             fail(f"invoice normalization UI is missing {required_id}")
 
 
+def validate_invoice_reconciliation() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/invoice_reconciliation_cron.xml",
+        "views/invoice_reconciliation_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("invoice reconciliation data files must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import invoice_reconciliation" not in model_init:
+        fail("invoice reconciliation models must be imported")
+
+    model_path = ADDON_ROOT / "models" / "invoice_reconciliation.py"
+    if not model_path.is_file():
+        fail("invoice reconciliation model is missing")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        "RECONCILIATION_ENGINE_VERSION",
+        "_ledger_line_summaries",
+        "models.UniqueIndex",
+        "FOR UPDATE SKIP LOCKED",
+        "source_snapshot_checksum",
+        "ledger_snapshot_checksum",
+        "result_checksum",
+        "move_snapshot_checksum",
+        "ACCOUNTING_ENTITY_MISMATCH",
+        "DUPLICATE_CURRENT_SOURCE_INVOICE",
+        "SOURCE_AUTHENTICITY_FAILED",
+        "SOURCE_AUTHENTICITY_NOT_CONFIRMED",
+        "SOURCE_COVERAGE_NOT_FULL",
+        "SOURCE_INTEGRITY_NOT_VERIFIED",
+        "SOURCE_RECORD_COUNT_MISMATCH",
+        "SOURCE_REVIEW_CONTROL_EXCEPTION",
+        "source_availability_state",
+        "account.group_account_user",
+        "cn_einvoice_reconciliation.confirmed",
+    ):
+        if required not in model_content:
+            fail(f"invoice reconciliation contract is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    governed_models = {
+        "model_sudo_cn_einvoice_reconciliation_run",
+        "model_sudo_cn_einvoice_reconciliation_case",
+        "model_sudo_cn_einvoice_reconciliation_candidate",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in governed_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"invoice reconciliation ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        if [
+            user_row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ] != ["1", "0", "0", "0"]:
+            fail(f"reconciliation users must be read-only: {model_name}")
+        manager_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_manager")
+        )
+        if manager_row["perm_unlink"] != "0":
+            fail(f"reconciliation audit records must not be deleted: {model_name}")
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in governed_models:
+            continue
+        domain = field_text(fields, "domain_force", record.attrib["id"])
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"reconciliation rule lacks company isolation: {model_ref}")
+        ruled_models.add(model_ref)
+    if ruled_models != governed_models:
+        fail("every invoice reconciliation model requires a company record rule")
+
+    cron_content = (
+        ADDON_ROOT / "data" / "invoice_reconciliation_cron.xml"
+    ).read_text(encoding="utf-8")
+    if "_cron_process_runs(limit=1)" not in cron_content:
+        fail("invoice reconciliation must use the bounded native Odoo queue")
+
+    view_path = ADDON_ROOT / "views" / "invoice_reconciliation_views.xml"
+    if not view_path.is_file():
+        fail("invoice reconciliation UI is missing")
+    view_content = view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_einvoice_reconciliation_case_list",
+        "view_cn_einvoice_reconciliation_case_form",
+        "view_cn_einvoice_reconciliation_run_list",
+        "view_cn_einvoice_reconciliation_run_form",
+        "view_cn_einvoice_reconciliation_wizard_form",
+        "view_cn_einvoice_manual_match_wizard_form",
+        "action_cn_einvoice_reconciliation_cases",
+        "action_cn_einvoice_reconciliation_runs",
+        "menu_cn_einvoice_reconciliation_cases",
+        "menu_cn_einvoice_reconciliation_start",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"invoice reconciliation UI is missing {required_id}")
+    if "decision_integrity_state', '=', 'mismatch'" in view_content:
+        fail("non-stored decision integrity must not be used as a search domain")
+
+    test_path = ADDON_ROOT / "tests" / "test_invoice_reconciliation.py"
+    if not test_path.is_file():
+        fail("invoice reconciliation runtime tests are missing")
+    test_tree = ast.parse(test_path.read_text(encoding="utf-8"))
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 10:
+        fail("invoice reconciliation requires at least ten runtime tests")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -842,6 +978,7 @@ def main() -> int:
     validate_taxpayer_classification_security()
     validate_external_dataset_security()
     validate_invoice_normalization_security()
+    validate_invoice_reconciliation()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

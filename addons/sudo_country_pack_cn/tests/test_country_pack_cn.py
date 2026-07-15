@@ -53,7 +53,7 @@ class TestChinaCountryPack(TransactionCase):
         )
         features = self.country_pack.capability_json["features"]
         self.assertTrue(features["external_dataset"])
-        self.assertFalse(features["reconciliation"])
+        self.assertTrue(features["reconciliation"])
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )

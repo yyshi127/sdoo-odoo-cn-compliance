@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.6.0</field>
+        <field name="version">19.0.1.7.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -22,7 +22,7 @@
                 'external_dataset': True,
                 'einvoice_normalized_ledger': True,
                 'einvoice_xbrl_parser': False,
-                'reconciliation': False,
+                'reconciliation': True,
                 'filing_control': True,
                 'controlled_ai': True,
                 'source_governance': True,

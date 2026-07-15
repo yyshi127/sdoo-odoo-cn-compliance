@@ -41,4 +41,32 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
+
+    <record id="cn_einvoice_reconciliation_run_company_rule" model="ir.rule">
+        <field name="name">China invoice reconciliation runs: allowed companies</field>
+        <field name="model_id"
+               ref="model_sudo_cn_einvoice_reconciliation_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_einvoice_reconciliation_case_company_rule" model="ir.rule">
+        <field name="name">China invoice reconciliation cases: allowed companies</field>
+        <field name="model_id"
+               ref="model_sudo_cn_einvoice_reconciliation_case"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_einvoice_reconciliation_candidate_company_rule"
+            model="ir.rule">
+        <field name="name">China invoice match candidates: allowed companies</field>
+        <field name="model_id"
+               ref="model_sudo_cn_einvoice_reconciliation_candidate"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
 </odoo>
