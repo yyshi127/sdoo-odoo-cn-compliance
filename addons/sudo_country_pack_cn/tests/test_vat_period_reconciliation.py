@@ -72,6 +72,15 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
                 "group_ids": [Command.set(compliance_user.ids)],
             }
         )
+        cls.filing_source_approver = cls.env["res.users"].create(
+            {
+                "name": "China VAT Filing Source Approver",
+                "login": "cn_vat_filing_source_approver",
+                "company_id": cls.company.id,
+                "company_ids": [Command.set(cls.company.ids)],
+                "group_ids": [Command.set(compliance_manager.ids)],
+            }
+        )
         partner_values = {
             "property_account_receivable_id": cls.company_data[
                 "default_account_receivable"
@@ -586,6 +595,93 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )._process()
         run.invalidate_recordset()
         return result
+
+    def _valid_filing_authority_source(self, suffix):
+        attachment = self._attachment(
+            f"official-vat-filing-deadline-{suffix}.pdf",
+            f"official VAT filing deadline source {suffix}".encode(),
+            "application/pdf",
+        )
+        source = self.env["sudo.compliance.authority.source"].with_user(
+            self.reviewer
+        ).create(
+            {
+                "name": f"增值税申报期限官方依据 {suffix}",
+                "country_id": self.country.id,
+                "authority": "国家税务总局",
+                "source_type": "form_instruction",
+                "official_url": "https://www.chinatax.gov.cn/",
+                "official_version": f"TEST-{suffix}",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-12-31",
+                "snapshot_kind": "official_document",
+                "snapshot_attachment_id": attachment.id,
+            }
+        )
+        source.with_user(self.reviewer).action_compute_hash()
+        source.with_user(self.reviewer).action_submit_review()
+        source.with_user(self.filing_source_approver).action_approve()
+        return source
+
+    def _controlled_filing_archive(self, run, suffix):
+        action = run.with_user(self.reviewer).action_open_cn_filing_archive()
+        defaults = {
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }
+        source = self._valid_filing_authority_source(suffix)
+        obligation = self.env["sudo.compliance.obligation"].browse(
+            defaults["obligation_id"]
+        )
+        obligation.write(
+            {
+                "applicability": "applicable",
+                "effective_from": "2026-01-01",
+                "authority_source_id": source.id,
+                "justification": (
+                    "依据已复核官方资料和测试公司纳税人身份，"
+                    "确认当前期间适用增值税申报与缴纳义务。"
+                ),
+            }
+        )
+        defaults.update(
+            {
+                "due_date": "2026-07-15",
+                "authority_source_id": source.id,
+                "due_date_basis": (
+                    "依据已复核官方资料和当前测试纳税人按月申报身份，"
+                    "人工确认本期申报截止日；未由系统自动推断。"
+                ),
+            }
+        )
+        return self.env["sudo.compliance.filing"].with_user(
+            self.reviewer
+        ).with_company(self.company).create(defaults)
+
+    def _verified_filing_evidence(self, filing, suffix, evidence_type):
+        evidence = self.env["sudo.compliance.evidence"].with_user(
+            self.read_only_user
+        ).with_company(self.company).create(
+            {
+                "name": f"受控档案证据 {suffix}",
+                "company_id": self.company.id,
+                "filing_id": filing.id,
+                "evidence_type": evidence_type,
+                "external_reference": (
+                    f"TEST-CONTROLLED-ARCHIVE/{suffix}; 保管人=测试合规管理员; "
+                    "访问方式=受控测试索引; 保留期限=测试期间"
+                ),
+                "evidence_date": "2026-07-12",
+                "issuer": "测试主管税务机关",
+            }
+        )
+        evidence.with_user(self.read_only_user).action_submit()
+        evidence.with_user(self.reviewer).write(
+            {"review_notes": "已与受控申报或缴款来源逐项核对，测试验证通过。"}
+        )
+        evidence.with_user(self.reviewer).action_verify()
+        return evidence
 
     def _assessment(
         self,
@@ -2165,3 +2261,276 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertIn("已复核潜在少缴税影响".encode(), html)
         self.assertIn(run.result_checksum.encode(), html)
         self.assertIn(case.review_checksum.encode(), html)
+
+    def test_filing_archive_action_does_not_infer_legal_deadline(self):
+        self._seed_complete_sources("archive-no-inference")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+
+        action = run.with_user(self.reviewer).action_open_cn_filing_archive()
+
+        self.assertEqual(action["res_model"], "sudo.compliance.filing")
+        self.assertEqual(
+            action["context"]["default_cn_vat_reconciliation_run_id"],
+            run.id,
+        )
+        self.assertNotIn("default_due_date", action["context"])
+        self.assertNotIn("default_authority_source_id", action["context"])
+        self.assertNotIn("default_due_date_basis", action["context"])
+
+    def test_filing_and_payment_archive_seal_full_controlled_chain(self):
+        self._seed_complete_sources("archive-full")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        filing = self._controlled_filing_archive(run, "archive-full")
+        receipt = self._verified_filing_evidence(
+            filing,
+            "archive-full-receipt",
+            "filing_receipt",
+        )
+
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        filing.invalidate_recordset()
+
+        self.assertEqual(filing.state, "submitted")
+        self.assertTrue(filing.cn_submission_checksum)
+        self.assertEqual(filing.cn_submission_evidence_ids, receipt)
+        self.assertEqual(filing.cn_submission_integrity_state, "verified")
+        self.assertEqual(
+            filing.cn_submission_snapshot_json["reconciliation"]["run_id"],
+            run.id,
+        )
+
+        payment = run.payment_record_ids
+        filing.write(
+            {
+                "payment_date": payment.payment_date,
+                "payment_reference": payment.payment_reference,
+            }
+        )
+        payment_evidence = self._verified_filing_evidence(
+            filing,
+            "archive-full-payment",
+            "payment_proof",
+        )
+        filing.with_user(self.reviewer).action_mark_paid()
+        filing.invalidate_recordset()
+
+        self.assertEqual(filing.payment_state, "paid")
+        self.assertTrue(filing.cn_payment_checksum)
+        self.assertEqual(filing.cn_payment_evidence_ids, payment_evidence)
+        self.assertEqual(filing.cn_payment_integrity_state, "verified")
+        self.assertEqual(
+            filing.cn_net_payment_amount,
+            run.payment_amount,
+        )
+        reopened = run.with_user(self.reviewer).action_open_cn_filing_archive()
+        self.assertEqual(reopened["res_id"], filing.id)
+        run.invalidate_recordset(["filing_archive_count"])
+        self.assertEqual(run.filing_archive_count, 1)
+        event_keys = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("model_name", "=", filing._name),
+                ("record_id", "=", filing.id),
+            ]
+        ).mapped("event_key")
+        self.assertIn("cn.vat_filing_archive.sealed", event_keys)
+        self.assertIn("cn.vat_payment_archive.sealed", event_keys)
+
+    def test_filing_archive_requires_verified_formal_receipt(self):
+        self._seed_complete_sources("archive-no-receipt")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        filing = self._controlled_filing_archive(run, "archive-no-receipt")
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+
+        with self.assertRaisesRegex(UserError, "已验证的正式申报回执"):
+            filing.with_user(self.reviewer).action_submit()
+
+    def test_filing_archive_requires_applicable_vat_obligation(self):
+        self._seed_complete_sources("archive-obligation")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        action = run.with_user(self.reviewer).action_open_cn_filing_archive()
+        defaults = {
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }
+        source = self._valid_filing_authority_source("archive-obligation")
+        defaults.update(
+            {
+                "due_date": "2026-07-15",
+                "authority_source_id": source.id,
+                "due_date_basis": "人工确认测试期间截止日。",
+            }
+        )
+        filing = self.env["sudo.compliance.filing"].with_user(
+            self.reviewer
+        ).with_company(self.company).create(defaults)
+        filing.with_user(self.reviewer).action_prepare()
+
+        with self.assertRaisesRegex(UserError, "义务尚未经过公司级适用性确认"):
+            filing.with_user(self.reviewer).action_ready()
+
+    def test_filing_archive_rejects_payment_difference(self):
+        seeded = self._seed_complete_sources(
+            "archive-payment-difference",
+            include_payment=False,
+        )
+        self._create_tax_records(
+            "tax_payment",
+            "archive-payment-difference",
+            [
+                self._payment_record(
+                    "archive-payment-difference",
+                    seeded["payable"] + 1.0,
+                )
+            ],
+        )
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        filing = self._controlled_filing_archive(
+            run,
+            "archive-payment-difference",
+        )
+        self._verified_filing_evidence(
+            filing,
+            "archive-payment-difference-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        payment = run.payment_record_ids
+        filing.write(
+            {
+                "payment_date": payment.payment_date,
+                "payment_reference": payment.payment_reference,
+            }
+        )
+        self._verified_filing_evidence(
+            filing,
+            "archive-payment-difference-proof",
+            "payment_proof",
+        )
+
+        with self.assertRaisesRegex(UserError, "尚未勾稽一致"):
+            filing.with_user(self.reviewer).action_mark_paid()
+
+    def test_filing_archive_detects_checksum_tampering(self):
+        self._seed_complete_sources("archive-tampering")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        filing = self._controlled_filing_archive(run, "archive-tampering")
+        self._verified_filing_evidence(
+            filing,
+            "archive-tampering-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        self.assertEqual(filing.cn_submission_integrity_state, "verified")
+
+        self.env.cr.execute(
+            """
+            UPDATE sudo_cn_vat_period_reconciliation_run
+               SET result_checksum = %s
+             WHERE id = %s
+            """,
+            ["0" * 64, run.id],
+        )
+        run.invalidate_recordset(["result_checksum"])
+        filing.invalidate_recordset(["cn_submission_integrity_state"])
+        self.assertEqual(filing.cn_submission_integrity_state, "changed")
+
+    def test_filing_archive_preserves_superseded_historical_snapshot(self):
+        self._seed_complete_sources("archive-superseded")
+        first = self._queue()
+        self.assertTrue(self._process(first))
+        filing = self._controlled_filing_archive(first, "archive-superseded")
+        self._verified_filing_evidence(
+            filing,
+            "archive-superseded-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        sealed_checksum = filing.cn_submission_checksum
+
+        replacement = self._queue()
+        self.assertTrue(self._process(replacement))
+        first.invalidate_recordset()
+        filing.invalidate_recordset(["cn_submission_integrity_state"])
+
+        self.assertEqual(first.state, "superseded")
+        self.assertEqual(filing.cn_submission_checksum, sealed_checksum)
+        self.assertEqual(
+            filing.cn_submission_integrity_state,
+            "source_superseded",
+        )
+
+    def test_filing_archive_rejects_cross_company_reconciliation(self):
+        other_company = self.env["res.company"].create(
+            {
+                "name": "Other China Filing Archive Company",
+                "country_id": self.country.id,
+                "account_fiscal_country_id": self.country.id,
+                "currency_id": self.currency.id,
+            }
+        )
+        other_profile = self.env["sudo.compliance.profile"].with_company(
+            other_company
+        ).create(
+            {
+                "company_id": other_company.id,
+                "country_id": self.country.id,
+                "country_pack_id": self.country_pack.id,
+            }
+        )
+        self.reviewer.write(
+            {"company_ids": [Command.link(other_company.id)]}
+        )
+        other_run = self.env[
+            "sudo.cn.vat.period.reconciliation.run"
+        ].with_user(self.reviewer).with_company(other_company).enqueue(
+            other_profile,
+            "2026-06-01",
+            "2026-06-30",
+            "VAT",
+        )
+        source = self._valid_filing_authority_source("archive-cross-company")
+        obligation = self.profile.obligation_ids.filtered(
+            lambda item: item.code == "CN-VAT"
+        )[:1]
+        obligation.write(
+            {
+                "applicability": "applicable",
+                "effective_from": "2026-01-01",
+                "authority_source_id": source.id,
+                "justification": "测试当前公司适用增值税申报义务。",
+            }
+        )
+        with self.assertRaisesRegex(ValidationError, "当前公司和合规档案"):
+            self.env["sudo.compliance.filing"].with_company(self.company).create(
+                {
+                    "filing_name": "跨公司错误增值税档案",
+                    "profile_id": self.profile.id,
+                    "filing_code": "CN-VAT",
+                    "filing_type": "cn_vat_return",
+                    "authority": "主管税务机关",
+                    "period_start": "2026-06-01",
+                    "period_end": "2026-06-30",
+                    "due_date": "2026-07-15",
+                    "authority_source_id": source.id,
+                    "obligation_id": obligation.id,
+                    "due_date_basis": "测试跨公司来源必须被拒绝。",
+                    "assignee_id": self.reviewer.id,
+                    "cn_vat_reconciliation_run_id": other_run.id,
+                }
+            )

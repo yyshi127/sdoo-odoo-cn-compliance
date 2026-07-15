@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_compliance_filing_form_cn_vat_archive"
+            model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.form.cn.vat.archive</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_filing_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='filing_type']" position="after">
+                <field name="cn_vat_reconciliation_run_id"
+                       readonly="state != 'draft'"
+                       options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_cn_vat_reconciliation"
+                        type="object" class="oe_stat_button"
+                        icon="fa-balance-scale"
+                        invisible="not cn_vat_reconciliation_run_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">增值税勾稽</span>
+                        <span class="o_stat_text">来源快照</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <div class="alert alert-info" role="alert"
+                     invisible="not cn_vat_reconciliation_run_id">
+                    <strong>中国增值税受控档案。</strong>
+                    截止日期和官方依据必须人工确认，系统不会根据期间自动猜测；
+                    正式提交和缴款还必须具有已验证的回执或缴款证据。
+                </div>
+                <div class="alert alert-danger" role="alert"
+                     invisible="cn_submission_integrity_state not in ('changed', 'invalid') and cn_payment_integrity_state not in ('changed', 'invalid')">
+                    <strong>档案完整性异常。</strong>
+                    封存内容或受控来源已发生变化，请停止依赖本档案并由合规管理员复核审计轨迹。
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="cn_submission_integrity_state != 'source_superseded' and cn_payment_integrity_state != 'source_superseded'">
+                    本档案的封存内容仍可校验，但来源批次已经被新结果替代；
+                    新的业务判断应打开最新勾稽批次，不应把历史快照当作当前结论。
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="中国增值税受控档案"
+                      invisible="not cn_vat_reconciliation_run_id">
+                    <group col="4">
+                        <group string="申报封存">
+                            <field name="cn_submission_integrity_state"
+                                   widget="badge"
+                                   decoration-success="cn_submission_integrity_state == 'verified'"
+                                   decoration-warning="cn_submission_integrity_state in ('unsealed', 'source_superseded')"
+                                   decoration-danger="cn_submission_integrity_state in ('changed', 'invalid')"/>
+                            <field name="cn_submission_sealed_at"/>
+                            <field name="cn_submission_checksum"/>
+                        </group>
+                        <group string="缴款封存">
+                            <field name="cn_payment_integrity_state"
+                                   widget="badge"
+                                   decoration-success="cn_payment_integrity_state in ('verified', 'not_required')"
+                                   decoration-warning="cn_payment_integrity_state in ('unsealed', 'source_superseded')"
+                                   decoration-danger="cn_payment_integrity_state in ('changed', 'invalid')"/>
+                            <field name="cn_payment_sealed_at"/>
+                            <field name="cn_payment_checksum"/>
+                        </group>
+                    </group>
+                    <group string="缴款方向分列" col="4">
+                        <field name="cn_currency_id" invisible="1"/>
+                        <field name="cn_succeeded_payment_amount"/>
+                        <field name="cn_reversed_payment_amount"/>
+                        <field name="cn_refunded_payment_amount"/>
+                        <field name="cn_net_payment_amount"/>
+                    </group>
+                    <div class="alert alert-secondary" role="alert">
+                        缴款成功、冲正和退库分别展示；有效缴款净额仅用于勾稽，
+                        不会把不同法律含义的交易静默合并为一条付款记录。
+                    </div>
+                    <notebook>
+                        <page string="受控申报记录">
+                            <field name="cn_vat_filing_record_ids" readonly="1">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="period_start"/>
+                                    <field name="period_end"/>
+                                    <field name="return_type_code"/>
+                                    <field name="return_status" widget="badge"/>
+                                    <field name="submitted_at"/>
+                                    <field name="submission_reference"/>
+                                    <field name="quality_state" widget="badge"
+                                           decoration-success="quality_state == 'valid'"
+                                           decoration-warning="quality_state == 'warning'"
+                                           decoration-danger="quality_state == 'error'"/>
+                                    <field name="record_checksum" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="受控缴款记录">
+                            <field name="cn_tax_payment_record_ids" readonly="1">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-success="payment_status == 'succeeded'"
+                                      decoration-muted="payment_status in ('reversed', 'refunded')"
+                                      decoration-danger="quality_state == 'error'">
+                                    <field name="payment_date"/>
+                                    <field name="payment_reference"/>
+                                    <field name="payment_status" widget="badge"/>
+                                    <field name="amount"/>
+                                    <field name="principal_amount" optional="hide"/>
+                                    <field name="interest_amount" optional="hide"/>
+                                    <field name="penalty_amount" optional="hide"/>
+                                    <field name="receipt_reference"/>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="record_checksum" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="已封存正式证据">
+                            <group col="2">
+                                <group string="申报回执证据">
+                                    <field name="cn_submission_evidence_ids"
+                                           readonly="1">
+                                        <list create="0" edit="0" delete="0">
+                                            <field name="name"/>
+                                            <field name="evidence_type"/>
+                                            <field name="state" widget="badge"/>
+                                            <field name="document_checksum"/>
+                                        </list>
+                                    </field>
+                                </group>
+                                <group string="缴款证明证据">
+                                    <field name="cn_payment_evidence_ids"
+                                           readonly="1">
+                                        <list create="0" edit="0" delete="0">
+                                            <field name="name"/>
+                                            <field name="evidence_type"/>
+                                            <field name="state" widget="badge"/>
+                                            <field name="document_checksum"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_filing_list_cn_vat_archive"
+            model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.list.cn.vat.archive</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_filing_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='filing_code']" position="after">
+                <field name="cn_vat_reconciliation_run_id" optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="cn_submission_integrity_state" widget="badge"
+                       optional="hide"/>
+                <field name="cn_payment_integrity_state" widget="badge"
+                       optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_filing_search_cn_vat_archive"
+            model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.search.cn.vat.archive</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_filing_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search/separator[1]" position="before">
+                <filter name="cn_vat_controlled" string="中国增值税受控档案"
+                        domain="[('cn_vat_reconciliation_run_id', '!=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_period_reconciliation_run_form_filing_archive"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.vat.period.reconciliation.run.form.filing.archive</field>
+        <field name="model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_vat_period_reconciliation_run_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_queue_compliance_assessment']"
+                   position="before">
+                <button name="action_open_cn_filing_archive" type="object"
+                        string="申报缴款档案" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state not in ('succeeded', 'superseded')"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_cn_filing_archive" type="object"
+                        class="oe_stat_button" icon="fa-archive"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="filing_archive_count == 0">
+                    <field name="filing_archive_count" widget="statinfo"
+                           string="申报缴款档案"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -221,6 +221,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("VAT period reconciliation capability must be declared")
     if features.get("formal_compliance_report") is not True:
         fail("formal compliance report capability must be declared")
+    if features.get("vat_filing_payment_archive") is not True:
+        fail("controlled VAT filing and payment archive capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -1391,6 +1393,87 @@ def validate_vat_period_reconciliation() -> None:
         fail("VAT period reconciliation requires at least fifteen runtime tests")
 
 
+def validate_filing_payment_archive() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    if "views/filing_archive_views.xml" not in manifest.get("data", []):
+        fail("controlled filing archive views must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import filing_archive" not in model_init:
+        fail("controlled filing archive models must be imported")
+    if model_init.index("from . import filing_archive") < model_init.index(
+        "from . import vat_period_reconciliation"
+    ):
+        fail("filing archive extensions must load after VAT reconciliation")
+
+    model_path = ADDON_ROOT / "models" / "filing_archive.py"
+    view_path = ADDON_ROOT / "views" / "filing_archive_views.xml"
+    if not model_path.is_file() or not view_path.is_file():
+        fail("controlled filing archive implementation is incomplete")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.filing"',
+        '_inherit = "sudo.cn.vat.period.reconciliation.run"',
+        '"sdoo.cn.vat-filing-archive.v1"',
+        '"sdoo.cn.vat-payment-archive.v1"',
+        "_CN_ARCHIVE_TRANSITION_MARKER",
+        "_CN_ARCHIVE_LINK_MARKER",
+        "_cn_validate_obligation",
+        "_cn_verified_evidence",
+        "current_document_checksum",
+        "source_superseded",
+        "filing_payment_difference",
+        "filing_receipt",
+        "payment_proof",
+        "cn.vat_filing_archive.sealed",
+        "cn.vat_payment_archive.sealed",
+        "action_open_cn_filing_archive",
+        "action_open_cn_vat_reconciliation",
+    ):
+        if required not in model_content:
+            fail(f"controlled filing archive contract is missing {required}")
+    if "default_due_date" in model_content:
+        fail("controlled filing archive must not infer a legal filing deadline")
+
+    view_content = view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_compliance_filing_form_cn_vat_archive",
+        "view_compliance_filing_list_cn_vat_archive",
+        "view_compliance_filing_search_cn_vat_archive",
+        "view_cn_vat_period_reconciliation_run_form_filing_archive",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"controlled filing archive UI is missing {required_id}")
+    for boundary_text in (
+        "系统不会根据期间自动猜测",
+        "已验证的回执或缴款证据",
+        "不同法律含义的交易",
+        "来源批次已经被新结果替代",
+    ):
+        if boundary_text not in view_content:
+            fail(f"controlled filing archive UI boundary is missing: {boundary_text}")
+
+    test_content = (
+        ADDON_ROOT / "tests" / "test_vat_period_reconciliation.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_filing_archive_action_does_not_infer_legal_deadline",
+        "test_filing_and_payment_archive_seal_full_controlled_chain",
+        "test_filing_archive_requires_verified_formal_receipt",
+        "test_filing_archive_requires_applicable_vat_obligation",
+        "test_filing_archive_rejects_payment_difference",
+        "test_filing_archive_detects_checksum_tampering",
+        "test_filing_archive_preserves_superseded_historical_snapshot",
+        "test_filing_archive_rejects_cross_company_reconciliation",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"controlled filing archive test is missing {test_name}")
+
+
 def validate_tax_impact_review() -> None:
     manifest = ast.literal_eval(
         (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
@@ -1860,6 +1943,7 @@ def main() -> int:
     validate_invoice_reconciliation()
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
+    validate_filing_payment_archive()
     validate_tax_impact_review()
     validate_formal_compliance_report()
     validate_xbrl_parser_addon()

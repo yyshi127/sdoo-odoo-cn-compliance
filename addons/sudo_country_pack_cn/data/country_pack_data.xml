@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.18.0</field>
+        <field name="version">19.0.1.19.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -32,6 +32,7 @@
                 'tax_impact_review': True,
                 'vat_adjustment_report': True,
                 'formal_compliance_report': True,
+                'vat_filing_payment_archive': True,
                 'multi_company': True
             },
             'governance': {
