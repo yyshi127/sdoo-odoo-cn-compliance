@@ -6,6 +6,7 @@ import importlib.metadata
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -29,7 +30,6 @@ XBRL_INSTANCE_TAG = "{http://www.xbrl.org/2003/instance}xbrl"
 LINKBASE_NAMESPACE = "http://www.xbrl.org/2003/linkbase"
 XLINK_NAMESPACE = "http://www.w3.org/1999/xlink"
 ROLE_TYPE_TAG = "{%s}roleType" % LINKBASE_NAMESPACE
-XML_SCHEMA_NAMESPACE = "http://www.w3.org/2001/XMLSchema"
 STRICT_COMPATIBILITY_PROFILE = "strict"
 ROLE_URI_WHITESPACE_PROFILE = "trim_role_uri_whitespace_v1"
 SUPPORTED_COMPATIBILITY_PROFILES = {
@@ -37,6 +37,15 @@ SUPPORTED_COMPATIBILITY_PROFILES = {
     ROLE_URI_WHITESPACE_PROFILE,
 }
 MAX_RESULT_BYTES = 100 * 1024 * 1024
+ROLE_TYPE_START_TAG_PATTERN = re.compile(
+    rb"<(?:[A-Za-z_][A-Za-z0-9_.-]*:)?roleType(?=[\s/>])[^<>]*>",
+    re.DOTALL,
+)
+ROLE_URI_ATTRIBUTE_PATTERN = re.compile(
+    rb"(?P<prefix>\broleURI\s*=\s*)(?P<quote>['\"])(?P<value>[^'\"]*)(?P=quote)",
+    re.DOTALL,
+)
+XML_WHITESPACE = b" \t\r\n"
 
 
 class WorkerError(Exception):
@@ -111,15 +120,75 @@ def _taxonomy_tree_checksum(taxonomy_root):
     return digest.hexdigest()
 
 
+def _patch_role_uri_whitespace(content, expected_patch_count):
+    patch_count = 0
+
+    def patch_start_tag(match):
+        nonlocal patch_count
+
+        def patch_attribute(attribute_match):
+            nonlocal patch_count
+            value = attribute_match.group("value")
+            normalized = value.strip(XML_WHITESPACE)
+            if value == normalized:
+                return attribute_match.group(0)
+            if not normalized:
+                raise WorkerError(
+                    "INVALID_ROLE_URI_COMPATIBILITY",
+                    "角色 URI 不能在兼容处理后变为空值。",
+                )
+            patch_count += 1
+            return b"".join(
+                (
+                    attribute_match.group("prefix"),
+                    attribute_match.group("quote"),
+                    normalized,
+                    attribute_match.group("quote"),
+                )
+            )
+
+        return ROLE_URI_ATTRIBUTE_PATTERN.sub(
+            patch_attribute,
+            match.group(0),
+        )
+
+    patched = ROLE_TYPE_START_TAG_PATTERN.sub(patch_start_tag, content)
+    if patch_count != expected_patch_count:
+        raise WorkerError(
+            "UNSAFE_ROLE_URI_COMPATIBILITY_ENCODING",
+            "角色 URI 空白无法通过受控最小字节修改安全处理。",
+        )
+    try:
+        original_root = ElementTree.fromstring(content)
+        patched_root = ElementTree.fromstring(patched)
+    except ElementTree.ParseError as exc:
+        raise WorkerError(
+            "UNSAFE_ROLE_URI_COMPATIBILITY_ENCODING",
+            "角色 URI 空白无法通过受控最小字节修改安全处理。",
+        ) from exc
+    expected_role_uris = [
+        (role_type.get("roleURI") or "").strip()
+        for role_type in original_root.iter(ROLE_TYPE_TAG)
+    ]
+    actual_role_uris = [
+        role_type.get("roleURI") or ""
+        for role_type in patched_root.iter(ROLE_TYPE_TAG)
+    ]
+    if actual_role_uris != expected_role_uris:
+        raise WorkerError(
+            "UNSAFE_ROLE_URI_COMPATIBILITY_ENCODING",
+            "角色 URI 空白无法通过受控最小字节修改安全处理。",
+        )
+    return patched
+
+
 def _apply_taxonomy_compatibility(taxonomy_root, profile):
     if profile not in SUPPORTED_COMPATIBILITY_PROFILES:
         raise WorkerError(
             "UNSUPPORTED_COMPATIBILITY_PROFILE",
             "分类标准技术兼容方案不在允许范围内。",
         )
-    ElementTree.register_namespace("xsd", XML_SCHEMA_NAMESPACE)
-    ElementTree.register_namespace("link", LINKBASE_NAMESPACE)
-    changed_trees = []
+    patched_files = []
     patch_count = 0
     xsd_paths = (
         path
@@ -148,7 +217,7 @@ def _apply_taxonomy_compatibility(taxonomy_root, profile):
                 "INVALID_TAXONOMY_XSD",
                 "分类标准包含无效 XSD。",
             ) from exc
-        changed = False
+        file_patch_count = 0
         for role_type in tree.getroot().iter(ROLE_TYPE_TAG):
             role_uri = role_type.get("roleURI") or ""
             normalized = role_uri.strip()
@@ -161,10 +230,14 @@ def _apply_taxonomy_compatibility(taxonomy_root, profile):
                 )
             patch_count += 1
             if profile == ROLE_URI_WHITESPACE_PROFILE:
-                role_type.set("roleURI", normalized)
-                changed = True
-        if changed:
-            changed_trees.append((path, tree))
+                file_patch_count += 1
+        if file_patch_count:
+            patched_files.append(
+                (
+                    path,
+                    _patch_role_uri_whitespace(content, file_patch_count),
+                )
+            )
     if patch_count and profile == STRICT_COMPATIBILITY_PROFILE:
         raise WorkerError(
             "TAXONOMY_COMPATIBILITY_REQUIRED",
@@ -175,12 +248,8 @@ def _apply_taxonomy_compatibility(taxonomy_root, profile):
             "COMPATIBILITY_PROFILE_NOT_APPLICABLE",
             "分类标准不存在所选技术兼容方案对应的问题。",
         )
-    for path, tree in changed_trees:
-        tree.write(
-            path,
-            encoding="UTF-8",
-            xml_declaration=True,
-        )
+    for path, patched_content in patched_files:
+        path.write_bytes(patched_content)
     return patch_count, _taxonomy_tree_checksum(taxonomy_root)
 
 

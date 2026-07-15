@@ -1,7 +1,7 @@
 {
     "name": "Sdoo China Electronic Invoice XBRL Parser",
     "summary": "Isolated Arelle parser for governed China e-invoice datasets",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Accounting/Accounting",
     "author": "Sdoo",
     "license": "LGPL-3",

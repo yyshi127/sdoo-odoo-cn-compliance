@@ -13,7 +13,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 _JOB_TRANSITION_MARKER = object()
 SUPPORTED_ARELLE_VERSION = "2.42.1"
-PARSER_ADDON_VERSION = "19.0.1.0.0"
+PARSER_ADDON_VERSION = "19.0.1.1.0"
 MAX_RESULT_BYTES = 100 * 1024 * 1024
 
 

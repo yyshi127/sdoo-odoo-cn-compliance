@@ -62,9 +62,62 @@ class TestXbrlWorkerCompatibility(unittest.TestCase):
                 role_type.attrib["roleURI"],
                 "http://example.test/role/100801",
             )
-            self.assertNotEqual(schema_path.read_bytes(), original)
+            self.assertEqual(
+                schema_path.read_bytes(),
+                original.replace(
+                    b'roleURI="http://example.test/role/100801 "',
+                    b'roleURI="http://example.test/role/100801"',
+                ),
+            )
             self.assertEqual(checksum, WORKER._taxonomy_tree_checksum(root))
             self.assertEqual(len(checksum), 64)
+
+    def test_entity_encoded_whitespace_is_rejected_without_rewriting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            schema_path = root / "entry.xsd"
+            original = self._schema(
+                "http://example.test/role/100801&#x20;"
+            )
+            schema_path.write_bytes(original)
+
+            with self.assertRaisesRegex(
+                WORKER.WorkerError,
+                "最小字节修改",
+            ):
+                WORKER._apply_taxonomy_compatibility(
+                    root,
+                    "trim_role_uri_whitespace_v1",
+                )
+
+            self.assertEqual(schema_path.read_bytes(), original)
+
+    def test_comment_cannot_mask_unsafe_semantic_whitespace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            schema_path = root / "entry.xsd"
+            original = self._schema(
+                "http://example.test/role/100801&#x20;"
+            ).replace(
+                b"<xsd:annotation>",
+                (
+                    b"<!-- <link:roleType id=\"comment\" "
+                    b"roleURI=\"http://example.test/comment/ \"/> -->"
+                    b"<xsd:annotation>"
+                ),
+            )
+            schema_path.write_bytes(original)
+
+            with self.assertRaisesRegex(
+                WORKER.WorkerError,
+                "最小字节修改",
+            ):
+                WORKER._apply_taxonomy_compatibility(
+                    root,
+                    "trim_role_uri_whitespace_v1",
+                )
+
+            self.assertEqual(schema_path.read_bytes(), original)
 
     def test_strict_profile_rejects_detected_issue_without_writing(self):
         with tempfile.TemporaryDirectory() as temporary:

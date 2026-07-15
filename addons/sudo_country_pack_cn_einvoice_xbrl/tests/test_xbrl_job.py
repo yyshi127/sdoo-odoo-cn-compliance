@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pathlib import Path
 from unittest.mock import patch
 
 from odoo.exceptions import AccessError, UserError
@@ -50,6 +51,11 @@ class TestChinaEinvoiceXbrlJob(ChinaXbrlCommon):
             job.parse_run_id.parser_distribution,
             "arelle-release==2.42.1",
         )
+        self.assertTrue(
+            job.parse_run_id.parser_version.startswith(
+                "19.0.1.1.0+arelle.2.42.1+"
+            )
+        )
         self.assertIn(
             "taxonomy.trim_role_uri_whitespace_v1",
             job.parse_run_id.parser_version,
@@ -63,6 +69,46 @@ class TestChinaEinvoiceXbrlJob(ChinaXbrlCommon):
                 job.taxonomy_bundle_id,
                 timeout=300,
             )
+
+    def test_worker_environment_drops_uncontrolled_variables(self):
+        job = self._enqueue("worker-environment")
+        temporary = Path("/tmp/sdoo-cn-xbrl-worker-test")
+
+        with patch.dict(
+            "os.environ",
+            {
+                "PATH": "/usr/bin",
+                "PYTHONPATH": "/uncontrolled/python/path",
+                "SDOO_TEST_SECRET": "must-not-leak",
+            },
+            clear=False,
+        ):
+            environment = job._worker_environment(temporary)
+
+        self.assertEqual(environment["PATH"], "/usr/bin")
+        self.assertEqual(environment["HOME"], str(temporary))
+        self.assertEqual(environment["TMPDIR"], str(temporary))
+        self.assertEqual(environment["PYTHONNOUSERSITE"], "1")
+        self.assertNotIn("PYTHONPATH", environment)
+        self.assertNotIn("SDOO_TEST_SECRET", environment)
+
+    def test_cron_claims_and_processes_queued_job(self):
+        job = self._enqueue("cron")
+        result = self._completed_result(job.parse_run_id, "cron")
+
+        with patch.object(
+            type(job),
+            "_execute_worker",
+            return_value=result,
+        ):
+            processed = self.env[
+                "sudo.cn.einvoice.xbrl.job"
+            ]._cron_process_jobs(limit=1)
+
+        self.assertEqual(processed, 1)
+        self.assertEqual(job.state, "succeeded")
+        self.assertEqual(job.parse_run_id.state, "succeeded")
+        self.assertEqual(job.parse_run_id.document_count, 1)
 
     def test_successful_worker_result_creates_current_normalized_ledger(self):
         job = self._enqueue("success")

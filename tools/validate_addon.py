@@ -1536,6 +1536,15 @@ def validate_xbrl_parser_addon() -> None:
     if requirements != "arelle-release==2.42.1":
         fail("Arelle deployment dependency must remain exactly pinned")
 
+    job_model = (XBRL_ADDON_ROOT / "models" / "xbrl_job.py").read_text(
+        encoding="utf-8"
+    )
+    if (
+        f'PARSER_ADDON_VERSION = "{manifest["version"]}"'
+        not in job_model
+    ):
+        fail("XBRL parser runtime version must match its manifest")
+
     worker = (XBRL_ADDON_ROOT / "parser" / "worker.py").read_text(
         encoding="utf-8"
     )
@@ -1551,10 +1560,20 @@ def validate_xbrl_parser_addon() -> None:
         "expected_compatibility_patch_count",
         "working_taxonomy_checksum",
     ):
-        if required not in worker and required not in (
-            XBRL_ADDON_ROOT / "models" / "xbrl_job.py"
-        ).read_text(encoding="utf-8"):
+        if required not in worker and required not in job_model:
             fail(f"XBRL isolation contract is missing {required}")
+    for required in (
+        "_patch_role_uri_whitespace",
+        "UNSAFE_ROLE_URI_COMPATIBILITY_ENCODING",
+        "path.write_bytes(patched_content)",
+    ):
+        if required not in worker:
+            fail(f"deterministic taxonomy compatibility is missing {required}")
+    compatibility_block = worker.split(
+        "def _apply_taxonomy_compatibility", 1
+    )[1].split("def _prepare_taxonomy", 1)[0]
+    if "tree.write(" in compatibility_block:
+        fail("taxonomy compatibility must not reserialize complete XSD files")
 
     contract = (XBRL_ADDON_ROOT / "parser" / "contract.py").read_text(
         encoding="utf-8"
@@ -1613,9 +1632,6 @@ def validate_xbrl_parser_addon() -> None:
     ).read_text(encoding="utf-8")
     if "_cron_process_jobs(limit=1)" not in cron:
         fail("XBRL parser must use the bounded native Odoo job queue")
-    job_model = (XBRL_ADDON_ROOT / "models" / "xbrl_job.py").read_text(
-        encoding="utf-8"
-    )
     if "FOR UPDATE SKIP LOCKED" not in job_model:
         fail("XBRL queue must prevent concurrent duplicate processing")
     for required in (
@@ -1645,8 +1661,29 @@ def validate_xbrl_parser_addon() -> None:
             and node.name.startswith("test_")
             for node in ast.walk(tree)
         )
-    if test_methods < 10:
-        fail("XBRL parser addon requires at least ten runtime tests")
+    if test_methods < 12:
+        fail("XBRL parser addon requires at least twelve runtime tests")
+
+    job_tests = (
+        XBRL_ADDON_ROOT / "tests" / "test_xbrl_job.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_worker_environment_drops_uncontrolled_variables",
+        "test_cron_claims_and_processes_queued_job",
+    ):
+        if f"def {test_name}(" not in job_tests:
+            fail(f"XBRL runtime safety coverage is missing {test_name}")
+
+    compatibility_tests = (
+        REPOSITORY_ROOT / "tools" / "test_xbrl_worker_compatibility.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_controlled_profile_trims_only_working_copy_role_uri",
+        "test_entity_encoded_whitespace_is_rejected_without_rewriting",
+        "test_comment_cannot_mask_unsafe_semantic_whitespace",
+    ):
+        if f"def {test_name}(" not in compatibility_tests:
+            fail(f"XBRL deterministic patch coverage is missing {test_name}")
 
 
 def main() -> int:
