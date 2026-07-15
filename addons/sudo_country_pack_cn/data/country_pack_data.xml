@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="compliance_country_pack_cn" model="sudo.compliance.country.pack">
+        <field name="name">中国财税合规国家包</field>
+        <field name="code">CN</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="module_name">sudo_country_pack_cn</field>
+        <field name="version">19.0.1.0.0</field>
+        <field name="capability_json" eval="{
+            'authorities': ['财政部门', '税务机关', '市场监督管理部门', '社会保险经办机构'],
+            'domains': ['vat', 'cit', 'iit_withholding', 'surcharge', 'stamp_duty', 'social_insurance', 'record_keeping'],
+            'engine': 'sudo.compliance.engine',
+            'source_governance': True,
+            'multi_company': True,
+            'ai_remediation': True,
+            'filing_control': True,
+            'setup_defaults': {
+                'registration_name': '统一社会信用代码登记',
+                'registration_type': 'unified_social_credit_code',
+                'registration_authority': '市场监督管理部门'
+            },
+            'rule_release_requires_professional_signoff': True,
+            'candidate_obligations_only': True
+        }"/>
+    </record>
+</odoo>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_compliance_setup_wizard_form_cn" model="ir.ui.view">
+        <field name="name">sudo.compliance.setup.wizard.form.cn</field>
+        <field name="model">sudo.compliance.setup.wizard</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_setup_wizard_form"/>
+        <field name="arch" type="xml">
+            <field name="fiscal_year_end_basis" position="attributes">
+                <attribute name="placeholder">例如营业执照、公司章程、决议或其他受控依据</attribute>
+            </field>
+            <field name="registration_number" position="attributes">
+                <attribute name="placeholder">公司登记号码，如统一社会信用代码或 UEN</attribute>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_profile_form_cn" model="ir.ui.view">
+        <field name="name">sudo.compliance.profile.form.cn</field>
+        <field name="model">sudo.compliance.profile</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_profile_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_seed_cn_obligations" type="object"
+                        string="检查中国候选义务"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="not is_china_profile"/>
+            </xpath>
+            <field name="active" position="after">
+                <field name="is_china_profile" invisible="1"/>
+            </field>
+            <field name="fiscal_year_end_basis" position="attributes">
+                <attribute name="placeholder">填写营业执照、公司章程、决议或其他受控依据...</attribute>
+            </field>
+        </field>
+    </record>
+</odoo>
