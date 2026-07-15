@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import new_test_user, tagged
 
 
@@ -381,6 +381,144 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
             abs(float(purchase.amount_tax_signed or 0.0)),
         )
 
+    def _control_account_scope(self, sale, purchase, suffix):
+        output_tax, input_tax = self._ledger_tax_amounts(sale, purchase)
+        code_suffix = str(
+            int(hashlib.sha256(suffix.encode()).hexdigest()[:8], 16)
+            % 100000
+        ).zfill(5)
+        account_model = self.env["account.account"].with_company(self.company)
+        output_account = account_model.create(
+            {
+                "name": f"测试销项税额控制科目 {suffix}",
+                "code": f"2221{code_suffix}",
+                "account_type": "liability_current",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        input_account = account_model.create(
+            {
+                "name": f"测试进项税额控制科目 {suffix}",
+                "code": f"1122{code_suffix}",
+                "account_type": "asset_current",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        control_move = self.env["account.move"].with_company(
+            self.company
+        ).create(
+            {
+                "move_type": "entry",
+                "journal_id": self.company_data["default_journal_misc"].id,
+                "date": "2026-06-30",
+                "ref": f"TEST-VAT-CONTROL-{suffix}",
+                "line_ids": [
+                    Command.create(
+                        {
+                            "name": "销项税额对方科目",
+                            "account_id": self.company_data[
+                                "default_account_expense"
+                            ].id,
+                            "debit": output_tax,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": "销项税额控制科目",
+                            "account_id": output_account.id,
+                            "credit": output_tax,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": "进项税额控制科目",
+                            "account_id": input_account.id,
+                            "debit": input_tax,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": "进项税额对方科目",
+                            "account_id": self.company_data[
+                                "default_account_revenue"
+                            ].id,
+                            "credit": input_tax,
+                        }
+                    ),
+                ],
+            }
+        )
+        control_move.action_post()
+        mapping_model = self.env["sudo.cn.vat.account.mapping"].with_company(
+            self.company
+        )
+        mappings = {}
+        for role, account in (
+            ("output", output_account),
+            ("input", input_account),
+        ):
+            evidence = self._attachment(
+                f"vat-control-{role}-{suffix}.pdf",
+                f"controlled VAT account mapping {role} {suffix}".encode(),
+                "application/pdf",
+            )
+            mapping = mapping_model.create(
+                {
+                    "profile_id": self.profile.id,
+                    "account_id": account.id,
+                    "role": role,
+                    "valid_from": "2026-06-01",
+                    "valid_to": "2026-06-30",
+                    "source_reference": f"VAT-CONTROL/{suffix}/{role}",
+                    "scope_note": (
+                        "测试增值税控制科目映射，覆盖当前完整期间并按固定余额方向取数。"
+                    ),
+                    "evidence_attachment_ids": [Command.set(evidence.ids)],
+                }
+            )
+            mapping.with_user(self.reviewer).action_verify()
+            mappings[role] = mapping
+        return {
+            "move": control_move,
+            "mappings": mappings,
+            "output_tax": output_tax,
+            "input_tax": input_tax,
+        }
+
+    def _approved_adjustment(
+        self,
+        suffix,
+        amount,
+        *,
+        tax_side="output",
+        effect="increase",
+    ):
+        evidence = self._attachment(
+            f"vat-adjustment-{suffix}.pdf",
+            f"controlled VAT filing adjustment {suffix}".encode(),
+            "application/pdf",
+        )
+        adjustment = self.env[
+            "sudo.cn.vat.filing.adjustment"
+        ].with_company(self.company).create(
+            {
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "tax_side": tax_side,
+                "effect": effect,
+                "adjustment_type": "recognition_timing",
+                "amount": amount,
+                "description": (
+                    "测试申报调节项目，记录控制科目与申报栏次之间的受控期间差异和计算过程。"
+                ),
+                "source_reference": f"VAT-ADJUSTMENT/{suffix}",
+                "evidence_attachment_ids": [Command.set(evidence.ids)],
+            }
+        )
+        adjustment.with_user(self.reviewer).action_approve()
+        return adjustment
+
     def _seed_complete_sources(
         self,
         suffix,
@@ -747,6 +885,406 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )
         self.assertIsNone(wrong_period["value"])
         self.assertEqual(wrong_period["quality_state"], "missing")
+
+    def test_verified_control_accounts_drive_layered_accounting_scope(self):
+        sources = self._seed_complete_sources("control-scope")
+        scope = self._control_account_scope(
+            sources["sale"],
+            sources["purchase"],
+            "control-scope",
+        )
+        run = self._queue()
+
+        self.assertTrue(self._process(run))
+
+        self.assertEqual(run.conclusion_state, "aligned")
+        self.assertEqual(run.accounting_basis, "control_accounts")
+        self.assertEqual(run.accounting_source_state, "available")
+        self.assertEqual(run.control_account_mapping_count, 2)
+        self.assertEqual(run.control_account_line_count, 2)
+        self.assertEqual(run.filing_adjustment_count, 0)
+        self.assertEqual(
+            set(run.control_account_mapping_ids.ids),
+            {mapping.id for mapping in scope["mappings"].values()},
+        )
+        self.assertAlmostEqual(
+            run.invoice_output_tax_amount,
+            sources["output_tax"],
+        )
+        self.assertAlmostEqual(
+            run.control_output_tax_amount,
+            sources["output_tax"],
+        )
+        self.assertAlmostEqual(
+            run.ledger_output_tax_amount,
+            sources["output_tax"],
+        )
+        self.assertTrue(run.has_invoice_control_output_difference)
+        self.assertAlmostEqual(run.invoice_control_output_difference, 0.0)
+        self.assertNotIn(
+            "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
+            set(run.issue_ids.mapped("code")),
+        )
+        detail = self._fact(
+            "cn.reconciliation.vat.detail",
+            self._assessment(),
+        )["value"]
+        self.assertEqual(
+            detail["schema"],
+            "sdoo.cn.reconciliation.vat-period.fact.v2",
+        )
+        self.assertEqual(detail["accounting"]["basis"], "control_accounts")
+        self.assertEqual(
+            detail["accounting"]["scope_snapshot_storage"],
+            "persisted",
+        )
+        self.assertEqual(
+            detail["accounting"]["control_account_line_count"],
+            2,
+        )
+        used_mapping = scope["mappings"]["output"]
+        audit_run = run.sudo()
+        historical_scope = audit_run.accounting_scope_snapshot_json
+        historical_scope_checksum = (
+            audit_run.accounting_scope_snapshot_checksum
+        )
+        used_mapping.with_user(self.reviewer).action_reset_to_draft()
+        used_mapping.with_user(self.reviewer).write(
+            {"scope_note": "未来期间重新配置，不得改写历史批次中的原始映射快照。"}
+        )
+        self.assertEqual(
+            audit_run.accounting_scope_snapshot_json,
+            historical_scope,
+        )
+        self.assertEqual(
+            audit_run.accounting_scope_snapshot_checksum,
+            historical_scope_checksum,
+        )
+        self.assertEqual(
+            self._fact(
+                "cn.reconciliation.vat.detail",
+                self._assessment(),
+            )["quality_state"],
+            "complete",
+        )
+        with self.assertRaises(UserError):
+            used_mapping.unlink()
+
+    def test_vat_fact_rejects_corrupted_accounting_scope_snapshot(self):
+        sources = self._seed_complete_sources("scope-snapshot-corruption")
+        self._control_account_scope(
+            sources["sale"],
+            sources["purchase"],
+            "scope-snapshot-corruption",
+        )
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        self.env.cr.execute(
+            """
+                UPDATE sudo_cn_vat_period_reconciliation_run
+                   SET accounting_scope_snapshot_checksum = NULL
+                 WHERE id = %s
+            """,
+            [run.id],
+        )
+        run.invalidate_recordset(["accounting_scope_snapshot_checksum"])
+
+        with self.assertRaises(UserError):
+            self._fact("cn.reconciliation.vat.conclusion_state")
+
+    def test_partial_control_account_mapping_blocks_filing_comparison(self):
+        sources = self._seed_complete_sources("partial-control")
+        scope = self._control_account_scope(
+            sources["sale"],
+            sources["purchase"],
+            "partial-control",
+        )
+        scope["mappings"]["input"].with_user(
+            self.reviewer
+        ).action_reset_to_draft()
+        run = self._queue()
+
+        self.assertTrue(self._process(run))
+
+        self.assertEqual(run.conclusion_state, "insufficient_data")
+        self.assertEqual(run.accounting_source_state, "blocked")
+        self.assertEqual(run.accounting_basis, "control_accounts")
+        self.assertEqual(run.control_account_mapping_count, 1)
+        self.assertIn(
+            "VAT_CONTROL_ACCOUNT_MAPPING_INCOMPLETE",
+            set(run.issue_ids.mapped("code")),
+        )
+        self.assertFalse(run.has_ledger_filing_output_difference)
+        self.assertFalse(run.has_ledger_filing_input_difference)
+
+    def test_partial_period_mapping_is_not_silently_ignored(self):
+        sources = self._seed_complete_sources("partial-period-control")
+        scope = self._control_account_scope(
+            sources["sale"],
+            sources["purchase"],
+            "partial-period-control",
+        )
+        output_mapping = scope["mappings"]["output"]
+        output_mapping.with_user(self.reviewer).action_reset_to_draft()
+        output_mapping.with_user(self.reviewer).write(
+            {"valid_to": "2026-06-15"}
+        )
+        output_mapping.with_user(self.reviewer).action_verify()
+        run = self._queue()
+
+        self.assertTrue(self._process(run))
+
+        self.assertEqual(run.conclusion_state, "insufficient_data")
+        self.assertEqual(run.accounting_source_state, "blocked")
+        self.assertEqual(run.accounting_basis, "control_accounts")
+        self.assertIn(
+            "VAT_CONTROL_ACCOUNT_MAPPING_PERIOD_NOT_COVERED",
+            set(run.issue_ids.mapped("code")),
+        )
+        self.assertIn(output_mapping, run.control_account_mapping_ids)
+        self.assertEqual(run.control_account_line_count, 1)
+        self.assertFalse(run.has_ledger_filing_output_difference)
+
+    def test_adjustment_type_must_match_tax_side_and_effect(self):
+        values = {
+            "profile_id": self.profile.id,
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "tax_side": "input",
+            "effect": "increase",
+            "adjustment_type": "unbilled_revenue",
+            "amount": 1.0,
+            "description": "测试调整类型与进销项口径的一致性校验记录。",
+            "source_reference": "VAT-ADJUSTMENT/SEMANTICS",
+        }
+        model = self.env["sudo.cn.vat.filing.adjustment"]
+        with self.assertRaises(ValidationError):
+            model.create(values)
+
+        values.update(
+            {
+                "tax_side": "input",
+                "effect": "increase",
+                "adjustment_type": "input_transfer_out",
+            }
+        )
+        with self.assertRaises(ValidationError):
+            model.create(values)
+
+        values["effect"] = "decrease"
+        adjustment = model.create(values)
+        self.assertEqual(adjustment.tax_side, "input")
+        self.assertEqual(adjustment.signed_amount, -1.0)
+
+    def test_approved_adjustment_is_snapshotted_and_cancelled_for_future_runs(self):
+        sources = self._seed_complete_sources("approved-adjustment")
+        self._control_account_scope(
+            sources["sale"],
+            sources["purchase"],
+            "approved-adjustment",
+        )
+        adjustment = self._approved_adjustment(
+            "approved-adjustment",
+            10.0,
+        )
+        run = self._queue()
+
+        self.assertTrue(self._process(run))
+
+        self.assertEqual(run.conclusion_state, "differences")
+        self.assertEqual(run.filing_adjustment_count, 1)
+        self.assertEqual(run.filing_adjustment_ids, adjustment)
+        self.assertAlmostEqual(run.filing_output_adjustment_amount, 10.0)
+        self.assertAlmostEqual(
+            run.ledger_output_tax_amount,
+            run.control_output_tax_amount + 10.0,
+        )
+        self.assertTrue(run.has_ledger_filing_output_difference)
+        self.assertAlmostEqual(run.ledger_filing_output_difference, 10.0)
+        with self.assertRaises(AccessError):
+            adjustment.write({"amount": 11.0})
+
+        adjustment.with_user(self.reviewer).action_cancel()
+        replacement = self._queue()
+        self.assertTrue(self._process(replacement))
+
+        self.assertEqual(replacement.conclusion_state, "aligned")
+        self.assertEqual(replacement.filing_adjustment_count, 0)
+        self.assertEqual(run.state, "superseded")
+        self.assertEqual(run.filing_adjustment_ids, adjustment)
+        self.assertAlmostEqual(run.filing_output_adjustment_amount, 10.0)
+
+    def test_mapping_same_person_review_requires_controlled_exception(self):
+        account = self.env["account.account"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "测试同人复核控制科目",
+                "code": "222199998",
+                "account_type": "liability_current",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        evidence = self.env["ir.attachment"].with_user(self.reviewer).create(
+            {
+                "name": "same-person-control.pdf",
+                "raw": b"same person controlled exception workpaper",
+                "mimetype": "application/pdf",
+            }
+        )
+        mapping = self.env["sudo.cn.vat.account.mapping"].with_user(
+            self.reviewer
+        ).with_company(self.company).create(
+            {
+                "profile_id": self.profile.id,
+                "account_id": account.id,
+                "role": "output",
+                "valid_from": "2026-06-01",
+                "valid_to": "2026-06-30",
+                "source_reference": "VAT-CONTROL/SAME-PERSON",
+                "scope_note": "测试同人复核例外，明确余额方向、期间边界和受控配置依据。",
+                "evidence_attachment_ids": [Command.set(evidence.ids)],
+            }
+        )
+
+        with self.assertRaises(UserError):
+            mapping.with_user(self.reviewer).action_verify()
+
+        mapping.with_user(self.reviewer).write(
+            {
+                "separation_exception_reason": (
+                    "当前测试环境仅配置一名合规管理员，已记录同人复核例外并保留完整工作底稿。"
+                )
+            }
+        )
+        mapping.with_user(self.reviewer).action_verify()
+
+        self.assertEqual(mapping.state, "verified")
+        self.assertEqual(mapping.integrity_state, "verified")
+        with self.assertRaises(AccessError):
+            mapping.with_user(self.read_only_user).write(
+                {"scope_note": "只读用户不得修改映射。"}
+            )
+
+    def test_scope_configuration_is_company_isolated_and_read_only(self):
+        own_account = self.env["account.account"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "测试本公司控制科目",
+                "code": "222199997",
+                "account_type": "liability_current",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        own_mapping = self.env["sudo.cn.vat.account.mapping"].create(
+            {
+                "profile_id": self.profile.id,
+                "account_id": own_account.id,
+                "role": "output",
+                "valid_from": "2026-06-01",
+                "source_reference": "VAT-CONTROL/OWN",
+                "scope_note": "本公司控制科目映射访问权限测试。",
+            }
+        )
+        own_adjustment = self.env["sudo.cn.vat.filing.adjustment"].create(
+            {
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "tax_side": "output",
+                "effect": "increase",
+                "adjustment_type": "other",
+                "amount": 1.0,
+                "description": "本公司增值税申报调整访问权限测试记录。",
+                "source_reference": "VAT-ADJUSTMENT/OWN",
+            }
+        )
+        self.assertEqual(
+            self.env["sudo.cn.vat.account.mapping"].with_user(
+                self.read_only_user
+            ).search([("id", "=", own_mapping.id)]),
+            own_mapping,
+        )
+        self.assertEqual(
+            self.env["sudo.cn.vat.filing.adjustment"].with_user(
+                self.read_only_user
+            ).search([("id", "=", own_adjustment.id)]),
+            own_adjustment,
+        )
+        with self.assertRaises(AccessError):
+            self.env["sudo.cn.vat.account.mapping"].with_user(
+                self.read_only_user
+            ).create({})
+        with self.assertRaises(AccessError):
+            self.env["sudo.cn.vat.filing.adjustment"].with_user(
+                self.read_only_user
+            ).create({})
+
+        other_company = self.env["res.company"].create(
+            {
+                "name": "Other China VAT Scope Company",
+                "country_id": self.country.id,
+                "account_fiscal_country_id": self.country.id,
+                "currency_id": self.currency.id,
+            }
+        )
+        other_profile = self.env["sudo.compliance.profile"].with_company(
+            other_company
+        ).create(
+            {
+                "company_id": other_company.id,
+                "country_id": self.country.id,
+                "country_pack_id": self.country_pack.id,
+            }
+        )
+        other_account = self.env["account.account"].with_company(
+            other_company
+        ).create(
+            {
+                "name": "其他公司增值税控制科目",
+                "code": "222199996",
+                "account_type": "liability_current",
+                "company_ids": [Command.set(other_company.ids)],
+            }
+        )
+        other_mapping = self.env["sudo.cn.vat.account.mapping"].with_company(
+            other_company
+        ).create(
+            {
+                "profile_id": other_profile.id,
+                "account_id": other_account.id,
+                "role": "output",
+                "valid_from": "2026-06-01",
+                "source_reference": "VAT-CONTROL/OTHER",
+                "scope_note": "其他公司控制科目映射访问隔离测试。",
+            }
+        )
+        other_adjustment = self.env[
+            "sudo.cn.vat.filing.adjustment"
+        ].with_company(other_company).create(
+            {
+                "profile_id": other_profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "tax_side": "output",
+                "effect": "increase",
+                "adjustment_type": "other",
+                "amount": 1.0,
+                "description": "其他公司增值税申报调整访问隔离测试记录。",
+                "source_reference": "VAT-ADJUSTMENT/OTHER",
+            }
+        )
+        self.assertFalse(
+            self.env["sudo.cn.vat.account.mapping"].with_user(
+                self.read_only_user
+            ).search([("id", "=", other_mapping.id)])
+        )
+        self.assertFalse(
+            self.env["sudo.cn.vat.filing.adjustment"].with_user(
+                self.read_only_user
+            ).search([("id", "=", other_adjustment.id)])
+        )
 
     def test_vat_reconciliation_drives_remediation_and_exact_period_rescan(self):
         self.profile._write_import({"status": "active"})

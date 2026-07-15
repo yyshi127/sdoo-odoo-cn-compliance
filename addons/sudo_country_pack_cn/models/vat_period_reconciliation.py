@@ -9,8 +9,9 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 
-VAT_PERIOD_ENGINE_VERSION = "19.0.1"
+VAT_PERIOD_ENGINE_VERSION = "19.0.2"
 MAX_ACCOUNTING_MOVES = 100000
+MAX_ACCOUNTING_LINES = 200000
 MAX_EINVOICE_DOCUMENTS = 50000
 MAX_FILING_RECORDS = 100
 MAX_PAYMENT_RECORDS = 10000
@@ -200,13 +201,65 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
     )
     filing_record_count = fields.Integer(string="申报记录数", readonly=True)
     payment_record_count = fields.Integer(string="缴税记录数", readonly=True)
+    accounting_basis = fields.Selection(
+        [
+            ("invoice_tax_totals", "Odoo 发票税额口径"),
+            ("control_accounts", "增值税控制科目与申报调整口径"),
+        ],
+        string="账务比较口径",
+        required=True,
+        default="invoice_tax_totals",
+        readonly=True,
+    )
+    control_account_mapping_count = fields.Integer(
+        string="控制科目映射数",
+        readonly=True,
+    )
+    control_account_line_count = fields.Integer(
+        string="控制科目分录数",
+        readonly=True,
+    )
+    filing_adjustment_count = fields.Integer(
+        string="已批准申报调整数",
+        readonly=True,
+    )
+    invoice_output_tax_amount = fields.Monetary(
+        string="Odoo 已过账客户发票税额",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    invoice_input_tax_amount = fields.Monetary(
+        string="Odoo 已过账供应商账单税额",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    control_output_tax_amount = fields.Monetary(
+        string="销项控制科目发生额",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    control_input_tax_amount = fields.Monetary(
+        string="进项控制科目发生额",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    filing_output_adjustment_amount = fields.Monetary(
+        string="销项申报调整净额",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    filing_input_adjustment_amount = fields.Monetary(
+        string="进项申报调整净额",
+        currency_field="currency_id",
+        readonly=True,
+    )
     ledger_output_tax_amount = fields.Monetary(
-        string="Odoo 客户发票税额合计",
+        string="账务销项税额比较口径",
         currency_field="currency_id",
         readonly=True,
     )
     ledger_input_tax_amount = fields.Monetary(
-        string="Odoo 供应商账单税额合计",
+        string="账务进项税额比较口径",
         currency_field="currency_id",
         readonly=True,
     )
@@ -294,6 +347,18 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         currency_field="currency_id",
         readonly=True,
     )
+    has_invoice_control_output_difference = fields.Boolean(readonly=True)
+    invoice_control_output_difference = fields.Monetary(
+        string="发票与销项控制科目差异",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    has_invoice_control_input_difference = fields.Boolean(readonly=True)
+    invoice_control_input_difference = fields.Monetary(
+        string="发票与进项控制科目差异",
+        currency_field="currency_id",
+        readonly=True,
+    )
     issue_count = fields.Integer(string="问题数", readonly=True)
     blocking_issue_count = fields.Integer(string="阻断问题数", readonly=True)
     difference_issue_count = fields.Integer(string="差异问题数", readonly=True)
@@ -301,6 +366,17 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
     accounting_snapshot_checksum = fields.Char(
         string="账务快照 SHA-256",
         readonly=True,
+    )
+    accounting_scope_snapshot_json = fields.Json(
+        string="账务口径配置快照",
+        readonly=True,
+        copy=False,
+        groups="account.group_account_readonly",
+    )
+    accounting_scope_snapshot_checksum = fields.Char(
+        string="账务口径配置快照 SHA-256",
+        readonly=True,
+        copy=False,
     )
     einvoice_snapshot_checksum = fields.Char(
         string="电子发票快照 SHA-256",
@@ -330,6 +406,34 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         "move_id",
         string="账务范围",
         groups="account.group_account_readonly",
+        check_company=True,
+        readonly=True,
+    )
+    control_account_mapping_ids = fields.Many2many(
+        "sudo.cn.vat.account.mapping",
+        "sudo_cn_vat_period_mapping_rel",
+        "run_id",
+        "mapping_id",
+        string="控制科目映射快照",
+        check_company=True,
+        readonly=True,
+    )
+    control_account_line_ids = fields.Many2many(
+        "account.move.line",
+        "sudo_cn_vat_period_move_line_rel",
+        "run_id",
+        "move_line_id",
+        string="控制科目分录范围",
+        groups="account.group_account_readonly",
+        check_company=True,
+        readonly=True,
+    )
+    filing_adjustment_ids = fields.Many2many(
+        "sudo.cn.vat.filing.adjustment",
+        "sudo_cn_vat_period_adjustment_rel",
+        "run_id",
+        "adjustment_id",
+        string="已批准申报调整快照",
         check_company=True,
         readonly=True,
     )
@@ -495,6 +599,27 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         if len(moves) > MAX_ACCOUNTING_MOVES:
             raise UserError(_("单次勾稽的 Odoo 发票凭证超过安全上限。"))
         return moves
+
+    def _control_account_lines(self, mappings):
+        self.ensure_one()
+        if not mappings:
+            return self.env["account.move.line"]
+        lines = self.env["account.move.line"].sudo().with_company(
+            self.company_id
+        ).search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("parent_state", "=", "posted"),
+                ("date", ">=", self.period_start),
+                ("date", "<=", self.period_end),
+                ("account_id", "in", mappings.account_id.ids),
+            ],
+            order="date, id",
+            limit=MAX_ACCOUNTING_LINES + 1,
+        )
+        if len(lines) > MAX_ACCOUNTING_LINES:
+            raise UserError(_("单次勾稽的增值税控制科目分录超过安全上限。"))
+        return lines
 
     def _einvoice_documents(self):
         self.ensure_one()
@@ -675,8 +800,8 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         moves = self._accounting_moves()
         posted = moves.filtered(lambda move: move.state == "posted")
         drafts = moves - posted
-        output_tax = 0.0
-        input_tax = 0.0
+        invoice_output_tax = 0.0
+        invoice_input_tax = 0.0
         helper = self.env["sudo.cn.einvoice.reconciliation.run"]
         line_summaries = helper._ledger_line_summaries(moves)
         empty_summary = {
@@ -690,13 +815,13 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             amount = abs(float(move.amount_tax_signed or 0.0))
             if move.state == "posted":
                 if move.move_type == "out_invoice":
-                    output_tax += amount
+                    invoice_output_tax += amount
                 elif move.move_type == "out_refund":
-                    output_tax -= amount
+                    invoice_output_tax -= amount
                 elif move.move_type == "in_invoice":
-                    input_tax += amount
+                    invoice_input_tax += amount
                 elif move.move_type == "in_refund":
-                    input_tax -= amount
+                    invoice_input_tax -= amount
             snapshot = helper._move_candidate_snapshot(
                 move,
                 line_summaries.get(move.id, empty_summary),
@@ -706,21 +831,220 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 amount,
             )
             snapshots.append(snapshot)
-        self._add_issue(
-            bucket,
-            "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
-            "review",
-            "accounting",
-            _("账务口径仅为 Odoo 发票税额合计"),
-            _(
-                "当前版本使用客户和供应商发票的全部税额合计，尚未按"
-                "中国增值税税种、税目或控制科目建立专用映射。"
-            ),
-            _(
-                "复核 Odoo 税配置及增值税控制科目，并结合未开票、"
-                "视同销售、进项转出和其他申报调整解释差异。"
-            ),
+
+        mapping_model = self.env["sudo.cn.vat.account.mapping"].sudo()
+        covered_mappings = mapping_model._for_profile_period(
+            self.profile_id,
+            self.period_start,
+            self.period_end,
         )
+        mappings = mapping_model._overlapping_for_profile_period(
+            self.profile_id,
+            self.period_start,
+            self.period_end,
+        )
+        partial_mappings = mappings - covered_mappings
+        draft_mappings = mapping_model.search(
+            [
+                ("profile_id", "=", self.profile_id.id),
+                ("state", "=", "draft"),
+                ("valid_from", "<=", self.period_end),
+                "|",
+                ("valid_to", "=", False),
+                ("valid_to", ">=", self.period_start),
+            ]
+        )
+        adjustment_model = self.env["sudo.cn.vat.filing.adjustment"].sudo()
+        adjustments = adjustment_model._for_profile_period(
+            self.profile_id,
+            self.period_start,
+            self.period_end,
+        )
+        draft_adjustments = adjustment_model.search(
+            [
+                ("profile_id", "=", self.profile_id.id),
+                ("period_start", "=", self.period_start),
+                ("period_end", "=", self.period_end),
+                ("state", "=", "draft"),
+            ]
+        )
+        mapping_integrity_failures = mappings.filtered(
+            lambda mapping: mapping._current_integrity_state() != "verified"
+        )
+        adjustment_integrity_failures = adjustments.filtered(
+            lambda adjustment: (
+                adjustment._current_integrity_state() != "verified"
+            )
+        )
+        account_counts = Counter(
+            mapping.account_id.id for mapping in covered_mappings
+        )
+        duplicated_accounts = {
+            account_id
+            for account_id, count in account_counts.items()
+            if count > 1
+        }
+        roles = set(covered_mappings.mapped("role"))
+        configured = bool(mappings or adjustments)
+        control_ready = (
+            roles == {"output", "input"}
+            and not partial_mappings
+            and not mapping_integrity_failures
+            and not adjustment_integrity_failures
+            and not duplicated_accounts
+        )
+        if draft_mappings:
+            self._add_issue(
+                bucket,
+                "DRAFT_VAT_CONTROL_ACCOUNT_MAPPINGS_EXCLUDED",
+                "review",
+                "accounting",
+                _("存在尚未核验的增值税控制科目映射"),
+                _("待核验映射没有进入本次控制科目取数范围。"),
+                _("完成配置依据和工作底稿复核后核验映射，再重新执行勾稽。"),
+                affected_count=len(draft_mappings),
+            )
+        if draft_adjustments:
+            self._add_issue(
+                bucket,
+                "DRAFT_VAT_FILING_ADJUSTMENTS_EXCLUDED",
+                "review",
+                "accounting",
+                _("存在尚未批准的增值税申报调整"),
+                _("待审批调整没有进入本次申报比较口径。"),
+                _("复核调整原因、计算过程和证据，批准后重新执行勾稽。"),
+                affected_count=len(draft_adjustments),
+            )
+        if partial_mappings:
+            self._add_issue(
+                bucket,
+                "VAT_CONTROL_ACCOUNT_MAPPING_PERIOD_NOT_COVERED",
+                "blocking",
+                "accounting",
+                _("增值税控制科目映射未覆盖完整勾稽期间"),
+                _("至少一份已核验映射只覆盖当前勾稽期间的一部分，不能形成完整控制科目口径。"),
+                _("调整勾稽期间或补齐映射有效期，核验后重新执行勾稽。"),
+                affected_count=len(partial_mappings),
+            )
+        if configured and roles != {"output", "input"}:
+            self._add_issue(
+                bucket,
+                "VAT_CONTROL_ACCOUNT_MAPPING_INCOMPLETE",
+                "blocking",
+                "accounting",
+                _("增值税控制科目映射不完整"),
+                _("控制科目口径必须同时具备覆盖整个期间的销项和进项已核验映射。"),
+                _("在规则与配置中补齐并核验销项税额、进项税额控制科目映射。"),
+                affected_count=max(len(mappings), 1),
+            )
+        if mapping_integrity_failures:
+            self._add_issue(
+                bucket,
+                "VAT_CONTROL_ACCOUNT_MAPPING_INTEGRITY_FAILED",
+                "blocking",
+                "accounting",
+                _("增值税控制科目映射完整性失效"),
+                _("已核验映射的科目、期间、口径说明或工作底稿发生变化。"),
+                _("重新核对配置并完成核验后再执行期间勾稽。"),
+                affected_count=len(mapping_integrity_failures),
+            )
+        if adjustment_integrity_failures:
+            self._add_issue(
+                bucket,
+                "VAT_FILING_ADJUSTMENT_INTEGRITY_FAILED",
+                "blocking",
+                "accounting",
+                _("已批准增值税申报调整完整性失效"),
+                _("已批准调整的期间、金额、原因或证据发生变化。"),
+                _("取消异常调整并创建新的受控调整记录。"),
+                affected_count=len(adjustment_integrity_failures),
+            )
+        if duplicated_accounts:
+            self._add_issue(
+                bucket,
+                "VAT_CONTROL_ACCOUNT_MAPPING_AMBIGUOUS",
+                "blocking",
+                "accounting",
+                _("增值税控制科目存在重复角色映射"),
+                _("同一控制科目在当前期间被多份已核验映射重复引用。"),
+                _("撤销冲突映射，只保留唯一有效的科目角色。"),
+                affected_count=len(duplicated_accounts),
+            )
+
+        control_lines = self._control_account_lines(covered_mappings)
+        mapping_by_account = {
+            mapping.account_id.id: mapping for mapping in covered_mappings
+        }
+        control_output_tax = 0.0
+        control_input_tax = 0.0
+        control_line_snapshots = []
+        for line in control_lines:
+            mapping = mapping_by_account.get(line.account_id.id)
+            role = mapping.role if mapping else False
+            if role == "output":
+                control_output_tax += float(line.credit - line.debit)
+            elif role == "input":
+                control_input_tax += float(line.debit - line.credit)
+            control_line_snapshots.append(
+                {
+                    "line_id": line.id,
+                    "move_id": line.move_id.id,
+                    "date": _date_string(line.date),
+                    "account_id": line.account_id.id,
+                    "role": role,
+                    "debit": _amount_string(self.currency_id, line.debit),
+                    "credit": _amount_string(self.currency_id, line.credit),
+                    "balance": _amount_string(self.currency_id, line.balance),
+                    "write_date": _datetime_string(line.write_date),
+                }
+            )
+
+        output_adjustment = sum(
+            float(adjustment.signed_amount)
+            for adjustment in adjustments
+            if adjustment.tax_side == "output"
+        )
+        input_adjustment = sum(
+            float(adjustment.signed_amount)
+            for adjustment in adjustments
+            if adjustment.tax_side == "input"
+        )
+        invoice_output_tax = self.currency_id.round(invoice_output_tax)
+        invoice_input_tax = self.currency_id.round(invoice_input_tax)
+        control_output_tax = self.currency_id.round(control_output_tax)
+        control_input_tax = self.currency_id.round(control_input_tax)
+        output_adjustment = self.currency_id.round(output_adjustment)
+        input_adjustment = self.currency_id.round(input_adjustment)
+        if control_ready:
+            accounting_basis = "control_accounts"
+            output_tax = self.currency_id.round(
+                control_output_tax + output_adjustment
+            )
+            input_tax = self.currency_id.round(
+                control_input_tax + input_adjustment
+            )
+        else:
+            accounting_basis = (
+                "control_accounts" if configured else "invoice_tax_totals"
+            )
+            output_tax = invoice_output_tax
+            input_tax = invoice_input_tax
+        if not configured:
+            self._add_issue(
+                bucket,
+                "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
+                "review",
+                "accounting",
+                _("账务口径仅为 Odoo 发票税额合计"),
+                _(
+                    "当前档案尚未配置覆盖期间的已核验增值税销项和进项"
+                    "控制科目，因此申报比较继续使用发票税额口径。"
+                ),
+                _(
+                    "在规则与配置中建立控制科目映射，并对未开票、视同销售、"
+                    "进项转出和其他申报调整形成受控工作底稿。"
+                ),
+            )
         if drafts:
             self._add_issue(
                 bucket,
@@ -732,14 +1056,102 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 _("核对草稿单据是否应在当前期间过账、取消或移至其他期间。"),
                 affected_count=len(drafts),
             )
+        mapping_snapshots = []
+        for mapping in mappings:
+            account = mapping.account_id.with_company(self.company_id)
+            mapping_snapshots.append(
+                {
+                    "mapping_id": mapping.id,
+                    "account_id": account.id,
+                    "account_code": account.code or None,
+                    "account_name": account.name or None,
+                    "role": mapping.role,
+                    "valid_from": _date_string(mapping.valid_from),
+                    "valid_to": _date_string(mapping.valid_to),
+                    "covers_full_period": mapping in covered_mappings,
+                    "verification_checksum": mapping.verification_checksum,
+                    "integrity_state": mapping._current_integrity_state(),
+                }
+            )
+        adjustment_snapshots = [
+            {
+                "adjustment_id": adjustment.id,
+                "tax_side": adjustment.tax_side,
+                "effect": adjustment.effect,
+                "adjustment_type": adjustment.adjustment_type,
+                "signed_amount": _amount_string(
+                    self.currency_id,
+                    adjustment.signed_amount,
+                ),
+                "source_reference": adjustment.source_reference,
+                "approval_checksum": adjustment.approval_checksum,
+                "integrity_state": adjustment._current_integrity_state(),
+            }
+            for adjustment in adjustments
+        ]
+        amount_snapshot = {
+            "invoice_output": _amount_string(
+                self.currency_id, invoice_output_tax
+            ),
+            "invoice_input": _amount_string(
+                self.currency_id, invoice_input_tax
+            ),
+            "control_output": _amount_string(
+                self.currency_id, control_output_tax
+            ),
+            "control_input": _amount_string(
+                self.currency_id, control_input_tax
+            ),
+            "output_adjustment": _amount_string(
+                self.currency_id, output_adjustment
+            ),
+            "input_adjustment": _amount_string(
+                self.currency_id, input_adjustment
+            ),
+            "filing_basis_output": _amount_string(
+                self.currency_id, output_tax
+            ),
+            "filing_basis_input": _amount_string(
+                self.currency_id, input_tax
+            ),
+        }
+        scope_snapshot = {
+            "schema": "sdoo.cn.vat-accounting-scope-config.v1",
+            "basis": accounting_basis,
+            "control_mappings": mapping_snapshots,
+            "filing_adjustments": adjustment_snapshots,
+            "amounts": amount_snapshot,
+        }
         return {
-            "state": "available",
+            "state": "available" if not configured or control_ready else "blocked",
+            "basis": accounting_basis,
             "moves": moves,
+            "mappings": mappings,
+            "control_lines": control_lines,
+            "adjustments": adjustments,
             "posted_count": len(posted),
             "draft_count": len(drafts),
-            "output_tax": self.currency_id.round(output_tax),
-            "input_tax": self.currency_id.round(input_tax),
-            "snapshot": sorted(snapshots, key=lambda item: item["move_id"]),
+            "invoice_output_tax": invoice_output_tax,
+            "invoice_input_tax": invoice_input_tax,
+            "control_output_tax": control_output_tax,
+            "control_input_tax": control_input_tax,
+            "output_adjustment": output_adjustment,
+            "input_adjustment": input_adjustment,
+            "output_tax": output_tax,
+            "input_tax": input_tax,
+            "scope_snapshot": scope_snapshot,
+            "snapshot": {
+                "schema": "sdoo.cn.vat-accounting-scope.v2",
+                "basis": accounting_basis,
+                "invoice_moves": sorted(
+                    snapshots,
+                    key=lambda item: item["move_id"],
+                ),
+                "control_mappings": mapping_snapshots,
+                "control_lines": control_line_snapshots,
+                "filing_adjustments": adjustment_snapshots,
+                "amounts": amount_snapshot,
+            },
         }
 
     def _invoice_identity(self, document):
@@ -1322,6 +1734,8 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         right_label,
         right_amount,
         action_hint,
+        *,
+        source_area="cross_source",
     ):
         difference = self.currency_id.round(left_amount - right_amount)
         values[has_field] = True
@@ -1332,7 +1746,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             bucket,
             code,
             "review",
-            "cross_source",
+            source_area,
             title,
             _("两个受控口径在当前期间存在金额差异。"),
             action_hint,
@@ -1352,6 +1766,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         filing = self._collect_filing(bucket)
         payments = self._collect_payments(bucket)
         accounting_checksum = _checksum(accounting["snapshot"])
+        accounting_scope_checksum = _checksum(accounting["scope_snapshot"])
         einvoice_checksum = _checksum(einvoices["snapshot"])
         filing_checksum = _checksum(filing["snapshot"])
         payment_checksum = _checksum(payments["snapshot"])
@@ -1365,6 +1780,20 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             "einvoice_document_count": len(einvoices["documents"]),
             "filing_record_count": len(filing["records"]),
             "payment_record_count": len(payments["records"]),
+            "accounting_basis": accounting["basis"],
+            "control_account_mapping_count": len(accounting["mappings"]),
+            "control_account_line_count": len(accounting["control_lines"]),
+            "filing_adjustment_count": len(accounting["adjustments"]),
+            "invoice_output_tax_amount": accounting["invoice_output_tax"],
+            "invoice_input_tax_amount": accounting["invoice_input_tax"],
+            "control_output_tax_amount": accounting["control_output_tax"],
+            "control_input_tax_amount": accounting["control_input_tax"],
+            "filing_output_adjustment_amount": accounting[
+                "output_adjustment"
+            ],
+            "filing_input_adjustment_amount": accounting[
+                "input_adjustment"
+            ],
             "ledger_output_tax_amount": accounting["output_tax"],
             "ledger_input_tax_amount": accounting["input_tax"],
             "has_einvoice_output_tax_amount": (
@@ -1393,11 +1822,26 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             "ledger_filing_input_difference": 0.0,
             "has_filing_payment_difference": False,
             "filing_payment_difference": 0.0,
+            "has_invoice_control_output_difference": False,
+            "invoice_control_output_difference": 0.0,
+            "has_invoice_control_input_difference": False,
+            "invoice_control_input_difference": 0.0,
             "accounting_snapshot_checksum": accounting_checksum,
+            "accounting_scope_snapshot_json": accounting["scope_snapshot"],
+            "accounting_scope_snapshot_checksum": accounting_scope_checksum,
             "einvoice_snapshot_checksum": einvoice_checksum,
             "filing_snapshot_checksum": filing_checksum,
             "payment_snapshot_checksum": payment_checksum,
             "accounting_move_ids": [Command.set(accounting["moves"].ids)],
+            "control_account_mapping_ids": [
+                Command.set(accounting["mappings"].ids)
+            ],
+            "control_account_line_ids": [
+                Command.set(accounting["control_lines"].ids)
+            ],
+            "filing_adjustment_ids": [
+                Command.set(accounting["adjustments"].ids)
+            ],
             "einvoice_document_ids": [
                 Command.set(einvoices["documents"].ids)
             ],
@@ -1411,9 +1855,9 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 "has_ledger_einvoice_output_difference",
                 "ledger_einvoice_output_difference",
                 "LEDGER_EINVOICE_OUTPUT_DIFFERENCE",
-                _("账务与电子发票销项税额不一致"),
+                _("Odoo 发票与受控电子发票销项税额不一致"),
                 _("Odoo 已过账客户发票税额合计"),
-                accounting["output_tax"],
+                accounting["invoice_output_tax"],
                 _("受控电子发票销项税额"),
                 einvoices["output_tax"],
                 _("按单据、红字状态、入账期间和票据覆盖范围逐项核对。"),
@@ -1424,14 +1868,56 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 "has_ledger_einvoice_input_difference",
                 "ledger_einvoice_input_difference",
                 "LEDGER_EINVOICE_INPUT_DIFFERENCE",
-                _("账务与电子发票进项税额不一致"),
+                _("Odoo 发票与受控电子发票进项税额不一致"),
                 _("Odoo 已过账供应商账单税额合计"),
-                accounting["input_tax"],
+                accounting["invoice_input_tax"],
                 _("受控电子发票进项税额"),
                 einvoices["input_tax"],
                 _("按单据、红字状态、入账期间和票据覆盖范围逐项核对。"),
             )
-        if filing["has_output"]:
+        if (
+            accounting["basis"] == "control_accounts"
+            and accounting["state"] == "available"
+        ):
+            self._add_comparison(
+                bucket,
+                values,
+                "has_invoice_control_output_difference",
+                "invoice_control_output_difference",
+                "INVOICE_CONTROL_OUTPUT_DIFFERENCE",
+                _("Odoo 发票与销项控制科目发生额不一致"),
+                _("Odoo 已过账客户发票税额合计"),
+                accounting["invoice_output_tax"],
+                _("销项增值税控制科目发生额"),
+                accounting["control_output_tax"],
+                _("核对未开票收入、视同销售、手工总账、红字和跨期入账。"),
+                source_area="accounting",
+            )
+            self._add_comparison(
+                bucket,
+                values,
+                "has_invoice_control_input_difference",
+                "invoice_control_input_difference",
+                "INVOICE_CONTROL_INPUT_DIFFERENCE",
+                _("Odoo 发票与进项控制科目发生额不一致"),
+                _("Odoo 已过账供应商账单税额合计"),
+                accounting["invoice_input_tax"],
+                _("进项增值税控制科目发生额"),
+                accounting["control_input_tax"],
+                _("核对认证时点、进项转出、手工总账、红字和跨期入账。"),
+                source_area="accounting",
+            )
+        filing_basis_output_label = (
+            _("控制科目发生额加已批准销项申报调整")
+            if accounting["basis"] == "control_accounts"
+            else _("Odoo 已过账客户发票税额合计")
+        )
+        filing_basis_input_label = (
+            _("控制科目发生额加已批准进项申报调整")
+            if accounting["basis"] == "control_accounts"
+            else _("Odoo 已过账供应商账单税额合计")
+        )
+        if filing["has_output"] and accounting["state"] == "available":
             self._add_comparison(
                 bucket,
                 values,
@@ -1439,13 +1925,13 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 "ledger_filing_output_difference",
                 "LEDGER_FILING_OUTPUT_DIFFERENCE",
                 _("账务销项税额与申报销项税额不一致"),
-                _("Odoo 已过账客户发票税额合计"),
+                filing_basis_output_label,
                 accounting["output_tax"],
                 _("增值税申报销项税额"),
                 filing["output_tax"],
                 _("核对未开票收入、视同销售、红字、调整及跨期入账。"),
             )
-        if filing["has_input"]:
+        if filing["has_input"] and accounting["state"] == "available":
             self._add_comparison(
                 bucket,
                 values,
@@ -1453,7 +1939,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 "ledger_filing_input_difference",
                 "LEDGER_FILING_INPUT_DIFFERENCE",
                 _("账务进项税额与申报进项税额不一致"),
-                _("Odoo 已过账供应商账单税额合计"),
+                filing_basis_input_label,
                 accounting["input_tax"],
                 _("增值税申报进项税额"),
                 filing["input_tax"],
@@ -1507,6 +1993,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             "period_start": _date_string(self.period_start),
             "period_end": _date_string(self.period_end),
             "vat_tax_type_code": self.vat_tax_type_code,
+            "accounting_basis": accounting["basis"],
             "source_states": {
                 "accounting": accounting["state"],
                 "einvoice": einvoices["state"],
@@ -1516,12 +2003,16 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             "source_counts": {
                 "accounting_posted": accounting["posted_count"],
                 "accounting_draft": accounting["draft_count"],
+                "control_account_mappings": len(accounting["mappings"]),
+                "control_account_lines": len(accounting["control_lines"]),
+                "filing_adjustments": len(accounting["adjustments"]),
                 "einvoice": len(einvoices["documents"]),
                 "filing": len(filing["records"]),
                 "payment": len(payments["records"]),
             },
             "source_checksums": {
                 "accounting": accounting_checksum,
+                "accounting_scope": accounting_scope_checksum,
                 "einvoice": einvoice_checksum,
                 "filing": filing_checksum,
                 "payment": payment_checksum,
@@ -1530,6 +2021,12 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
             "amounts": {
                 key: _amount_string(self.currency_id, values[key])
                 for key in (
+                    "invoice_output_tax_amount",
+                    "invoice_input_tax_amount",
+                    "control_output_tax_amount",
+                    "control_input_tax_amount",
+                    "filing_output_adjustment_amount",
+                    "filing_input_adjustment_amount",
                     "ledger_output_tax_amount",
                     "ledger_input_tax_amount",
                     "einvoice_output_tax_amount",
@@ -1543,6 +2040,8 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                     "ledger_filing_output_difference",
                     "ledger_filing_input_difference",
                     "filing_payment_difference",
+                    "invoice_control_output_difference",
+                    "invoice_control_input_difference",
                 )
             },
             "provided": {
@@ -1559,6 +2058,8 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                     "has_ledger_filing_output_difference",
                     "has_ledger_filing_input_difference",
                     "has_filing_payment_difference",
+                    "has_invoice_control_output_difference",
+                    "has_invoice_control_input_difference",
                 )
             },
             "issues": [

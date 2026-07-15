@@ -1,6 +1,8 @@
 from collections import Counter
 from datetime import date
 from decimal import Decimal
+import hashlib
+import json
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError
@@ -20,6 +22,17 @@ INVOICE_MOVE_TYPES = (
     "out_receipt",
     "in_receipt",
 )
+
+
+def _json_checksum(payload):
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 class SudoChinaComplianceEngine(models.AbstractModel):
@@ -331,6 +344,37 @@ class SudoChinaComplianceEngine(models.AbstractModel):
         if not run:
             return payload, None
 
+        scope_snapshot = run.accounting_scope_snapshot_json
+        scope_snapshot_checksum = run.accounting_scope_snapshot_checksum
+        scope_snapshot_storage = "legacy_hash_only"
+        if run.engine_version != "19.0.1":
+            if (
+                not isinstance(scope_snapshot, dict)
+                or scope_snapshot.get("schema")
+                != "sdoo.cn.vat-accounting-scope-config.v1"
+                or not scope_snapshot_checksum
+                or _json_checksum(scope_snapshot) != scope_snapshot_checksum
+            ):
+                raise UserError(_("增值税期间四方勾稽账务口径配置快照不完整。"))
+            snapshot_mapping_ids = [
+                item.get("mapping_id")
+                for item in scope_snapshot.get("control_mappings", [])
+            ]
+            snapshot_adjustment_ids = [
+                item.get("adjustment_id")
+                for item in scope_snapshot.get("filing_adjustments", [])
+            ]
+            if (
+                Counter(snapshot_mapping_ids)
+                != Counter(run.control_account_mapping_ids.ids)
+                or Counter(snapshot_adjustment_ids)
+                != Counter(run.filing_adjustment_ids.ids)
+            ):
+                raise UserError(
+                    _("增值税期间四方勾稽账务口径配置快照与关联记录不一致。")
+                )
+            scope_snapshot_storage = "persisted"
+
         issues = run.issue_ids.sudo()
         blocking_count = len(
             issues.filtered(lambda issue: issue.severity == "blocking")
@@ -367,6 +411,11 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                     lambda move: move.state == "draft"
                 )
             ),
+            "control_account_mapping_count": len(
+                run.control_account_mapping_ids
+            ),
+            "control_account_line_count": len(run.control_account_line_ids),
+            "filing_adjustment_count": len(run.filing_adjustment_ids),
             "einvoice_document_count": len(run.einvoice_document_ids),
             "filing_record_count": len(run.filing_record_ids),
             "payment_record_count": len(run.payment_record_ids),
@@ -396,6 +445,12 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             )
 
         amount_fields = (
+            "invoice_output_tax_amount",
+            "invoice_input_tax_amount",
+            "control_output_tax_amount",
+            "control_input_tax_amount",
+            "filing_output_adjustment_amount",
+            "filing_input_adjustment_amount",
             "ledger_output_tax_amount",
             "ledger_input_tax_amount",
             "einvoice_output_tax_amount",
@@ -439,6 +494,14 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "has_ledger_filing_input_difference",
             ),
             ("filing_payment_difference", "has_filing_payment_difference"),
+            (
+                "invoice_control_output_difference",
+                "has_invoice_control_output_difference",
+            ),
+            (
+                "invoice_control_input_difference",
+                "has_invoice_control_input_difference",
+            ),
         )
         differences = {
             field_name: (
@@ -449,7 +512,7 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             for field_name, provided_field in difference_fields
         }
         detail = {
-            "schema": "sdoo.cn.reconciliation.vat-period.fact.v1",
+            "schema": "sdoo.cn.reconciliation.vat-period.fact.v2",
             "run_id": run.id,
             "engine_version": run.engine_version,
             "period_start": fields.Date.to_string(run.period_start),
@@ -457,6 +520,15 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             "vat_tax_type_code": run.vat_tax_type_code,
             "currency": run.currency_id.name,
             "conclusion_state": run.conclusion_state,
+            "accounting": {
+                "basis": run.accounting_basis,
+                "scope_snapshot_storage": scope_snapshot_storage,
+                "control_account_mapping_count": (
+                    run.control_account_mapping_count
+                ),
+                "control_account_line_count": run.control_account_line_count,
+                "filing_adjustment_count": run.filing_adjustment_count,
+            },
             "source_states": {
                 "accounting": run.accounting_source_state,
                 "einvoice": run.einvoice_source_state,
@@ -466,6 +538,11 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             "counts": {
                 "accounting_posted": run.posted_accounting_move_count,
                 "accounting_draft": run.draft_accounting_move_count,
+                "control_account_mappings": (
+                    run.control_account_mapping_count
+                ),
+                "control_account_lines": run.control_account_line_count,
+                "filing_adjustments": run.filing_adjustment_count,
                 "einvoice": run.einvoice_document_count,
                 "filing": run.filing_record_count,
                 "payment": run.payment_record_count,
@@ -498,6 +575,7 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             ],
             "checksums": {
                 "accounting": run.accounting_snapshot_checksum,
+                "accounting_scope": scope_snapshot_checksum,
                 "einvoice": run.einvoice_snapshot_checksum,
                 "filing": run.filing_snapshot_checksum,
                 "payment": run.payment_snapshot_checksum,

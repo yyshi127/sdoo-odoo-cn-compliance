@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_vat_account_mapping_search" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.account.mapping.search</field>
+        <field name="model">sudo.cn.vat.account.mapping</field>
+        <field name="arch" type="xml">
+            <search string="增值税控制科目映射">
+                <field name="name"/>
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="account_id"/>
+                <field name="source_reference"/>
+                <filter name="draft" string="待核验"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="verified" string="已核验"
+                        domain="[('state', '=', 'verified')]"/>
+                <separator/>
+                <filter name="group_role" string="科目角色"
+                        context="{'group_by': 'role'}"/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_account_mapping_list" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.account.mapping.list</field>
+        <field name="model">sudo.cn.vat.account.mapping</field>
+        <field name="arch" type="xml">
+            <list string="增值税控制科目映射"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="profile_id" optional="hide"/>
+                <field name="role" widget="badge"/>
+                <field name="account_id"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="source_reference"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'draft'"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"
+                       decoration-warning="integrity_state == 'unverified'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_account_mapping_form" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.account.mapping.form</field>
+        <field name="model">sudo.cn.vat.account.mapping</field>
+        <field name="arch" type="xml">
+            <form string="增值税控制科目映射">
+                <header>
+                    <button name="action_verify" type="object"
+                            string="核验映射" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="撤销核验"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'verified'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,verified"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="配置或证据已变化"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        销项科目按贷方减借方取数，进项科目按借方减贷方取数。系统不会根据科目名称自动猜测角色。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group readonly="state != 'draft'">
+                        <group string="映射范围">
+                            <field name="profile_id"
+                                   domain="[('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   readonly="1"/>
+                            <field name="country_id" invisible="1"/>
+                            <field name="role"/>
+                            <field name="account_id"
+                                   domain="[('company_ids', 'in', [company_id])]"
+                                   options="{'no_create': True}"/>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                        </group>
+                        <group string="配置依据">
+                            <field name="source_reference"/>
+                            <field name="separation_exception_reason"
+                                   placeholder="仅在配置人与核验人为同一人时填写不少于 20 字的受控例外理由..."/>
+                        </group>
+                    </group>
+                    <group string="映射口径" readonly="state != 'draft'">
+                        <field name="scope_note"
+                               placeholder="说明科目余额方向、覆盖业务、排除范围和需要人工处理的边界..."/>
+                    </group>
+                    <group string="配置工作底稿">
+                        <field name="evidence_attachment_ids"
+                               widget="many2many_binary" nolabel="1"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <group string="核验与完整性">
+                        <group>
+                            <field name="integrity_state" widget="badge"
+                                   readonly="1"/>
+                            <field name="verification_checksum" readonly="1"
+                                   invisible="not verification_checksum"/>
+                        </group>
+                        <group>
+                            <field name="verified_at" readonly="1"
+                                   invisible="not verified_at"/>
+                            <field name="verified_by_id" readonly="1"
+                                   invisible="not verified_by_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_vat_account_mappings" model="ir.actions.act_window">
+        <field name="name">增值税控制科目映射</field>
+        <field name="res_model">sudo.cn.vat.account.mapping</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_vat_account_mapping_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">建立第一份增值税控制科目映射</p>
+            <p>明确销项和进项控制科目、有效期间、配置依据和工作底稿；系统不会自动猜测科目角色。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_vat_account_mappings"
+              name="增值税控制科目映射"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_vat_account_mappings" sequence="70"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <record id="view_cn_vat_filing_adjustment_search" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.adjustment.search</field>
+        <field name="model">sudo.cn.vat.filing.adjustment</field>
+        <field name="arch" type="xml">
+            <search string="增值税申报调整">
+                <field name="name"/>
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="source_reference"/>
+                <filter name="draft" string="待审批"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="approved" string="已批准"
+                        domain="[('state', '=', 'approved')]"/>
+                <filter name="cancelled" string="已取消"
+                        domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter name="group_period" string="期间"
+                        context="{'group_by': 'period_end'}"/>
+                <filter name="group_side" string="调节口径"
+                        context="{'group_by': 'tax_side'}"/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_filing_adjustment_list" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.adjustment.list</field>
+        <field name="model">sudo.cn.vat.filing.adjustment</field>
+        <field name="arch" type="xml">
+            <list string="增值税申报调整"
+                  decoration-warning="state == 'draft'"
+                  decoration-success="state == 'approved'"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="profile_id" optional="hide"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="tax_side" widget="badge"/>
+                <field name="effect" widget="badge"/>
+                <field name="adjustment_type"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="调整金额"/>
+                <field name="signed_amount" sum="调节净额"/>
+                <field name="source_reference"/>
+                <field name="prepared_by_id" optional="hide"/>
+                <field name="approved_by_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-warning="state == 'draft'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_filing_adjustment_form" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.adjustment.form</field>
+        <field name="model">sudo.cn.vat.filing.adjustment</field>
+        <field name="arch" type="xml">
+            <form string="增值税申报调整">
+                <header>
+                    <button name="action_approve" type="object"
+                            string="批准调整" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_cancel" type="object"
+                            string="取消调整"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'approved'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,approved,cancelled"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="已取消"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'cancelled'"/>
+                    <widget name="web_ribbon" title="批准资料已变化"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        本记录只解释控制科目与申报口径之间的受控调整，不会修改 Odoo 会计凭证、电子发票或申报原始数据。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group readonly="state != 'draft'">
+                        <group string="调节范围">
+                            <field name="profile_id"
+                                   domain="[('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   readonly="1"/>
+                            <field name="country_id" invisible="1"/>
+                            <field name="currency_id" readonly="1"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="tax_side"/>
+                        </group>
+                        <group string="调整金额">
+                            <field name="effect"/>
+                            <field name="adjustment_type"/>
+                            <field name="amount"/>
+                            <field name="signed_amount" readonly="1"/>
+                            <field name="source_reference"/>
+                            <field name="separation_exception_reason"
+                                   placeholder="仅在编制人与审批人为同一人时填写不少于 20 字的受控例外理由..."/>
+                        </group>
+                    </group>
+                    <group string="调整原因与计算过程"
+                           readonly="state != 'draft'">
+                        <field name="description"
+                               placeholder="说明差异原因、计算公式、对应申报栏次、会计科目及期间边界..."/>
+                    </group>
+                    <group string="调整证据">
+                        <field name="evidence_attachment_ids"
+                               widget="many2many_binary" nolabel="1"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <group string="编制、审批与完整性">
+                        <group>
+                            <field name="prepared_by_id" readonly="1"/>
+                            <field name="approved_by_id" readonly="1"
+                                   invisible="not approved_by_id"/>
+                            <field name="approved_at" readonly="1"
+                                   invisible="not approved_at"/>
+                        </group>
+                        <group>
+                            <field name="integrity_state" widget="badge"
+                                   readonly="1"/>
+                            <field name="approval_checksum" readonly="1"
+                                   invisible="not approval_checksum"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_vat_filing_adjustments" model="ir.actions.act_window">
+        <field name="name">增值税申报调整</field>
+        <field name="res_model">sudo.cn.vat.filing.adjustment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_vat_filing_adjustment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">登记第一项受控申报调整</p>
+            <p>记录控制科目到申报口径的期间调整、计算过程、证据和审批轨迹。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_vat_filing_adjustments"
+              name="增值税申报调整"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_vat_filing_adjustments" sequence="79"
+              groups="sudo_global_finance.group_compliance_manager"/>
+</odoo>

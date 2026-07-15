@@ -101,6 +101,10 @@
                     <field name="has_ledger_filing_input_difference"
                            invisible="1"/>
                     <field name="has_filing_payment_difference" invisible="1"/>
+                    <field name="has_invoice_control_output_difference"
+                           invisible="1"/>
+                    <field name="has_invoice_control_input_difference"
+                           invisible="1"/>
                     <widget name="web_ribbon" title="已被新结果替代"
                             bg_color="text-bg-secondary"
                             invisible="state != 'superseded'"/>
@@ -167,8 +171,15 @@
                     <group string="四方数据状态" col="4">
                         <group string="账务">
                             <field name="accounting_source_state" widget="badge"/>
+                            <field name="accounting_basis" widget="badge"/>
                             <field name="posted_accounting_move_count"/>
                             <field name="draft_accounting_move_count"/>
+                            <field name="control_account_mapping_count"
+                                   invisible="accounting_basis != 'control_accounts'"/>
+                            <field name="control_account_line_count"
+                                   invisible="accounting_basis != 'control_accounts'"/>
+                            <field name="filing_adjustment_count"
+                                   invisible="accounting_basis != 'control_accounts'"/>
                         </group>
                         <group string="电子发票">
                             <field name="einvoice_source_state" widget="badge"/>
@@ -183,11 +194,27 @@
                             <field name="payment_record_count"/>
                         </group>
                     </group>
-                    <group string="四方金额口径" col="4">
+                    <group string="账务与申报调节链" col="4">
                         <group string="Odoo 已过账发票">
+                            <field name="invoice_output_tax_amount"/>
+                            <field name="invoice_input_tax_amount"/>
+                        </group>
+                        <group string="增值税控制科目"
+                               invisible="accounting_basis != 'control_accounts'">
+                            <field name="control_output_tax_amount"/>
+                            <field name="control_input_tax_amount"/>
+                        </group>
+                        <group string="已批准申报调整"
+                               invisible="accounting_basis != 'control_accounts'">
+                            <field name="filing_output_adjustment_amount"/>
+                            <field name="filing_input_adjustment_amount"/>
+                        </group>
+                        <group string="账务申报比较口径">
                             <field name="ledger_output_tax_amount"/>
                             <field name="ledger_input_tax_amount"/>
                         </group>
+                    </group>
+                    <group string="外部受控金额口径" col="3">
                         <group string="受控电子发票">
                             <field name="einvoice_output_tax_amount"
                                    invisible="not has_einvoice_output_tax_amount"/>
@@ -209,6 +236,10 @@
                     </group>
                     <group string="可比较口径差异">
                         <group>
+                            <field name="invoice_control_output_difference"
+                                   invisible="not has_invoice_control_output_difference"/>
+                            <field name="invoice_control_input_difference"
+                                   invisible="not has_invoice_control_input_difference"/>
                             <field name="ledger_einvoice_output_difference"
                                    invisible="not has_ledger_einvoice_output_difference"/>
                             <field name="ledger_einvoice_input_difference"
@@ -261,6 +292,55 @@
                                     <field name="amount_total"/>
                                 </list>
                             </field>
+                        </page>
+                        <page string="控制科目与申报调整">
+                            <div class="alert alert-info" role="alert">
+                                本批次已固化执行时点的账务口径配置快照；下方关联记录用于追溯来源，其后续状态变化不会改写历史快照。
+                            </div>
+                            <group string="本次检查的已核验控制科目映射"
+                                   invisible="not control_account_mapping_ids">
+                                <field name="control_account_mapping_ids">
+                                    <list create="0" edit="0" delete="0">
+                                        <field name="role" widget="badge"/>
+                                        <field name="account_id"/>
+                                        <field name="valid_from"/>
+                                        <field name="valid_to"/>
+                                        <field name="source_reference"/>
+                                        <field name="state" widget="badge"/>
+                                        <field name="integrity_state" widget="badge"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="控制科目分录范围"
+                                   groups="account.group_account_readonly"
+                                   invisible="not control_account_line_ids">
+                                <field name="control_account_line_ids">
+                                    <list create="0" edit="0" delete="0">
+                                        <field name="date"/>
+                                        <field name="move_id"/>
+                                        <field name="account_id"/>
+                                        <field name="partner_id" optional="hide"/>
+                                        <field name="debit" sum="借方合计"/>
+                                        <field name="credit" sum="贷方合计"/>
+                                        <field name="balance" sum="余额合计"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="本次采用的已批准申报调整"
+                                   invisible="not filing_adjustment_ids">
+                                <field name="filing_adjustment_ids">
+                                    <list create="0" edit="0" delete="0">
+                                        <field name="tax_side" widget="badge"/>
+                                        <field name="effect" widget="badge"/>
+                                        <field name="adjustment_type"/>
+                                        <field name="amount"/>
+                                        <field name="signed_amount" sum="调节净额"/>
+                                        <field name="source_reference"/>
+                                        <field name="approved_by_id"/>
+                                        <field name="state" widget="badge"/>
+                                    </list>
+                                </field>
+                            </group>
                         </page>
                         <page string="电子发票范围">
                             <field name="einvoice_document_ids">
@@ -316,6 +396,7 @@
                                 </group>
                                 <group>
                                     <field name="accounting_snapshot_checksum"/>
+                                    <field name="accounting_scope_snapshot_checksum"/>
                                     <field name="einvoice_snapshot_checksum"/>
                                     <field name="filing_snapshot_checksum"/>
                                     <field name="payment_snapshot_checksum"/>
