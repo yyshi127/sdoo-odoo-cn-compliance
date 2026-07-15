@@ -219,6 +219,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("electronic invoice reconciliation capability must be declared")
     if features.get("vat_period_reconciliation") is not True:
         fail("VAT period reconciliation capability must be declared")
+    if features.get("formal_compliance_report") is not True:
+        fail("formal compliance report capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -1512,6 +1514,147 @@ def validate_tax_impact_review() -> None:
             fail(f"tax impact runtime coverage is missing {test_name}")
 
 
+def validate_formal_compliance_report() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/compliance_report_sequence.xml",
+        "reports/compliance_report.xml",
+        "views/compliance_report_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("formal compliance report files must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import compliance_report" not in model_init:
+        fail("formal compliance report model must be imported")
+    if model_init.index("from . import compliance_report") < model_init.index(
+        "from . import tax_impact_review"
+    ):
+        fail("formal report must load after tax impact review extensions")
+
+    model_content = (
+        ADDON_ROOT / "models" / "compliance_report.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.compliance.report"',
+        '"sdoo.cn.compliance-report.v1"',
+        '"sdoo.cn.compliance-report-approval.v1"',
+        "approval_integrity_state",
+        '"submitted", "待独立批准"',
+        '"issued", "已签发"',
+        '"superseded", "已被替代"',
+        '"withdrawn", "已撤回"',
+        "snapshot_checksum",
+        "approval_checksum",
+        "issued_pdf_sha256",
+        "_lock_for_transition",
+        "FOR UPDATE",
+        "cn_compliance_report.submitted",
+        "cn_compliance_report.issued",
+        "cn_compliance_report.withdrawn",
+        "group_cn_report_approver",
+        "action_download_issued_pdf",
+    ):
+        if required not in model_content:
+            fail(f"formal compliance report contract is missing {required}")
+    if "net_tax_impact" in model_content:
+        fail("formal report must not publish a netted tax impact amount")
+
+    with (ADDON_ROOT / "security" / "ir.model.access.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+    model_rows = [
+        row
+        for row in rows
+        if row["model_id:id"] == "model_sudo_cn_compliance_report"
+    ]
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+        "sudo_country_pack_cn.group_cn_report_approver",
+    }
+    if {row["group_id:id"] for row in model_rows} != expected_groups:
+        fail("formal compliance report ACL groups are incomplete")
+    user_row = next(
+        row
+        for row in model_rows
+        if row["group_id:id"].endswith("group_compliance_user")
+    )
+    if [
+        user_row[key]
+        for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+    ] != ["1", "0", "0", "0"]:
+        fail("ordinary compliance users must have read-only formal report access")
+
+    security = (
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="group_cn_report_approver"',
+        'ref="model_sudo_cn_compliance_report"',
+        "[('company_id', 'in', company_ids)]",
+    ):
+        if required not in security:
+            fail(f"formal report security is missing {required}")
+
+    view_content = (
+        ADDON_ROOT / "views" / "compliance_report_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_formal_compliance_report_list"',
+        'id="view_cn_formal_compliance_report_form"',
+        'id="action_cn_formal_compliance_reports"',
+        'id="menu_cn_formal_compliance_reports"',
+        "提交独立批准",
+        "批准并签发",
+        "下载已签发 PDF",
+        "源资料已变化",
+        "PDF 完整性异常",
+    ):
+        if required not in view_content:
+            fail(f"formal compliance report UI is missing {required}")
+
+    report_content = (
+        ADDON_ROOT / "reports" / "compliance_report.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '<field name="binding_model_id" eval="False"/>',
+        "不是纳税申报表、税务鉴证报告、法律意见、审计意见或税务机关认定",
+        "潜在少缴、潜在多缴和期间错配影响分别列示",
+        "不计算净额",
+        "AI 分析仅为辅助材料",
+        "内容快照 SHA-256",
+        "批准 SHA-256",
+    ):
+        if required not in report_content:
+            fail(f"formal compliance report boundary is missing {required}")
+
+    test_content = (
+        ADDON_ROOT / "tests" / "test_compliance_report.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_submission_freezes_explainable_snapshot_and_audit",
+        "test_unreviewed_or_unsigned_findings_block_formal_submission",
+        "test_source_change_after_submission_requires_return_and_resubmit",
+        "test_independent_approver_issues_immutable_pdf",
+        "test_pdf_tampering_is_detected_and_download_blocked",
+        "test_approval_tampering_is_detected_and_download_blocked",
+        "test_open_verification_task_prevents_clear_conclusion",
+        "test_same_person_approval_requires_recorded_exception",
+        "test_new_issue_supersedes_previous_report_without_rewriting_pdf",
+        "test_withdrawal_preserves_artifact_and_audit_history",
+        "test_read_only_user_cannot_prepare_or_mutate_report",
+        "test_report_html_preserves_boundary_and_non_net_tax_impact",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"formal report runtime coverage is missing {test_name}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -1707,6 +1850,7 @@ def main() -> int:
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
     validate_tax_impact_review()
+    validate_formal_compliance_report()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="res_groups_privilege_cn_compliance_reporting"
+            model="res.groups.privilege">
+        <field name="name">China Compliance Reporting</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+        <field name="sequence">43</field>
+    </record>
+
+    <record id="group_cn_report_approver" model="res.groups">
+        <field name="name">Report Approver</field>
+        <field name="sequence">20</field>
+        <field name="comment">Independently approve governed China compliance report snapshots and issued PDF artifacts.</field>
+        <field name="privilege_id"
+               ref="res_groups_privilege_cn_compliance_reporting"/>
+        <field name="implied_ids"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+        <field name="user_ids"
+               eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
     <record id="cn_taxpayer_classification_company_rule" model="ir.rule">
         <field name="name">China taxpayer classifications: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_taxpayer_classification"/>
@@ -141,6 +160,14 @@
     <record id="cn_tax_impact_case_company_rule" model="ir.rule">
         <field name="name">China tax impact review cases: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_tax_impact_case"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_formal_compliance_report_company_rule" model="ir.rule">
+        <field name="name">China formal compliance reports: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_compliance_report"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups"
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>

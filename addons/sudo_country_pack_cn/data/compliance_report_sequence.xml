@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <record id="sequence_cn_formal_compliance_report" model="ir.sequence">
+        <field name="name">中国正式合规报告</field>
+        <field name="code">sudo.cn.compliance.report</field>
+        <field name="prefix">CN-CR/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

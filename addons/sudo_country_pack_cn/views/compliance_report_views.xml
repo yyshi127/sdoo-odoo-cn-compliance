@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_formal_compliance_report_search" model="ir.ui.view">
+        <field name="name">sudo.cn.compliance.report.search</field>
+        <field name="model">sudo.cn.compliance.report</field>
+        <field name="arch" type="xml">
+            <search string="正式合规报告">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="assessment_id"/>
+                <field name="company_id"/>
+                <field name="reviewer_id"/>
+                <filter name="active_lifecycle" string="进行中与当前"
+                        domain="[('state', 'in', ('draft', 'submitted', 'issued'))]"/>
+                <filter name="current" string="当前签发"
+                        domain="[('state', '=', 'issued')]"/>
+                <filter name="pending" string="待批准"
+                        domain="[('state', '=', 'submitted')]"/>
+                <filter name="action_required" string="需要整改"
+                        domain="[('conclusion_state', 'in', ('action_required', 'limited_action_required'))]"/>
+                <filter name="limited" string="存在限制"
+                        domain="[('has_material_limitations', '=', True)]"/>
+                <separator/>
+                <filter name="my_approvals" string="待我批准"
+                        domain="[('state', '=', 'submitted'), ('reviewer_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_company" string="公司"
+                            context="{'group_by': 'company_id'}"/>
+                    <filter name="group_state" string="状态"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_conclusion" string="结论"
+                            context="{'group_by': 'conclusion_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_formal_compliance_report_list" model="ir.ui.view">
+        <field name="name">sudo.cn.compliance.report.list</field>
+        <field name="model">sudo.cn.compliance.report</field>
+        <field name="arch" type="xml">
+            <list string="正式合规报告"
+                  decoration-danger="state == 'withdrawn' or pdf_integrity_state == 'checksum_mismatch' or approval_integrity_state == 'checksum_mismatch'"
+                  decoration-warning="state == 'submitted' or has_material_limitations"
+                  decoration-muted="state == 'superseded'">
+                <field name="name"/>
+                <field name="revision"/>
+                <field name="title"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="critical_count" decoration-danger="critical_count &gt; 0"/>
+                <field name="high_count" decoration-danger="high_count &gt; 0"/>
+                <field name="open_task_count" decoration-warning="open_task_count &gt; 0"/>
+                <field name="conclusion_state" widget="badge"
+                       decoration-success="conclusion_state == 'clear'"
+                       decoration-danger="conclusion_state in ('action_required', 'limited_action_required')"
+                       decoration-warning="conclusion_state in ('limited', 'limited_action_required')"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'issued'"
+                       decoration-warning="state == 'submitted'"
+                       decoration-danger="state == 'withdrawn'"
+                       decoration-muted="state == 'superseded'"/>
+                <field name="reviewer_id" widget="many2one_avatar_user"/>
+                <field name="issued_at"/>
+                <field name="approval_integrity_state" widget="badge" optional="hide"
+                       decoration-success="approval_integrity_state == 'verified'"
+                       decoration-danger="approval_integrity_state in ('missing', 'checksum_mismatch')"/>
+                <field name="pdf_integrity_state" widget="badge" optional="hide"
+                       decoration-success="pdf_integrity_state == 'verified'"
+                       decoration-danger="pdf_integrity_state in ('missing', 'checksum_mismatch')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_formal_compliance_report_form" model="ir.ui.view">
+        <field name="name">sudo.cn.compliance.report.form</field>
+        <field name="model">sudo.cn.compliance.report</field>
+        <field name="arch" type="xml">
+            <form string="中国正式财税合规报告">
+                <header>
+                    <button name="action_submit" type="object"
+                            string="提交独立批准" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_return_to_draft" type="object"
+                            string="退回修改"
+                            groups="sudo_country_pack_cn.group_cn_report_approver"
+                            invisible="state != 'submitted' or reviewer_id != uid"/>
+                    <button name="action_issue" type="object"
+                            string="批准并签发" class="btn-primary"
+                            groups="sudo_country_pack_cn.group_cn_report_approver"
+                            invisible="state != 'submitted' or reviewer_id != uid"/>
+                    <button name="action_withdraw" type="object"
+                            string="撤回报告"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'issued'"/>
+                    <button name="action_preview" type="object"
+                            string="预览报告" icon="fa-file-pdf-o"
+                            invisible="state in ('issued', 'superseded', 'withdrawn')"/>
+                    <button name="action_download_issued_pdf" type="object"
+                            string="下载已签发 PDF" icon="fa-download"
+                            invisible="state not in ('issued', 'superseded', 'withdrawn') or approval_integrity_state != 'verified' or pdf_integrity_state != 'verified'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,issued,superseded,withdrawn"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="待独立批准"
+                            bg_color="text-bg-warning"
+                            invisible="state != 'submitted'"/>
+                    <widget name="web_ribbon" title="已签发"
+                            bg_color="text-bg-success"
+                            invisible="state != 'issued'"/>
+                    <widget name="web_ribbon" title="已被替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <widget name="web_ribbon" title="已撤回"
+                            bg_color="text-bg-danger"
+                            invisible="state != 'withdrawn'"/>
+                    <widget name="web_ribbon" title="源资料已变化"
+                            bg_color="text-bg-danger"
+                            invisible="state == 'draft' or snapshot_integrity_state != 'source_changed'"/>
+                    <widget name="web_ribbon" title="PDF 完整性异常"
+                            bg_color="text-bg-danger"
+                            invisible="pdf_integrity_state not in ('missing', 'checksum_mismatch')"/>
+                    <widget name="web_ribbon" title="批准记录完整性异常"
+                            bg_color="text-bg-danger"
+                            invisible="approval_integrity_state not in ('missing', 'checksum_mismatch')"/>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_assessment" type="object"
+                                class="oe_stat_button" icon="fa-search">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">来源评估</span>
+                                <span class="o_stat_value"><field name="assessment_id"/></span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <label for="name" string="正式报告"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h2><field name="title" placeholder="报告名称"
+                                   readonly="state != 'draft'"/></h2>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        本记录是受控管理层财税合规报告，不是纳税申报表、税务鉴证报告、法律意见、审计意见或税务机关认定。“已签发”仅表示组织内部完成受控批准。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'submitted' or snapshot_integrity_state != 'source_changed'">
+                        提交后的评估、复核、整改或证据资料已经变化，当前版本不能签发。请由批准人退回后重新提交。
+                    </div>
+
+                    <group>
+                        <group string="报告范围">
+                            <field name="assessment_id" readonly="1"/>
+                            <field name="profile_id" readonly="1"/>
+                            <field name="company_id" readonly="1"
+                                   groups="base.group_multi_company"/>
+                            <field name="period_start" readonly="1"/>
+                            <field name="period_end" readonly="1"/>
+                        </group>
+                        <group string="版本与批准">
+                            <field name="revision" readonly="1"/>
+                            <field name="supersedes_id" readonly="1"
+                                   invisible="not supersedes_id"/>
+                            <field name="prepared_by_id" readonly="1"
+                                   widget="many2one_avatar_user"/>
+                            <field name="reviewer_id"
+                                   widget="many2one_avatar_user"
+                                   readonly="state != 'draft'"/>
+                            <field name="conclusion_state" widget="badge"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="报告快照概览" col="4"
+                           invisible="state == 'draft'">
+                        <group>
+                            <field name="finding_count"/>
+                            <field name="critical_count"
+                                   decoration-danger="critical_count &gt; 0"/>
+                            <field name="high_count"
+                                   decoration-danger="high_count &gt; 0"/>
+                            <field name="has_material_limitations"/>
+                        </group>
+                        <group>
+                            <field name="open_task_count"
+                                   decoration-warning="open_task_count &gt; 0"/>
+                            <field name="overdue_task_count"
+                                   decoration-danger="overdue_task_count &gt; 0"/>
+                            <field name="evidence_count"/>
+                            <field name="verified_evidence_count"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page name="content" string="报告内容">
+                            <group>
+                                <field name="executive_summary" nolabel="1"
+                                       placeholder="概述本次评估范围、主要结论、关键风险和管理层需关注事项..."
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="范围说明">
+                                <field name="scope_statement" nolabel="1"
+                                       placeholder="明确公司、期间、税种、规则范围、数据来源和未覆盖范围..."
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="限制与不确定性">
+                                <field name="limitation_statement" nolabel="1"
+                                       placeholder="记录数据不足、无法量化、未覆盖事项和结论使用限制..."
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="管理层整改回应">
+                                <field name="management_response" nolabel="1"
+                                       placeholder="说明整改责任、时间安排、暂缓原因和风险接受边界..."
+                                       readonly="state != 'draft'"/>
+                            </group>
+                        </page>
+
+                        <page name="approval" string="独立批准">
+                            <group>
+                                <group>
+                                    <field name="submitted_by_id" readonly="1"
+                                           widget="many2one_avatar_user"/>
+                                    <field name="submitted_at" readonly="1"/>
+                                    <field name="issued_by_id" readonly="1"
+                                           widget="many2one_avatar_user"/>
+                                    <field name="issued_at" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="snapshot_integrity_state"
+                                           widget="badge"/>
+                                    <field name="approval_integrity_state"
+                                           widget="badge"/>
+                                    <field name="pdf_integrity_state"
+                                           widget="badge"/>
+                                    <field name="issued_pdf_filename" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="职责分离例外">
+                                <field name="independence_exception_reason"
+                                       nolabel="1"
+                                       placeholder="仅在编制、提交与批准职责无法分离时填写受控例外..."
+                                       readonly="state != 'draft'"/>
+                            </group>
+                            <group string="批准意见">
+                                <field name="review_notes" nolabel="1"
+                                       placeholder="批准人说明核验范围、批准依据、保留事项和结论边界..."
+                                       readonly="state != 'submitted' or reviewer_id != uid"/>
+                            </group>
+                            <group string="撤回控制"
+                                   invisible="state not in ('issued', 'withdrawn')">
+                                <field name="withdrawal_reason" nolabel="1"
+                                       placeholder="撤回前记录原因、影响和替代安排..."
+                                       readonly="state != 'issued'"/>
+                                <field name="withdrawn_by_id" readonly="1"
+                                       widget="many2one_avatar_user"/>
+                                <field name="withdrawn_at" readonly="1"/>
+                            </group>
+                        </page>
+
+                        <page name="tax_impact" string="税务影响">
+                            <div class="alert alert-info" role="alert">
+                                少缴、多缴和期间错配影响分别列示，不计算净额。只有经复核且完整性正常的金额进入快照。
+                            </div>
+                            <group col="4">
+                                <group>
+                                    <field name="tax_impact_pending_count"/>
+                                    <field name="reviewed_underpayment_amount"/>
+                                </group>
+                                <group>
+                                    <field name="reviewed_overpayment_amount"/>
+                                    <field name="reviewed_timing_amount"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page name="audit" string="审计指纹">
+                            <group>
+                                <field name="snapshot_checksum" readonly="1"/>
+                                <field name="approval_checksum" readonly="1"/>
+                                <field name="issued_pdf_sha256" readonly="1"/>
+                            </group>
+                            <field name="replacement_ids" readonly="1"
+                                   invisible="not replacement_ids">
+                                <list create="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="revision"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="issued_at"/>
+                                    <field name="snapshot_checksum" optional="hide"/>
+                                </list>
+                            </field>
+                            <field name="snapshot_json" invisible="1"/>
+                            <field name="issued_pdf" invisible="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_formal_compliance_reports" model="ir.actions.act_window">
+        <field name="name">正式报告</field>
+        <field name="res_model">sudo.cn.compliance.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id"
+               ref="view_cn_formal_compliance_report_search"/>
+        <field name="context">{'search_default_active_lifecycle': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">尚未编制正式报告</p>
+            <p>从已完成的合规评估进入，冻结来源快照并完成独立批准后签发。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_formal_compliance_reports"
+              name="正式报告"
+              parent="sudo_global_finance.menu_global_finance_root"
+              action="action_cn_formal_compliance_reports"
+              sequence="35"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <record id="view_compliance_report_cn_formal_report" model="ir.ui.view">
+        <field name="name">sudo.compliance.report.cn.formal.report</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_report_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='report_state']" position="before">
+                <button name="action_prepare_cn_formal_report" type="object"
+                        string="编制正式报告" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state != 'completed'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_cn_formal_reports" type="object"
+                        class="oe_stat_button" icon="fa-file-pdf-o"
+                        invisible="cn_formal_report_count == 0">
+                    <field name="cn_formal_report_count" widget="statinfo"
+                           string="正式报告"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_assessment_cn_formal_report" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.cn.formal.report</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_assessment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_prepare_cn_formal_report" type="object"
+                        string="编制正式报告"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state != 'completed'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_cn_formal_reports" type="object"
+                        class="oe_stat_button" icon="fa-file-pdf-o"
+                        invisible="cn_formal_report_count == 0">
+                    <field name="cn_formal_report_count" widget="statinfo"
+                           string="正式报告"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

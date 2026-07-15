@@ -426,12 +426,12 @@ class SudoComplianceRuleVersion(models.Model):
     cn_review_packet_ids = fields.One2many(
         "sudo.cn.rule.review.packet",
         "rule_version_id",
-        string="中国专业复核包",
+        string="中国专业复核包记录",
     )
     cn_review_packet_id = fields.Many2one(
         "sudo.cn.rule.review.packet",
-        string="中国专业复核包",
-        compute="_compute_cn_review_packet",
+        string="当前中国专业复核包",
+        compute="_compute_cn_review_packet_record",
         readonly=True,
     )
     cn_review_packet_state = fields.Selection(
@@ -441,23 +441,28 @@ class SudoComplianceRuleVersion(models.Model):
             ("ready", "候选材料完整"),
         ],
         string="专业复核包",
-        compute="_compute_cn_review_packet",
+        compute="_compute_cn_review_packet_status",
         store=True,
         readonly=True,
         index=True,
     )
     cn_review_packet_ready = fields.Boolean(
         string="专业复核包完整",
-        compute="_compute_cn_review_packet",
+        compute="_compute_cn_review_packet_status",
         store=True,
         readonly=True,
     )
     cn_review_packet_blockers = fields.Text(
         string="专业复核包缺口",
-        compute="_compute_cn_review_packet",
+        compute="_compute_cn_review_packet_status",
         store=True,
         readonly=True,
     )
+
+    @api.depends("cn_review_packet_ids")
+    def _compute_cn_review_packet_record(self):
+        for version in self:
+            version.cn_review_packet_id = version.cn_review_packet_ids[:1]
 
     @api.depends(
         "rule_id.country_id.code",
@@ -465,10 +470,9 @@ class SudoComplianceRuleVersion(models.Model):
         "cn_review_packet_ids.readiness_state",
         "cn_review_packet_ids.readiness_blockers",
     )
-    def _compute_cn_review_packet(self):
+    def _compute_cn_review_packet_status(self):
         for version in self:
             packets = version.cn_review_packet_ids
-            version.cn_review_packet_id = packets[:1]
             if not version.cn_is_china_rule:
                 version.cn_review_packet_state = False
                 version.cn_review_packet_ready = False

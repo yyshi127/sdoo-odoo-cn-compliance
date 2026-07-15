@@ -1,7 +1,7 @@
 {
     "name": "Sdoo China Country Pack",
     "summary": "Governed China fiscal compliance profiles and country-pack foundations",
-    "version": "19.0.1.16.0",
+    "version": "19.0.1.17.0",
     "category": "Accounting/Accounting",
     "author": "Sdoo",
     "license": "LGPL-3",
@@ -13,6 +13,7 @@
     "data": [
         "security/compliance_security.xml",
         "security/ir.model.access.csv",
+        "data/compliance_report_sequence.xml",
         "data/country_pack_data.xml",
         "data/official_source_candidates.xml",
         "data/compliance_fact_data.xml",
@@ -22,6 +23,7 @@
         "data/vat_period_reconciliation_cron.xml",
         "reports/rule_review_packet_report.xml",
         "reports/vat_adjustment_report.xml",
+        "reports/compliance_report.xml",
         "views/rule_review_packet_views.xml",
         "views/rule_governance_views.xml",
         "views/compliance_integration_views.xml",
@@ -31,6 +33,7 @@
         "views/vat_accounting_scope_views.xml",
         "views/vat_period_reconciliation_views.xml",
         "views/tax_impact_review_views.xml",
+        "views/compliance_report_views.xml",
     ],
     "post_init_hook": "post_init_hook",
     "installable": True,

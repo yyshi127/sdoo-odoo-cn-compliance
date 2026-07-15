@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_report_cn_formal_compliance" model="ir.actions.report">
+        <field name="name">中国正式财税合规管理报告</field>
+        <field name="model">sudo.cn.compliance.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sudo_country_pack_cn.report_cn_formal_compliance</field>
+        <field name="report_file">sudo_country_pack_cn.report_cn_formal_compliance</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="print_report_name">(object.issued_pdf_filename or ('中国财税合规管理报告-%s' % object.name))</field>
+    </record>
+
+    <template id="report_cn_formal_compliance">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="report">
+                <t t-set="payload" t-value="report.report_payload()"/>
+                <t t-set="assessment" t-value="payload.get('assessment', {})"/>
+                <t t-set="tax_impact" t-value="payload.get('tax_impact', {})"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div style="border-bottom: 3px solid #0f766e; padding-bottom: 12px; margin-bottom: 18px;">
+                            <div style="color: #0f766e; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                Sdoo China Fiscal Compliance
+                            </div>
+                            <h1 style="margin: 4px 0 2px; font-size: 25px;">
+                                <span t-esc="report.title"/>
+                            </h1>
+                            <div style="color: #52636d;">
+                                <span t-esc="report.name"/> · 版本 <span t-esc="report.revision"/>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning" style="border-left: 4px solid #d97706;">
+                            <strong>受控管理层财税合规报告。</strong>
+                            本报告不是纳税申报表、税务鉴证报告、法律意见、审计意见或税务机关认定；“已签发”仅表示组织内部完成受控批准。
+                        </div>
+                        <div t-if="report.state in ('draft', 'submitted')" class="alert alert-danger">
+                            <strong>预览稿，尚未签发。</strong>
+                            本文件不得作为正式报告对内批准或对外提供；请以系统封存并通过完整性校验的已签发 PDF 为准。
+                        </div>
+                        <div t-if="report.state == 'withdrawn'" class="alert alert-danger">
+                            <strong>本报告已撤回，不得继续作为当前报告使用。</strong>
+                            <span t-esc="report.withdrawal_reason"/>
+                        </div>
+                        <div t-if="report.state == 'superseded'" class="alert alert-info">
+                            <strong>本报告已被后续版本替代。</strong>
+                            请从系统查看当前签发版本。
+                        </div>
+
+                        <h2 style="font-size: 17px; color: #17313b;">一、报告身份与范围</h2>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 18%;">公司</th>
+                                    <td><span t-esc="assessment.get('company_name')"/></td>
+                                    <th style="width: 18%;">合规档案</th>
+                                    <td><span t-esc="assessment.get('profile_name')"/></td>
+                                </tr>
+                                <tr>
+                                    <th>评估编号</th>
+                                    <td><span t-esc="assessment.get('name')"/></td>
+                                    <th>评估期间</th>
+                                    <td>
+                                        <span t-esc="assessment.get('period_start')"/> 至
+                                        <span t-esc="assessment.get('period_end')"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>报告状态</th>
+                                    <td><span t-field="report.state"/></td>
+                                    <th>报告结论</th>
+                                    <td>
+                                        <span t-if="report.conclusion_state" t-field="report.conclusion_state"/>
+                                        <span t-else="">提交批准时确定</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>内容快照 SHA-256</th>
+                                    <td colspan="3" style="word-break: break-all; font-family: monospace; font-size: 9px;">
+                                        <span t-esc="report.snapshot_checksum or '尚未冻结'"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>批准 SHA-256</th>
+                                    <td colspan="3" style="word-break: break-all; font-family: monospace; font-size: 9px;">
+                                        <span t-esc="report.approval_checksum or '尚未签发'"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h2 style="font-size: 17px; color: #17313b;">二、管理层摘要</h2>
+                        <p style="white-space: pre-line;"><span t-esc="payload.get('report', {}).get('executive_summary')"/></p>
+                        <h3 style="font-size: 14px;">范围说明</h3>
+                        <p style="white-space: pre-line;"><span t-esc="payload.get('report', {}).get('scope_statement')"/></p>
+                        <h3 style="font-size: 14px;">限制与不确定性</h3>
+                        <p t-if="payload.get('report', {}).get('limitation_statement')" style="white-space: pre-line;">
+                            <span t-esc="payload.get('report', {}).get('limitation_statement')"/>
+                        </p>
+                        <p t-else="" class="text-muted">未另行声明重大范围限制；报告边界仍以本报告首页和结论边界为准。</p>
+
+                        <h2 style="font-size: 17px; color: #17313b;">三、评估与数据充分性</h2>
+                        <table class="table table-sm table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>规则结果</th>
+                                    <th>通过</th>
+                                    <th>失败</th>
+                                    <th>待确认</th>
+                                    <th>执行错误</th>
+                                    <th>问题事实</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span t-esc="assessment.get('finding_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('pass_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('fail_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('unknown_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('error_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('problem_fact_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>严重</th>
+                                    <th>高</th>
+                                    <th>中</th>
+                                    <th>低</th>
+                                    <th>必需事实</th>
+                                    <th>完整事实</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong t-esc="assessment.get('critical_count', 0)"/></td>
+                                    <td><strong t-esc="assessment.get('high_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('medium_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('low_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('required_fact_count', 0)"/></td>
+                                    <td><span t-esc="assessment.get('complete_fact_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-muted"><span t-esc="assessment.get('data_sufficiency_message')"/></p>
+
+                        <h2 style="font-size: 17px; color: #17313b;">四、规则结果与复核结论</h2>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">风险</th>
+                                    <th style="width: 14%;">规则</th>
+                                    <th>结论与事实</th>
+                                    <th style="width: 13%;">结果</th>
+                                    <th style="width: 13%;">人工复核</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not payload.get('findings')">
+                                    <td colspan="5">未冻结任何规则结果。</td>
+                                </tr>
+                                <tr t-foreach="payload.get('findings', [])" t-as="finding">
+                                    <td><span t-esc="report.report_label('risk', finding.get('risk_level'))"/></td>
+                                    <td>
+                                        <strong t-esc="finding.get('rule_code')"/>
+                                        <div class="text-muted" t-esc="finding.get('rule_version')"/>
+                                    </td>
+                                    <td>
+                                        <strong t-esc="finding.get('title')"/>
+                                        <div style="white-space: pre-line;" t-esc="finding.get('summary') or '-'"/>
+                                        <div class="text-muted" t-if="finding.get('recommendation')">
+                                            下一步：<span t-esc="finding.get('recommendation')"/>
+                                        </div>
+                                    </td>
+                                    <td><span t-esc="report.report_label('result', finding.get('result'))"/></td>
+                                    <td><span t-esc="report.report_label('review', finding.get('review_state'))"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h2 style="font-size: 17px; color: #17313b;">五、整改与证据状态</h2>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>整改任务</th>
+                                    <th>负责人</th>
+                                    <th>截止日期</th>
+                                    <th>状态</th>
+                                    <th>验证状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not payload.get('tasks')">
+                                    <td colspan="5">本次快照没有整改任务。</td>
+                                </tr>
+                                <tr t-foreach="payload.get('tasks', [])" t-as="task">
+                                    <td><span t-esc="task.get('name')"/></td>
+                                    <td><span t-esc="task.get('assignee_name') or '-'"/></td>
+                                    <td><span t-esc="task.get('due_date') or '-'"/></td>
+                                    <td><span t-esc="report.report_label('task', task.get('state'))"/></td>
+                                    <td><span t-esc="task.get('verification_state') or '-'"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>证据</th>
+                                    <th>类型</th>
+                                    <th>状态</th>
+                                    <th>完整性</th>
+                                    <th>SHA-256</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not payload.get('evidence')">
+                                    <td colspan="5">本次快照没有证据记录。</td>
+                                </tr>
+                                <tr t-foreach="payload.get('evidence', [])" t-as="evidence">
+                                    <td><span t-esc="evidence.get('name')"/></td>
+                                    <td><span t-esc="evidence.get('evidence_type')"/></td>
+                                    <td><span t-esc="report.report_label('evidence', evidence.get('state'))"/></td>
+                                    <td><span t-esc="evidence.get('integrity_state')"/></td>
+                                    <td style="word-break: break-all; font-family: monospace; font-size: 8px;">
+                                        <span t-esc="evidence.get('stored_checksum') or evidence.get('current_checksum') or '-'"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h2 style="font-size: 17px; color: #17313b;">六、经人工复核的税务影响</h2>
+                        <div class="alert alert-info">
+                            潜在少缴、潜在多缴和期间错配影响分别列示，不计算净额。未完成复核、无法量化或完整性异常事项不进入金额。
+                        </div>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>已复核潜在少缴税影响</th>
+                                    <td><span t-esc="tax_impact.get('reviewed_underpayment_amount', '0.00')"/> <span t-esc="assessment.get('currency')"/></td>
+                                    <th>已复核潜在多缴税影响</th>
+                                    <td><span t-esc="tax_impact.get('reviewed_overpayment_amount', '0.00')"/> <span t-esc="assessment.get('currency')"/></td>
+                                </tr>
+                                <tr>
+                                    <th>已复核期间错配影响</th>
+                                    <td><span t-esc="tax_impact.get('reviewed_timing_amount', '0.00')"/> <span t-esc="assessment.get('currency')"/></td>
+                                    <th>净额</th>
+                                    <td><strong>不计算</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>待复核事项</th>
+                                    <td><span t-esc="tax_impact.get('pending_count', 0)"/></td>
+                                    <th>无法量化事项</th>
+                                    <td><span t-esc="tax_impact.get('unquantifiable_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h2 style="font-size: 17px; color: #17313b;">七、管理层整改回应</h2>
+                        <p t-if="payload.get('report', {}).get('management_response')" style="white-space: pre-line;">
+                            <span t-esc="payload.get('report', {}).get('management_response')"/>
+                        </p>
+                        <p t-else="" class="text-muted">本次报告未要求单独记录管理层整改回应。</p>
+
+                        <h2 style="font-size: 17px; color: #17313b;">八、编制、批准与结论边界</h2>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 20%;">编制人</th>
+                                    <td><span t-esc="payload.get('report', {}).get('prepared_by_name')"/></td>
+                                    <th style="width: 20%;">独立批准人</th>
+                                    <td><span t-esc="payload.get('report', {}).get('reviewer_name')"/></td>
+                                </tr>
+                                <tr>
+                                    <th>签发时间</th>
+                                    <td><span t-field="report.issued_at"/></td>
+                                    <th>批准意见</th>
+                                    <td><span t-esc="report.review_notes or '尚未签发'"/></td>
+                                </tr>
+                                <tr t-if="payload.get('report', {}).get('independence_exception_reason')">
+                                    <th>职责分离例外</th>
+                                    <td colspan="3"><span t-esc="payload.get('report', {}).get('independence_exception_reason')"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <ul>
+                            <li>结论只适用于所列公司、期间、规则版本、事实快照和已取得证据。</li>
+                            <li>数据不足、来源异常、专业签核缺失和完整性异常必须在签发前处理或按门禁阻断。</li>
+                            <li>整改或源资料变化后应重新扫描并签发新版本，不能改写本报告。</li>
+                            <li>AI 分析仅为辅助材料；本快照记录 <span t-esc="len(payload.get('ai_analysis_metadata', []))"/> 条 AI 元数据，其文本不作为正式结论或证据。</li>
+                        </ul>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -344,7 +344,7 @@
         <field name="inherit_id"
                ref="sudo_country_pack_cn.view_cn_vat_period_reconciliation_issue_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[contains(@class, 'oe_title')]" position="before">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
                 <div class="oe_button_box" name="button_box">
                     <button name="action_open_tax_impact_cases" type="object"
                             class="oe_stat_button" icon="fa-balance-scale"
@@ -379,7 +379,7 @@
         <field name="inherit_id"
                ref="sudo_global_finance.view_compliance_finding_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[contains(@class, 'oe_title')]" position="before">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
                 <div class="oe_button_box" name="button_box">
                     <button name="action_open_cn_tax_impact_cases" type="object"
                             class="oe_stat_button" icon="fa-balance-scale"
