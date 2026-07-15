@@ -304,7 +304,7 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
                 "engine_version": RECONCILIATION_ENGINE_VERSION,
             },
         )
-        return run
+        return run.with_context(cn_reconciliation_transition=None)
 
     def _source_documents(self):
         self.ensure_one()
@@ -1666,7 +1666,8 @@ class SudoChinaEinvoiceReconciliationCase(models.Model):
                 raise UserError(_("已有候选的账簿快照已变化，请重新运行勾稽。"))
             if existing.state != "proposed":
                 existing._reset_decision()
-            return existing._confirm(note)
+            existing._confirm(note)
+            return existing
         values.update(
             {
                 "case_id": self.id,
@@ -1693,7 +1694,8 @@ class SudoChinaEinvoiceReconciliationCase(models.Model):
                 "note": note,
             },
         )
-        return candidate._confirm(note)
+        candidate._confirm(note)
+        return candidate
 
 
 class SudoChinaEinvoiceReconciliationCandidate(models.Model):

@@ -443,6 +443,8 @@ class TestChinaInvoiceNormalization(TransactionCase):
         with self.assertRaises(AccessError):
             entry.write({"amount": 1})
         with self.assertRaises(AccessError):
+            run.write({"result_summary": "changed outside controlled flow"})
+        with self.assertRaises(AccessError):
             run.unlink()
 
     def test_tampering_after_parse_removes_document_from_current_results(self):

@@ -18,7 +18,7 @@ TRI_STATE = (
 
 
 def _safe_text(value, limit=None):
-    if value is None:
+    if value in (None, False):
         return False
     text = " ".join(str(value).split()).strip()
     if not text:
@@ -255,7 +255,7 @@ class SudoChinaExternalParseRun(models.Model):
             raise UserError(_("只有当前已封存的数据集可以解析。"))
         if dataset._current_integrity_state() != "verified":
             raise UserError(_("数据集文件完整性异常，不能开始解析。"))
-        if input_attachment not in dataset.source_attachment_ids:
+        if input_attachment not in dataset._controlled_source_attachments():
             raise UserError(_("解析源文件必须属于当前数据集。"))
         source_attachment = input_attachment.sudo()
         if source_attachment.type != "binary" or source_attachment.file_size <= 0:
@@ -338,7 +338,7 @@ class SudoChinaExternalParseRun(models.Model):
                 "taxonomy_checksum": run.taxonomy_checksum,
             },
         )
-        return run
+        return run.with_context(cn_parse_run_transition=None)
 
     def _record_failure(
         self,

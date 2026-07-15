@@ -252,9 +252,10 @@ class SudoChinaTaxDataParseRun(models.Model):
             raise UserError(_("数据集文件完整性异常，不能开始导入。"))
         if dataset.data_format != "json":
             raise UserError(_("当前受控导入契约只接受 UTF-8 JSON 文件。"))
-        if len(dataset.source_attachment_ids) != 1:
+        source_attachments = dataset._controlled_source_attachments()
+        if len(source_attachments) != 1:
             raise UserError(_("当前受控导入要求数据集只能包含一份标准化 JSON 源文件。"))
-        if input_attachment not in dataset.source_attachment_ids:
+        if input_attachment not in source_attachments:
             raise UserError(_("导入源文件必须属于当前数据集。"))
         attachment = input_attachment.sudo()
         if attachment.type != "binary" or attachment.file_size <= 0:
@@ -316,7 +317,7 @@ class SudoChinaTaxDataParseRun(models.Model):
                 "mapping_version": mapping_version,
             },
         )
-        return run
+        return run.with_context(cn_tax_parse_run_transition=None)
 
     def _record_failure(self, error_code, summary):
         self.ensure_one()

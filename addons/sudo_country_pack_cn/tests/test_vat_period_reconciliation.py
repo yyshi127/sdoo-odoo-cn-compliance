@@ -15,6 +15,7 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env = cls.env(su=True)
         cls.company = cls.env.company
         cls.country = cls.env.ref("base.cn")
         cls.currency = cls.env.ref("base.CNY")
@@ -674,8 +675,8 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         first.invalidate_recordset()
         self.assertEqual(first.state, "superseded")
         self.assertEqual(second.state, "succeeded")
-        self.assertFalse(first.issue_ids.is_current_result)
-        self.assertTrue(second.issue_ids.is_current_result)
+        self.assertFalse(any(first.issue_ids.mapped("is_current_result")))
+        self.assertTrue(all(second.issue_ids.mapped("is_current_result")))
 
     def test_run_and_issues_are_immutable(self):
         run = self._queue()

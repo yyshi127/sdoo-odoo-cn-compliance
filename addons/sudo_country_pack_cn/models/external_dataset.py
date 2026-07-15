@@ -385,6 +385,14 @@ class SudoChinaExternalDataset(models.Model):
             )
         return payload
 
+    def _controlled_source_attachments(self):
+        self.ensure_one()
+        return self.sudo().source_attachment_ids
+
+    def _controlled_authenticity_attachments(self):
+        self.ensure_one()
+        return self.sudo().authenticity_evidence_attachment_ids
+
     def _checksum_payload(self):
         self.ensure_one()
         return {
@@ -419,10 +427,10 @@ class SudoChinaExternalDataset(models.Model):
             ),
             "supersedes_id": self.supersedes_id.id or None,
             "source_attachments": self._attachment_payload(
-                self.source_attachment_ids
+                self._controlled_source_attachments()
             ),
             "authenticity_evidence": self._attachment_payload(
-                self.authenticity_evidence_attachment_ids
+                self._controlled_authenticity_attachments()
             ),
         }
 
@@ -449,9 +457,11 @@ class SudoChinaExternalDataset(models.Model):
         expected_authenticity = self._manifest_probe(
             manifest.get("authenticity_evidence", [])
         )
-        current_source = self._attachment_probe(self.source_attachment_ids)
+        current_source = self._attachment_probe(
+            self._controlled_source_attachments()
+        )
         current_authenticity = self._attachment_probe(
-            self.authenticity_evidence_attachment_ids
+            self._controlled_authenticity_attachments()
         )
         if (
             expected_source == current_source
@@ -539,6 +549,10 @@ class SudoChinaExternalDataset(models.Model):
     def _sealing_issues(self):
         self.ensure_one()
         issues = []
+        source_attachments = self._controlled_source_attachments()
+        authenticity_attachments = (
+            self._controlled_authenticity_attachments()
+        )
         required_values = (
             (self.source_channel, _("未选择取得渠道")),
             (self.source_system_name, _("未填写来源系统")),
@@ -551,9 +565,9 @@ class SudoChinaExternalDataset(models.Model):
         issues.extend(message for value, message in required_values if not value)
         if self.declared_record_count <= 0:
             issues.append(_("源文件声明记录数必须大于零"))
-        if not self.source_attachment_ids:
+        if not source_attachments:
             issues.append(_("未上传源文件"))
-        elif self._invalid_binary_attachments(self.source_attachment_ids):
+        elif self._invalid_binary_attachments(source_attachments):
             issues.append(_("源文件必须是系统内保存的非空二进制附件"))
         if self.contains_sensitive_data and not self.data_control_note:
             issues.append(_("包含个人或敏感数据时必须记录数据保护说明"))
@@ -565,10 +579,10 @@ class SudoChinaExternalDataset(models.Model):
                 issues.append(_("未记录真实性验证工具或方法"))
             if not self.authenticity_reference:
                 issues.append(_("未记录真实性验证结果引用"))
-            if not self.authenticity_evidence_attachment_ids:
+            if not authenticity_attachments:
                 issues.append(_("未上传真实性验证证据"))
             elif self._invalid_binary_attachments(
-                self.authenticity_evidence_attachment_ids
+                authenticity_attachments
             ):
                 issues.append(_("真实性验证证据必须是非空二进制附件"))
         if (
@@ -765,7 +779,7 @@ class SudoChinaExternalDataset(models.Model):
                     "dataset_type": dataset.dataset_type,
                     "coverage_scope": dataset.coverage_scope,
                     "source_attachment_count": len(
-                        dataset.source_attachment_ids
+                        dataset._controlled_source_attachments()
                     ),
                     "authenticity_state": dataset.authenticity_state,
                     "independent_review": (

@@ -433,6 +433,8 @@ class TestChinaTaxDataNormalization(TransactionCase):
             record.unlink()
         with self.assertRaises(AccessError):
             record.line_ids.write({"line_name": "CHANGED"})
+        with self.assertRaises(AccessError):
+            run.write({"result_summary": "changed outside controlled flow"})
 
     def test_read_only_access_is_company_isolated(self):
         own_dataset = self._dataset(

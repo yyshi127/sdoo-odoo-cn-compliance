@@ -470,7 +470,7 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
                 "engine_version": VAT_PERIOD_ENGINE_VERSION,
             },
         )
-        return run
+        return run.with_context(cn_vat_period_transition=None)
 
     def _accounting_moves(self):
         self.ensure_one()

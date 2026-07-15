@@ -14,6 +14,7 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env = cls.env(su=True)
         cls.company = cls.env.company
         cls.country = cls.env.ref("base.cn")
         cls.currency = cls.env.ref("base.CNY")
@@ -156,9 +157,9 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         return dataset
 
     def _start_parse_run(self, dataset, suffix):
-        return self.env["sudo.cn.external.parse.run"].with_company(
-            self.company
-        )._start_for_dataset(
+        return self.env["sudo.cn.external.parse.run"].with_user(
+            self.reviewer
+        ).with_company(self.company)._start_for_dataset(
             dataset,
             dataset.source_attachment_ids[:1],
             parser_key="mof_einvoice_xbrl",
@@ -365,6 +366,10 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         ):
             with self.assertRaises(AccessError):
                 self.env[model_name].create({})
+
+        run = self._queue()
+        with self.assertRaises(AccessError):
+            run.write({"result_summary": "changed outside controlled flow"})
 
     def test_duplicate_active_period_is_blocked_and_cancel_releases_it(self):
         first = self._queue()
