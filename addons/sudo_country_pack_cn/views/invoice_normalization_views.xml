@@ -371,7 +371,7 @@
         <field name="inherit_id"
                ref="sudo_country_pack_cn.view_cn_external_dataset_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[contains(@class, 'oe_title')]"
+            <xpath expr="//sheet/div[hasclass('oe_title')]"
                    position="before">
                 <div class="oe_button_box" name="button_box">
                     <button name="action_view_parse_runs" type="object"

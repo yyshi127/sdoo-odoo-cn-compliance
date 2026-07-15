@@ -1,10 +1,11 @@
+import hashlib
 import json
 from unittest.mock import patch
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import tagged
+from odoo.tests import new_test_user, tagged
 
 
 @tagged("post_install", "-at_install")
@@ -448,6 +449,221 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         run.invalidate_recordset()
         return result
 
+    def _assessment(
+        self,
+        period_start="2026-06-01",
+        period_end="2026-06-30",
+    ):
+        return self.env["sudo.compliance.assessment"].create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-15",
+                "period_start": period_start,
+                "period_end": period_end,
+            }
+        )
+
+    def _fact(self, key, assessment=None):
+        assessment = assessment or self._assessment()
+        provider = self.env[
+            "sudo.compliance.engine"
+        ]._fact_provider_registry()[key]
+        return provider(assessment, False)
+
+    def _activate_vat_reconciliation_test_rule(self):
+        author = new_test_user(
+            self.env,
+            login="cn_vat_bridge_rule_author",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_rule_author"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        approver = new_test_user(
+            self.env,
+            login="cn_vat_bridge_rule_approver",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_rule_approver"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        professional = new_test_user(
+            self.env,
+            login="cn_vat_bridge_professional_reviewer",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_professional_reviewer"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        source = self.env[
+            "sudo.compliance.authority.source"
+        ].with_user(author).create(
+            {
+                "name": "中国增值税勾稽闭环测试受控来源",
+                "country_id": self.country.id,
+                "authority": "测试主管税务机关",
+                "source_type": "tax_guide",
+                "snapshot_kind": "official_web_capture",
+                "official_url": (
+                    "https://example.test/cn-vat-reconciliation-control"
+                ),
+                "official_version": "TEST-2026.1",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-07-15",
+            }
+        )
+        attachment = self.env["ir.attachment"].with_user(author).create(
+            {
+                "name": "cn-vat-reconciliation-test-source.html",
+                "raw": b"Controlled China VAT reconciliation test source",
+                "mimetype": "text/html",
+                "res_model": source._name,
+                "res_id": source.id,
+            }
+        )
+        source.with_user(author).write(
+            {"snapshot_attachment_id": attachment.id}
+        )
+        source.with_user(author).action_compute_hash()
+        source.with_user(author).action_submit_review()
+        source.with_user(approver).action_approve()
+
+        fact_definitions = self.env[
+            "sudo.compliance.fact.definition"
+        ].browse(
+            [
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_vat_reconciliation_conclusion_state_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_vat_reconciliation_blocking_count_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_vat_reconciliation_difference_count_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_vat_reconciliation_detail_v1"
+                ).id,
+            ]
+        )
+        rule = self.env["sudo.compliance.rule"].with_user(author).create(
+            {
+                "name": "中国增值税四方勾稽闭环运行时测试规则",
+                "code": "CN-TEST-VAT-RECON-E2E",
+                "country_id": self.country.id,
+                "domain_key": "CN.FILING_PAYMENT.TEST",
+                "description": "仅用于运行时验证规则扫描与整改复扫闭环。",
+            }
+        )
+        version = self.env[
+            "sudo.compliance.rule.version"
+        ].with_user(author).create(
+            {
+                "rule_id": rule.id,
+                "version": "TEST-2026.1",
+                "effective_from": "2026-01-01",
+                "next_review_date": "2027-07-15",
+                "evaluator_type": "declarative",
+                "condition_json": {
+                    "all": [
+                        {
+                            "fact": "cn.reconciliation.vat.conclusion_state",
+                            "operator": "eq",
+                            "value": "aligned",
+                        },
+                        {
+                            "fact": (
+                                "cn.reconciliation.vat."
+                                "blocking_issue_count"
+                            ),
+                            "operator": "eq",
+                            "value": 0,
+                        },
+                        {
+                            "fact": (
+                                "cn.reconciliation.vat."
+                                "difference_issue_count"
+                            ),
+                            "operator": "eq",
+                            "value": 0,
+                        },
+                    ]
+                },
+                "match_result": "pass",
+                "no_match_result": "fail",
+                "risk_level": "high",
+                "stale_policy": "block_all",
+                "authority_source_ids": [Command.set(source.ids)],
+                "required_fact_ids": [Command.set(fact_definitions.ids)],
+                "legal_basis_summary": "受控运行时测试来源。",
+                "failure_message": "四方勾稽存在阻断或差异。",
+                "pass_message": "四方勾稽在测试范围内一致。",
+                "unknown_message": "没有完整的四方勾稽事实。",
+                "recommended_actions": "补齐来源并重新执行四方勾稽。",
+                "evidence_required": "受控来源、差异调节和复核证据。",
+                "requires_human_review": True,
+            }
+        )
+        self.env["sudo.compliance.rule.test.case"].with_user(author).create(
+            [
+                {
+                    "name": "四方勾稽一致",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.vat.conclusion_state": "aligned",
+                        "cn.reconciliation.vat.blocking_issue_count": 0,
+                        "cn.reconciliation.vat.difference_issue_count": 0,
+                    },
+                    "evaluation_date": "2026-07-15",
+                    "expected_result": "pass",
+                },
+                {
+                    "name": "四方勾稽数据不足",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.vat.conclusion_state": (
+                            "insufficient_data"
+                        ),
+                        "cn.reconciliation.vat.blocking_issue_count": 1,
+                        "cn.reconciliation.vat.difference_issue_count": 0,
+                    },
+                    "evaluation_date": "2026-07-15",
+                    "expected_result": "fail",
+                },
+            ]
+        )
+        version.with_user(author).action_run_tests()
+        evidence = b"China VAT reconciliation professional test workpaper"
+        version.with_user(professional).write(
+            {
+                "professional_qualification": "中国财税专业测试资质",
+                "professional_review_notes": (
+                    "仅验证规则治理、事实快照和整改闭环。"
+                ),
+                "professional_evidence_reference": (
+                    "TEST/CN/VAT-RECON/%s" % version.id
+                ),
+                "professional_evidence_checksum": hashlib.sha256(
+                    evidence
+                ).hexdigest(),
+            }
+        )
+        version.with_user(professional).action_professional_signoff()
+        version.with_user(author).action_submit_review()
+        version.with_user(approver).action_approve()
+        version.with_user(approver).action_activate()
+        return version
+
     def test_direct_creation_of_governed_results_is_blocked(self):
         for model_name in (
             "sudo.cn.vat.period.reconciliation.run",
@@ -486,6 +702,172 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(len(run.result_checksum), 64)
         self.assertEqual(len(run.accounting_snapshot_checksum), 64)
 
+    def test_vat_reconciliation_facts_expose_auditable_aligned_snapshot(self):
+        self._seed_complete_sources("fact-aligned")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        assessment = self._assessment()
+
+        conclusion = self._fact(
+            "cn.reconciliation.vat.conclusion_state", assessment
+        )
+        blocking = self._fact(
+            "cn.reconciliation.vat.blocking_issue_count", assessment
+        )
+        differences = self._fact(
+            "cn.reconciliation.vat.difference_issue_count", assessment
+        )
+        warnings = self._fact(
+            "cn.reconciliation.vat.warning_issue_count", assessment
+        )
+        detail = self._fact("cn.reconciliation.vat.detail", assessment)
+
+        self.assertEqual(conclusion["value"], "aligned")
+        self.assertEqual(conclusion["quality_state"], "complete")
+        self.assertEqual(conclusion["source_record_ids"], run.ids)
+        self.assertEqual(blocking["value"], 0)
+        self.assertEqual(differences["value"], 0)
+        self.assertGreater(warnings["value"], 0)
+        self.assertEqual(detail["value"]["run_id"], run.id)
+        self.assertEqual(
+            detail["value"]["checksums"]["result"],
+            run.result_checksum,
+        )
+        self.assertIn(
+            "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
+            {issue["code"] for issue in detail["value"]["issues"]},
+        )
+        self.assertIsNotNone(
+            detail["value"]["amounts"]["filing_payable_amount"]
+        )
+
+        wrong_period = self._fact(
+            "cn.reconciliation.vat.conclusion_state",
+            self._assessment("2026-05-01", "2026-05-31"),
+        )
+        self.assertIsNone(wrong_period["value"])
+        self.assertEqual(wrong_period["quality_state"], "missing")
+
+    def test_vat_reconciliation_drives_remediation_and_exact_period_rescan(self):
+        self.profile._write_import({"status": "active"})
+        version = self._activate_vat_reconciliation_test_rule()
+        initial_run = self._queue()
+        self.assertTrue(self._process(initial_run))
+        self.assertEqual(initial_run.conclusion_state, "insufficient_data")
+
+        assessment_action = initial_run.with_user(
+            self.reviewer
+        ).action_queue_compliance_assessment()
+        assessment = self.env["sudo.compliance.assessment"].browse(
+            assessment_action["res_id"]
+        )
+        self.assertEqual(assessment.state, "queued")
+        self.assertEqual(assessment.period_start.isoformat(), "2026-06-01")
+        self.assertEqual(assessment.period_end.isoformat(), "2026-06-30")
+        self.assertEqual(assessment.rule_version_ids, version)
+
+        assessment.with_user(self.reviewer).action_run_now()
+        finding = assessment.finding_ids
+        self.assertEqual(finding.result, "fail")
+        self.assertFalse(finding.source_warning)
+        self.assertFalse(finding.professional_warning)
+        snapshots = {
+            snapshot.definition_id.key: snapshot
+            for snapshot in finding.fact_snapshot_ids
+        }
+        self.assertEqual(
+            snapshots[
+                "cn.reconciliation.vat.conclusion_state"
+            ].source_record_ids_json,
+            initial_run.ids,
+        )
+        self.assertEqual(
+            snapshots[
+                "cn.reconciliation.vat.blocking_issue_count"
+            ].value_json,
+            initial_run.blocking_issue_count,
+        )
+
+        task_action = finding.with_user(self.reviewer).action_create_task()
+        task = self.env["sudo.compliance.task"].browse(task_action["res_id"])
+        task.with_user(self.reviewer).write(
+            {
+                "completion_notes": (
+                    "已补齐受控电子发票、增值税申报和缴税来源并重新勾稽。"
+                ),
+                "external_evidence_reference": (
+                    "TEST/CN/VAT-REMEDIATION/2026-06"
+                ),
+            }
+        )
+        task.with_user(self.reviewer).action_done()
+        self.assertEqual(task.state, "pending_review")
+        self.assertEqual(task.verification_state, "pending_rescan")
+
+        self._seed_complete_sources("compliance-remediated")
+        replacement_run = self._queue()
+        self.assertTrue(self._process(replacement_run))
+        self.assertEqual(replacement_run.conclusion_state, "aligned")
+        initial_run.invalidate_recordset(["state"])
+        self.assertEqual(initial_run.state, "superseded")
+
+        verification_action = task.with_user(
+            self.reviewer
+        ).action_queue_verification_scan()
+        verification = self.env["sudo.compliance.assessment"].browse(
+            verification_action["res_id"]
+        )
+        self.assertEqual(verification.period_start, assessment.period_start)
+        self.assertEqual(verification.period_end, assessment.period_end)
+        self.assertEqual(verification.rule_version_ids, version)
+        verification.with_user(self.reviewer).action_run_now()
+        self.assertEqual(verification.finding_ids.result, "pass")
+        self.assertEqual(
+            verification.fact_snapshot_ids.filtered(
+                lambda snapshot: snapshot.definition_id.key
+                == "cn.reconciliation.vat.conclusion_state"
+            ).source_record_ids_json,
+            replacement_run.ids,
+        )
+
+        evidence = self.env["sudo.compliance.evidence"].with_user(
+            self.reviewer
+        ).create(
+            {
+                "name": "增值税四方勾稽整改验证证据",
+                "company_id": self.company.id,
+                "task_id": task.id,
+                "evidence_type": "remediation_proof",
+                "external_reference": (
+                    "TEST/CN/VAT-REMEDIATION/VERIFIED-2026-06"
+                ),
+            }
+        )
+        evidence.with_user(self.reviewer).action_submit()
+        evidence.with_user(self.reviewer).review_notes = (
+            "已核对替代批次、精确期间、来源范围和结果校验和。"
+        )
+        evidence.with_user(self.reviewer).action_verify()
+        task.with_user(self.reviewer).action_verify_remediation()
+
+        self.assertEqual(task.state, "done")
+        self.assertEqual(task.verification_state, "verified")
+        self.assertEqual(task.verification_assessment_id, verification)
+        self.assertEqual(task.verification_finding_id.result, "pass")
+        event = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("model_name", "=", task._name),
+                ("record_id", "=", task.id),
+                ("event_key", "=", "task.verification_scan_queued"),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        self.assertEqual(
+            event.details_json["scope"],
+            "cn_reconciliation_exact_period",
+        )
+
     def test_explainable_output_difference_is_created(self):
         self._seed_complete_sources(
             "difference",
@@ -514,6 +896,33 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(run.filing_source_state, "no_data")
         self.assertEqual(run.payment_source_state, "no_data")
         self.assertGreaterEqual(run.blocking_issue_count, 3)
+        assessment = self._assessment()
+        conclusion = self._fact(
+            "cn.reconciliation.vat.conclusion_state", assessment
+        )
+        blocking = self._fact(
+            "cn.reconciliation.vat.blocking_issue_count", assessment
+        )
+        self.assertEqual(conclusion["value"], "insufficient_data")
+        self.assertEqual(conclusion["quality_state"], "complete")
+        self.assertEqual(blocking["value"], run.blocking_issue_count)
+
+    def test_vat_reconciliation_fact_rejects_missing_audit_checksum(self):
+        self._seed_complete_sources("fact-corruption")
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        self.env.cr.execute(
+            """
+                UPDATE sudo_cn_vat_period_reconciliation_run
+                   SET result_checksum = NULL
+                 WHERE id = %s
+            """,
+            [run.id],
+        )
+        run.invalidate_recordset(["result_checksum"])
+
+        with self.assertRaises(UserError):
+            self._fact("cn.reconciliation.vat.conclusion_state")
 
     def test_partial_invoice_coverage_blocks_total_comparison(self):
         self._seed_complete_sources(

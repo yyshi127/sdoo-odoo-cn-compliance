@@ -170,4 +170,164 @@
         <field name="completeness_method">transaction_partner_tax_id_presence_signal</field>
         <field name="sensitivity">confidential</field>
     </record>
+
+    <record id="fact_cn_einvoice_reconciliation_source_state_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间账票勾稽源数据状态</field>
+        <field name="key">cn.reconciliation.einvoice.source_state</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">string</field>
+        <field name="provider_key">cn.reconciliation.einvoice.source_state</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.einvoice.reconciliation.run</field>
+        <field name="source_description">严格读取同一档案和完全相同期间的唯一当前成功账票勾稽批次；状态只说明勾稽数据准备度，不是抵扣或合规结论</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_einvoice_reconciliation_data_gap_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间账票勾稽数据缺口事项数</field>
+        <field name="key">cn.reconciliation.einvoice.data_gap_case_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.einvoice.data_gap_case_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.einvoice.reconciliation.run</field>
+        <field name="source_description">唯一当前成功批次中因来源完整性、覆盖范围、主体或关键字段问题而阻断匹配的事项数</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_einvoice_reconciliation_unresolved_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间账票勾稽未完成复核事项数</field>
+        <field name="key">cn.reconciliation.einvoice.unresolved_case_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.einvoice.unresolved_case_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.einvoice.reconciliation.run</field>
+        <field name="source_description">唯一当前成功批次中仍处于单一建议、多候选或尚未复核未匹配状态的事项数；已复核未匹配单独保留在详情快照中</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_einvoice_reconciliation_integrity_mismatch_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">账票匹配确认后账簿变化事项数</field>
+        <field name="key">cn.reconciliation.einvoice.decision_integrity_mismatch_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.einvoice.decision_integrity_mismatch_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.einvoice.reconciliation.run</field>
+        <field name="source_description">已确认匹配所引用的 Odoo 凭证快照与当前账簿不一致的事项数</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_einvoice_reconciliation_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">期间账票勾稽审计详情</field>
+        <field name="key">cn.reconciliation.einvoice.detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.einvoice.detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.einvoice.reconciliation.run</field>
+        <field name="source_description">保存批次、期间、状态、复核后事项计数以及来源、账簿和结果校验和；不包含发票正文或凭证明细</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_vat_reconciliation_conclusion_state_v1" model="sudo.compliance.fact.definition">
+        <field name="label">增值税期间四方勾稽结论状态</field>
+        <field name="key">cn.reconciliation.vat.conclusion_state</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">string</field>
+        <field name="provider_key">cn.reconciliation.vat.conclusion_state</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">严格读取同一档案和完全相同期间的唯一当前成功四方勾稽批次；一致仅代表当前受控口径金额一致</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_vat_reconciliation_blocking_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">增值税期间四方勾稽阻断问题数</field>
+        <field name="key">cn.reconciliation.vat.blocking_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.vat.blocking_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">唯一当前成功四方勾稽批次中导致金额不可比较的数据或控制问题数</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_vat_reconciliation_difference_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">增值税期间四方勾稽金额差异数</field>
+        <field name="key">cn.reconciliation.vat.difference_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.vat.difference_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">唯一当前成功四方勾稽批次中账、票、申报和缴税受控口径之间的非零差异项目数</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_vat_reconciliation_warning_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">增值税期间四方勾稽复核提示数</field>
+        <field name="key">cn.reconciliation.vat.warning_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.vat.warning_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">不阻断金额比较但必须在专业判断中披露的口径、真实性或复核控制提示数</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_vat_reconciliation_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">增值税期间四方勾稽审计详情</field>
+        <field name="key">cn.reconciliation.vat.detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.vat.detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">保存来源状态、记录数量、可用金额、逐项差异、稳定问题代码和五类审计校验和；差异金额不汇总为税务影响额</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
 </odoo>

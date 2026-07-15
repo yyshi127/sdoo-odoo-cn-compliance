@@ -341,6 +341,27 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         run.invalidate_recordset()
         return result
 
+    def _assessment(
+        self,
+        period_start="2026-06-01",
+        period_end="2026-06-30",
+    ):
+        return self.env["sudo.compliance.assessment"].create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-15",
+                "period_start": period_start,
+                "period_end": period_end,
+            }
+        )
+
+    def _fact(self, key, assessment=None):
+        assessment = assessment or self._assessment()
+        provider = self.env[
+            "sudo.compliance.engine"
+        ]._fact_provider_registry()[key]
+        return provider(assessment, False)
+
     def _bill_payload(self, suffix, bill, accounting_documents=None):
         tax = bill.amount_tax
         total = bill.amount_total
@@ -415,6 +436,73 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
             "SOURCE_AUTHENTICITY_NOT_CONFIRMED",
             {gap["code"] for gap in case.data_gap_json},
         )
+
+    def test_reconciliation_facts_follow_current_run_and_review_decisions(self):
+        bill = self._bill("EINV-FACT-BRIDGE")
+        self._normalized_document(
+            "fact-bridge",
+            self._bill_payload(
+                "fact-bridge",
+                bill,
+                accounting_documents=[],
+            ),
+        )
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        assessment = self._assessment()
+
+        source = self._fact(
+            "cn.reconciliation.einvoice.source_state", assessment
+        )
+        unresolved = self._fact(
+            "cn.reconciliation.einvoice.unresolved_case_count", assessment
+        )
+        detail = self._fact(
+            "cn.reconciliation.einvoice.detail", assessment
+        )
+
+        self.assertEqual(source["value"], "available")
+        self.assertEqual(source["quality_state"], "complete")
+        self.assertEqual(source["source_record_ids"], run.ids)
+        self.assertEqual(unresolved["value"], 1)
+        self.assertEqual(detail["value"]["run_id"], run.id)
+        self.assertEqual(
+            detail["value"]["checksums"]["result"],
+            run.result_checksum,
+        )
+
+        candidate = run.case_ids.candidate_ids.filtered(
+            lambda item: item.source_scope == "invoice"
+        )
+        candidate.with_user(self.reviewer).action_confirm()
+        self.assertEqual(
+            self._fact(
+                "cn.reconciliation.einvoice.unresolved_case_count",
+                assessment,
+            )["value"],
+            0,
+        )
+
+        bill.ref = "EINV-FACT-BRIDGE-CHANGED"
+        candidate.invalidate_recordset(["integrity_state"])
+        self.assertEqual(
+            self._fact(
+                "cn.reconciliation.einvoice."
+                "decision_integrity_mismatch_count",
+                assessment,
+            )["value"],
+            1,
+        )
+
+        pending = self._queue()
+        stale = self._fact(
+            "cn.reconciliation.einvoice.source_state", assessment
+        )
+        self.assertEqual(pending.state, "queued")
+        self.assertIsNone(stale["value"])
+        self.assertEqual(stale["quality_state"], "stale")
+        self.assertIn(run.id, stale["source_record_ids"])
+        self.assertIn(pending.id, stale["source_record_ids"])
 
     def test_partial_source_coverage_is_visible_but_does_not_fake_failure(self):
         bill = self._bill("EINV-PARTIAL-COVERAGE")
@@ -731,6 +819,18 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         first.invalidate_recordset()
         self.assertEqual(first.state, "superseded")
         self.assertEqual(replacement.state, "succeeded")
+
+        self.env.cr.execute(
+            """
+                UPDATE sudo_cn_einvoice_reconciliation_run
+                   SET state = 'succeeded'
+                 WHERE id = %s
+            """,
+            [first.id],
+        )
+        first.invalidate_recordset(["state"])
+        with self.assertRaises(UserError):
+            self._fact("cn.reconciliation.einvoice.source_state")
 
     def test_invoice_and_voucher_confirmation_modes_cannot_mix(self):
         reference = "EINV-MODE-001"

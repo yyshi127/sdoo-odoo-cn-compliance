@@ -73,6 +73,11 @@
         <field name="arch" type="xml">
             <form string="增值税期间四方勾稽" create="0" edit="0" delete="0">
                 <header>
+                    <button name="action_queue_compliance_assessment"
+                            type="object" string="发起规则扫描"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'succeeded'"/>
                     <button name="action_cancel" type="object" string="取消批次"
                             class="btn-secondary"
                             groups="sudo_global_finance.group_compliance_manager"

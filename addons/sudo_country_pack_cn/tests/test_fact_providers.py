@@ -54,6 +54,16 @@ class TestChinaFactProviders(TransactionCase):
             "cn.evidence.invoice_missing_attachment_count",
             "cn.vat_invoice.posted_line_without_tax_count",
             "cn.master.transaction_partner_missing_tax_id_count",
+            "cn.reconciliation.einvoice.source_state",
+            "cn.reconciliation.einvoice.data_gap_case_count",
+            "cn.reconciliation.einvoice.unresolved_case_count",
+            "cn.reconciliation.einvoice.decision_integrity_mismatch_count",
+            "cn.reconciliation.einvoice.detail",
+            "cn.reconciliation.vat.conclusion_state",
+            "cn.reconciliation.vat.blocking_issue_count",
+            "cn.reconciliation.vat.difference_issue_count",
+            "cn.reconciliation.vat.warning_issue_count",
+            "cn.reconciliation.vat.detail",
         }
         self.assertFalse(
             expected - set(self.engine._fact_provider_registry())
@@ -176,3 +186,14 @@ class TestChinaFactProviders(TransactionCase):
             self.assertEqual(payload["value"], 0, key)
             self.assertTrue(payload["is_complete"], key)
             self.assertTrue(payload["is_full_dataset"], key)
+
+    def test_reconciliation_facts_require_an_exact_period_current_result(self):
+        for key in (
+            "cn.reconciliation.einvoice.source_state",
+            "cn.reconciliation.vat.conclusion_state",
+        ):
+            payload = self._provider(key)(self.assessment, False)
+            self.assertIsNone(payload["value"], key)
+            self.assertEqual(payload["quality_state"], "missing", key)
+            self.assertFalse(payload["is_complete"], key)
+            self.assertFalse(payload["is_full_dataset"], key)

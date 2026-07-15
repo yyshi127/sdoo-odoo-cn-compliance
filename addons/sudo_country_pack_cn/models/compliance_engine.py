@@ -1,4 +1,6 @@
+from collections import Counter
 from datetime import date
+from decimal import Decimal
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError
@@ -58,9 +60,491 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.master.transaction_partner_missing_tax_id_count": (
                     self._provide_cn_transaction_partner_missing_tax_id_count
                 ),
+                "cn.reconciliation.einvoice.source_state": (
+                    self._provide_cn_einvoice_reconciliation_source_state
+                ),
+                "cn.reconciliation.einvoice.data_gap_case_count": (
+                    self._provide_cn_einvoice_reconciliation_data_gap_count
+                ),
+                "cn.reconciliation.einvoice.unresolved_case_count": (
+                    self._provide_cn_einvoice_reconciliation_unresolved_count
+                ),
+                "cn.reconciliation.einvoice.decision_integrity_mismatch_count": (
+                    self._provide_cn_einvoice_reconciliation_integrity_mismatch_count
+                ),
+                "cn.reconciliation.einvoice.detail": (
+                    self._provide_cn_einvoice_reconciliation_detail
+                ),
+                "cn.reconciliation.vat.conclusion_state": (
+                    self._provide_cn_vat_reconciliation_conclusion_state
+                ),
+                "cn.reconciliation.vat.blocking_issue_count": (
+                    self._provide_cn_vat_reconciliation_blocking_count
+                ),
+                "cn.reconciliation.vat.difference_issue_count": (
+                    self._provide_cn_vat_reconciliation_difference_count
+                ),
+                "cn.reconciliation.vat.warning_issue_count": (
+                    self._provide_cn_vat_reconciliation_warning_count
+                ),
+                "cn.reconciliation.vat.detail": (
+                    self._provide_cn_vat_reconciliation_detail
+                ),
             }
         )
         return providers
+
+    @staticmethod
+    def _reconciliation_period_domain(assessment):
+        period_start = fields.Date.to_date(assessment.period_start)
+        period_end = fields.Date.to_date(assessment.period_end)
+        domain = [("profile_id", "=", assessment.profile_id.id)]
+        if period_start:
+            domain.append(("period_start", "=", period_start))
+        if period_end:
+            domain.append(("period_end", "=", period_end))
+        return period_start, period_end, domain
+
+    def _current_reconciliation_run(
+        self,
+        assessment,
+        model_name,
+        label,
+        checksum_fields,
+        aggregation_method,
+    ):
+        period_start, period_end, period_domain = (
+            self._reconciliation_period_domain(assessment)
+        )
+        model = self.env[model_name].sudo().with_company(
+            assessment.company_id
+        )
+        missing = {
+            "value": None,
+            "source_model": model_name,
+            "source_domain": period_domain + [("state", "=", "succeeded")],
+            "record_count": 0,
+            "aggregation_method": aggregation_method,
+            "quality_state": "missing",
+            "is_complete": False,
+            "is_full_dataset": False,
+            "provider_version": "1",
+        }
+        if not period_start or not period_end:
+            return model.browse(), missing
+
+        active = model.search(
+            period_domain + [("state", "in", ("queued", "processing"))],
+            order="requested_at desc, id desc",
+        )
+        current = model.search(
+            period_domain + [("state", "=", "succeeded")],
+            order="requested_at desc, id desc",
+            limit=2,
+        )
+        if len(current) > 1:
+            raise UserError(
+                _(
+                    "%(label)s存在多份当前成功结果，不能选择或汇总。",
+                    label=label,
+                )
+            )
+        if active:
+            pending = active | current
+            return model.browse(), {
+                **missing,
+                "source_record_ids": pending.ids,
+                "record_count": len(pending),
+                "quality_state": "stale",
+            }
+        if not current:
+            return model.browse(), missing
+
+        run = current[0]
+        required_fields = (
+            "engine_version",
+            "finished_at",
+            "result_checksum",
+            *checksum_fields,
+        )
+        absent = [field_name for field_name in required_fields if not run[field_name]]
+        if absent:
+            raise UserError(
+                _(
+                    "%(label)s当前结果缺少审计字段：%(fields)s。",
+                    label=label,
+                    fields=", ".join(absent),
+                )
+            )
+        return run, {
+            "source_model": model_name,
+            "source_record_ids": run.ids,
+            "record_count": 1,
+            "aggregation_method": aggregation_method,
+            "valid_at": run.finished_at,
+            "quality_state": "complete",
+            "is_complete": True,
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
+
+    def _cn_einvoice_reconciliation_snapshot(self, assessment):
+        run, payload = self._current_reconciliation_run(
+            assessment,
+            "sudo.cn.einvoice.reconciliation.run",
+            _("账票勾稽"),
+            ("source_snapshot_checksum", "ledger_snapshot_checksum"),
+            "single_exact_period_current_success_snapshot",
+        )
+        if not run:
+            return payload, None
+
+        cases = run.case_ids.sudo()
+        states = Counter(cases.mapped("state"))
+        expected_counts = {
+            "case_count": len(cases),
+            "matched_case_count": states["matched"] + states["partial"],
+            "suggested_case_count": states["suggested"],
+            "ambiguous_case_count": states["ambiguous"],
+            "unmatched_case_count": (
+                states["unmatched"] + states["reviewed_unmatched"]
+            ),
+            "data_gap_case_count": states["data_gap"],
+            "warning_case_count": len(
+                cases.filtered(lambda case: case.warning_issue_count > 0)
+            ),
+        }
+        inconsistent = [
+            field_name
+            for field_name, expected in expected_counts.items()
+            if run[field_name] != expected
+        ]
+        if run.source_document_count != len(cases):
+            inconsistent.append("source_document_count")
+        if run.source_availability_state == "not_evaluated":
+            inconsistent.append("source_availability_state")
+        if inconsistent:
+            raise UserError(
+                _(
+                    "账票勾稽当前结果计数或状态不一致：%(fields)s。",
+                    fields=", ".join(sorted(set(inconsistent))),
+                )
+            )
+
+        unresolved = (
+            states["suggested"] + states["ambiguous"] + states["unmatched"]
+        )
+        integrity_mismatches = len(
+            cases.filtered(
+                lambda case: case.decision_integrity_state == "mismatch"
+            )
+        )
+        detail = {
+            "schema": "sdoo.cn.reconciliation.einvoice.fact.v1",
+            "run_id": run.id,
+            "engine_version": run.engine_version,
+            "period_start": fields.Date.to_string(run.period_start),
+            "period_end": fields.Date.to_string(run.period_end),
+            "source_state": run.source_availability_state,
+            "counts": {
+                "source_documents": run.source_document_count,
+                "ledger_moves": run.ledger_move_count,
+                "cases": run.case_count,
+                "matched": run.matched_case_count,
+                "suggested": states["suggested"],
+                "ambiguous": states["ambiguous"],
+                "unmatched": states["unmatched"],
+                "reviewed_unmatched": states["reviewed_unmatched"],
+                "data_gap": states["data_gap"],
+                "warning_cases": run.warning_case_count,
+                "unresolved": unresolved,
+                "decision_integrity_mismatch": integrity_mismatches,
+            },
+            "checksums": {
+                "source": run.source_snapshot_checksum,
+                "ledger": run.ledger_snapshot_checksum,
+                "result": run.result_checksum,
+            },
+        }
+        return payload, detail
+
+    def _provide_cn_einvoice_reconciliation_value(
+        self, assessment, value_getter
+    ):
+        payload, detail = self._cn_einvoice_reconciliation_snapshot(assessment)
+        payload["value"] = value_getter(detail) if detail else None
+        return payload
+
+    def _provide_cn_einvoice_reconciliation_source_state(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_einvoice_reconciliation_value(
+            assessment, lambda detail: detail["source_state"]
+        )
+
+    def _provide_cn_einvoice_reconciliation_data_gap_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_einvoice_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["data_gap"]
+        )
+
+    def _provide_cn_einvoice_reconciliation_unresolved_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_einvoice_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["unresolved"]
+        )
+
+    def _provide_cn_einvoice_reconciliation_integrity_mismatch_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_einvoice_reconciliation_value(
+            assessment,
+            lambda detail: detail["counts"]["decision_integrity_mismatch"],
+        )
+
+    def _provide_cn_einvoice_reconciliation_detail(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_einvoice_reconciliation_value(
+            assessment, lambda detail: detail
+        )
+
+    @staticmethod
+    def _amount_snapshot(currency, value):
+        return format(Decimal(str(currency.round(float(value or 0.0)))), "f")
+
+    def _cn_vat_reconciliation_snapshot(self, assessment):
+        run, payload = self._current_reconciliation_run(
+            assessment,
+            "sudo.cn.vat.period.reconciliation.run",
+            _("增值税期间四方勾稽"),
+            (
+                "accounting_snapshot_checksum",
+                "einvoice_snapshot_checksum",
+                "filing_snapshot_checksum",
+                "payment_snapshot_checksum",
+            ),
+            "single_exact_period_current_success_snapshot",
+        )
+        if not run:
+            return payload, None
+
+        issues = run.issue_ids.sudo()
+        blocking_count = len(
+            issues.filtered(lambda issue: issue.severity == "blocking")
+        )
+        difference_count = len(
+            issues.filtered(lambda issue: issue.issue_kind == "difference")
+        )
+        warning_count = len(
+            issues.filtered(
+                lambda issue: issue.severity == "review"
+                and issue.issue_kind != "difference"
+            )
+        )
+        expected_conclusion = (
+            "insufficient_data"
+            if blocking_count
+            else "differences"
+            if difference_count
+            else "aligned"
+        )
+        expected = {
+            "issue_count": len(issues),
+            "blocking_issue_count": blocking_count,
+            "difference_issue_count": difference_count,
+            "warning_issue_count": warning_count,
+            "conclusion_state": expected_conclusion,
+            "posted_accounting_move_count": len(
+                run.accounting_move_ids.filtered(
+                    lambda move: move.state == "posted"
+                )
+            ),
+            "draft_accounting_move_count": len(
+                run.accounting_move_ids.filtered(
+                    lambda move: move.state == "draft"
+                )
+            ),
+            "einvoice_document_count": len(run.einvoice_document_ids),
+            "filing_record_count": len(run.filing_record_ids),
+            "payment_record_count": len(run.payment_record_ids),
+        }
+        inconsistent = [
+            field_name
+            for field_name, value in expected.items()
+            if run[field_name] != value
+        ]
+        source_state_fields = (
+            "accounting_source_state",
+            "einvoice_source_state",
+            "filing_source_state",
+            "payment_source_state",
+        )
+        inconsistent.extend(
+            field_name
+            for field_name in source_state_fields
+            if run[field_name] == "not_evaluated"
+        )
+        if inconsistent:
+            raise UserError(
+                _(
+                    "增值税期间四方勾稽当前结果计数或状态不一致：%(fields)s。",
+                    fields=", ".join(sorted(set(inconsistent))),
+                )
+            )
+
+        amount_fields = (
+            "ledger_output_tax_amount",
+            "ledger_input_tax_amount",
+            "einvoice_output_tax_amount",
+            "einvoice_input_tax_amount",
+            "filing_output_tax_amount",
+            "filing_input_tax_amount",
+            "filing_payable_amount",
+            "payment_amount",
+        )
+        provided_fields = {
+            "einvoice_output_tax_amount": "has_einvoice_output_tax_amount",
+            "einvoice_input_tax_amount": "has_einvoice_input_tax_amount",
+            "filing_output_tax_amount": "has_filing_output_tax_amount",
+            "filing_input_tax_amount": "has_filing_input_tax_amount",
+            "filing_payable_amount": "has_filing_payable_amount",
+            "payment_amount": "has_payment_amount",
+        }
+        amounts = {}
+        for field_name in amount_fields:
+            provided_field = provided_fields.get(field_name)
+            amounts[field_name] = (
+                self._amount_snapshot(run.currency_id, run[field_name])
+                if not provided_field or run[provided_field]
+                else None
+            )
+        difference_fields = (
+            (
+                "ledger_einvoice_output_difference",
+                "has_ledger_einvoice_output_difference",
+            ),
+            (
+                "ledger_einvoice_input_difference",
+                "has_ledger_einvoice_input_difference",
+            ),
+            (
+                "ledger_filing_output_difference",
+                "has_ledger_filing_output_difference",
+            ),
+            (
+                "ledger_filing_input_difference",
+                "has_ledger_filing_input_difference",
+            ),
+            ("filing_payment_difference", "has_filing_payment_difference"),
+        )
+        differences = {
+            field_name: (
+                self._amount_snapshot(run.currency_id, run[field_name])
+                if run[provided_field]
+                else None
+            )
+            for field_name, provided_field in difference_fields
+        }
+        detail = {
+            "schema": "sdoo.cn.reconciliation.vat-period.fact.v1",
+            "run_id": run.id,
+            "engine_version": run.engine_version,
+            "period_start": fields.Date.to_string(run.period_start),
+            "period_end": fields.Date.to_string(run.period_end),
+            "vat_tax_type_code": run.vat_tax_type_code,
+            "currency": run.currency_id.name,
+            "conclusion_state": run.conclusion_state,
+            "source_states": {
+                "accounting": run.accounting_source_state,
+                "einvoice": run.einvoice_source_state,
+                "filing": run.filing_source_state,
+                "payment": run.payment_source_state,
+            },
+            "counts": {
+                "accounting_posted": run.posted_accounting_move_count,
+                "accounting_draft": run.draft_accounting_move_count,
+                "einvoice": run.einvoice_document_count,
+                "filing": run.filing_record_count,
+                "payment": run.payment_record_count,
+                "issues": run.issue_count,
+                "blocking": run.blocking_issue_count,
+                "differences": run.difference_issue_count,
+                "warnings": run.warning_issue_count,
+            },
+            "amounts": amounts,
+            "differences": differences,
+            "issues": [
+                {
+                    "id": issue.id,
+                    "code": issue.code,
+                    "severity": issue.severity,
+                    "kind": issue.issue_kind,
+                    "source_area": issue.source_area,
+                    "affected_record_count": issue.affected_record_count,
+                    "difference": (
+                        self._amount_snapshot(
+                            run.currency_id, issue.difference_amount
+                        )
+                        if issue.has_difference
+                        else None
+                    ),
+                }
+                for issue in issues.sorted(
+                    lambda issue: (issue.sequence, issue.code, issue.id)
+                )
+            ],
+            "checksums": {
+                "accounting": run.accounting_snapshot_checksum,
+                "einvoice": run.einvoice_snapshot_checksum,
+                "filing": run.filing_snapshot_checksum,
+                "payment": run.payment_snapshot_checksum,
+                "result": run.result_checksum,
+            },
+        }
+        return payload, detail
+
+    def _provide_cn_vat_reconciliation_value(
+        self, assessment, value_getter
+    ):
+        payload, detail = self._cn_vat_reconciliation_snapshot(assessment)
+        payload["value"] = value_getter(detail) if detail else None
+        return payload
+
+    def _provide_cn_vat_reconciliation_conclusion_state(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, lambda detail: detail["conclusion_state"]
+        )
+
+    def _provide_cn_vat_reconciliation_blocking_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["blocking"]
+        )
+
+    def _provide_cn_vat_reconciliation_difference_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["differences"]
+        )
+
+    def _provide_cn_vat_reconciliation_warning_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["warnings"]
+        )
+
+    def _provide_cn_vat_reconciliation_detail(self, assessment, _definition):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, lambda detail: detail
+        )
 
     def _taxpayer_classifications(self, assessment):
         classifications = self.env[

@@ -420,8 +420,12 @@ def validate_rule_drafts(
         required_keys = {fact_ids[ref] for ref in required_refs if ref in fact_ids}
         if len(required_keys) != len(required_refs):
             fail(f"{xml_id} references an unknown fact definition")
-        if required_keys != used_fact_keys:
-            fail(f"{xml_id} condition and required facts differ")
+        missing_required_keys = used_fact_keys - required_keys
+        if missing_required_keys:
+            fail(
+                f"{xml_id} condition facts are not declared: "
+                f"{sorted(missing_required_keys)}"
+            )
 
     if rules_with_versions != set(rules):
         fail("every packaged China rule must have a draft version")

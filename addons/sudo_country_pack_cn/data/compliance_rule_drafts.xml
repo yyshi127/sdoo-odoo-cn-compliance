@@ -261,4 +261,144 @@
         <field name="expected_result">fail</field>
         <field name="source_case_note">内部资料治理反例，不是官方法律案例。</field>
     </record>
+
+    <record id="rule_cn_einvoice_reconciliation_ready_001" model="sudo.compliance.rule">
+        <field name="name">期间账票勾稽复核准备度</field>
+        <field name="code">CN-DATA-EINV-RECON-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.VAT_INVOICE</field>
+        <field name="description">检查评估期间是否存在唯一、完整且已完成事项复核的当前账票勾稽结果。该控制只评价内部数据准备和复核流程，不判断发票抵扣、税前扣除或申报合规。</field>
+    </record>
+    <record id="rule_version_cn_einvoice_reconciliation_ready_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_einvoice_reconciliation_ready_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'all': [
+                {'fact': 'cn.reconciliation.einvoice.source_state', 'operator': 'eq', 'value': 'available'},
+                {'fact': 'cn.reconciliation.einvoice.data_gap_case_count', 'operator': 'eq', 'value': 0},
+                {'fact': 'cn.reconciliation.einvoice.unresolved_case_count', 'operator': 'eq', 'value': 0},
+                {'fact': 'cn.reconciliation.einvoice.decision_integrity_mismatch_count', 'operator': 'eq', 'value': 0}
+            ]
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_vat_law_2024_candidate'),
+            ref('source_cn_invoice_measures_2023_candidate')
+        ])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_einvoice_reconciliation_source_state_v1'),
+            ref('fact_cn_einvoice_reconciliation_data_gap_count_v1'),
+            ref('fact_cn_einvoice_reconciliation_unresolved_count_v1'),
+            ref('fact_cn_einvoice_reconciliation_integrity_mismatch_count_v1'),
+            ref('fact_cn_einvoice_reconciliation_detail_v1')
+        ])]"/>
+        <field name="legal_basis_summary">内部账票数据准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；即使通过也只表示当前账票勾稽事项已完成复核，不构成发票真实性、抵扣资格、税前扣除或纳税申报结论。</field>
+        <field name="failure_message">期间账票勾稽存在数据阻断、待复核事项或确认后账簿变化，当前结果不足以支持后续正式规则判断。</field>
+        <field name="pass_message">期间账票勾稽在当前受控范围内已完成事项复核且确认依据未发生变化；仍须结合正式规则和专业判断形成税务结论。</field>
+        <field name="unknown_message">没有可用的唯一当前成功账票勾稽结果，或结果正在重算、审计指纹异常，不能形成通过判断。</field>
+        <field name="recommended_actions">打开事实快照关联的账票勾稽批次，先修复来源数据缺口，再逐项确认单一建议和多候选，对无法匹配事项记录人工复核结论；若确认后凭证变化，应重新运行勾稽。</field>
+        <field name="evidence_required">受控电子发票来源、账簿范围快照、匹配评分依据、人工复核记录、未匹配说明和勾稽结果校验和。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_einvoice_reconciliation_ready_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">账票来源可用且所有事项已复核</field>
+        <field name="rule_version_id" ref="rule_version_cn_einvoice_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.einvoice.source_state': 'available',
+            'cn.reconciliation.einvoice.data_gap_case_count': 0,
+            'cn.reconciliation.einvoice.unresolved_case_count': 0,
+            'cn.reconciliation.einvoice.decision_integrity_mismatch_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部数据准备度正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_einvoice_reconciliation_ready_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">账票勾稽仍有未复核事项</field>
+        <field name="rule_version_id" ref="rule_version_cn_einvoice_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.einvoice.source_state': 'available',
+            'cn.reconciliation.einvoice.data_gap_case_count': 0,
+            'cn.reconciliation.einvoice.unresolved_case_count': 2,
+            'cn.reconciliation.einvoice.decision_integrity_mismatch_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部数据准备度反例，不是官方法律案例。</field>
+    </record>
+
+    <record id="rule_cn_vat_reconciliation_ready_001" model="sudo.compliance.rule">
+        <field name="name">增值税期间四方勾稽复核准备度</field>
+        <field name="code">CN-DATA-VAT-RECON-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.FILING_PAYMENT</field>
+        <field name="description">检查评估期间账务、电子发票、增值税申报和税款缴纳受控口径是否具备比较条件且没有金额差异。该控制不自动判断少缴税、违法或申报正确。</field>
+    </record>
+    <record id="rule_version_cn_vat_reconciliation_ready_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_vat_reconciliation_ready_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'all': [
+                {'fact': 'cn.reconciliation.vat.conclusion_state', 'operator': 'eq', 'value': 'aligned'},
+                {'fact': 'cn.reconciliation.vat.blocking_issue_count', 'operator': 'eq', 'value': 0},
+                {'fact': 'cn.reconciliation.vat.difference_issue_count', 'operator': 'eq', 'value': 0}
+            ]
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_vat_law_2024_candidate'),
+            ref('source_cn_vat_regulation_order_826_candidate'),
+            ref('source_cn_invoice_measures_2023_candidate')
+        ])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_vat_reconciliation_conclusion_state_v1'),
+            ref('fact_cn_vat_reconciliation_blocking_count_v1'),
+            ref('fact_cn_vat_reconciliation_difference_count_v1'),
+            ref('fact_cn_vat_reconciliation_warning_count_v1'),
+            ref('fact_cn_vat_reconciliation_detail_v1')
+        ])]"/>
+        <field name="legal_basis_summary">内部四方数据勾稽准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；金额一致不证明税法口径、申报调整、抵扣资格或缴税义务正确。</field>
+        <field name="failure_message">期间四方勾稽存在数据阻断或金额差异，需要先完成来源补充和逐项专业复核。</field>
+        <field name="pass_message">账务、电子发票、申报和缴税金额在当前受控口径下勾稽一致；范围限制与复核提示仍须在正式报告中披露。</field>
+        <field name="unknown_message">没有可用的唯一当前成功四方勾稽结果，或结果正在重算、审计指纹异常，不能形成通过判断。</field>
+        <field name="recommended_actions">打开事实快照关联的四方勾稽批次，先解决阻断问题，再按稳定问题代码核对左右口径、调整事项、红字、跨期、抵缴、冲正和退库；不得把多个差异金额简单相加作为税务影响额。</field>
+        <field name="evidence_required">账务、电子发票、增值税申报、缴款回执的受控来源快照，逐项差异调节表、复核说明和结果校验和。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_vat_reconciliation_ready_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">四方数据可比较且当前口径金额一致</field>
+        <field name="rule_version_id" ref="rule_version_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.vat.conclusion_state': 'aligned',
+            'cn.reconciliation.vat.blocking_issue_count': 0,
+            'cn.reconciliation.vat.difference_issue_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部数据准备度正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_vat_reconciliation_ready_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">四方勾稽存在金额差异</field>
+        <field name="rule_version_id" ref="rule_version_cn_vat_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.vat.conclusion_state': 'differences',
+            'cn.reconciliation.vat.blocking_issue_count': 0,
+            'cn.reconciliation.vat.difference_issue_count': 1
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部数据准备度反例，不是官方法律案例。</field>
+    </record>
 </odoo>

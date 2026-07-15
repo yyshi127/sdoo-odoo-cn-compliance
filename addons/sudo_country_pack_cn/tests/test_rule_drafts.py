@@ -24,6 +24,14 @@ class TestChinaRuleDrafts(TransactionCase):
                 cls.env.ref(
                     "sudo_country_pack_cn.rule_version_cn_profile_tax_001_draft"
                 ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "rule_version_cn_einvoice_reconciliation_ready_001_draft"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "rule_version_cn_vat_reconciliation_ready_001_draft"
+                ).id,
             ]
         )
         cls.sources = cls.env["sudo.compliance.authority.source"].browse(
@@ -106,7 +114,7 @@ class TestChinaRuleDrafts(TransactionCase):
 
     def test_all_packaged_draft_cases_evaluate_as_expected(self):
         cases = self.versions.mapped("test_case_ids")
-        self.assertEqual(len(cases), 10)
+        self.assertEqual(len(cases), 14)
         for case in cases:
             self.assertTrue(case._run_case(), case.display_name)
             self.assertEqual(case.last_result, case.expected_result)
