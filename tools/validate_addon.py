@@ -92,19 +92,20 @@ def validate_hooks(manifest: dict[str, object]) -> None:
             fail(f"filing type missing for {template['code']}")
 
 
-def validate_fact_definitions() -> None:
+def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
     path = ADDON_ROOT / "data" / "compliance_fact_data.xml"
     root = ElementTree.parse(path).getroot()
     facts: list[dict[str, str]] = []
+    fact_ids: dict[str, str] = {}
     for record in root.findall(".//record"):
         if record.attrib.get("model") != "sudo.compliance.fact.definition":
             continue
-        facts.append(
-            {
-                field.attrib["name"]: (field.text or "").strip()
-                for field in record.findall("field")
-            }
-        )
+        fields = {
+            field.attrib["name"]: (field.text or "").strip()
+            for field in record.findall("field")
+        }
+        facts.append(fields)
+        fact_ids[record.attrib["id"]] = fields["key"]
     if not facts:
         fail("at least one China fact definition is required")
     keys = [fact["key"] for fact in facts]
@@ -121,13 +122,175 @@ def validate_fact_definitions() -> None:
             fail(f"fact and provider key differ: {key}")
         if f'"{key}"' not in provider_code:
             fail(f"fact provider is not registered: {key}")
+    return set(keys), fact_ids
+
+
+def record_fields(record: ElementTree.Element) -> dict[str, ElementTree.Element]:
+    return {
+        field.attrib["name"]: field
+        for field in record.findall("field")
+    }
+
+
+def field_text(
+    fields: dict[str, ElementTree.Element],
+    name: str,
+    record_id: str,
+) -> str:
+    field = fields.get(name)
+    value = (field.text or "").strip() if field is not None else ""
+    if not value:
+        fail(f"{record_id} is missing required field {name}")
+    return value
+
+
+def literal_eval_field(
+    field: ElementTree.Element,
+    record_id: str,
+) -> object:
+    expression = field.attrib.get("eval")
+    if not expression:
+        fail(f"{record_id}.{field.attrib['name']} must use an eval expression")
+    try:
+        return ast.literal_eval(expression)
+    except (SyntaxError, ValueError) as exc:
+        fail(f"invalid literal expression in {record_id}: {exc}")
+
+
+def condition_fact_keys(value: object) -> set[str]:
+    keys: set[str] = set()
+    if isinstance(value, dict):
+        fact = value.get("fact")
+        if isinstance(fact, str):
+            keys.add(fact)
+        for child in value.values():
+            keys.update(condition_fact_keys(child))
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            keys.update(condition_fact_keys(child))
+    return keys
+
+
+def validate_rule_drafts(
+    fact_keys: set[str],
+    fact_ids: dict[str, str],
+) -> None:
+    path = ADDON_ROOT / "data" / "compliance_rule_drafts.xml"
+    root = ElementTree.parse(path).getroot()
+    records = root.findall(".//record")
+    rules = {
+        record.attrib["id"]: record_fields(record)
+        for record in records
+        if record.attrib.get("model") == "sudo.compliance.rule"
+    }
+    versions = {
+        record.attrib["id"]: record_fields(record)
+        for record in records
+        if record.attrib.get("model") == "sudo.compliance.rule.version"
+    }
+    cases = [
+        (record.attrib["id"], record_fields(record))
+        for record in records
+        if record.attrib.get("model") == "sudo.compliance.rule.test.case"
+    ]
+    if len(rules) < 4 or len(versions) < 4:
+        fail("at least four governed China rule drafts are required")
+
+    codes = [field_text(fields, "code", xml_id) for xml_id, fields in rules.items()]
+    if len(codes) != len(set(codes)):
+        fail("China rule codes must be unique")
+    if any(not code.startswith("CN-") for code in codes):
+        fail("all China rule codes must start with CN-")
+
+    version_case_results: dict[str, set[str]] = {
+        xml_id: set() for xml_id in versions
+    }
+    rules_with_versions: set[str] = set()
+    ref_pattern = re.compile(r"ref\(['\"]([^'\"]+)['\"]\)")
+    for xml_id, fields in versions.items():
+        version = field_text(fields, "version", xml_id)
+        if not version.startswith("DRAFT-"):
+            fail(f"draft asset contains a non-draft version: {xml_id}")
+        state = (fields.get("state").text or "").strip() if fields.get(
+            "state"
+        ) is not None else "draft"
+        if state != "draft":
+            fail(f"draft version forces a publishable state: {xml_id}")
+        if "professional_review_state" in fields:
+            fail(f"draft version must not force professional sign-off: {xml_id}")
+        if "authority_source_ids" in fields:
+            fail(f"draft version must not claim governed sources: {xml_id}")
+        if field_text(fields, "stale_policy", xml_id) != "block_all":
+            fail(f"draft version must block evaluation when stale: {xml_id}")
+        if field_text(fields, "requires_human_review", xml_id) != "True":
+            fail(f"draft version must require human review: {xml_id}")
+
+        rule_ref = fields.get("rule_id")
+        rule_id = rule_ref.attrib.get("ref") if rule_ref is not None else None
+        if rule_id not in rules:
+            fail(f"{xml_id} references an unknown China rule")
+        rules_with_versions.add(rule_id)
+
+        condition_field = fields.get("condition_json")
+        if condition_field is None:
+            fail(f"{xml_id} has no declarative condition")
+        condition = literal_eval_field(condition_field, xml_id)
+        used_fact_keys = condition_fact_keys(condition)
+        if not used_fact_keys:
+            fail(f"{xml_id} condition does not reference a fact")
+        unknown_keys = used_fact_keys - fact_keys
+        if unknown_keys:
+            fail(f"{xml_id} references unknown facts: {sorted(unknown_keys)}")
+
+        required_field = fields.get("required_fact_ids")
+        if required_field is None:
+            fail(f"{xml_id} has no required fact declaration")
+        required_refs = set(
+            ref_pattern.findall(required_field.attrib.get("eval", ""))
+        )
+        required_keys = {fact_ids[ref] for ref in required_refs if ref in fact_ids}
+        if len(required_keys) != len(required_refs):
+            fail(f"{xml_id} references an unknown fact definition")
+        if required_keys != used_fact_keys:
+            fail(f"{xml_id} condition and required facts differ")
+
+    if rules_with_versions != set(rules):
+        fail("every packaged China rule must have a draft version")
+
+    for xml_id, fields in cases:
+        version_field = fields.get("rule_version_id")
+        version_id = (
+            version_field.attrib.get("ref")
+            if version_field is not None
+            else None
+        )
+        if version_id not in versions:
+            fail(f"{xml_id} references an unknown draft version")
+        facts_field = fields.get("facts_json")
+        if facts_field is None:
+            fail(f"{xml_id} has no test facts")
+        test_facts = literal_eval_field(facts_field, xml_id)
+        if not isinstance(test_facts, dict) or not test_facts:
+            fail(f"{xml_id} must provide a non-empty fact dictionary")
+        unknown_keys = set(test_facts) - fact_keys
+        if unknown_keys:
+            fail(f"{xml_id} uses unknown facts: {sorted(unknown_keys)}")
+        expected = field_text(fields, "expected_result", xml_id)
+        if expected not in {"pass", "fail", "unknown"}:
+            fail(f"{xml_id} has an invalid expected result")
+        version_case_results[version_id].add(expected)
+
+    for version_id, results in version_case_results.items():
+        if not {"pass", "fail"}.issubset(results):
+            fail(f"{version_id} must have pass and fail test cases")
 
 
 def main() -> int:
     validate_text_and_syntax()
     manifest = validate_manifest()
     validate_hooks(manifest)
-    validate_fact_definitions()
+    fact_keys, fact_ids = validate_fact_definitions()
+    validate_rule_drafts(fact_keys, fact_ids)
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
 

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- These internal control drafts cannot be published without governed official sources, tests, independent approval and China professional sign-off. -->
+    <record id="rule_cn_base_reg_001" model="sudo.compliance.rule">
+        <field name="name">中国企业登记资料准备度</field>
+        <field name="code">CN-BASE-REG-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.IDENTITY</field>
+        <field name="description">检查合规档案是否具有唯一有效的统一社会信用代码受控登记和登记证明附件线索。附件存在不代表登记真实性已核验。</field>
+    </record>
+    <record id="rule_version_cn_base_reg_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_base_reg_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{'all': [
+            {'fact': 'cn.company.unified_social_credit_code', 'operator': 'is_set'},
+            {'fact': 'cn.company.registration_evidence_count', 'operator': 'gt', 'value': 0}
+        ]}"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_company_uscc_v1'),
+            ref('fact_cn_registration_evidence_count_v1')
+        ])]"/>
+        <field name="legal_basis_summary">内部数据治理控制草案。尚未关联官方原文快照，也未完成中国财税专业签核，不构成企业登记或税务合规结论。</field>
+        <field name="failure_message">合规档案中的统一社会信用代码受控登记或证明附件线索不完整。</field>
+        <field name="pass_message">合规档案已记录统一社会信用代码和登记证明附件线索；仍需完成内容核验。</field>
+        <field name="unknown_message">登记事实缺失、冲突或不完整，不能作出通过判断。</field>
+        <field name="recommended_actions">核对营业执照或登记机关正式资料，在合规档案建立唯一有效登记记录并上传可追溯附件；不要根据发票抬头猜测号码。</field>
+        <field name="evidence_required">营业执照或登记机关正式证明、取得日期、核验人和受控附件。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_base_reg_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">登记号码和附件线索均存在</field>
+        <field name="rule_version_id" ref="rule_version_cn_base_reg_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.company.unified_social_credit_code': '91310000TEST000001',
+            'cn.company.registration_evidence_count': 1
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部控制正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_base_reg_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">登记证明附件线索缺失</field>
+        <field name="rule_version_id" ref="rule_version_cn_base_reg_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.company.unified_social_credit_code': '91310000TEST000001',
+            'cn.company.registration_evidence_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部控制反例，不是官方法律案例。</field>
+    </record>
+
+    <record id="rule_cn_acc_period_001" model="sudo.compliance.rule">
+        <field name="name">评估期间未过账凭证准备度</field>
+        <field name="code">CN-ACC-PERIOD-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.ACCOUNTING</field>
+        <field name="description">检查评估期间是否存在草稿会计凭证。该结果只表示 Odoo 过账准备度，不判断会计处理或纳税申报是否合法。</field>
+    </record>
+    <record id="rule_version_cn_acc_period_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_acc_period_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'fact': 'cn.account.unposted_move_count',
+            'operator': 'eq',
+            'value': 0
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">medium</field>
+        <field name="stale_policy">block_all</field>
+        <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_unposted_move_count_v1')])]"/>
+        <field name="legal_basis_summary">内部关账准备度控制草案。尚未关联官方原文快照，也未完成中国会计与税务专业签核，不构成法定关账或申报期限判断。</field>
+        <field name="failure_message">评估期间仍存在未过账会计凭证，当前账面数据可能尚未形成稳定评估基础。</field>
+        <field name="pass_message">评估期间未发现草稿会计凭证。</field>
+        <field name="unknown_message">无法完整取得评估期间会计凭证，不能作出通过判断。</field>
+        <field name="recommended_actions">核对草稿凭证的业务依据、期间和审批状态；应过账的完成受控过账，不应入账的保留处理说明，不得为了通过检查而批量过账。</field>
+        <field name="evidence_required">草稿凭证清单、业务依据、复核记录和关账工作底稿。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_acc_period_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">期间没有未过账凭证</field>
+        <field name="rule_version_id" ref="rule_version_cn_acc_period_001_draft"/>
+        <field name="facts_json" eval="{'cn.account.unposted_move_count': 0}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部控制正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_acc_period_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">期间存在未过账凭证</field>
+        <field name="rule_version_id" ref="rule_version_cn_acc_period_001_draft"/>
+        <field name="facts_json" eval="{'cn.account.unposted_move_count': 3}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部控制反例，不是官方法律案例。</field>
+    </record>
+
+    <record id="rule_cn_vat_inv_ready_001" model="sudo.compliance.rule">
+        <field name="name">业务发票税码映射准备度</field>
+        <field name="code">CN-VAT-INV-READY-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.VAT_INVOICE</field>
+        <field name="description">检查已过账业务发票的收入、成本和费用行是否维护 Odoo 税码。该控制不判断发票真伪、税率或抵扣资格。</field>
+    </record>
+    <record id="rule_version_cn_vat_inv_ready_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_vat_inv_ready_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'fact': 'cn.vat_invoice.posted_line_without_tax_count',
+            'operator': 'eq',
+            'value': 0
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_posted_invoice_line_without_tax_count_v1')])]"/>
+        <field name="legal_basis_summary">内部税务数据映射准备度控制草案。尚未绑定中国增值税官方来源、企业纳税人身份和专业签核，不构成税率、应纳税额或抵扣结论。</field>
+        <field name="failure_message">发现已过账业务发票行没有维护 Odoo 税码，账票税款勾稽基础可能不完整。</field>
+        <field name="pass_message">评估期间已过账业务发票的相关业务行均维护了 Odoo 税码。</field>
+        <field name="unknown_message">无法完整取得发票行和税码数据，不能作出通过判断。</field>
+        <field name="recommended_actions">逐行核对业务性质、发票和会计处理后补充正确税码；不得为消除提示而统一套用税率，后续仍需与受控发票数据勾稽。</field>
+        <field name="evidence_required">发票原件、合同、业务说明、税码映射表和复核记录。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_vat_inv_ready_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">全部业务发票行已有税码</field>
+        <field name="rule_version_id" ref="rule_version_cn_vat_inv_ready_001_draft"/>
+        <field name="facts_json" eval="{'cn.vat_invoice.posted_line_without_tax_count': 0}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部控制正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_vat_inv_ready_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">存在没有税码的业务发票行</field>
+        <field name="rule_version_id" ref="rule_version_cn_vat_inv_ready_001_draft"/>
+        <field name="facts_json" eval="{'cn.vat_invoice.posted_line_without_tax_count': 5}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部控制反例，不是官方法律案例。</field>
+    </record>
+
+    <record id="rule_cn_acc_evidence_001" model="sudo.compliance.rule">
+        <field name="name">业务发票附件线索准备度</field>
+        <field name="code">CN-ACC-EVIDENCE-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.ACCOUNTING</field>
+        <field name="description">检查已过账业务发票是否存在二进制附件线索。附件存在不代表原始凭证真实、合法、完整或已专业核验。</field>
+    </record>
+    <record id="rule_version_cn_acc_evidence_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_acc_evidence_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'fact': 'cn.evidence.invoice_missing_attachment_count',
+            'operator': 'eq',
+            'value': 0
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">medium</field>
+        <field name="stale_policy">block_all</field>
+        <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_invoice_missing_attachment_count_v1')])]"/>
+        <field name="legal_basis_summary">内部证据准备度控制草案。尚未关联中国会计档案和电子凭证官方原文快照，也未完成专业签核，不构成凭证保管合规结论。</field>
+        <field name="failure_message">发现已过账业务发票在 Odoo 中没有附件线索，证据链准备度不足。</field>
+        <field name="pass_message">评估期间已过账业务发票均存在附件线索；仍需核验内容和外部档案索引。</field>
+        <field name="unknown_message">无法完整取得业务发票或附件数据，不能作出通过判断。</field>
+        <field name="recommended_actions">逐笔补充原始发票、合同或等效业务凭证；若资料保存在外部档案系统，应登记受控索引、保管责任人和可调阅证明。</field>
+        <field name="evidence_required">发票原件、合同、付款支持文件、外部档案索引和复核记录。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_acc_evidence_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">全部业务发票存在附件线索</field>
+        <field name="rule_version_id" ref="rule_version_cn_acc_evidence_001_draft"/>
+        <field name="facts_json" eval="{'cn.evidence.invoice_missing_attachment_count': 0}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部控制正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_acc_evidence_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">存在没有附件线索的业务发票</field>
+        <field name="rule_version_id" ref="rule_version_cn_acc_evidence_001_draft"/>
+        <field name="facts_json" eval="{'cn.evidence.invoice_missing_attachment_count': 2}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部控制反例，不是官方法律案例。</field>
+    </record>
+</odoo>

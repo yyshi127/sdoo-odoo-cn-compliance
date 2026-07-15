@@ -39,7 +39,7 @@ class TestChinaCountryPack(TransactionCase):
             }
         )
 
-    def test_country_pack_is_registered_without_published_rules(self):
+    def test_country_pack_is_registered_without_active_rules(self):
         self.assertEqual(self.country_pack.code, "CN")
         self.assertEqual(self.country_pack.country_id, self.country_cn)
         setup_defaults = self.country_pack.capability_json["setup_defaults"]
@@ -51,9 +51,13 @@ class TestChinaCountryPack(TransactionCase):
                 "candidate_obligations_only"
             ]
         )
+        rules = self.env["sudo.compliance.rule"].search(
+            [("code", "like", "CN-%")]
+        )
+        self.assertEqual(len(rules), 4)
         self.assertFalse(
-            self.env["sudo.compliance.rule"].search_count(
-                [("code", "like", "CN-%")]
+            rules.mapped("version_ids").filtered(
+                lambda version: version.state == "active"
             )
         )
 
