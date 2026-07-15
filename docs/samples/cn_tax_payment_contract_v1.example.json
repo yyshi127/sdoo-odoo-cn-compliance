@@ -1,0 +1,30 @@
+{
+  "schema": "sdoo.cn.tax-data.v1",
+  "dataset_type": "tax_payment",
+  "source_schema": "controlled-tax-payment-export",
+  "source_schema_version": "1.0",
+  "record_count": 1,
+  "records": [
+    {
+      "source_record_key": "TEST-PAY-2026-06-001",
+      "taxpayer_name": "测试企业（格式示例）",
+      "taxpayer_id": "TEST-USCC-0001",
+      "tax_type_code": "VAT",
+      "tax_item_code": "DOMESTIC_VAT",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "payment_date": "2026-07-12",
+      "payment_reference": "TEST-PAYMENT-20260712-001",
+      "payment_status": "succeeded",
+      "currency_code": "CNY",
+      "amount": "1000.00",
+      "principal_amount": "1000.00",
+      "interest_amount": "0.00",
+      "penalty_amount": "0.00",
+      "authority": "示例主管税务机关",
+      "payment_channel": "示例电子缴税渠道",
+      "payer_account_masked": "****1234",
+      "receipt_reference": "TEST-RECEIPT-001"
+    }
+  ]
+}

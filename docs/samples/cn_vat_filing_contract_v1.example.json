@@ -1,0 +1,49 @@
+{
+  "schema": "sdoo.cn.tax-data.v1",
+  "dataset_type": "vat_filing",
+  "source_schema": "controlled-vat-return-export",
+  "source_schema_version": "1.0",
+  "record_count": 1,
+  "records": [
+    {
+      "source_record_key": "TEST-VAT-2026-06",
+      "taxpayer_name": "测试企业（格式示例）",
+      "taxpayer_id": "TEST-USCC-0001",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "currency_code": "CNY",
+      "jurisdiction_code": "CN",
+      "jurisdiction_name": "中国",
+      "return_type_code": "GENERAL_VAT_RETURN",
+      "return_status": "submitted",
+      "submitted_at": "2026-07-10T09:30:00+08:00",
+      "submission_reference": "TEST-FILING-202606-001",
+      "revision_number": 1,
+      "taxable_sales_amount": "100000.00",
+      "output_tax_amount": "13000.00",
+      "input_tax_amount": "13000.00",
+      "input_tax_transfer_out_amount": "0.00",
+      "prior_credit_amount": "0.00",
+      "tax_payable_amount": "0.00",
+      "tax_refund_amount": "0.00",
+      "closing_credit_amount": "0.00",
+      "lines": [
+        {
+          "line_code": "L01",
+          "line_name": "按适用税率计税销售额",
+          "amount_type": "taxable_base",
+          "current_amount": "100000.00",
+          "ytd_amount": "600000.00",
+          "tax_rate": "0.13"
+        },
+        {
+          "line_code": "L02",
+          "line_name": "应纳税额",
+          "amount_type": "tax",
+          "current_amount": "0.00",
+          "ytd_amount": "0.00"
+        }
+      ]
+    }
+  ]
+}

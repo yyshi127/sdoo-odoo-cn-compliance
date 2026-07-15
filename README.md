@@ -37,12 +37,15 @@ Odoo 19 中国财税合规插件工程。
 
 电子发票与 Odoo 会计凭证勾稽工作台已经形成代码基线。系统支持供应商账单级和源会计凭证级两种模式，生成可解释候选，显式区分数据缺口、未匹配、单一建议、多候选、部分匹配和已匹配，并保留账簿快照与人工决策审计。系统不会修改会计凭证，也不会把匹配关系解释为抵扣或申报结论。
 
-下一阶段是在共享底座稳定后完成 Odoo 安装、升级、权限、多公司及队列运行时测试，再建设发票台账与增值税申报、缴税数据的期间勾稽及差异整改闭环。
+增值税申报与税款缴纳标准化台账也已形成代码基线。受控 JSON 契约严格区分零值与缺失，拒绝未知字段、重复 JSON 字段和数量不一致，保留来源、版本、质量问题与多层 SHA-256 审计指纹，并禁止保存未脱敏付款账号。该能力不连接税务机关，不自动提交申报或执行付款。
+
+下一阶段是在共享底座稳定后完成 Odoo 安装、升级、权限、多公司及队列运行时测试，再建设账务、发票、增值税申报和缴税数据的期间勾稽及差异整改闭环。
 
 ## 本地校验
 
 ```powershell
 python tools\validate_addon.py
+python tools\test_tax_data_contract.py
 python tools\test_xbrl_contract.py
 python tools\test_xbrl_normalizer.py
 python tools\test_xbrl_worker_compatibility.py

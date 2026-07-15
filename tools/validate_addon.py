@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import csv
+import json
 import re
 import sys
 from datetime import date
@@ -15,7 +16,16 @@ ADDON_ROOT = REPOSITORY_ROOT / "addons" / "sudo_country_pack_cn"
 XBRL_ADDON_ROOT = (
     REPOSITORY_ROOT / "addons" / "sudo_country_pack_cn_einvoice_xbrl"
 )
-TEXT_SUFFIXES = {".csv", ".md", ".py", ".txt", ".xml", ".yml", ".yaml"}
+TEXT_SUFFIXES = {
+    ".csv",
+    ".json",
+    ".md",
+    ".py",
+    ".txt",
+    ".xml",
+    ".yml",
+    ".yaml",
+}
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |OPENSSH )?PRIVATE KEY"),
     "credential assignment": re.compile(
@@ -65,6 +75,8 @@ def validate_text_and_syntax() -> None:
                 fail(f"possible {label} found in {path}")
         if path.suffix == ".py":
             ast.parse(content, filename=str(path))
+        elif path.suffix == ".json":
+            json.loads(content)
         elif path.suffix == ".xml":
             ElementTree.parse(path)
 
@@ -825,6 +837,147 @@ def validate_invoice_reconciliation() -> None:
         fail("invoice reconciliation requires at least ten runtime tests")
 
 
+def validate_tax_data_normalization() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    view_relative_path = "views/tax_data_normalization_views.xml"
+    if view_relative_path not in manifest.get("data", []):
+        fail("tax data normalization views must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import tax_data_normalization" not in model_init:
+        fail("tax data normalization models must be imported")
+
+    service_init = (ADDON_ROOT / "services" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "tax_data_contract" not in service_init:
+        fail("tax data contract service must be imported")
+
+    contract_path = ADDON_ROOT / "services" / "tax_data_contract.py"
+    model_path = ADDON_ROOT / "models" / "tax_data_normalization.py"
+    if not contract_path.is_file() or not model_path.is_file():
+        fail("tax data normalization implementation is incomplete")
+    contract_content = contract_path.read_text(encoding="utf-8")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        "sdoo.cn.tax-data.v1",
+        "duplicate JSON key",
+        "non-standard JSON constant",
+        "contains unknown fields",
+        "record_count does not match",
+        "load_tax_data_contract",
+    ):
+        if required not in contract_content and required not in model_content:
+            fail(f"tax data contract is missing {required}")
+    for required in (
+        "DECLARED_RECORD_COUNT_MISMATCH",
+        "TAXPAYER_ENTITY_MISMATCH",
+        "UNMASKED_PAYER_ACCOUNT",
+        "has_tax_payable_amount",
+        "has_amount",
+        "contract_checksum",
+        "output_checksum",
+        "record_checksum",
+        "_canonical_issues",
+        "superseded",
+        "cn_tax_data_import.started",
+        "cn_tax_data_import.failed",
+        "cn_tax_data_import.succeeded",
+    ):
+        if required not in model_content:
+            fail(f"tax data normalization contract is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    governed_models = {
+        "model_sudo_cn_tax_data_parse_run",
+        "model_sudo_cn_vat_filing_record",
+        "model_sudo_cn_vat_filing_line",
+        "model_sudo_cn_tax_payment_record",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in governed_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"tax data ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        if [
+            user_row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ] != ["1", "0", "0", "0"]:
+            fail(f"tax data users must be read-only: {model_name}")
+        manager_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_manager")
+        )
+        if manager_row["perm_unlink"] != "0":
+            fail(f"tax data audit records must not be deleted: {model_name}")
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in governed_models:
+            continue
+        domain = field_text(fields, "domain_force", record.attrib["id"])
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"tax data rule lacks company isolation: {model_ref}")
+        ruled_models.add(model_ref)
+    if ruled_models != governed_models:
+        fail("every governed tax data model requires a company record rule")
+
+    view_path = ADDON_ROOT / view_relative_path
+    if not view_path.is_file():
+        fail("tax data normalization UI is missing")
+    view_content = view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_tax_data_parse_run_form",
+        "view_cn_vat_filing_record_list",
+        "view_cn_vat_filing_record_form",
+        "view_cn_tax_payment_record_list",
+        "view_cn_tax_payment_record_form",
+        "view_cn_tax_data_import_wizard_form",
+        "action_cn_tax_data_parse_runs",
+        "action_cn_vat_filing_records",
+        "action_cn_tax_payment_records",
+        "menu_cn_vat_filing_records",
+        "menu_cn_tax_payment_records",
+        "menu_cn_tax_data_parse_runs",
+    ):
+        if f'id="{required_id}"' not in view_content:
+            fail(f"tax data normalization UI is missing {required_id}")
+
+    pure_test_path = REPOSITORY_ROOT / "tools" / "test_tax_data_contract.py"
+    runtime_test_path = ADDON_ROOT / "tests" / "test_tax_data_normalization.py"
+    if not pure_test_path.is_file() or not runtime_test_path.is_file():
+        fail("tax data normalization tests are incomplete")
+    test_tree = ast.parse(runtime_test_path.read_text(encoding="utf-8"))
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 10:
+        fail("tax data normalization requires at least ten runtime tests")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -979,6 +1132,7 @@ def main() -> int:
     validate_external_dataset_security()
     validate_invoice_normalization_security()
     validate_invoice_reconciliation()
+    validate_tax_data_normalization()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

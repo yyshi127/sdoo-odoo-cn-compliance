@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_tax_data_parse_run_search" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.parse.run.search</field>
+        <field name="model">sudo.cn.tax.data.parse.run</field>
+        <field name="arch" type="xml">
+            <search string="申报缴税导入运行">
+                <field name="dataset_id"/>
+                <field name="company_id"/>
+                <field name="mapping_key"/>
+                <field name="mapping_version"/>
+                <filter name="running" string="导入中"
+                        domain="[('state', '=', 'running')]"/>
+                <filter name="succeeded" string="当前成功结果"
+                        domain="[('state', '=', 'succeeded')]"/>
+                <filter name="failed" string="失败"
+                        domain="[('state', '=', 'failed')]"/>
+                <separator/>
+                <filter name="group_dataset_type" string="数据类型"
+                        context="{'group_by': 'dataset_type'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_data_parse_run_list" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.parse.run.list</field>
+        <field name="model">sudo.cn.tax.data.parse.run</field>
+        <field name="arch" type="xml">
+            <list string="申报缴税导入运行" create="0" edit="0" delete="0"
+                  decoration-success="state == 'succeeded' and error_record_count == 0"
+                  decoration-danger="state == 'failed' or error_record_count &gt; 0"
+                  decoration-warning="state == 'running' or warning_record_count &gt; 0"
+                  decoration-muted="state == 'superseded'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="dataset_id"/>
+                <field name="dataset_type"/>
+                <field name="source_schema" optional="show"/>
+                <field name="source_schema_version" optional="show"/>
+                <field name="mapping_version"/>
+                <field name="record_count" sum="记录数"/>
+                <field name="valid_record_count" optional="show"/>
+                <field name="warning_record_count" optional="show"/>
+                <field name="error_record_count" optional="show"/>
+                <field name="started_at"/>
+                <field name="started_by_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'succeeded'"
+                       decoration-danger="state == 'failed'"
+                       decoration-warning="state == 'running'"
+                       decoration-muted="state == 'superseded'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_data_parse_run_form" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.parse.run.form</field>
+        <field name="model">sudo.cn.tax.data.parse.run</field>
+        <field name="arch" type="xml">
+            <form string="申报缴税导入运行" create="0" edit="0" delete="0">
+                <header>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="running,succeeded,failed,superseded"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="已被新结果替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        本次导入失败且没有替代上一份成功结果。请根据失败代码修复标准化文件、声明记录数或映射版本后重新导入。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'succeeded' or error_record_count == 0">
+                        导入流程完成，但部分记录存在主体、期间、必要金额或敏感字段错误；这些记录不能直接形成勾稽或无风险结论。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'succeeded' or warning_record_count == 0">
+                        部分记录存在非阻断警告，后续勾稽和报告必须继续披露这些限制。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="受控输入">
+                            <field name="dataset_id"/>
+                            <field name="dataset_type"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="input_attachment_id"/>
+                            <field name="input_sha256"/>
+                            <field name="dataset_seal_checksum"/>
+                        </group>
+                        <group string="映射版本">
+                            <field name="contract_schema"/>
+                            <field name="source_schema"/>
+                            <field name="source_schema_version"/>
+                            <field name="mapping_key"/>
+                            <field name="mapping_version"/>
+                            <field name="contract_checksum"/>
+                        </group>
+                    </group>
+                    <group string="导入结果">
+                        <group>
+                            <field name="record_count"/>
+                            <field name="valid_record_count"/>
+                            <field name="warning_record_count"/>
+                            <field name="error_record_count"/>
+                        </group>
+                        <group>
+                            <field name="vat_filing_count"/>
+                            <field name="tax_payment_count"/>
+                            <field name="output_checksum"/>
+                            <field name="error_code" invisible="not error_code"/>
+                        </group>
+                    </group>
+                    <group string="执行信息">
+                        <field name="started_at"/>
+                        <field name="started_by_id"/>
+                        <field name="finished_at"/>
+                    </group>
+                    <field name="result_summary"/>
+                    <notebook>
+                        <page string="增值税申报"
+                              invisible="dataset_type != 'vat_filing'">
+                            <field name="vat_filing_record_ids">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="quality_state == 'error'"
+                                      decoration-warning="quality_state == 'warning'">
+                                    <field name="period_start"/>
+                                    <field name="period_end"/>
+                                    <field name="taxpayer_name"/>
+                                    <field name="taxpayer_id"/>
+                                    <field name="return_type_code"/>
+                                    <field name="return_status" widget="badge"/>
+                                    <field name="currency_id"/>
+                                    <field name="has_tax_payable_amount"
+                                           string="应纳税额已提供"/>
+                                    <field name="tax_payable_amount"/>
+                                    <field name="quality_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="税款缴纳"
+                              invisible="dataset_type != 'tax_payment'">
+                            <field name="tax_payment_record_ids">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="quality_state == 'error'"
+                                      decoration-warning="quality_state == 'warning'">
+                                    <field name="payment_date"/>
+                                    <field name="tax_type_code"/>
+                                    <field name="period_start"/>
+                                    <field name="period_end"/>
+                                    <field name="payment_reference"/>
+                                    <field name="payment_status" widget="badge"/>
+                                    <field name="currency_id"/>
+                                    <field name="has_amount"
+                                           string="缴款金额已提供"/>
+                                    <field name="amount"/>
+                                    <field name="quality_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_filing_record_search" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.record.search</field>
+        <field name="model">sudo.cn.vat.filing.record</field>
+        <field name="arch" type="xml">
+            <search string="增值税申报台账">
+                <field name="taxpayer_name"/>
+                <field name="taxpayer_id"/>
+                <field name="return_type_code"/>
+                <field name="submission_reference"/>
+                <field name="dataset_id"/>
+                <filter name="current" string="当前有效导入结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="quality_error" string="数据错误"
+                        domain="[('quality_state', '=', 'error')]"/>
+                <filter name="quality_warning" string="数据警告"
+                        domain="[('quality_state', '=', 'warning')]"/>
+                <separator/>
+                <filter name="group_period" string="所属期结束"
+                        context="{'group_by': 'period_end'}"/>
+                <filter name="group_status" string="申报状态"
+                        context="{'group_by': 'return_status'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_filing_record_list" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.record.list</field>
+        <field name="model">sudo.cn.vat.filing.record</field>
+        <field name="arch" type="xml">
+            <list string="增值税申报台账" create="0" edit="0" delete="0"
+                  decoration-danger="quality_state == 'error'"
+                  decoration-warning="quality_state == 'warning'"
+                  decoration-muted="not is_current_result">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="taxpayer_name"/>
+                <field name="taxpayer_id" optional="show"/>
+                <field name="return_type_code"/>
+                <field name="return_status" widget="badge"
+                       decoration-success="return_status in ('submitted', 'accepted')"
+                       decoration-warning="return_status in ('draft', 'amended', 'unknown')"
+                       decoration-muted="return_status == 'cancelled'"/>
+                <field name="submitted_at" optional="show"/>
+                <field name="currency_id"/>
+                <field name="taxable_sales_amount" sum="应税销售额"/>
+                <field name="output_tax_amount" sum="销项税额"/>
+                <field name="input_tax_amount" sum="进项税额"/>
+                <field name="has_tax_payable_amount"
+                       string="应纳税额已提供"/>
+                <field name="tax_payable_amount" sum="应纳税额"/>
+                <field name="source_coverage_scope" widget="badge"
+                       optional="show"/>
+                <field name="quality_state" widget="badge"
+                       decoration-success="quality_state == 'valid'"
+                       decoration-warning="quality_state == 'warning'"
+                       decoration-danger="quality_state == 'error'"/>
+                <field name="is_current_result" widget="boolean"/>
+                <field name="dataset_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_vat_filing_record_form" model="ir.ui.view">
+        <field name="name">sudo.cn.vat.filing.record.form</field>
+        <field name="model">sudo.cn.vat.filing.record</field>
+        <field name="arch" type="xml">
+            <form string="规范化增值税申报" create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_taxable_sales_amount" invisible="1"/>
+                    <field name="has_output_tax_amount" invisible="1"/>
+                    <field name="has_input_tax_amount" invisible="1"/>
+                    <field name="has_input_tax_transfer_out_amount"
+                           invisible="1"/>
+                    <field name="has_prior_credit_amount" invisible="1"/>
+                    <field name="has_tax_payable_amount" invisible="1"/>
+                    <field name="has_tax_refund_amount" invisible="1"/>
+                    <field name="has_closing_credit_amount" invisible="1"/>
+                    <widget name="web_ribbon" title="非当前导入结果"
+                            bg_color="text-bg-secondary"
+                            invisible="is_current_result"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="quality_state != 'error'">
+                        该记录存在纳税主体、期间、币种或必要金额错误，不能作为可靠的账表税款勾稽依据。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="quality_state != 'warning'">
+                        该记录可读取，但存在必须在后续勾稽、规则结论和报告中披露的数据限制。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="source_authenticity_state in ('official_tool_passed', 'not_applicable')">
+                        标准化字段校验不等于税务机关真实性确认；请结合源文件、提交回执和受控验证证据复核。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="申报范围">
+                            <field name="taxpayer_name"/>
+                            <field name="taxpayer_id"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="jurisdiction_code"/>
+                            <field name="jurisdiction_name"/>
+                        </group>
+                        <group string="申报状态">
+                            <field name="return_type_code"/>
+                            <field name="return_status" widget="badge"/>
+                            <field name="submitted_at"/>
+                            <field name="submission_reference"/>
+                            <field name="revision_number"/>
+                            <field name="correction_reference"/>
+                        </group>
+                    </group>
+                    <group string="申报汇总金额">
+                        <group>
+                            <field name="currency_id"/>
+                            <field name="taxable_sales_amount"
+                                   invisible="not has_taxable_sales_amount"/>
+                            <field name="output_tax_amount"
+                                   invisible="not has_output_tax_amount"/>
+                            <field name="input_tax_amount"
+                                   invisible="not has_input_tax_amount"/>
+                            <field name="input_tax_transfer_out_amount"
+                                   invisible="not has_input_tax_transfer_out_amount"/>
+                        </group>
+                        <group>
+                            <field name="prior_credit_amount"
+                                   invisible="not has_prior_credit_amount"/>
+                            <field name="tax_payable_amount"
+                                   invisible="not has_tax_payable_amount"/>
+                            <field name="tax_refund_amount"
+                                   invisible="not has_tax_refund_amount"/>
+                            <field name="closing_credit_amount"
+                                   invisible="not has_closing_credit_amount"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="申报表标准化行">
+                            <field name="line_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="sequence"/>
+                                    <field name="line_code"/>
+                                    <field name="line_name"/>
+                                    <field name="amount_type"/>
+                                    <field name="has_current_amount"
+                                           string="本期值已提供"/>
+                                    <field name="current_amount"/>
+                                    <field name="has_ytd_amount"
+                                           string="累计值已提供" optional="hide"/>
+                                    <field name="ytd_amount"/>
+                                    <field name="has_tax_rate"
+                                           string="税率已提供" optional="hide"/>
+                                    <field name="tax_rate" widget="percentage"
+                                           invisible="not has_tax_rate"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="数据质量与溯源">
+                            <group>
+                                <group>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="is_current_result"/>
+                                    <field name="source_coverage_scope" widget="badge"/>
+                                    <field name="source_authenticity_state"
+                                           widget="badge"/>
+                                    <field name="source_review_control_state"
+                                           widget="badge"/>
+                                    <field name="source_integrity_state"
+                                           widget="badge"/>
+                                </group>
+                                <group>
+                                    <field name="source_record_key"/>
+                                    <field name="dataset_id"/>
+                                    <field name="parse_run_id"/>
+                                    <field name="record_checksum"/>
+                                </group>
+                            </group>
+                            <field name="issue_json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_payment_record_search" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.payment.record.search</field>
+        <field name="model">sudo.cn.tax.payment.record</field>
+        <field name="arch" type="xml">
+            <search string="税款缴纳台账">
+                <field name="taxpayer_name"/>
+                <field name="taxpayer_id"/>
+                <field name="tax_type_code"/>
+                <field name="payment_reference"/>
+                <field name="receipt_reference"/>
+                <field name="dataset_id"/>
+                <filter name="current" string="当前有效导入结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="succeeded" string="缴款成功"
+                        domain="[('payment_status', '=', 'succeeded')]"/>
+                <filter name="quality_error" string="数据错误"
+                        domain="[('quality_state', '=', 'error')]"/>
+                <filter name="quality_warning" string="数据警告"
+                        domain="[('quality_state', '=', 'warning')]"/>
+                <separator/>
+                <filter name="group_tax_type" string="税种"
+                        context="{'group_by': 'tax_type_code'}"/>
+                <filter name="group_status" string="缴款状态"
+                        context="{'group_by': 'payment_status'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_payment_record_list" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.payment.record.list</field>
+        <field name="model">sudo.cn.tax.payment.record</field>
+        <field name="arch" type="xml">
+            <list string="税款缴纳台账" create="0" edit="0" delete="0"
+                  decoration-success="payment_status == 'succeeded' and quality_state != 'error'"
+                  decoration-danger="quality_state == 'error' or payment_status == 'failed'"
+                  decoration-warning="quality_state == 'warning' or payment_status in ('pending', 'unknown')"
+                  decoration-muted="not is_current_result or payment_status in ('reversed', 'refunded')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="payment_date"/>
+                <field name="tax_type_code"/>
+                <field name="tax_item_code" optional="show"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="taxpayer_name" optional="show"/>
+                <field name="payment_reference"/>
+                <field name="payment_status" widget="badge"
+                       decoration-success="payment_status == 'succeeded'"
+                       decoration-danger="payment_status == 'failed'"
+                       decoration-warning="payment_status in ('pending', 'unknown')"
+                       decoration-muted="payment_status in ('reversed', 'refunded')"/>
+                <field name="currency_id"/>
+                <field name="has_amount" string="缴款金额已提供"/>
+                <field name="amount" sum="缴款金额"/>
+                <field name="principal_amount" sum="税款本金"
+                       optional="show"/>
+                <field name="penalty_amount" sum="滞纳金及罚款"
+                       optional="show"/>
+                <field name="authority" optional="show"/>
+                <field name="source_coverage_scope" widget="badge"
+                       optional="show"/>
+                <field name="quality_state" widget="badge"
+                       decoration-success="quality_state == 'valid'"
+                       decoration-warning="quality_state == 'warning'"
+                       decoration-danger="quality_state == 'error'"/>
+                <field name="is_current_result" widget="boolean"/>
+                <field name="dataset_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_payment_record_form" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.payment.record.form</field>
+        <field name="model">sudo.cn.tax.payment.record</field>
+        <field name="arch" type="xml">
+            <form string="规范化税款缴纳" create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_amount" invisible="1"/>
+                    <field name="has_principal_amount" invisible="1"/>
+                    <field name="has_interest_amount" invisible="1"/>
+                    <field name="has_penalty_amount" invisible="1"/>
+                    <widget name="web_ribbon" title="非当前导入结果"
+                            bg_color="text-bg-secondary"
+                            invisible="is_current_result"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="quality_state != 'error'">
+                        该记录存在纳税主体、所属期、金额或敏感字段错误，不能作为可靠的表税款勾稽依据。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="quality_state != 'warning'">
+                        该记录存在需要复核的来源或字段警告，后续结论必须保留限制说明。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="缴款范围">
+                            <field name="taxpayer_name"/>
+                            <field name="taxpayer_id"/>
+                            <field name="tax_type_code"/>
+                            <field name="tax_item_code"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                        </group>
+                        <group string="缴款结果">
+                            <field name="payment_date"/>
+                            <field name="payment_reference"/>
+                            <field name="payment_status" widget="badge"/>
+                            <field name="authority"/>
+                            <field name="payment_channel"/>
+                            <field name="receipt_reference"/>
+                        </group>
+                    </group>
+                    <group string="缴款金额">
+                        <group>
+                            <field name="currency_id"/>
+                            <field name="amount" invisible="not has_amount"/>
+                            <field name="principal_amount"
+                                   invisible="not has_principal_amount"/>
+                        </group>
+                        <group>
+                            <field name="interest_amount"
+                                   invisible="not has_interest_amount"/>
+                            <field name="penalty_amount"
+                                   invisible="not has_penalty_amount"/>
+                            <field name="payer_account_masked"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="数据质量与溯源">
+                            <group>
+                                <group>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="is_current_result"/>
+                                    <field name="source_coverage_scope" widget="badge"/>
+                                    <field name="source_authenticity_state"
+                                           widget="badge"/>
+                                    <field name="source_review_control_state"
+                                           widget="badge"/>
+                                    <field name="source_integrity_state"
+                                           widget="badge"/>
+                                </group>
+                                <group>
+                                    <field name="source_record_key"/>
+                                    <field name="dataset_id"/>
+                                    <field name="parse_run_id"/>
+                                    <field name="record_checksum"/>
+                                </group>
+                            </group>
+                            <field name="issue_json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_tax_data_import_wizard_form" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.import.wizard.form</field>
+        <field name="model">sudo.cn.tax.data.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="导入申报与缴税数据">
+                <div class="alert alert-info" role="alert">
+                    当前入口只接受 sdoo.cn.tax-data.v1 标准化 UTF-8 JSON。导入只生成不可改写的申报或缴税台账，不会自动提交申报、执行付款或形成税法结论。
+                </div>
+                <group>
+                    <field name="dataset_id" options="{'no_create': True}"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="available_attachment_ids" invisible="1"/>
+                    <field name="input_attachment_id"
+                           domain="[('id', 'in', available_attachment_ids)]"
+                           options="{'no_create': True}"/>
+                    <field name="mapping_key"/>
+                    <field name="mapping_version"/>
+                </group>
+                <footer>
+                    <button name="action_import" type="object"
+                            string="执行受控导入" class="btn-primary"/>
+                    <button string="取消" special="cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_tax_data_parse_runs" model="ir.actions.act_window">
+        <field name="name">申报缴税导入运行</field>
+        <field name="res_model">sudo.cn.tax.data.parse.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_tax_data_parse_run_search"/>
+    </record>
+
+    <record id="action_cn_vat_filing_records" model="ir.actions.act_window">
+        <field name="name">增值税申报台账</field>
+        <field name="res_model">sudo.cn.vat.filing.record</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_vat_filing_record_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <record id="action_cn_tax_payment_records" model="ir.actions.act_window">
+        <field name="name">税款缴纳台账</field>
+        <field name="res_model">sudo.cn.tax.payment.record</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_tax_payment_record_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_vat_filing_records" name="增值税申报台账"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_vat_filing_records" sequence="51"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <menuitem id="menu_cn_tax_payment_records" name="税款缴纳台账"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_tax_payment_records" sequence="52"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <menuitem id="menu_cn_tax_data_parse_runs" name="申报缴税导入运行"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_tax_data_parse_runs" sequence="53"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <record id="view_cn_external_dataset_form_tax_data_results"
+            model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form.tax.data.results</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_external_dataset_form_parse_results"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_create_replacement']"
+                   position="before">
+                <button name="action_import_tax_data" type="object"
+                        string="导入申报缴税数据" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state != 'sealed' or integrity_state != 'verified' or dataset_type not in ('vat_filing', 'tax_payment')"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_tax_data_parse_runs" type="object"
+                        class="oe_stat_button" icon="fa-exchange"
+                        invisible="tax_data_parse_run_count == 0">
+                    <field name="tax_data_parse_run_count" widget="statinfo"
+                           string="申报缴税导入"/>
+                </button>
+                <button name="action_view_normalized_tax_records" type="object"
+                        class="oe_stat_button" icon="fa-table"
+                        invisible="normalized_vat_filing_count == 0">
+                    <field name="normalized_vat_filing_count" widget="statinfo"
+                           string="增值税申报"/>
+                </button>
+                <button name="action_view_normalized_tax_records" type="object"
+                        class="oe_stat_button" icon="fa-credit-card"
+                        invisible="normalized_tax_payment_count == 0">
+                    <field name="normalized_tax_payment_count" widget="statinfo"
+                           string="税款缴纳"/>
+                </button>
+            </xpath>
+            <field name="current_parse_run_id" position="after">
+                <field name="current_tax_data_parse_run_id" readonly="1"
+                       invisible="not current_tax_data_parse_run_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>
