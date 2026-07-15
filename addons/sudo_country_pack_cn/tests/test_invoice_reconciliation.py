@@ -2,6 +2,9 @@ from unittest.mock import patch
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.addons.sudo_country_pack_cn.models.invoice_reconciliation import (
+    _checksum,
+)
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 
@@ -401,6 +404,38 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         first.with_user(self.reviewer).action_cancel()
         replacement = self._queue()
         self.assertEqual(replacement.state, "queued")
+
+    def test_move_index_streaming_checksum_matches_legacy_snapshot_list(self):
+        bill = self._bill("EINV-CHECKSUM-BILL")
+        entry = self._entry("EINV-CHECKSUM-ENTRY")
+        moves = entry | bill
+        model = self.env["sudo.cn.einvoice.reconciliation.run"]
+        line_summaries = model._ledger_line_summaries(moves)
+        empty_line_summary = {
+            "debit_total": 0.0,
+            "credit_total": 0.0,
+            "line_count": 0,
+            "line_write_date": None,
+        }
+        legacy_snapshots = [
+            model._move_candidate_snapshot(
+                move,
+                line_summaries.get(move.id, empty_line_summary),
+            )
+            for move in moves.sorted("id")
+        ]
+
+        _indexes, snapshot_count, streaming_checksum = (
+            model._build_move_indexes(moves)
+        )
+        _empty_indexes, empty_count, empty_checksum = (
+            model._build_move_indexes(self.env["account.move"].browse())
+        )
+
+        self.assertEqual(snapshot_count, len(legacy_snapshots))
+        self.assertEqual(streaming_checksum, _checksum(legacy_snapshots))
+        self.assertEqual(empty_count, 0)
+        self.assertEqual(empty_checksum, _checksum([]))
 
     def test_run_creates_explainable_high_confidence_bill_candidate(self):
         bill = self._bill("EINV-BILL-001")

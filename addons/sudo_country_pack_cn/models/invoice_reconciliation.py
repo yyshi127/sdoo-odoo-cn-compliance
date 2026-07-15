@@ -14,6 +14,22 @@ RECONCILIATION_ENGINE_VERSION = "19.0.1"
 MAX_SOURCE_DOCUMENTS = 50000
 MAX_LEDGER_MOVES = 100000
 _RECONCILIATION_TRANSITION_MARKER = object()
+_LEDGER_MOVE_SNAPSHOT_FIELDS = (
+    "name",
+    "ref",
+    "payment_reference",
+    "invoice_origin",
+    "move_type",
+    "state",
+    "date",
+    "invoice_date",
+    "commercial_partner_id",
+    "currency_id",
+    "company_currency_id",
+    "amount_total",
+    "amount_tax",
+    "write_date",
+)
 
 
 def _checksum(payload):
@@ -24,6 +40,19 @@ def _checksum(payload):
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(content).hexdigest()
+
+
+def _checksum_list_item(digest, payload, item_count):
+    if item_count:
+        digest.update(b",")
+    digest.update(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
 
 
 def _safe_text(value, limit=1000):
@@ -466,6 +495,8 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
 
     @api.model
     def _build_move_indexes(self, moves):
+        moves = moves.with_context(prefetch_fields=False)
+        moves.fetch(_LEDGER_MOVE_SNAPSHOT_FIELDS)
         indexes = {
             "bill_reference": defaultdict(set),
             "voucher_reference": defaultdict(set),
@@ -474,7 +505,6 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
             "bill_amount": defaultdict(set),
             "date": defaultdict(set),
         }
-        snapshots = {}
         line_summaries = self._ledger_line_summaries(moves)
         empty_line_summary = {
             "debit_total": 0.0,
@@ -482,12 +512,16 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
             "line_count": 0,
             "line_write_date": None,
         }
-        for move in moves:
+        snapshot_count = 0
+        snapshot_digest = hashlib.sha256()
+        snapshot_digest.update(b"[")
+        for move in moves.sorted("id"):
             snapshot = self._move_candidate_snapshot(
                 move,
                 line_summaries.get(move.id, empty_line_summary),
             )
-            snapshots[move.id] = snapshot
+            _checksum_list_item(snapshot_digest, snapshot, snapshot_count)
+            snapshot_count += 1
             references = {
                 _reference_token(value)
                 for value in self._move_references(move)
@@ -515,10 +549,8 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
                 _amount_string(currency, move.amount_total),
             )
             indexes["bill_amount"][amount_key].add(move.id)
-        ledger_checksum = _checksum(
-            [snapshots[move_id] for move_id in sorted(snapshots)]
-        )
-        return indexes, snapshots, ledger_checksum
+        snapshot_digest.update(b"]")
+        return indexes, snapshot_count, snapshot_digest.hexdigest()
 
     @api.model
     def _date_candidate_ids(self, indexes, source_date, days=7):
@@ -984,7 +1016,7 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
             if documents
             else self.env["account.move"].browse()
         )
-        indexes, move_snapshots, ledger_checksum = self._build_move_indexes(
+        indexes, ledger_move_count, ledger_checksum = self._build_move_indexes(
             moves
         )
         moves_by_id = {move.id: move for move in moves}
@@ -1061,7 +1093,7 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
             )
         counts = {
             "source_document_count": len(documents),
-            "ledger_move_count": len(move_snapshots),
+            "ledger_move_count": ledger_move_count,
             "case_count": len(cases),
             "matched_case_count": 0,
             "suggested_case_count": len(

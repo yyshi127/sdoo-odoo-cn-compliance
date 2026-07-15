@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -82,13 +82,14 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
 
     @classmethod
-    def _user(cls, login, name, groups):
+    def _user(cls, login, name, groups, company=None):
+        company = company or cls.company
         return cls.env["res.users"].create(
             {
                 "name": name,
                 "login": login,
-                "company_id": cls.company.id,
-                "company_ids": [Command.set(cls.company.ids)],
+                "company_id": company.id,
+                "company_ids": [Command.set(company.ids)],
                 "group_ids": [Command.set(groups.ids)],
             }
         )
@@ -418,6 +419,72 @@ class TestChinaFormalComplianceReport(TransactionCase):
         report = self._report()
         with self.assertRaises(AccessError):
             report.with_user(self.reader).write({"title": "无权修改"})
+
+    def test_report_is_company_isolated_and_reviewer_must_have_company(self):
+        other_company = self.env["res.company"].create(
+            {
+                "name": "China Formal Report Other Company",
+                "country_id": self.country.id,
+                "account_fiscal_country_id": self.country.id,
+                "currency_id": self.currency.id,
+            }
+        )
+        manager_group = self.env.ref(
+            "sudo_global_finance.group_compliance_manager"
+        )
+        approver_group = self.env.ref(
+            "sudo_country_pack_cn.group_cn_report_approver"
+        )
+        other_manager = self._user(
+            "cn_report_other_manager",
+            "China Report Other Manager",
+            manager_group,
+            company=other_company,
+        )
+        other_approver = self._user(
+            "cn_report_other_approver",
+            "China Report Other Approver",
+            approver_group,
+            company=other_company,
+        )
+        report = self._report()
+        report_model = self.env["sudo.cn.compliance.report"].with_user(
+            other_manager
+        ).with_company(other_company)
+
+        self.assertFalse(report_model.search([("id", "=", report.id)]))
+        with self.assertRaises(AccessError):
+            report.with_user(other_manager).with_company(other_company).read(
+                ["name"]
+            )
+        with self.assertRaises(ValidationError):
+            self._report(reviewer=other_approver)
+
+    def test_only_designated_approver_can_return_or_issue(self):
+        approver_group = self.env.ref(
+            "sudo_country_pack_cn.group_cn_report_approver"
+        )
+        alternate_approver = self._user(
+            "cn_report_alternate_approver",
+            "China Report Alternate Approver",
+            approver_group,
+        )
+        report = self._report()
+        report.with_user(self.manager).action_submit()
+
+        with self.assertRaises(AccessError):
+            report.with_user(alternate_approver).write(
+                {
+                    "review_notes": (
+                        "This alternate approver was not designated for the "
+                        "controlled report approval."
+                    )
+                }
+            )
+        with self.assertRaises(AccessError):
+            report.with_user(alternate_approver).action_return_to_draft()
+        with self.assertRaises(AccessError):
+            report.with_user(alternate_approver).action_issue()
 
     def test_report_html_preserves_boundary_and_non_net_tax_impact(self):
         report = self._report()

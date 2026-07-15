@@ -979,6 +979,9 @@ def validate_invoice_reconciliation() -> None:
     model_content = model_path.read_text(encoding="utf-8")
     for required in (
         "RECONCILIATION_ENGINE_VERSION",
+        "_LEDGER_MOVE_SNAPSHOT_FIELDS",
+        "prefetch_fields=False",
+        "_checksum_list_item",
         "_ledger_line_summaries",
         "models.UniqueIndex",
         "FOR UPDATE SKIP LOCKED",
@@ -1090,6 +1093,12 @@ def validate_invoice_reconciliation() -> None:
     )
     if test_methods < 10:
         fail("invoice reconciliation requires at least ten runtime tests")
+    test_content = test_path.read_text(encoding="utf-8")
+    if (
+        "def test_move_index_streaming_checksum_matches_legacy_snapshot_list("
+        not in test_content
+    ):
+        fail("invoice reconciliation requires snapshot checksum compatibility coverage")
 
 
 def validate_tax_data_normalization() -> None:
@@ -1649,6 +1658,8 @@ def validate_formal_compliance_report() -> None:
         "test_new_issue_supersedes_previous_report_without_rewriting_pdf",
         "test_withdrawal_preserves_artifact_and_audit_history",
         "test_read_only_user_cannot_prepare_or_mutate_report",
+        "test_report_is_company_isolated_and_reviewer_must_have_company",
+        "test_only_designated_approver_can_return_or_issue",
         "test_report_html_preserves_boundary_and_non_net_tax_impact",
     ):
         if f"def {test_name}(" not in test_content:
