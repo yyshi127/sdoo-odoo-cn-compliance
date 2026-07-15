@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_einvoice_xbrl_job_search" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.xbrl.job.search</field>
+        <field name="model">sudo.cn.einvoice.xbrl.job</field>
+        <field name="arch" type="xml">
+            <search string="电子发票 XBRL 解析任务">
+                <field name="dataset_id"/>
+                <field name="company_id"/>
+                <field name="taxonomy_bundle_id"/>
+                <field name="taxonomy_compatibility_profile" optional="hide"/>
+                <field name="taxonomy_patch_count" optional="hide"/>
+                <field name="requested_by_id"/>
+                <filter name="active" string="待处理与处理中"
+                        domain="[('state', 'in', ('queued', 'processing'))]"/>
+                <filter name="failed" string="失败"
+                        domain="[('state', '=', 'failed')]"/>
+                <filter name="succeeded" string="成功"
+                        domain="[('state', '=', 'succeeded')]"/>
+                <separator/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_einvoice_xbrl_job_list" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.xbrl.job.list</field>
+        <field name="model">sudo.cn.einvoice.xbrl.job</field>
+        <field name="arch" type="xml">
+            <list string="电子发票 XBRL 解析任务"
+                  create="0" edit="0" delete="0"
+                  decoration-success="state == 'succeeded'"
+                  decoration-danger="state == 'failed'"
+                  decoration-warning="state in ('queued', 'processing')"
+                  decoration-muted="state == 'cancelled'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="dataset_id"/>
+                <field name="source_attachment_id"/>
+                <field name="taxonomy_bundle_id"/>
+                <field name="requested_at"/>
+                <field name="requested_by_id"/>
+                <field name="started_at" optional="show"/>
+                <field name="finished_at" optional="show"/>
+                <field name="timeout_seconds" optional="hide"/>
+                <field name="parse_run_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'succeeded'"
+                       decoration-danger="state == 'failed'"
+                       decoration-warning="state in ('queued', 'processing')"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_einvoice_xbrl_job_form" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.xbrl.job.form</field>
+        <field name="model">sudo.cn.einvoice.xbrl.job</field>
+        <field name="arch" type="xml">
+            <form string="电子发票 XBRL 解析任务"
+                  create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_cancel" type="object"
+                            string="取消待处理任务"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'queued'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="queued,processing,succeeded,failed,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state not in ('queued', 'processing')">
+                        任务由后台隔离进程离线处理。页面可以关闭，处理结果会保留在解析运行和电子发票台账中。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        本次解析没有替代上一份成功结果。请查看解析运行中的失败代码，再修复源文件、分类标准包或运行环境。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="dataset_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="source_attachment_id"/>
+                            <field name="taxonomy_bundle_id"/>
+                            <field name="taxonomy_compatibility_profile"/>
+                            <field name="taxonomy_patch_count"/>
+                            <field name="working_taxonomy_checksum"/>
+                            <field name="parse_run_id"/>
+                        </group>
+                        <group>
+                            <field name="requested_at"/>
+                            <field name="requested_by_id"/>
+                            <field name="started_at"/>
+                            <field name="finished_at"/>
+                            <field name="timeout_seconds"/>
+                            <field name="worker_exit_code"/>
+                            <field name="worker_result_checksum"/>
+                        </group>
+                    </group>
+                    <field name="result_summary"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_einvoice_xbrl_jobs" model="ir.actions.act_window">
+        <field name="name">电子发票解析任务</field>
+        <field name="res_model">sudo.cn.einvoice.xbrl.job</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_einvoice_xbrl_job_search"/>
+    </record>
+
+    <menuitem id="menu_cn_einvoice_xbrl_jobs" name="电子发票解析任务"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_einvoice_xbrl_jobs" sequence="48"
+              groups="sudo_global_finance.group_compliance_manager"/>
+</odoo>

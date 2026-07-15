@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cn_xbrl_taxonomy_user,China XBRL taxonomy user,model_sudo_cn_xbrl_taxonomy_bundle,sudo_global_finance.group_compliance_user,1,0,0,0
+access_cn_xbrl_taxonomy_manager,China XBRL taxonomy manager,model_sudo_cn_xbrl_taxonomy_bundle,sudo_global_finance.group_compliance_manager,1,1,1,1
+access_cn_einvoice_xbrl_job_user,China e-invoice XBRL job user,model_sudo_cn_einvoice_xbrl_job,sudo_global_finance.group_compliance_user,1,0,0,0
+access_cn_einvoice_xbrl_job_manager,China e-invoice XBRL job manager,model_sudo_cn_einvoice_xbrl_job,sudo_global_finance.group_compliance_manager,1,1,1,0
+access_cn_einvoice_parse_wizard_manager,China e-invoice parse wizard manager,model_sudo_cn_einvoice_parse_wizard,sudo_global_finance.group_compliance_manager,1,1,1,1

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_xbrl_taxonomy_bundle_search" model="ir.ui.view">
+        <field name="name">sudo.cn.xbrl.taxonomy.bundle.search</field>
+        <field name="model">sudo.cn.xbrl.taxonomy.bundle</field>
+        <field name="arch" type="xml">
+            <search string="电子发票分类标准包">
+                <field name="official_title"/>
+                <field name="namespace"/>
+                <field name="version"/>
+                <filter name="sealed" string="当前已封存"
+                        domain="[('state', '=', 'sealed')]"/>
+                <filter name="draft" string="待复核"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="superseded" string="已被替代"
+                        domain="[('state', '=', 'superseded')]"/>
+                <separator/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_version" string="版本"
+                        context="{'group_by': 'version'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_xbrl_taxonomy_bundle_list" model="ir.ui.view">
+        <field name="name">sudo.cn.xbrl.taxonomy.bundle.list</field>
+        <field name="model">sudo.cn.xbrl.taxonomy.bundle</field>
+        <field name="arch" type="xml">
+            <list string="电子发票分类标准包"
+                  decoration-success="state == 'sealed' and integrity_state == 'verified'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'"
+                  decoration-muted="state == 'superseded'">
+                <field name="official_title"/>
+                <field name="version"/>
+                <field name="publication_date"/>
+                <field name="namespace" optional="hide"/>
+                <field name="entry_point_path" optional="show"/>
+                <field name="bundle_sha256" optional="hide"/>
+                <field name="bundle_file_count"/>
+                <field name="sealed_at"/>
+                <field name="sealed_by_id"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"
+                       decoration-warning="integrity_state == 'unsealed'"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sealed'"
+                       decoration-warning="state == 'draft'"
+                       decoration-muted="state == 'superseded'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_xbrl_taxonomy_bundle_form" model="ir.ui.view">
+        <field name="name">sudo.cn.xbrl.taxonomy.bundle.form</field>
+        <field name="model">sudo.cn.xbrl.taxonomy.bundle</field>
+        <field name="arch" type="xml">
+            <form string="电子发票分类标准包">
+                <header>
+                    <button name="action_seal" type="object"
+                            string="安全检查并封存" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_create_replacement" type="object"
+                            string="创建替代版本"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'sealed' or replacement_ids"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,sealed,superseded"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="封存后文件已变化"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <widget name="web_ribbon" title="已被替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        请从财政部官方页面取得分类标准 ZIP 包。封存将验证压缩包安全、入口文件和命名空间，并固化文件哈希。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="integrity_state != 'checksum_mismatch'">
+                        封存后附件发生变化。该标准包不得继续用于新解析任务。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group readonly="state != 'draft'">
+                        <group>
+                            <field name="standard_key"/>
+                            <field name="official_title"/>
+                            <field name="version"/>
+                            <field name="publication_date"/>
+                        </group>
+                        <group>
+                            <field name="namespace"/>
+                            <field name="entry_point_namespace"/>
+                            <field name="entry_point_hint"/>
+                            <field name="source_url" widget="url"/>
+                            <field name="source_reference"/>
+                        </group>
+                    </group>
+                    <group string="官方分类标准包" readonly="state != 'draft'">
+                        <field name="bundle_attachment_ids"
+                               widget="many2many_binary"/>
+                    </group>
+                    <group string="技术兼容处理" readonly="state != 'draft'">
+                        <field name="compatibility_profile"/>
+                        <field name="compatibility_reason"
+                               invisible="compatibility_profile == 'strict'"
+                               placeholder="说明已识别的官方分类标准技术问题、兼容处理边界及复核结论..."/>
+                    </group>
+                    <group readonly="state != 'draft'">
+                        <group string="登记与复核">
+                            <field name="acquired_at"/>
+                            <field name="acquired_by_id" readonly="1"/>
+                            <field name="separation_exception_reason"
+                                   placeholder="登记人与封存人为同一人时，说明无法独立复核的原因和补偿控制..."/>
+                        </group>
+                        <group string="封存结果">
+                            <field name="sealed_at"/>
+                            <field name="sealed_by_id"/>
+                            <field name="integrity_state" widget="badge"/>
+                            <field name="entry_point_path"/>
+                            <field name="bundle_sha256"/>
+                            <field name="bundle_file_count"/>
+                            <field name="bundle_expanded_size"/>
+                            <field name="compatibility_patch_count"/>
+                        </group>
+                    </group>
+                    <group string="版本链">
+                        <field name="supersedes_id" readonly="state != 'draft'"
+                               options="{'no_create': True}"/>
+                        <field name="replacement_ids" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_xbrl_taxonomy_bundles" model="ir.actions.act_window">
+        <field name="name">电子发票分类标准包</field>
+        <field name="res_model">sudo.cn.xbrl.taxonomy.bundle</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_xbrl_taxonomy_bundle_search"/>
+        <field name="context">{'search_default_sealed': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_xbrl_taxonomy_bundles"
+              name="电子发票分类标准包"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_xbrl_taxonomy_bundles" sequence="65"
+              groups="sudo_global_finance.group_compliance_manager"/>
+</odoo>

@@ -12,7 +12,10 @@ from xml.etree import ElementTree
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ADDON_ROOT = REPOSITORY_ROOT / "addons" / "sudo_country_pack_cn"
-TEXT_SUFFIXES = {".csv", ".md", ".py", ".xml", ".yml", ".yaml"}
+XBRL_ADDON_ROOT = (
+    REPOSITORY_ROOT / "addons" / "sudo_country_pack_cn_einvoice_xbrl"
+)
+TEXT_SUFFIXES = {".csv", ".md", ".py", ".txt", ".xml", ".yml", ".yaml"}
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |OPENSSH )?PRIVATE KEY"),
     "credential assignment": re.compile(
@@ -686,6 +689,143 @@ def validate_invoice_normalization_security() -> None:
             fail(f"invoice normalization UI is missing {required_id}")
 
 
+def validate_xbrl_parser_addon() -> None:
+    manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
+    if not manifest_path.is_file():
+        fail("optional XBRL parser addon is missing")
+    manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8"))
+    if not str(manifest.get("version", "")).startswith("19.0."):
+        fail("XBRL parser manifest must target Odoo 19")
+    if manifest.get("depends") != ["sudo_country_pack_cn"]:
+        fail("XBRL parser must remain an optional child of the China pack")
+    if manifest.get("application") or not manifest.get("installable"):
+        fail("XBRL parser must be installable without creating an app root")
+    external = manifest.get("external_dependencies", {})
+    if external.get("python") != ["arelle"]:
+        fail("XBRL parser must declare the Arelle Python dependency")
+    for relative_path in manifest.get("data", []):
+        if not (XBRL_ADDON_ROOT / relative_path).is_file():
+            fail(f"XBRL manifest data file is missing: {relative_path}")
+
+    requirements = (
+        XBRL_ADDON_ROOT / "requirements.txt"
+    ).read_text(encoding="utf-8").strip()
+    if requirements != "arelle-release==2.42.1":
+        fail("Arelle deployment dependency must remain exactly pinned")
+
+    worker = (XBRL_ADDON_ROOT / "parser" / "worker.py").read_text(
+        encoding="utf-8"
+    )
+    for required in (
+        'internetConnectivity="offline"',
+        "TemporaryDirectory",
+        "timeout_seconds",
+        "SUPPORTED_ARELLE_VERSION",
+        "safe_extract_zip",
+        "expected_source_sha256",
+        "expected_taxonomy_sha256",
+        "taxonomy_compatibility_profile",
+        "expected_compatibility_patch_count",
+        "working_taxonomy_checksum",
+    ):
+        if required not in worker and required not in (
+            XBRL_ADDON_ROOT / "models" / "xbrl_job.py"
+        ).read_text(encoding="utf-8"):
+            fail(f"XBRL isolation contract is missing {required}")
+
+    contract = (XBRL_ADDON_ROOT / "parser" / "contract.py").read_text(
+        encoding="utf-8"
+    )
+    for required in (
+        "UNSAFE_ARCHIVE_PATH",
+        "ARCHIVE_SYMLINK",
+        "ENCRYPTED_ARCHIVE",
+        "INVALID_COMPRESSION_RATIO",
+        "TAXONOMY_NAMESPACE_MISMATCH",
+        "XML_DTD_FORBIDDEN",
+        "role_uri_whitespace_count",
+    ):
+        if required not in contract:
+            fail(f"XBRL archive security contract is missing {required}")
+
+    hooks = (XBRL_ADDON_ROOT / "hooks.py").read_text(encoding="utf-8")
+    if 'features["einvoice_xbrl_parser"]' not in hooks:
+        fail("XBRL addon must update the runtime parser capability")
+    if "post_init_hook" not in hooks or "uninstall_hook" not in hooks:
+        fail("XBRL capability must be enabled and disabled with module lifecycle")
+
+    access_path = XBRL_ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    job_user = next(
+        row
+        for row in rows
+        if row["id"] == "access_cn_einvoice_xbrl_job_user"
+    )
+    if [
+        job_user[key]
+        for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+    ] != ["1", "0", "0", "0"]:
+        fail("ordinary compliance users must have read-only XBRL job access")
+    taxonomy_user = next(
+        row
+        for row in rows
+        if row["id"] == "access_cn_xbrl_taxonomy_user"
+    )
+    if taxonomy_user["perm_write"] != "0" or taxonomy_user["perm_create"] != "0":
+        fail("ordinary users must not maintain taxonomy bundles")
+
+    security = ElementTree.parse(
+        XBRL_ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    rules = security.findall(".//record[@model='ir.rule']")
+    if len(rules) != 1:
+        fail("XBRL jobs require exactly one company isolation rule")
+    fields = record_fields(rules[0])
+    if "company_ids" not in field_text(fields, "domain_force", rules[0].attrib["id"]):
+        fail("XBRL job record rule must enforce allowed companies")
+
+    cron = (
+        XBRL_ADDON_ROOT / "data" / "ir_cron_data.xml"
+    ).read_text(encoding="utf-8")
+    if "_cron_process_jobs(limit=1)" not in cron:
+        fail("XBRL parser must use the bounded native Odoo job queue")
+    job_model = (XBRL_ADDON_ROOT / "models" / "xbrl_job.py").read_text(
+        encoding="utf-8"
+    )
+    if "FOR UPDATE SKIP LOCKED" not in job_model:
+        fail("XBRL queue must prevent concurrent duplicate processing")
+    for required in (
+        "taxonomy_compatibility_profile",
+        "taxonomy_patch_count",
+        "working_taxonomy_checksum",
+    ):
+        if required not in job_model:
+            fail(f"XBRL job audit contract is missing {required}")
+
+    taxonomy_model = (
+        XBRL_ADDON_ROOT / "models" / "taxonomy_bundle.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "trim_role_uri_whitespace_v1",
+        "compatibility_reason",
+        "compatibility_patch_count",
+    ):
+        if required not in taxonomy_model:
+            fail(f"taxonomy compatibility governance is missing {required}")
+
+    test_methods = 0
+    for test_path in (XBRL_ADDON_ROOT / "tests").glob("test_*.py"):
+        tree = ast.parse(test_path.read_text(encoding="utf-8"))
+        test_methods += sum(
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("test_")
+            for node in ast.walk(tree)
+        )
+    if test_methods < 10:
+        fail("XBRL parser addon requires at least ten runtime tests")
+
+
 def main() -> int:
     validate_text_and_syntax()
     manifest = validate_manifest()
@@ -702,6 +842,7 @@ def main() -> int:
     validate_taxpayer_classification_security()
     validate_external_dataset_security()
     validate_invoice_normalization_security()
+    validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_external_dataset_form_xbrl" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form.xbrl</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_external_dataset_form_parse_results"/>
+        <field name="arch" type="xml">
+            <button name="action_create_replacement" position="after">
+                <button name="action_open_xbrl_parse_wizard" type="object"
+                        string="提交 XBRL 解析" class="btn-primary"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="state != 'sealed'
+                                   or dataset_type != 'electronic_invoice'
+                                   or integrity_state != 'verified'"/>
+            </button>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_xbrl_jobs" type="object"
+                        class="oe_stat_button" icon="fa-tasks"
+                        invisible="xbrl_job_count == 0">
+                    <field name="xbrl_job_count" widget="statinfo"
+                           string="XBRL 任务"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

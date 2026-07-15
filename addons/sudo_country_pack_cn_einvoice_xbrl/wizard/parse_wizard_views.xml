@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_einvoice_parse_wizard_form" model="ir.ui.view">
+        <field name="name">sudo.cn.einvoice.parse.wizard.form</field>
+        <field name="model">sudo.cn.einvoice.parse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="提交电子发票 XBRL 解析">
+                <div class="alert alert-info" role="alert">
+                    任务由后台隔离进程离线处理。提交只建立解析队列，不代表发票真实性、抵扣资格或申报结论已经确认。
+                </div>
+                <group>
+                    <field name="dataset_id" options="{'no_create': True}"/>
+                    <field name="company_id"
+                           groups="base.group_multi_company"/>
+                    <field name="available_source_attachment_ids"
+                           invisible="1"/>
+                    <field name="source_attachment_id"
+                           domain="[('id', 'in', available_source_attachment_ids)]"
+                           options="{'no_create': True}"/>
+                    <field name="taxonomy_bundle_id"
+                           options="{'no_create': True}"/>
+                    <field name="timeout_seconds"/>
+                </group>
+                <footer>
+                    <button name="action_queue" type="object"
+                            string="提交后台解析" class="btn-primary"/>
+                    <button string="取消" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

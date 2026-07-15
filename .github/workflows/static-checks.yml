@@ -19,3 +19,9 @@ jobs:
           python-version: "3.11"
       - name: Validate Odoo addon
         run: python tools/validate_addon.py
+      - name: Test XBRL archive contract
+        run: python tools/test_xbrl_contract.py
+      - name: Test XBRL normalization contract
+        run: python tools/test_xbrl_normalizer.py
+      - name: Test XBRL taxonomy compatibility contract
+        run: python tools/test_xbrl_worker_compatibility.py
