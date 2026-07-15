@@ -46,6 +46,8 @@ class TestChinaFactProviders(TransactionCase):
             "cn.company.unified_social_credit_code",
             "cn.company.registration_evidence_count",
             "cn.company.fiscal_year_end_confirmed",
+            "cn.taxpayer.classification_verified",
+            "cn.taxpayer.classification_detail",
             "cn.account.posted_move_count",
             "cn.account.unposted_move_count",
             "cn.account.posted_invoice_count",

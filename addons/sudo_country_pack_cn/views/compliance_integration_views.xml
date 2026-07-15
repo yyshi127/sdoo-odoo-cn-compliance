@@ -1,5 +1,116 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="view_cn_taxpayer_classification_list" model="ir.ui.view">
+        <field name="name">sudo.cn.taxpayer.classification.list</field>
+        <field name="model">sudo.cn.taxpayer.classification</field>
+        <field name="arch" type="xml">
+            <list string="中国纳税人身份快照"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'">
+                <field name="profile_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="province_id"/>
+                <field name="local_jurisdiction_name" optional="hide"/>
+                <field name="local_jurisdiction_code" optional="hide"/>
+                <field name="vat_taxpayer_status"/>
+                <field name="vat_filing_frequency" optional="hide"/>
+                <field name="cit_taxpayer_status"/>
+                <field name="cit_collection_method" optional="hide"/>
+                <field name="pit_withholding_status" optional="hide"/>
+                <field name="accounting_regime" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'draft'"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"
+                       decoration-warning="integrity_state == 'unverified'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_taxpayer_classification_form" model="ir.ui.view">
+        <field name="name">sudo.cn.taxpayer.classification.form</field>
+        <field name="model">sudo.cn.taxpayer.classification</field>
+        <field name="arch" type="xml">
+            <form string="中国纳税人身份快照">
+                <header>
+                    <button name="action_verify" type="object"
+                            string="核验身份快照" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="撤销核验"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'verified'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,verified"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="证据内容已变化"
+                            bg_color="text-bg-danger"
+                            invisible="integrity_state != 'checksum_mismatch'"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state == 'verified' and integrity_state == 'verified'">
+                        本记录只有在来源、分类、有效期、范围说明和证明附件齐全并完成管理人员核验后，才能用于税种适用性判断。核验不代表系统已独立确认税法结论。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="profile_id"
+                                   domain="[('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"
+                                   readonly="1"/>
+                            <field name="country_id" invisible="1"/>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="province_id" options="{'no_create': True}"/>
+                            <field name="local_jurisdiction_name"/>
+                            <field name="local_jurisdiction_code"/>
+                            <field name="tax_authority_name"/>
+                            <field name="tax_authority_code"/>
+                        </group>
+                        <group>
+                            <field name="vat_taxpayer_status"/>
+                            <field name="vat_filing_frequency"/>
+                            <field name="cit_taxpayer_status"/>
+                            <field name="cit_collection_method"/>
+                            <field name="pit_withholding_status"/>
+                            <field name="accounting_regime"/>
+                        </group>
+                    </group>
+                    <group string="受控来源">
+                        <group>
+                            <field name="source_type"/>
+                            <field name="source_date"/>
+                            <field name="source_reference"/>
+                        </group>
+                        <group>
+                            <field name="integrity_state" widget="badge" readonly="1"/>
+                            <field name="verified_at" readonly="1"
+                                   invisible="not verified_at"/>
+                            <field name="verified_by_id" readonly="1"
+                                   invisible="not verified_by_id"/>
+                            <field name="verification_checksum" readonly="1"
+                                   invisible="not verification_checksum"/>
+                        </group>
+                    </group>
+                    <field name="scope_note"
+                           placeholder="说明资料覆盖的税种、期间、判断边界和仍未消除的不确定性..."/>
+                    <group string="身份依据附件">
+                        <field name="evidence_attachment_ids"
+                               widget="many2many_binary" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <record id="view_compliance_setup_wizard_form_cn" model="ir.ui.view">
         <field name="name">sudo.compliance.setup.wizard.form.cn</field>
         <field name="model">sudo.compliance.setup.wizard</field>
@@ -31,6 +142,28 @@
             <field name="fiscal_year_end_basis" position="attributes">
                 <attribute name="placeholder">填写营业执照、公司章程、决议或其他受控依据...</attribute>
             </field>
+            <xpath expr="//field[@name='obligation_ids']/.." position="before">
+                <page string="中国纳税人身份" invisible="not is_china_profile">
+                    <field name="cn_taxpayer_classification_ids"
+                           context="{'default_profile_id': id}">
+                        <list decoration-warning="state == 'draft'"
+                              decoration-danger="integrity_state == 'checksum_mismatch'">
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="province_id"/>
+                            <field name="vat_taxpayer_status"/>
+                            <field name="vat_filing_frequency"/>
+                            <field name="cit_taxpayer_status"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'verified'"
+                                   decoration-warning="state == 'draft'"/>
+                            <field name="integrity_state" widget="badge"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

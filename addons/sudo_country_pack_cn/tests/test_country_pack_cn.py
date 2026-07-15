@@ -54,7 +54,7 @@ class TestChinaCountryPack(TransactionCase):
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )
-        self.assertEqual(len(rules), 4)
+        self.assertEqual(len(rules), 5)
         self.assertFalse(
             rules.mapped("version_ids").filtered(
                 lambda version: version.state == "active"
@@ -135,6 +135,51 @@ class TestChinaCountryPack(TransactionCase):
             {"name": "business-license.txt", "raw": b"test evidence clue"}
         )
         registration.evidence_attachment_ids = [Command.set(attachment.ids)]
+        self.assertIn(
+            "未建立当前有效的中国纳税人身份快照",
+            profile._cn_activation_issues(),
+        )
+        province = self.env["res.country.state"].search(
+            [("country_id", "=", self.country_cn.id)], limit=1
+        )
+        if not province:
+            province = self.env["res.country.state"].create(
+                {
+                    "name": "中国合规测试辖区",
+                    "code": "ZCT",
+                    "country_id": self.country_cn.id,
+                }
+            )
+        identity_attachment = self.env["ir.attachment"].create(
+            {"name": "taxpayer-profile.txt", "raw": b"controlled identity"}
+        )
+        classification = self.env[
+            "sudo.cn.taxpayer.classification"
+        ].create(
+            {
+                "profile_id": profile.id,
+                "valid_from": "2000-01-01",
+                "province_id": province.id,
+                "local_jurisdiction_name": "测试市辖区",
+                "local_jurisdiction_code": "CN-TEST-LOCAL",
+                "tax_authority_name": "测试主管税务机关",
+                "vat_taxpayer_status": "general",
+                "vat_filing_frequency": "monthly",
+                "cit_taxpayer_status": "resident",
+                "cit_collection_method": "accounts_based",
+                "pit_withholding_status": "yes",
+                "accounting_regime": "asbe",
+                "source_type": "electronic_tax_bureau",
+                "source_date": "2026-01-01",
+                "source_reference": "TEST-TAXPAYER-PROFILE",
+                "scope_note": "测试身份快照，仅验证档案激活门禁。",
+                "evidence_attachment_ids": [
+                    Command.set(identity_attachment.ids)
+                ],
+            }
+        )
+        classification.action_verify()
+
         self.assertFalse(profile._cn_activation_issues())
 
     def test_leaving_china_clears_china_registration_defaults(self):

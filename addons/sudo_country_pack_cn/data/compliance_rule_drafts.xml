@@ -200,4 +200,52 @@
         <field name="expected_result">fail</field>
         <field name="source_case_note">内部控制反例，不是官方法律案例。</field>
     </record>
+
+    <record id="rule_cn_profile_tax_001" model="sudo.compliance.rule">
+        <field name="name">中国纳税人身份资料准备度</field>
+        <field name="code">CN-PROFILE-TAX-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.IDENTITY</field>
+        <field name="description">检查评估日是否存在唯一、有效、经管理人员核验且附件内容未变化的中国纳税人身份快照。该控制不自行判断企业应属于何种纳税人类型。</field>
+    </record>
+    <record id="rule_version_cn_profile_tax_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_profile_tax_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'fact': 'cn.taxpayer.classification_verified',
+            'operator': 'eq',
+            'value': True
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_taxpayer_classification_verified_v1')])]"/>
+        <field name="legal_basis_summary">内部企业身份资料治理控制草稿。尚未关联国家税务总局或地方税务机关官方原文快照，也未完成中国财税专业签核；通过只表示身份资料准备完成，不构成税种适用、税率或申报义务结论。</field>
+        <field name="failure_message">评估日的中国纳税人身份快照存在但尚未核验，或证据内容已发生变化。</field>
+        <field name="pass_message">评估日存在唯一有效、已核验且证据完整性正常的中国纳税人身份快照；身份分类本身仍须由专业人员依据受控材料判断。</field>
+        <field name="unknown_message">评估日没有可用的中国纳税人身份快照，无法确定税种适用性和申报频率。</field>
+        <field name="recommended_actions">从电子税务局受控导出、税务登记或认定文书等来源建立身份快照，记录有效期、主管辖区、各税种身份、资料范围与限制，上传证据后由合规管理员核验。</field>
+        <field name="evidence_required">身份来源材料、取得日期、来源引用、主管税务辖区、分类工作底稿、范围与限制说明以及附件校验和。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_profile_tax_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">身份快照已核验且证据完整</field>
+        <field name="rule_version_id" ref="rule_version_cn_profile_tax_001_draft"/>
+        <field name="facts_json" eval="{'cn.taxpayer.classification_verified': True}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部资料治理正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_profile_tax_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">身份快照未核验或证据完整性异常</field>
+        <field name="rule_version_id" ref="rule_version_cn_profile_tax_001_draft"/>
+        <field name="facts_json" eval="{'cn.taxpayer.classification_verified': False}"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部资料治理反例，不是官方法律案例。</field>
+    </record>
 </odoo>

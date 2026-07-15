@@ -8,6 +8,11 @@ class SudoComplianceProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
     is_china_profile = fields.Boolean(compute="_compute_is_china_profile")
+    cn_taxpayer_classification_ids = fields.One2many(
+        "sudo.cn.taxpayer.classification",
+        "profile_id",
+        string="中国纳税人身份快照",
+    )
 
     @api.depends("country_id.code")
     def _compute_is_china_profile(self):
@@ -65,6 +70,17 @@ class SudoComplianceProfile(models.Model):
             issues.append(_("存在多个同时有效的统一社会信用代码登记记录"))
         elif not registrations.evidence_attachment_ids:
             issues.append(_("统一社会信用代码登记尚未上传证明附件线索"))
+        classifications = self.env[
+            "sudo.cn.taxpayer.classification"
+        ]._for_profile_date(self, today)
+        if not classifications:
+            issues.append(_("未建立当前有效的中国纳税人身份快照"))
+        elif len(classifications) > 1:
+            issues.append(_("当前期间存在多份中国纳税人身份快照"))
+        elif classifications.state != "verified":
+            issues.append(_("当前中国纳税人身份快照尚未核验"))
+        elif classifications._current_integrity_state() != "verified":
+            issues.append(_("中国纳税人身份快照证据完整性校验失败"))
         return issues
 
     def _activation_issues(self):

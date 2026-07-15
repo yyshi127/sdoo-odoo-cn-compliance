@@ -36,6 +36,12 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.company.fiscal_year_end_confirmed": (
                     self._provide_cn_fiscal_year_end_confirmed
                 ),
+                "cn.taxpayer.classification_verified": (
+                    self._provide_cn_taxpayer_classification_verified
+                ),
+                "cn.taxpayer.classification_detail": (
+                    self._provide_cn_taxpayer_classification_detail
+                ),
                 "cn.account.posted_move_count": self._provide_cn_posted_move_count,
                 "cn.account.unposted_move_count": (
                     self._provide_cn_unposted_move_count
@@ -55,6 +61,115 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             }
         )
         return providers
+
+    def _taxpayer_classifications(self, assessment):
+        classifications = self.env[
+            "sudo.cn.taxpayer.classification"
+        ]._for_profile_date(
+            assessment.profile_id,
+            fields.Date.to_date(assessment.evaluation_date),
+        )
+        if len(classifications) > 1:
+            raise UserError(
+                _("评估日存在多份中国纳税人身份快照，无法确定唯一身份。")
+            )
+        return classifications
+
+    @staticmethod
+    def _classification_control_state(classification):
+        if classification.state != "verified":
+            return "draft"
+        return classification._current_integrity_state()
+
+    def _provide_cn_taxpayer_classification_verified(
+        self, assessment, _definition
+    ):
+        classifications = self._taxpayer_classifications(assessment)
+        if not classifications:
+            return {
+                "value": None,
+                "source_model": "sudo.cn.taxpayer.classification",
+                "source_domain": [
+                    ("profile_id", "=", assessment.profile_id.id)
+                ],
+                "record_count": 0,
+                "aggregation_method": "single_effective_verified_snapshot",
+                "quality_state": "missing",
+                "is_complete": False,
+                "is_full_dataset": True,
+                "provider_version": "1",
+            }
+        control_state = self._classification_control_state(classifications)
+        return {
+            "value": control_state == "verified",
+            "source_model": classifications._name,
+            "source_record_ids": classifications.ids,
+            "record_count": 1,
+            "aggregation_method": "single_effective_verified_snapshot",
+            "is_complete": True,
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
+
+    def _provide_cn_taxpayer_classification_detail(
+        self, assessment, _definition
+    ):
+        classifications = self._taxpayer_classifications(assessment)
+        if not classifications:
+            return {
+                "value": {"control_state": "missing"},
+                "source_model": "sudo.cn.taxpayer.classification",
+                "source_domain": [
+                    ("profile_id", "=", assessment.profile_id.id)
+                ],
+                "record_count": 0,
+                "aggregation_method": "single_effective_snapshot_detail",
+                "quality_state": "missing",
+                "is_complete": False,
+                "is_full_dataset": True,
+                "provider_version": "1",
+            }
+        control_state = self._classification_control_state(classifications)
+        return {
+            "value": {
+                "control_state": control_state,
+                "valid_from": fields.Date.to_string(
+                    classifications.valid_from
+                ),
+                "valid_to": fields.Date.to_string(classifications.valid_to),
+                "province_code": classifications.province_id.code or None,
+                "local_jurisdiction_code": (
+                    classifications.local_jurisdiction_code
+                ),
+                "vat_taxpayer_status": (
+                    classifications.vat_taxpayer_status
+                ),
+                "vat_filing_frequency": (
+                    classifications.vat_filing_frequency
+                ),
+                "cit_taxpayer_status": (
+                    classifications.cit_taxpayer_status
+                ),
+                "cit_collection_method": (
+                    classifications.cit_collection_method
+                ),
+                "pit_withholding_status": (
+                    classifications.pit_withholding_status
+                ),
+                "accounting_regime": classifications.accounting_regime,
+                "source_type": classifications.source_type,
+                "evidence_count": len(
+                    classifications.evidence_attachment_ids
+                ),
+            },
+            "source_model": classifications._name,
+            "source_record_ids": classifications.ids,
+            "record_count": 1,
+            "aggregation_method": "single_effective_snapshot_detail",
+            "is_complete": True,
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
 
     @staticmethod
     def _registration_type(registration):

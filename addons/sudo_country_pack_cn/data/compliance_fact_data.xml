@@ -48,6 +48,38 @@
         <field name="sensitivity">confidential</field>
     </record>
 
+    <record id="fact_cn_taxpayer_classification_verified_v1" model="sudo.compliance.fact.definition">
+        <field name="label">评估日中国纳税人身份快照已核验</field>
+        <field name="key">cn.taxpayer.classification_verified</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">boolean</field>
+        <field name="provider_key">cn.taxpayer.classification_verified</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.taxpayer.classification</field>
+        <field name="source_description">评估日唯一有效的身份快照、管理人员核验状态和附件内容校验和</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_effective_verified_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_taxpayer_classification_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">评估日中国纳税人身份快照详情</field>
+        <field name="key">cn.taxpayer.classification_detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.taxpayer.classification_detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.taxpayer.classification</field>
+        <field name="source_description">仅暴露受控分类键、有效期、辖区代码、来源类型、证据数量和完整性状态，不输出来源引用或附件内容</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_effective_snapshot_detail</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
     <record id="fact_cn_posted_move_count_v1" model="sudo.compliance.fact.definition">
         <field name="label">期间已过账凭证数</field>
         <field name="key">cn.account.posted_move_count</field>

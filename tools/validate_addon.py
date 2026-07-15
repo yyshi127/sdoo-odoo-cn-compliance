@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import csv
 import re
 import sys
 from pathlib import Path
@@ -9,7 +10,7 @@ from xml.etree import ElementTree
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ADDON_ROOT = REPOSITORY_ROOT / "addons" / "sudo_country_pack_cn"
-TEXT_SUFFIXES = {".md", ".py", ".xml", ".yml", ".yaml"}
+TEXT_SUFFIXES = {".csv", ".md", ".py", ".xml", ".yml", ".yaml"}
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |OPENSSH )?PRIVATE KEY"),
     "credential assignment": re.compile(
@@ -285,12 +286,57 @@ def validate_rule_drafts(
             fail(f"{version_id} must have pass and fail test cases")
 
 
+def validate_taxpayer_classification_security() -> None:
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    model_rows = [
+        row
+        for row in rows
+        if row["model_id:id"] == "model_sudo_cn_taxpayer_classification"
+    ]
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    if {row["group_id:id"] for row in model_rows} != expected_groups:
+        fail("China taxpayer classification ACL groups are incomplete")
+    user_row = next(
+        row
+        for row in model_rows
+        if row["group_id:id"].endswith("group_compliance_user")
+    )
+    if user_row["perm_unlink"] != "0":
+        fail("compliance users must not delete taxpayer classifications")
+
+    rule_path = ADDON_ROOT / "security" / "compliance_security.xml"
+    root = ElementTree.parse(rule_path).getroot()
+    company_rules = []
+    for record in root.findall(".//record"):
+        if record.attrib.get("model") != "ir.rule":
+            continue
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        if (
+            model_field is not None
+            and model_field.attrib.get("ref")
+            == "model_sudo_cn_taxpayer_classification"
+        ):
+            company_rules.append(fields)
+    if len(company_rules) != 1:
+        fail("taxpayer classifications require one company record rule")
+    domain = field_text(company_rules[0], "domain_force", "company rule")
+    if "company_ids" not in domain or "company_id" not in domain:
+        fail("taxpayer classification rule must enforce allowed companies")
+
+
 def main() -> int:
     validate_text_and_syntax()
     manifest = validate_manifest()
     validate_hooks(manifest)
     fact_keys, fact_ids = validate_fact_definitions()
     validate_rule_drafts(fact_keys, fact_ids)
+    validate_taxpayer_classification_security()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
 
