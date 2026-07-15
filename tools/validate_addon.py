@@ -4,7 +4,9 @@ import ast
 import csv
 import re
 import sys
+from datetime import date
 from pathlib import Path
+from urllib.parse import urlparse
 from xml.etree import ElementTree
 
 
@@ -16,6 +18,13 @@ SECRET_PATTERNS = {
     "credential assignment": re.compile(
         r"(?i)(?:api[_-]?key|password|secret|token)\s*=\s*[^\s]"
     ),
+}
+OFFICIAL_SOURCE_HOSTS = {
+    "fgk.chinatax.gov.cn",
+    "kjs.mof.gov.cn",
+    "tfs.mof.gov.cn",
+    "wb.flk.npc.gov.cn",
+    "www.mof.gov.cn",
 }
 
 
@@ -66,9 +75,20 @@ def validate_manifest() -> dict[str, object]:
         fail("China country pack must remain installable")
     if manifest.get("application"):
         fail("China country pack must not create a second application root")
-    for relative_path in manifest.get("data", []):
+    data_files = manifest.get("data", [])
+    for relative_path in data_files:
         if not (ADDON_ROOT / relative_path).is_file():
             fail(f"manifest data file does not exist: {relative_path}")
+    ordered_data = {
+        "data/official_source_candidates.xml",
+        "data/compliance_rule_drafts.xml",
+    }
+    if not ordered_data.issubset(data_files):
+        fail("manifest must load official sources and rule drafts")
+    if data_files.index("data/official_source_candidates.xml") > data_files.index(
+        "data/compliance_rule_drafts.xml"
+    ):
+        fail("official source candidates must load before rule drafts")
     return manifest
 
 
@@ -172,10 +192,95 @@ def condition_fact_keys(value: object) -> set[str]:
     return keys
 
 
+def validate_official_source_candidates() -> set[str]:
+    path = ADDON_ROOT / "data" / "official_source_candidates.xml"
+    root = ElementTree.parse(path).getroot()
+    if root.attrib.get("noupdate") != "1":
+        fail("official source candidates must be protected by noupdate")
+    records = [
+        record
+        for record in root.findall(".//record")
+        if record.attrib.get("model")
+        == "sudo.compliance.authority.source"
+    ]
+    if len(records) < 7:
+        fail("at least seven China official source candidates are required")
+
+    source_ids: set[str] = set()
+    official_urls: set[str] = set()
+    forbidden_fields = {
+        "content_hash",
+        "reviewed_at",
+        "reviewer_id",
+        "snapshot_attachment_id",
+    }
+    for record in records:
+        xml_id = record.attrib.get("id", "")
+        if not xml_id or xml_id in source_ids:
+            fail("official source candidate XML IDs must be unique")
+        if not xml_id.endswith("_candidate"):
+            fail(f"official source candidate ID must be explicit: {xml_id}")
+        source_ids.add(xml_id)
+
+        fields = record_fields(record)
+        country = fields.get("country_id")
+        if country is None or country.attrib.get("ref") != "base.cn":
+            fail(f"{xml_id} must be restricted to China")
+        field_text(fields, "name", xml_id)
+        field_text(fields, "authority", xml_id)
+        field_text(fields, "source_type", xml_id)
+        field_text(fields, "official_version", xml_id)
+        field_text(fields, "published_date", xml_id)
+
+        status = (
+            (fields["status"].text or "").strip()
+            if "status" in fields
+            else "draft"
+        )
+        if status != "draft":
+            fail(f"{xml_id} must remain a draft source candidate")
+        snapshot_kind = (
+            (fields["snapshot_kind"].text or "").strip()
+            if "snapshot_kind" in fields
+            else "other"
+        )
+        if snapshot_kind != "other":
+            fail(f"{xml_id} must not claim an official snapshot")
+        populated_forbidden = forbidden_fields & set(fields)
+        if populated_forbidden:
+            fail(
+                f"{xml_id} pre-populates governed fields: "
+                f"{sorted(populated_forbidden)}"
+            )
+
+        official_url = field_text(fields, "official_url", xml_id)
+        parsed = urlparse(official_url)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in OFFICIAL_SOURCE_HOSTS
+            or parsed.username
+            or parsed.password
+            or parsed.port not in {None, 443}
+        ):
+            fail(f"{xml_id} does not use an approved official HTTPS host")
+        normalized_url = official_url.rstrip("/")
+        if normalized_url in official_urls:
+            fail(f"official source candidate URLs must be unique: {official_url}")
+        official_urls.add(normalized_url)
+
+        review_date = date.fromisoformat(
+            field_text(fields, "next_review_date", xml_id)
+        )
+        if review_date < date.today():
+            fail(f"official source candidate is overdue for review: {xml_id}")
+    return source_ids
+
+
 def validate_rule_drafts(
     fact_keys: set[str],
     fact_ids: dict[str, str],
-) -> None:
+    source_ids: set[str],
+) -> dict[str, set[str]]:
     path = ADDON_ROOT / "data" / "compliance_rule_drafts.xml"
     root = ElementTree.parse(path).getroot()
     records = root.findall(".//record")
@@ -206,6 +311,7 @@ def validate_rule_drafts(
     version_case_results: dict[str, set[str]] = {
         xml_id: set() for xml_id in versions
     }
+    version_source_refs: dict[str, set[str]] = {}
     rules_with_versions: set[str] = set()
     ref_pattern = re.compile(r"ref\(['\"]([^'\"]+)['\"]\)")
     for xml_id, fields in versions.items():
@@ -219,8 +325,21 @@ def validate_rule_drafts(
             fail(f"draft version forces a publishable state: {xml_id}")
         if "professional_review_state" in fields:
             fail(f"draft version must not force professional sign-off: {xml_id}")
-        if "authority_source_ids" in fields:
-            fail(f"draft version must not claim governed sources: {xml_id}")
+        source_field = fields.get("authority_source_ids")
+        if source_field is None:
+            fail(f"{xml_id} has no official source candidates")
+        source_refs = set(
+            ref_pattern.findall(source_field.attrib.get("eval", ""))
+        )
+        if not source_refs:
+            fail(f"{xml_id} has no official source candidate references")
+        unknown_source_refs = source_refs - source_ids
+        if unknown_source_refs:
+            fail(
+                f"{xml_id} references unknown source candidates: "
+                f"{sorted(unknown_source_refs)}"
+            )
+        version_source_refs[xml_id] = source_refs
         if field_text(fields, "stale_policy", xml_id) != "block_all":
             fail(f"draft version must block evaluation when stale: {xml_id}")
         if field_text(fields, "requires_human_review", xml_id) != "True":
@@ -284,6 +403,42 @@ def validate_rule_drafts(
     for version_id, results in version_case_results.items():
         if not {"pass", "fail"}.issubset(results):
             fail(f"{version_id} must have pass and fail test cases")
+    return version_source_refs
+
+
+def validate_upgrade_migration(
+    manifest: dict[str, object],
+    source_ids: set[str],
+    version_source_refs: dict[str, set[str]],
+) -> None:
+    migration_path = (
+        ADDON_ROOT
+        / "migrations"
+        / str(manifest["version"])
+        / "post-migration.py"
+    )
+    if not migration_path.is_file():
+        fail("current version requires a post-migration script")
+    content = migration_path.read_text(encoding="utf-8")
+    tree = ast.parse(content, filename=str(migration_path))
+    links = literal_assignments(tree).get("RULE_SOURCE_LINKS")
+    if not isinstance(links, dict):
+        fail("upgrade migration must declare RULE_SOURCE_LINKS")
+    normalized_links = {
+        version_id: set(candidates)
+        for version_id, candidates in links.items()
+    }
+    if normalized_links != version_source_refs:
+        fail("upgrade migration must cover every packaged rule draft")
+    linked_sources = {
+        source_id
+        for candidates in normalized_links.values()
+        for source_id in candidates
+    }
+    if linked_sources != source_ids:
+        fail("upgrade migration must cover every official source candidate")
+    if "Command.link" not in content or "Command.set" in content:
+        fail("upgrade migration must preserve existing rule source links")
 
 
 def validate_taxpayer_classification_security() -> None:
@@ -335,7 +490,13 @@ def main() -> int:
     manifest = validate_manifest()
     validate_hooks(manifest)
     fact_keys, fact_ids = validate_fact_definitions()
-    validate_rule_drafts(fact_keys, fact_ids)
+    source_ids = validate_official_source_candidates()
+    version_source_refs = validate_rule_drafts(
+        fact_keys,
+        fact_ids,
+        source_ids,
+    )
+    validate_upgrade_migration(manifest, source_ids, version_source_refs)
     validate_taxpayer_classification_security()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

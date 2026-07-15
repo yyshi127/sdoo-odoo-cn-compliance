@@ -26,6 +26,37 @@ class TestChinaRuleDrafts(TransactionCase):
                 ).id,
             ]
         )
+        cls.sources = cls.env["sudo.compliance.authority.source"].browse(
+            [
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_accounting_law_2024_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_accounting_archives_order_79_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn.source_cn_vat_law_2024_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_vat_regulation_order_826_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_invoice_measures_2023_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_tax_collection_law_2015_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_electronic_voucher_standard_2025_candidate"
+                ).id,
+            ]
+        )
 
     def test_packaged_china_rules_remain_unpublished_drafts(self):
         self.assertEqual(set(self.versions.mapped("state")), {"draft"})
@@ -33,13 +64,43 @@ class TestChinaRuleDrafts(TransactionCase):
             set(self.versions.mapped("professional_review_state")),
             {"pending"},
         )
-        self.assertFalse(self.versions.mapped("authority_source_ids"))
+        self.assertTrue(
+            all(version.authority_source_ids for version in self.versions)
+        )
+        self.assertEqual(
+            set(self.versions.mapped("authority_source_ids").ids),
+            set(self.sources.ids),
+        )
         self.assertFalse(
             self.env["sudo.compliance.rule.version"].search_count(
                 [
                     ("rule_id.code", "like", "CN-%"),
                     ("state", "=", "active"),
                 ]
+            )
+        )
+
+    def test_official_url_candidates_remain_ungoverned_drafts(self):
+        self.assertEqual(set(self.sources.mapped("status")), {"draft"})
+        self.assertEqual(set(self.sources.mapped("snapshot_kind")), {"other"})
+        self.assertTrue(
+            all(not source.content_hash for source in self.sources)
+        )
+        self.assertTrue(
+            all(not source.snapshot_attachment_id for source in self.sources)
+        )
+        self.assertTrue(all(not source.reviewer_id for source in self.sources))
+        self.assertTrue(
+            all(not source.reviewed_at for source in self.sources)
+        )
+        self.assertEqual(
+            set(self.sources.mapped("country_id").ids),
+            {self.env.ref("base.cn").id},
+        )
+        self.assertTrue(
+            all(
+                source.official_url.startswith("https://")
+                for source in self.sources
             )
         )
 

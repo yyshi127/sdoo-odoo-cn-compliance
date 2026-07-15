@@ -22,11 +22,12 @@
         <field name="no_match_result">fail</field>
         <field name="risk_level">high</field>
         <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [ref('source_cn_tax_collection_law_2015_candidate')])]"/>
         <field name="required_fact_ids" eval="[(6, 0, [
             ref('fact_cn_company_uscc_v1'),
             ref('fact_cn_registration_evidence_count_v1')
         ])]"/>
-        <field name="legal_basis_summary">内部数据治理控制草案。尚未关联官方原文快照，也未完成中国财税专业签核，不构成企业登记或税务合规结论。</field>
+        <field name="legal_basis_summary">内部数据治理控制草案。已登记税收征管法官方网址候选项，但尚未抓取原文、生成哈希、完成独立复核和中国财税专业签核，不构成企业登记或税务合规结论。</field>
         <field name="failure_message">合规档案中的统一社会信用代码受控登记或证明附件线索不完整。</field>
         <field name="pass_message">合规档案已记录统一社会信用代码和登记证明附件线索；仍需完成内容核验。</field>
         <field name="unknown_message">登记事实缺失、冲突或不完整，不能作出通过判断。</field>
@@ -79,8 +80,9 @@
         <field name="no_match_result">fail</field>
         <field name="risk_level">medium</field>
         <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [ref('source_cn_accounting_law_2024_candidate')])]"/>
         <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_unposted_move_count_v1')])]"/>
-        <field name="legal_basis_summary">内部关账准备度控制草案。尚未关联官方原文快照，也未完成中国会计与税务专业签核，不构成法定关账或申报期限判断。</field>
+        <field name="legal_basis_summary">内部关账准备度控制草案。已登记会计法官方网址候选项，但尚未抓取原文、生成哈希、完成独立复核和中国会计与税务专业签核，不构成法定关账或申报期限判断。</field>
         <field name="failure_message">评估期间仍存在未过账会计凭证，当前账面数据可能尚未形成稳定评估基础。</field>
         <field name="pass_message">评估期间未发现草稿会计凭证。</field>
         <field name="unknown_message">无法完整取得评估期间会计凭证，不能作出通过判断。</field>
@@ -127,8 +129,13 @@
         <field name="no_match_result">fail</field>
         <field name="risk_level">high</field>
         <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_vat_law_2024_candidate'),
+            ref('source_cn_vat_regulation_order_826_candidate'),
+            ref('source_cn_invoice_measures_2023_candidate')
+        ])]"/>
         <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_posted_invoice_line_without_tax_count_v1')])]"/>
-        <field name="legal_basis_summary">内部税务数据映射准备度控制草案。尚未绑定中国增值税官方来源、企业纳税人身份和专业签核，不构成税率、应纳税额或抵扣结论。</field>
+        <field name="legal_basis_summary">内部税务数据映射准备度控制草案。已登记增值税法、实施条例及发票管理办法官方网址候选项，但尚未完成原文抓取、哈希、独立复核、企业纳税人身份适用判断和专业签核，不构成税率、应纳税额或抵扣结论。</field>
         <field name="failure_message">发现已过账业务发票行没有维护 Odoo 税码，账票税款勾稽基础可能不完整。</field>
         <field name="pass_message">评估期间已过账业务发票的相关业务行均维护了 Odoo 税码。</field>
         <field name="unknown_message">无法完整取得发票行和税码数据，不能作出通过判断。</field>
@@ -175,8 +182,13 @@
         <field name="no_match_result">fail</field>
         <field name="risk_level">medium</field>
         <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_accounting_law_2024_candidate'),
+            ref('source_cn_accounting_archives_order_79_candidate'),
+            ref('source_cn_electronic_voucher_standard_2025_candidate')
+        ])]"/>
         <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_invoice_missing_attachment_count_v1')])]"/>
-        <field name="legal_basis_summary">内部证据准备度控制草案。尚未关联中国会计档案和电子凭证官方原文快照，也未完成专业签核，不构成凭证保管合规结论。</field>
+        <field name="legal_basis_summary">内部证据准备度控制草案。已登记会计法、会计档案办法和电子凭证标准官方网址候选项，但尚未抓取原文、生成哈希、完成独立复核和专业签核，不构成凭证保管合规结论。</field>
         <field name="failure_message">发现已过账业务发票在 Odoo 中没有附件线索，证据链准备度不足。</field>
         <field name="pass_message">评估期间已过账业务发票均存在附件线索；仍需核验内容和外部档案索引。</field>
         <field name="unknown_message">无法完整取得业务发票或附件数据，不能作出通过判断。</field>
@@ -223,8 +235,9 @@
         <field name="no_match_result">fail</field>
         <field name="risk_level">high</field>
         <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [ref('source_cn_tax_collection_law_2015_candidate')])]"/>
         <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_taxpayer_classification_verified_v1')])]"/>
-        <field name="legal_basis_summary">内部企业身份资料治理控制草稿。尚未关联国家税务总局或地方税务机关官方原文快照，也未完成中国财税专业签核；通过只表示身份资料准备完成，不构成税种适用、税率或申报义务结论。</field>
+        <field name="legal_basis_summary">内部企业身份资料治理控制草稿。已登记税收征管法官方网址候选项，但尚未抓取原文、生成哈希、完成独立复核和中国财税专业签核；通过只表示身份资料准备完成，不构成税种适用、税率或申报义务结论。</field>
         <field name="failure_message">评估日的中国纳税人身份快照存在但尚未核验，或证据内容已发生变化。</field>
         <field name="pass_message">评估日存在唯一有效、已核验且证据完整性正常的中国纳税人身份快照；身份分类本身仍须由专业人员依据受控材料判断。</field>
         <field name="unknown_message">评估日没有可用的中国纳税人身份快照，无法确定税种适用性和申报频率。</field>

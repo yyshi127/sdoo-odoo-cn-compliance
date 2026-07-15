@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!--
+        These records are official-URL candidates only. An official URL is not
+        a governed source until the original is captured, hashed, independently
+        reviewed and approved through the shared source lifecycle.
+    -->
+    <record id="source_cn_accounting_law_2024_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国会计法（2024年修正）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">全国人民代表大会常务委员会</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://wb.flk.npc.gov.cn/flfg/PDF/b450cf89277c40918e7077c5418d93d9.pdf</field>
+        <field name="official_version">2024年6月28日第三次修正，2024年7月1日起施行</field>
+        <field name="published_date">2024-06-28</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_accounting_archives_order_79_candidate" model="sudo.compliance.authority.source">
+        <field name="name">会计档案管理办法（财政部、国家档案局令第79号）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">财政部、国家档案局</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://tfs.mof.gov.cn/caizhengbuling/201512/t20151214_1613338.htm</field>
+        <field name="official_version">财政部、国家档案局令第79号，2016年1月1日起施行</field>
+        <field name="published_date">2015-12-11</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_vat_law_2024_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国增值税法</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">全国人民代表大会常务委员会</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://fgk.chinatax.gov.cn/zcfgk/c100009/c5237365/content.html</field>
+        <field name="official_version">2024年12月25日通过，2026年1月1日起施行</field>
+        <field name="published_date">2024-12-25</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_vat_regulation_order_826_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国增值税法实施条例</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">国务院</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://fgk.chinatax.gov.cn/zcfgk/c100010/c5246349/content.html</field>
+        <field name="official_version">国务院令第826号，2026年1月1日起施行</field>
+        <field name="published_date">2025-12-25</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_invoice_measures_2023_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国发票管理办法（2023年修订）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">国务院</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://fgk.chinatax.gov.cn/zcfgk/c100010/c5195084/content.html</field>
+        <field name="official_version">国务院令第764号第三次修订，2023年7月20日起施行</field>
+        <field name="published_date">2023-07-20</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_tax_collection_law_2015_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国税收征收管理法（2015年修正）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">全国人民代表大会常务委员会</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://fgk.chinatax.gov.cn/zcfgk/c100009/c5195081/content.html</field>
+        <field name="official_version">2015年4月24日第三次修正</field>
+        <field name="published_date">2015-04-24</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_electronic_voucher_standard_2025_candidate" model="sudo.compliance.authority.source">
+        <field name="name">关于推广应用电子凭证会计数据标准的通知</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">财政部等九部门（单位）</field>
+        <field name="source_type">technical_spec</field>
+        <field name="official_url">https://www.mof.gov.cn/jrttts/202505/t20250521_3964264.htm</field>
+        <field name="official_version">财会〔2025〕9号，推广应用版</field>
+        <field name="published_date">2025-05-09</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+</odoo>
