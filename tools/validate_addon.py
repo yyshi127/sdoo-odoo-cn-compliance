@@ -35,9 +35,47 @@ SECRET_PATTERNS = {
 OFFICIAL_SOURCE_HOSTS = {
     "fgk.chinatax.gov.cn",
     "kjs.mof.gov.cn",
-    "tfs.mof.gov.cn",
-    "wb.flk.npc.gov.cn",
     "www.mof.gov.cn",
+    "www.gov.cn",
+}
+EXPECTED_OFFICIAL_SOURCE_URLS = {
+    "source_cn_accounting_law_2024_candidate": (
+        "https://kjs.mof.gov.cn/zhengcefabu/202408/t20240812_3941615.htm"
+    ),
+    "source_cn_accounting_archives_order_79_candidate": (
+        "https://www.gov.cn/gongbao/content/2016/content_5041555.htm"
+    ),
+    "source_cn_vat_law_2024_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100009/c5237365/content.html"
+    ),
+    "source_cn_vat_regulation_order_826_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100010/c5246349/content.html"
+    ),
+    "source_cn_invoice_measures_2023_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100010/c5195084/content.html"
+    ),
+    "source_cn_tax_collection_law_2015_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100009/c5195081/content.html"
+    ),
+    "source_cn_electronic_voucher_standard_2025_candidate": (
+        "https://www.mof.gov.cn/jrttts/202505/t20250521_3964264.htm"
+    ),
+}
+EXPECTED_SOURCE_URL_REPLACEMENTS = {
+    "source_cn_accounting_law_2024_candidate": (
+        "https://wb.flk.npc.gov.cn/flfg/PDF/"
+        "b450cf89277c40918e7077c5418d93d9.pdf",
+        EXPECTED_OFFICIAL_SOURCE_URLS[
+            "source_cn_accounting_law_2024_candidate"
+        ],
+    ),
+    "source_cn_accounting_archives_order_79_candidate": (
+        "https://tfs.mof.gov.cn/caizhengbuling/201512/"
+        "t20151214_1613338.htm",
+        EXPECTED_OFFICIAL_SOURCE_URLS[
+            "source_cn_accounting_archives_order_79_candidate"
+        ],
+    ),
 }
 ALLOWED_CN_RULE_NATURES = {
     "statutory_requirement",
@@ -311,6 +349,12 @@ def validate_official_source_candidates() -> set[str]:
             )
 
         official_url = field_text(fields, "official_url", xml_id)
+        expected_url = EXPECTED_OFFICIAL_SOURCE_URLS.get(xml_id)
+        if official_url != expected_url:
+            fail(
+                f"{xml_id} does not use its audited official URL: "
+                f"{official_url}"
+            )
         parsed = urlparse(official_url)
         if (
             parsed.scheme != "https"
@@ -330,6 +374,8 @@ def validate_official_source_candidates() -> set[str]:
         )
         if review_date < date.today():
             fail(f"official source candidate is overdue for review: {xml_id}")
+    if source_ids != set(EXPECTED_OFFICIAL_SOURCE_URLS):
+        fail("audited official source URL manifest is incomplete")
     return source_ids
 
 
@@ -491,18 +537,26 @@ def validate_upgrade_migration(
     current_content = current_migration_path.read_text(encoding="utf-8")
     if "update_country_pack_metadata" not in current_content:
         fail("current migration must refresh country pack metadata")
-    if "backfill_cn_rule_natures" not in current_content:
-        fail("current migration must backfill governed China rule natures")
 
     link_migrations = []
+    nature_backfill_migrations = []
+    source_url_migrations = []
     for migration_path in sorted(
         (ADDON_ROOT / "migrations").glob("*/post-migration.py")
     ):
         content = migration_path.read_text(encoding="utf-8")
         tree = ast.parse(content, filename=str(migration_path))
-        links = literal_assignments(tree).get("RULE_SOURCE_LINKS")
+        assignments = literal_assignments(tree)
+        links = assignments.get("RULE_SOURCE_LINKS")
         if isinstance(links, dict):
             link_migrations.append((content, links))
+        if "backfill_cn_rule_natures" in content:
+            nature_backfill_migrations.append(content)
+        replacements = assignments.get("SOURCE_URL_REPLACEMENTS")
+        if isinstance(replacements, dict):
+            source_url_migrations.append((content, replacements))
+    if len(nature_backfill_migrations) != 1:
+        fail("exactly one migration must backfill governed China rule natures")
     if len(link_migrations) != 1:
         fail("exactly one upgrade migration must govern rule source links")
     content, links = link_migrations[0]
@@ -521,6 +575,25 @@ def validate_upgrade_migration(
         fail("upgrade migration must cover every official source candidate")
     if "Command.link" not in content or "Command.set" in content:
         fail("upgrade migration must preserve existing rule source links")
+
+    if len(source_url_migrations) != 1:
+        fail("exactly one migration must govern official source URL changes")
+    source_content, replacements = source_url_migrations[0]
+    normalized_replacements = {
+        source_id: tuple(urls)
+        for source_id, urls in replacements.items()
+    }
+    if normalized_replacements != EXPECTED_SOURCE_URL_REPLACEMENTS:
+        fail("official source URL migration does not match the audited manifest")
+    for guard in (
+        'source.status != "draft"',
+        "source.snapshot_attachment_id",
+        "source.content_hash",
+        "source.official_url != old_url",
+        "authority_source.candidate_url_migrated",
+    ):
+        if guard not in source_content:
+            fail(f"official source URL migration is missing guard: {guard}")
 
 
 def validate_taxpayer_classification_security() -> None:

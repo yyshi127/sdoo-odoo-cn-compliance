@@ -10,7 +10,7 @@
         <field name="country_id" ref="base.cn"/>
         <field name="authority">全国人民代表大会常务委员会</field>
         <field name="source_type">legislation</field>
-        <field name="official_url">https://wb.flk.npc.gov.cn/flfg/PDF/b450cf89277c40918e7077c5418d93d9.pdf</field>
+        <field name="official_url">https://kjs.mof.gov.cn/zhengcefabu/202408/t20240812_3941615.htm</field>
         <field name="official_version">2024年6月28日第三次修正，2024年7月1日起施行</field>
         <field name="published_date">2024-06-28</field>
         <field name="next_review_date">2026-10-15</field>
@@ -21,7 +21,7 @@
         <field name="country_id" ref="base.cn"/>
         <field name="authority">财政部、国家档案局</field>
         <field name="source_type">legislation</field>
-        <field name="official_url">https://tfs.mof.gov.cn/caizhengbuling/201512/t20151214_1613338.htm</field>
+        <field name="official_url">https://www.gov.cn/gongbao/content/2016/content_5041555.htm</field>
         <field name="official_version">财政部、国家档案局令第79号，2016年1月1日起施行</field>
         <field name="published_date">2015-12-11</field>
         <field name="next_review_date">2026-10-15</field>

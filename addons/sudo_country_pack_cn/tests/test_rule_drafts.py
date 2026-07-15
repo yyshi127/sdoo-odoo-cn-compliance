@@ -190,6 +190,36 @@ class TestChinaRuleDrafts(TransactionCase):
             version._check_publish_gate()
 
     def test_official_url_candidates_remain_ungoverned_drafts(self):
+        expected_urls = {
+            "source_cn_accounting_law_2024_candidate": (
+                "https://kjs.mof.gov.cn/zhengcefabu/202408/"
+                "t20240812_3941615.htm"
+            ),
+            "source_cn_accounting_archives_order_79_candidate": (
+                "https://www.gov.cn/gongbao/content/2016/"
+                "content_5041555.htm"
+            ),
+            "source_cn_vat_law_2024_candidate": (
+                "https://fgk.chinatax.gov.cn/zcfgk/c100009/"
+                "c5237365/content.html"
+            ),
+            "source_cn_vat_regulation_order_826_candidate": (
+                "https://fgk.chinatax.gov.cn/zcfgk/c100010/"
+                "c5246349/content.html"
+            ),
+            "source_cn_invoice_measures_2023_candidate": (
+                "https://fgk.chinatax.gov.cn/zcfgk/c100010/"
+                "c5195084/content.html"
+            ),
+            "source_cn_tax_collection_law_2015_candidate": (
+                "https://fgk.chinatax.gov.cn/zcfgk/c100009/"
+                "c5195081/content.html"
+            ),
+            "source_cn_electronic_voucher_standard_2025_candidate": (
+                "https://www.mof.gov.cn/jrttts/202505/"
+                "t20250521_3964264.htm"
+            ),
+        }
         self.assertEqual(set(self.sources.mapped("status")), {"draft"})
         self.assertEqual(set(self.sources.mapped("snapshot_kind")), {"other"})
         self.assertTrue(
@@ -212,6 +242,9 @@ class TestChinaRuleDrafts(TransactionCase):
                 for source in self.sources
             )
         )
+        for xml_id, expected_url in expected_urls.items():
+            source = self.env.ref(f"sudo_country_pack_cn.{xml_id}")
+            self.assertEqual(source.official_url, expected_url)
 
     def test_all_packaged_draft_cases_evaluate_as_expected(self):
         cases = self.versions.mapped("test_case_ids")
