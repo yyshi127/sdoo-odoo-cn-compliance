@@ -266,6 +266,12 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("controlled IIT filing and settlement archive capability must be declared")
     if features.get("official_source_change_monitoring") is not True:
         fail("governed official source change monitoring must be declared")
+    if features.get("jurisdiction") is not True:
+        fail("China jurisdiction capability must be declared")
+    if features.get("jurisdiction_governance") is not True:
+        fail("China jurisdiction governance capability must be declared")
+    if features.get("local_rule_scope") is not True:
+        fail("China local rule scope capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -2669,6 +2675,157 @@ def validate_official_source_change_monitoring() -> None:
             fail(f"official source monitoring runtime coverage is missing {test_name}")
 
 
+def validate_china_jurisdiction_governance(manifest: dict[str, object]) -> None:
+    data_files = set(manifest.get("data", []))
+    for required in (
+        "views/jurisdiction_views.xml",
+        "security/compliance_security.xml",
+        "security/ir.model.access.csv",
+    ):
+        if required not in data_files:
+            fail(f"China jurisdiction governance file is not loaded: {required}")
+
+    forbidden_seed_models = {
+        "sudo.cn.jurisdiction.version",
+        "sudo.cn.profile.jurisdiction",
+    }
+    for relative_path in manifest.get("data", []):
+        if not relative_path.endswith(".xml"):
+            continue
+        root = ElementTree.parse(ADDON_ROOT / relative_path).getroot()
+        for record in root.findall(".//record"):
+            if record.attrib.get("model") in forbidden_seed_models:
+                fail("packaged China pack must not seed active jurisdiction data")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import jurisdiction" not in model_init:
+        fail("China jurisdiction model must be imported")
+
+    model_content = (
+        ADDON_ROOT / "models" / "jurisdiction.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.jurisdiction.version"',
+        '_name = "sudo.cn.profile.jurisdiction"',
+        'selection_add=[("jurisdiction_governance"',
+        "_source_snapshot_matches_hash",
+        "cn_jurisdiction_ids",
+        "cn_jurisdiction_scope_state",
+        "cn_jurisdiction_coverage_state",
+        "cn_jurisdiction_scope_snapshot_json",
+        "cn_jurisdiction_scope_checksum",
+        "_select_versions",
+        "_cn_jurisdiction_scope_write",
+        "_ASSESSMENT_SCOPE_MARKER",
+        "_JURISDICTION_TRANSITION_MARKER",
+        "_ASSIGNMENT_TRANSITION_MARKER",
+        "cn_is_china_assessment",
+    ):
+        if required not in model_content:
+            fail(f"China jurisdiction governance contract is missing {required}")
+    if "if self.cn_jurisdiction_ids:" not in model_content:
+        fail("empty China jurisdiction scope must preserve national rule checksum")
+    if '"jurisdiction_governance": "set null"' not in model_content:
+        fail("jurisdiction release state must use a safe uninstall fallback")
+    for forbidden in (
+        "create_jurisdiction_seed",
+        "default_active_jurisdiction",
+        "auto_activate_jurisdiction",
+    ):
+        if forbidden in model_content:
+            fail(f"China jurisdiction governance must not auto-seed: {forbidden}")
+
+    view_content = (
+        ADDON_ROOT / "views" / "jurisdiction_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="action_cn_jurisdiction_versions"',
+        'id="menu_cn_jurisdiction_versions"',
+        'id="action_cn_profile_jurisdictions"',
+        'id="menu_cn_profile_jurisdictions"',
+        "cn_jurisdiction_assignment_ids",
+        "cn_jurisdiction_scope_state",
+        "cn_jurisdiction_coverage_state",
+        "cn_is_china_assessment",
+    ):
+        if required not in view_content:
+            fail(f"China jurisdiction governance UI is missing {required}")
+    if "default_active" in view_content:
+        fail("China jurisdiction action must not hide draft jurisdictions by default")
+
+    with (ADDON_ROOT / "security" / "ir.model.access.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        rows = {row["id"]: row for row in csv.DictReader(handle)}
+    expected_access = {
+        "access_cn_jurisdiction_version_user": ["1", "0", "0", "0"],
+        "access_cn_jurisdiction_version_author": ["1", "1", "1", "1"],
+        "access_cn_jurisdiction_version_approver": ["1", "1", "0", "0"],
+        "access_cn_jurisdiction_version_manager": ["1", "1", "1", "1"],
+        "access_cn_profile_jurisdiction_user": ["1", "1", "1", "0"],
+        "access_cn_profile_jurisdiction_manager": ["1", "1", "1", "1"],
+    }
+    for access_id, expected in expected_access.items():
+        row = rows.get(access_id)
+        if not row:
+            fail(f"China jurisdiction ACL is missing {access_id}")
+        actual = [
+            row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ]
+        if actual != expected:
+            fail(f"China jurisdiction ACL is unsafe: {access_id}")
+
+    security = (
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="cn_profile_jurisdiction_company_rule"',
+        'ref="model_sudo_cn_profile_jurisdiction"',
+        "[('company_id', 'in', company_ids)]",
+    ):
+        if required not in security:
+            fail(f"China jurisdiction company isolation is missing {required}")
+
+    tests_init = (ADDON_ROOT / "tests" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import test_jurisdiction" not in tests_init:
+        fail("China jurisdiction runtime tests must be imported")
+    test_path = ADDON_ROOT / "tests" / "test_jurisdiction.py"
+    test_content = test_path.read_text(encoding="utf-8")
+    test_tree = ast.parse(test_content)
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 16:
+        fail("China jurisdiction governance requires at least sixteen runtime tests")
+    for test_name in (
+        "test_packaged_country_pack_does_not_seed_active_jurisdictions_or_local_rules",
+        "test_jurisdiction_create_cannot_forge_governance_state",
+        "test_jurisdiction_requires_independent_review_and_freezes_checksum",
+        "test_invalid_official_source_blocks_jurisdiction",
+        "test_hierarchy_cycle_and_parent_period_are_guarded",
+        "test_active_jurisdiction_is_immutable_and_source_tamper_is_visible",
+        "test_assignment_requires_complete_evidence",
+        "test_assignment_verification_freezes_evidence_and_detects_tamper",
+        "test_overlapping_verified_assignment_is_rejected",
+        "test_assignment_record_rule_isolates_companies",
+        "test_local_rule_scope_changes_checksum_and_publish_gate",
+        "test_descendant_assignment_selects_matching_rule_and_excludes_other_scope",
+        "test_missing_assignment_limits_assessment_while_national_rule_runs",
+        "test_tampered_assignment_blocks_local_rule_as_integrity_error",
+        "test_explicit_out_of_scope_rule_is_rejected",
+        "test_assessment_scope_fields_cannot_be_forged_and_snapshot_tamper_is_detected",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"China jurisdiction runtime coverage is missing {test_name}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -2870,6 +3027,7 @@ def main() -> int:
     validate_tax_impact_review()
     validate_formal_compliance_report()
     validate_official_source_change_monitoring()
+    validate_china_jurisdiction_governance(manifest)
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0

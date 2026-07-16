@@ -38,7 +38,7 @@
                 <field name="cn_release_state" widget="badge" optional="show"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'jurisdiction_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
             </xpath>
@@ -55,7 +55,7 @@
                 <field name="cn_release_state" widget="badge" optional="show"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'jurisdiction_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
             </field>
@@ -120,7 +120,7 @@
                        invisible="not cn_is_china_rule"
                        decoration-success="cn_release_state == 'active'"
                        decoration-info="cn_release_state in ('ready_for_review', 'technical_review', 'ready_to_activate')"
-                       decoration-warning="cn_release_state in ('source_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
+                       decoration-warning="cn_release_state in ('source_governance', 'jurisdiction_governance', 'test_required', 'review_packet_required', 'professional_signoff')"
                        decoration-danger="cn_release_state in ('classification_required', 'review_boundary_required', 'active_attention')"
                        decoration-muted="cn_release_state == 'retired'"/>
                 <field name="cn_governance_ready" readonly="1"

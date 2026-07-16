@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_jurisdiction_version_search" model="ir.ui.view">
+        <field name="name">sudo.cn.jurisdiction.version.search</field>
+        <field name="model">sudo.cn.jurisdiction.version</field>
+        <field name="arch" type="xml">
+            <search string="中国受控辖区">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="parent_id"/>
+                <field name="province_id"/>
+                <filter name="active" string="当前有效" domain="[('state', '=', 'active')]"/>
+                <filter name="pending_review" string="待复核" domain="[('state', '=', 'pending_review')]"/>
+                <separator/>
+                <filter name="group_level" string="辖区层级" context="{'group_by': 'level'}"/>
+                <filter name="group_state" string="状态" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_jurisdiction_version_list" model="ir.ui.view">
+        <field name="name">sudo.cn.jurisdiction.version.list</field>
+        <field name="model">sudo.cn.jurisdiction.version</field>
+        <field name="arch" type="xml">
+            <list string="中国受控辖区"
+                  decoration-warning="state in ('draft', 'pending_review')"
+                  decoration-danger="integrity_state in ('checksum_mismatch', 'source_invalid', 'parent_invalid')"
+                  decoration-muted="state == 'retired'">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="version"/>
+                <field name="level" widget="badge"/>
+                <field name="parent_id" optional="show"/>
+                <field name="province_id" optional="hide"/>
+                <field name="effective_from"/>
+                <field name="effective_to"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-info="state == 'approved'"
+                       decoration-warning="state in ('draft', 'pending_review')"
+                       decoration-muted="state == 'retired'"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-warning="integrity_state == 'unapproved'"
+                       decoration-danger="integrity_state in ('checksum_mismatch', 'source_invalid', 'parent_invalid')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_jurisdiction_version_form" model="ir.ui.view">
+        <field name="name">sudo.cn.jurisdiction.version.form</field>
+        <field name="model">sudo.cn.jurisdiction.version</field>
+        <field name="arch" type="xml">
+            <form string="中国受控辖区版本">
+                <header>
+                    <button name="action_submit_review" type="object" string="提交独立复核"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="批准辖区版本"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_rule_approver,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'pending_review'"/>
+                    <button name="action_reject" type="object" string="退回修改"
+                            groups="sudo_global_finance.group_compliance_rule_approver,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'pending_review'"/>
+                    <button name="action_activate" type="object" string="发布生效"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_rule_approver,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'approved'"/>
+                    <button name="action_retire" type="object" string="退役辖区版本"
+                            groups="sudo_global_finance.group_compliance_rule_approver,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,pending_review,approved,active,retired"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="完整性异常" bg_color="text-bg-danger"
+                            invisible="integrity_state not in ('checksum_mismatch', 'source_invalid', 'parent_invalid')"/>
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        辖区记录只定义受控适用边界，不代表任何地方税务结论。必须关联有效官方快照并由不同人员复核后才能发布。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="integrity_state not in ('checksum_mismatch', 'source_invalid', 'parent_invalid')">
+                        当前辖区版本、官方来源或上级辖区完整性异常，相关地方规则会被阻断，不能解释为无风险。
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="state != 'draft'"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" readonly="state != 'draft'"/>
+                            <field name="version" readonly="state != 'draft'"/>
+                            <field name="level" readonly="state != 'draft'"/>
+                            <field name="country_id" readonly="1"/>
+                            <field name="province_id" options="{'no_create': True}"
+                                   readonly="state != 'draft'" invisible="level == 'national'"/>
+                            <field name="parent_id" options="{'no_create': True}"
+                                   domain="[('state', '=', 'active'), ('country_id.code', '=', 'CN')]"
+                                   readonly="state != 'draft'" invisible="level == 'national'"
+                                   required="level != 'national'"/>
+                        </group>
+                        <group>
+                            <field name="effective_from" readonly="state != 'draft'"/>
+                            <field name="effective_to" readonly="state != 'draft'"/>
+                            <field name="integrity_state" widget="badge" readonly="1"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-warning="integrity_state == 'unapproved'"
+                                   decoration-danger="integrity_state in ('checksum_mismatch', 'source_invalid', 'parent_invalid')"/>
+                            <field name="author_id" readonly="1"/>
+                            <field name="reviewer_id" readonly="1" invisible="not reviewer_id"/>
+                            <field name="submitted_at" readonly="1" invisible="not submitted_at"/>
+                            <field name="approved_at" readonly="1" invisible="not approved_at"/>
+                            <field name="activated_at" readonly="1" invisible="not activated_at"/>
+                            <field name="retired_at" readonly="1" invisible="not retired_at"/>
+                        </group>
+                    </group>
+                    <group string="官方依据">
+                        <field name="authority_source_ids" widget="many2many_tags"
+                               options="{'no_create': True}"
+                               domain="[('country_id.code', '=', 'CN')]"
+                               readonly="state != 'draft'" nolabel="1"/>
+                    </group>
+                    <field name="scope_note" readonly="state != 'draft'"
+                           placeholder="说明行政或税务辖区含义、适用领域、排除项及仍需人工判断的边界..."/>
+                    <field name="review_notes" readonly="state != 'pending_review'"
+                           placeholder="独立复核人员记录复核意见；退回时必填..."/>
+                    <notebook>
+                        <page string="治理与校验">
+                            <group>
+                                <field name="checksum" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="下级辖区">
+                            <field name="child_ids" readonly="1">
+                                <list>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="version"/>
+                                    <field name="level" widget="badge"/>
+                                    <field name="effective_from"/>
+                                    <field name="effective_to"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="integrity_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_jurisdiction_versions" model="ir.actions.act_window">
+        <field name="name">中国受控辖区</field>
+        <field name="res_model">sudo.cn.jurisdiction.version</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_jurisdiction_version_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">建立第一份经过治理的中国辖区版本</p>
+            <p>先从全国根辖区开始，关联有效官方快照并完成独立复核；模块不会预装任何生效辖区或地方规则。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_jurisdiction_versions" name="中国受控辖区"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_jurisdiction_versions" sequence="25"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <record id="view_cn_profile_jurisdiction_search" model="ir.ui.view">
+        <field name="name">sudo.cn.profile.jurisdiction.search</field>
+        <field name="model">sudo.cn.profile.jurisdiction</field>
+        <field name="arch" type="xml">
+            <search string="公司辖区适用快照">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="jurisdiction_id"/>
+                <filter name="verified" string="已核验" domain="[('state', '=', 'verified')]"/>
+                <filter name="draft" string="待核验" domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="group_company" string="公司" context="{'group_by': 'company_id'}"/>
+                <filter name="group_domain" string="适用领域" context="{'group_by': 'applicability_domain'}"/>
+                <filter name="group_state" string="状态" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_profile_jurisdiction_list" model="ir.ui.view">
+        <field name="name">sudo.cn.profile.jurisdiction.list</field>
+        <field name="model">sudo.cn.profile.jurisdiction</field>
+        <field name="arch" type="xml">
+            <list string="公司辖区适用快照"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="integrity_state in ('jurisdiction_invalid', 'checksum_mismatch')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="profile_id" optional="hide"/>
+                <field name="jurisdiction_id"/>
+                <field name="applicability_domain" widget="badge"/>
+                <field name="role"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'draft'"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-warning="integrity_state == 'unverified'"
+                       decoration-danger="integrity_state in ('jurisdiction_invalid', 'checksum_mismatch')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_profile_jurisdiction_form" model="ir.ui.view">
+        <field name="name">sudo.cn.profile.jurisdiction.form</field>
+        <field name="model">sudo.cn.profile.jurisdiction</field>
+        <field name="arch" type="xml">
+            <form string="公司辖区适用快照">
+                <header>
+                    <button name="action_verify" type="object" string="核验适用快照"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object" string="撤销核验"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'verified'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,verified"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="完整性异常" bg_color="text-bg-danger"
+                            invisible="integrity_state not in ('jurisdiction_invalid', 'checksum_mismatch')"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state == 'verified' and integrity_state == 'verified'">
+                        地方规则只有在辖区版本、有效期、适用领域、来源说明和证据附件全部核验后才会执行；资料不足会形成评估限制，不会被解释为无风险。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="profile_id" domain="[('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}" readonly="state == 'verified'"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                            <field name="country_id" invisible="1"/>
+                            <field name="jurisdiction_id"
+                                   domain="[('state', '=', 'active'), ('country_id.code', '=', 'CN')]"
+                                   options="{'no_create': True}" readonly="state == 'verified'"/>
+                            <field name="applicability_domain" readonly="state == 'verified'"/>
+                            <field name="role" readonly="state == 'verified'"/>
+                            <field name="valid_from" readonly="state == 'verified'"/>
+                            <field name="valid_to" readonly="state == 'verified'"/>
+                        </group>
+                        <group>
+                            <field name="source_type" readonly="state == 'verified'"/>
+                            <field name="source_date" readonly="state == 'verified'"/>
+                            <field name="source_reference" readonly="state == 'verified'"/>
+                            <field name="integrity_state" widget="badge" readonly="1"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-warning="integrity_state == 'unverified'"
+                                   decoration-danger="integrity_state in ('jurisdiction_invalid', 'checksum_mismatch')"/>
+                            <field name="verified_at" readonly="1" invisible="not verified_at"/>
+                            <field name="verified_by_id" readonly="1" invisible="not verified_by_id"/>
+                            <field name="jurisdiction_checksum" readonly="1" invisible="not jurisdiction_checksum"/>
+                            <field name="verification_checksum" readonly="1" invisible="not verification_checksum"/>
+                        </group>
+                    </group>
+                    <field name="scope_note" readonly="state == 'verified'"
+                           placeholder="说明该辖区对本公司的税种、期间、机构、交易及未消除不确定性的适用边界..."/>
+                    <group string="适用性依据附件">
+                        <field name="evidence_attachment_ids" widget="many2many_binary"
+                               readonly="state == 'verified'" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_profile_jurisdictions" model="ir.actions.act_window">
+        <field name="name">公司辖区适用快照</field>
+        <field name="res_model">sudo.cn.profile.jurisdiction</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_profile_jurisdiction_search"/>
+        <field name="context">{'search_default_group_company': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">为中国合规档案建立辖区适用快照</p>
+            <p>记录主管税务登记、住所、分支、工资社保或交易项目辖区，并保留核验依据。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_profile_jurisdictions" name="辖区适用快照"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_profile_jurisdictions" sequence="43"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <record id="view_compliance_profile_form_cn_jurisdiction" model="ir.ui.view">
+        <field name="name">sudo.compliance.profile.form.cn.jurisdiction</field>
+        <field name="model">sudo.compliance.profile</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_profile_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='obligation_ids']/.." position="before">
+                <page string="中国适用辖区" invisible="not is_china_profile">
+                    <div class="alert alert-info" role="alert">
+                        这里保存的是公司适用关系快照，不是自由文本地址。地方规则会按评估日期、财税领域和受控辖区层级自动选取，并在评估中冻结选择与排除依据。
+                    </div>
+                    <field name="cn_jurisdiction_assignment_ids"
+                           context="{'default_profile_id': id}">
+                        <list decoration-warning="state == 'draft'"
+                              decoration-danger="integrity_state in ('jurisdiction_invalid', 'checksum_mismatch')">
+                            <field name="jurisdiction_id"/>
+                            <field name="applicability_domain" widget="badge"/>
+                            <field name="role"/>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'verified'"
+                                   decoration-warning="state == 'draft'"/>
+                            <field name="integrity_state" widget="badge"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-warning="integrity_state == 'unverified'"
+                                   decoration-danger="integrity_state in ('jurisdiction_invalid', 'checksum_mismatch')"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_rule_version_list_cn_jurisdiction" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.version.list.cn.jurisdiction</field>
+        <field name="model">sudo.compliance.rule.version</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_version_list"/>
+        <field name="arch" type="xml">
+            <field name="evaluator_type" position="before">
+                <field name="cn_jurisdiction_scope_state" widget="badge" optional="show"
+                       decoration-success="cn_jurisdiction_scope_state in ('national', 'ready')"
+                       decoration-danger="cn_jurisdiction_scope_state == 'invalid'"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_rule_version_form_cn_jurisdiction" model="ir.ui.view">
+        <field name="name">sudo.compliance.rule.version.form.cn.jurisdiction</field>
+        <field name="model">sudo.compliance.rule.version</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_rule_version_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[1]" position="before">
+                <page string="中国地方适用范围" invisible="not cn_is_china_rule">
+                    <div class="alert alert-info" role="alert" invisible="cn_jurisdiction_ids">
+                        未选择辖区时，该版本按全国规则处理；系统不会根据名称或地址猜测地方适用性。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="cn_jurisdiction_scope_state != 'invalid'">
+                        <strong>地方范围阻断事项</strong>
+                        <field name="cn_jurisdiction_scope_blockers" nolabel="1" readonly="1"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cn_jurisdiction_scope_state" widget="badge" readonly="1"
+                                   decoration-success="cn_jurisdiction_scope_state in ('national', 'ready')"
+                                   decoration-danger="cn_jurisdiction_scope_state == 'invalid'"/>
+                            <field name="cn_jurisdiction_domain"
+                                   readonly="state != 'draft'" invisible="not cn_jurisdiction_ids"/>
+                        </group>
+                    </group>
+                    <field name="cn_jurisdiction_ids" widget="many2many_tags"
+                           domain="[('state', '=', 'active'), ('country_id.code', '=', 'CN')]"
+                           options="{'no_create': True}" readonly="state != 'draft'"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_assessment_form_cn_jurisdiction" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.form.cn.jurisdiction</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_assessment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
+                <field name="cn_is_china_assessment" invisible="1"/>
+                <div class="alert alert-danger" role="alert"
+                     invisible="cn_jurisdiction_coverage_state not in ('incomplete', 'integrity_error') and cn_jurisdiction_scope_integrity_state != 'checksum_mismatch'">
+                    <strong>地方规则范围受限：</strong>
+                    <field name="cn_jurisdiction_coverage_message" nolabel="1" readonly="1"/>
+                </div>
+                <div class="alert alert-success" role="alert"
+                     invisible="cn_jurisdiction_coverage_state != 'complete' or cn_jurisdiction_scope_integrity_state != 'verified'">
+                    <field name="cn_jurisdiction_coverage_message" nolabel="1" readonly="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//notebook/page[1]" position="before">
+                <page string="地方规则范围" invisible="not cn_is_china_assessment">
+                    <group>
+                        <group>
+                            <field name="cn_jurisdiction_coverage_state" widget="badge" readonly="1"
+                                   decoration-success="cn_jurisdiction_coverage_state in ('complete', 'not_required')"
+                                   decoration-warning="cn_jurisdiction_coverage_state == 'incomplete'"
+                                   decoration-danger="cn_jurisdiction_coverage_state == 'integrity_error'"/>
+                            <field name="cn_jurisdiction_scope_integrity_state" widget="badge" readonly="1"
+                                   decoration-success="cn_jurisdiction_scope_integrity_state == 'verified'"
+                                   decoration-warning="cn_jurisdiction_scope_integrity_state == 'unavailable'"
+                                   decoration-danger="cn_jurisdiction_scope_integrity_state == 'checksum_mismatch'"/>
+                            <field name="cn_jurisdiction_coverage_message" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="cn_jurisdiction_assignment_count" readonly="1"/>
+                            <field name="cn_jurisdiction_scoped_rule_count" readonly="1"/>
+                            <field name="cn_jurisdiction_selected_rule_count" readonly="1"/>
+                            <field name="cn_jurisdiction_excluded_rule_count" readonly="1"/>
+                            <field name="cn_jurisdiction_blocked_rule_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="冻结的选择与排除依据"
+                           invisible="not cn_jurisdiction_scope_checksum">
+                        <field name="cn_jurisdiction_scope_checksum" readonly="1"/>
+                        <field name="cn_jurisdiction_scope_snapshot_json" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
