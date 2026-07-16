@@ -256,6 +256,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China AI obligation context capability must be declared")
     if features.get("china_obligation_readiness_visibility") is not True:
         fail("China obligation readiness visibility capability must be declared")
+    if features.get("china_assessment_obligation_basis") is not True:
+        fail("China assessment obligation basis capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
         fail("China cross-border workbench overview must be declared")
     if features.get("china_cross_border_transaction_register") is not True:
@@ -2944,6 +2946,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China data readiness center capability is missing from {label}")
         if "china_assessment_data_basis" not in content:
             fail(f"China assessment data basis capability is missing from {label}")
+        if "china_assessment_obligation_basis" not in content:
+            fail(f"China assessment obligation basis capability is missing from {label}")
         if "china_remediation_rescan_visibility" not in content:
             fail(f"China remediation rescan capability is missing from {label}")
         if "china_risk_rule_basis_visibility" not in content:
@@ -3252,6 +3256,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_data_basis_dataset_count",
         "cn_data_basis_normalized_record_count",
         "cn_data_basis_next_action",
+        "cn_obligation_basis_state",
+        "cn_obligation_basis_candidate_count",
+        "cn_obligation_basis_pending_count",
+        "cn_obligation_basis_next_action",
+        "action_cn_open_assessment_obligation_basis",
         "action_cn_open_assessment_data_basis",
         "action_prepare_cn_formal_report",
         "action_open_cn_formal_reports",
@@ -3347,6 +3356,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_data_basis_blocked_count",
         "cn_data_basis_normalized_record_count",
         "cn_data_basis_next_action",
+        "cn_obligation_basis_state",
+        "cn_obligation_basis_candidate_count",
+        "cn_obligation_basis_applicable_count",
+        "cn_obligation_basis_pending_count",
+        "cn_obligation_basis_filing_count",
+        "cn_obligation_basis_next_action",
+        "action_cn_open_assessment_obligation_basis",
         "action_cn_open_assessment_data_basis",
         "sudo_country_pack_cn.action_cn_data_readiness_center",
     ):
@@ -3362,10 +3378,15 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_assessment_data_basis",
         "test_assessment_without_datasets_shows_missing_data_basis",
         "test_assessment_opens_period_scoped_data_basis",
+        "test_assessment_opens_profile_scoped_obligation_basis",
         "test_draft_dataset_makes_data_basis_warning",
+        "test_reviewed_obligations_make_assessment_obligation_basis_ready",
         "china_assessment_data_basis",
+        "china_assessment_obligation_basis",
         "cn_data_basis_state",
+        "cn_obligation_basis_state",
         "action_cn_open_assessment_data_basis",
+        "action_cn_open_assessment_obligation_basis",
     ):
         if required not in data_basis_test_content:
             fail(f"China assessment data basis runtime coverage is missing {required}")

@@ -39,8 +39,45 @@ class SudoChinaAssessmentDataBasis(models.Model):
         string="数据基础下一步",
         compute="_compute_cn_data_basis",
     )
+    cn_obligation_basis_state = fields.Selection(
+        [
+            ("missing", "No candidate obligations"),
+            ("attention", "Needs obligation review"),
+            ("ready", "Obligations reviewed"),
+        ],
+        string="China Obligation Basis",
+        compute="_compute_cn_data_basis",
+    )
+    cn_obligation_basis_candidate_count = fields.Integer(
+        string="Candidate Obligations",
+        compute="_compute_cn_data_basis",
+    )
+    cn_obligation_basis_applicable_count = fields.Integer(
+        string="Applicable Obligations",
+        compute="_compute_cn_data_basis",
+    )
+    cn_obligation_basis_pending_count = fields.Integer(
+        string="Obligations Needing Review",
+        compute="_compute_cn_data_basis",
+    )
+    cn_obligation_basis_filing_count = fields.Integer(
+        string="Applicable Filing Obligations",
+        compute="_compute_cn_data_basis",
+    )
+    cn_obligation_basis_next_action = fields.Char(
+        string="Obligation Basis Next Action",
+        compute="_compute_cn_data_basis",
+    )
 
-    @api.depends("profile_id", "period_start", "period_end", "country_id")
+    @api.depends(
+        "profile_id",
+        "period_start",
+        "period_end",
+        "country_id",
+        "profile_id.obligation_ids.applicability",
+        "profile_id.obligation_ids.authority_source_id",
+        "profile_id.obligation_ids.filing_required",
+    )
     def _compute_cn_data_basis(self):
         Dataset = self.env["sudo.cn.external.dataset"].sudo()
         for assessment in self:
@@ -52,6 +89,12 @@ class SudoChinaAssessmentDataBasis(models.Model):
                 "cn_data_basis_blocked_count": 0,
                 "cn_data_basis_normalized_record_count": 0,
                 "cn_data_basis_next_action": False,
+                "cn_obligation_basis_state": False,
+                "cn_obligation_basis_candidate_count": 0,
+                "cn_obligation_basis_applicable_count": 0,
+                "cn_obligation_basis_pending_count": 0,
+                "cn_obligation_basis_filing_count": 0,
+                "cn_obligation_basis_next_action": False,
             }
             if assessment.country_id.code != "CN":
                 assessment.update(defaults)
@@ -66,6 +109,7 @@ class SudoChinaAssessmentDataBasis(models.Model):
                     }
                 )
                 assessment.update(defaults)
+                assessment._cn_update_obligation_basis_values()
                 continue
 
             datasets = Dataset.search(assessment._cn_data_basis_domain())
@@ -102,6 +146,43 @@ class SudoChinaAssessmentDataBasis(models.Model):
             assessment.cn_data_basis_blocked_count = blocked_count
             assessment.cn_data_basis_normalized_record_count = normalized_count
             assessment.cn_data_basis_next_action = next_action
+            assessment._cn_update_obligation_basis_values()
+
+    def _cn_update_obligation_basis_values(self):
+        for assessment in self:
+            obligations = assessment.profile_id.obligation_ids
+            applicable = obligations.filtered(
+                lambda obligation: obligation.applicability == "applicable"
+            )
+            pending = obligations.filtered(
+                lambda obligation: obligation.applicability == "unknown"
+                or (
+                    obligation.applicability == "applicable"
+                    and not obligation.authority_source_id
+                )
+            )
+            filing = applicable.filtered(lambda obligation: obligation.filing_required)
+            if not obligations:
+                state = "missing"
+                next_action = _(
+                    "Seed China candidate obligations before treating the assessment perimeter as complete."
+                )
+            elif pending:
+                state = "attention"
+                next_action = _(
+                    "Confirm obligation applicability and link official sources before relying on scan results as complete."
+                )
+            else:
+                state = "ready"
+                next_action = _(
+                    "Obligation applicability is reviewed; keep official sources current and rescan when the profile changes."
+                )
+            assessment.cn_obligation_basis_state = state
+            assessment.cn_obligation_basis_candidate_count = len(obligations)
+            assessment.cn_obligation_basis_applicable_count = len(applicable)
+            assessment.cn_obligation_basis_pending_count = len(pending)
+            assessment.cn_obligation_basis_filing_count = len(filing)
+            assessment.cn_obligation_basis_next_action = next_action
 
     def _cn_data_basis_domain(self):
         self.ensure_one()
@@ -135,5 +216,19 @@ class SudoChinaAssessmentDataBasis(models.Model):
             "view_mode": "kanban,list,form",
             "domain": domain,
             "context": context,
+            "target": "current",
+        }
+
+    def action_cn_open_assessment_obligation_basis(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("China obligation basis"),
+            "res_model": "sudo.compliance.obligation",
+            "view_mode": "list,form",
+            "domain": [("profile_id", "=", self.profile_id.id)],
+            "context": {
+                "default_profile_id": self.profile_id.id,
+            },
             "target": "current",
         }

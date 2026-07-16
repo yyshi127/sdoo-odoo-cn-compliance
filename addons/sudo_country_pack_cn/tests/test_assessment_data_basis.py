@@ -47,6 +47,11 @@ class TestChinaAssessmentDataBasis(TransactionCase):
                 "china_assessment_data_basis"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_assessment_obligation_basis"
+            ]
+        )
 
     def test_assessment_without_datasets_shows_missing_data_basis(self):
         assessment = self._assessment()
@@ -55,6 +60,15 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         self.assertEqual(assessment.cn_data_basis_state, "missing")
         self.assertEqual(assessment.cn_data_basis_dataset_count, 0)
         self.assertIn("电子发票", assessment.cn_data_basis_next_action)
+        self.assertEqual(assessment.cn_obligation_basis_state, "attention")
+        self.assertEqual(
+            assessment.cn_obligation_basis_candidate_count,
+            len(self.profile.obligation_ids),
+        )
+        self.assertEqual(
+            assessment.cn_obligation_basis_pending_count,
+            len(self.profile.obligation_ids),
+        )
 
     def test_assessment_opens_period_scoped_data_basis(self):
         assessment = self._assessment()
@@ -68,6 +82,14 @@ class TestChinaAssessmentDataBasis(TransactionCase):
             action["context"]["search_default_group_dataset_type"],
             1,
         )
+
+    def test_assessment_opens_profile_scoped_obligation_basis(self):
+        assessment = self._assessment()
+        action = assessment.action_cn_open_assessment_obligation_basis()
+
+        self.assertEqual(action["res_model"], "sudo.compliance.obligation")
+        self.assertIn(("profile_id", "=", self.profile.id), action["domain"])
+        self.assertEqual(action["context"]["default_profile_id"], self.profile.id)
 
     def test_draft_dataset_makes_data_basis_warning(self):
         self.env["sudo.cn.external.dataset"].create(
@@ -87,3 +109,20 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         self.assertEqual(assessment.cn_data_basis_state, "warning")
         self.assertEqual(assessment.cn_data_basis_dataset_count, 1)
         self.assertEqual(assessment.cn_data_basis_warning_count, 1)
+
+    def test_reviewed_obligations_make_assessment_obligation_basis_ready(self):
+        self.profile.obligation_ids.write(
+            {
+                "applicability": "not_applicable",
+                "justification": (
+                    "测试档案已逐项确认候选义务当前不适用，用于验证评估边界显示。"
+                ),
+            }
+        )
+        assessment = self._assessment()
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_obligation_basis_state, "ready")
+        self.assertEqual(assessment.cn_obligation_basis_pending_count, 0)
+        self.assertEqual(assessment.cn_obligation_basis_applicable_count, 0)
+        self.assertTrue(assessment.cn_obligation_basis_next_action)
