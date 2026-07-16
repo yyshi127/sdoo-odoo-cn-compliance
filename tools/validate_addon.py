@@ -223,6 +223,164 @@ def _search_group_by_field_names(context: str) -> set[str]:
     return fields
 
 
+def _env_model_name(value: ast.AST) -> str | None:
+    if isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute):
+        return _env_model_name(value.func.value)
+    if not isinstance(value, ast.Subscript):
+        return None
+    if not (
+        isinstance(value.value, ast.Attribute)
+        and value.value.attr == "env"
+        and isinstance(value.value.value, ast.Name)
+        and value.value.value.id == "self"
+    ):
+        return None
+    try:
+        model_name = ast.literal_eval(value.slice)
+    except (TypeError, ValueError):
+        return None
+    return model_name if isinstance(model_name, str) else None
+
+
+def _domain_field_names(value: ast.AST, variables: dict[str, set[str]]) -> set[str] | None:
+    if isinstance(value, ast.Name):
+        return variables.get(value.id)
+    if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
+        left = _domain_field_names(value.left, variables)
+        right = _domain_field_names(value.right, variables)
+        if left is None or right is None:
+            return None
+        return left | right
+    if not isinstance(value, (ast.List, ast.Tuple)):
+        return None
+    fields: set[str] = set()
+    for item in value.elts:
+        if isinstance(item, (ast.List, ast.Tuple)) and item.elts:
+            first = item.elts[0]
+            if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                fields.add(first.value.split(".", 1)[0])
+    return fields
+
+
+def _function_domain_variables(node: ast.FunctionDef) -> dict[str, set[str]]:
+    assignments: list[tuple[str, ast.AST]] = []
+    for item in ast.walk(node):
+        if not isinstance(item, ast.Assign) or len(item.targets) != 1:
+            continue
+        target = item.targets[0]
+        if isinstance(target, ast.Name):
+            assignments.append((target.id, item.value))
+
+    variables: dict[str, set[str]] = {}
+    changed = True
+    while changed:
+        changed = False
+        for name, value in assignments:
+            fields = _domain_field_names(value, variables)
+            if fields is not None and variables.get(name) != fields:
+                variables[name] = fields
+                changed = True
+    return variables
+
+
+def _function_model_aliases(node: ast.FunctionDef) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for item in ast.walk(node):
+        if not isinstance(item, ast.Assign) or len(item.targets) != 1:
+            continue
+        target = item.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        model_name = _env_model_name(item.value)
+        if model_name:
+            aliases[target.id] = model_name
+    return aliases
+
+
+def _call_receiver_model(
+    value: ast.AST,
+    aliases: dict[str, str],
+    current_model: str | None,
+) -> str | None:
+    if isinstance(value, ast.Name):
+        if value.id == "self":
+            return current_model
+        return aliases.get(value.id)
+    if isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute):
+        inherited = _call_receiver_model(value.func.value, aliases, current_model)
+        if inherited:
+            return inherited
+    return _env_model_name(value)
+
+
+def validate_python_domains_do_not_search_nonstored_computed_fields() -> None:
+    computed_fields = _nonstored_computed_fields_by_model()
+    if not computed_fields:
+        return
+    checked_methods = {"search", "search_count", "filtered_domain", "_read_group"}
+    for path in sorted((ADDON_ROOT / "models").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        classes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+        for class_node in classes:
+            model_names = _model_names_for_class(class_node)
+            current_model = next(iter(model_names)) if len(model_names) == 1 else None
+            functions = [
+                node for node in ast.walk(class_node) if isinstance(node, ast.FunctionDef)
+            ]
+            for function in functions:
+                aliases = _function_model_aliases(function)
+                domain_variables = _function_domain_variables(function)
+                for call in (node for node in ast.walk(function) if isinstance(node, ast.Call)):
+                    if not (
+                        isinstance(call.func, ast.Attribute)
+                        and call.func.attr in checked_methods
+                        and call.args
+                    ):
+                        continue
+                    model_name = _call_receiver_model(
+                        call.func.value,
+                        aliases,
+                        current_model,
+                    )
+                    if not model_name or model_name not in computed_fields:
+                        continue
+                    domain_fields = _domain_field_names(call.args[0], domain_variables)
+                    if domain_fields is None:
+                        continue
+                    used = domain_fields & computed_fields[model_name]
+                    if used:
+                        fail(
+                            "Python ORM domains cannot search non-stored computed "
+                            f"fields {sorted(used)} on {model_name} in {path} "
+                            f"function {function.name}"
+                        )
+        for function in (
+            node for node in tree.body if isinstance(node, ast.FunctionDef)
+        ):
+            aliases = _function_model_aliases(function)
+            domain_variables = _function_domain_variables(function)
+            for call in (node for node in ast.walk(function) if isinstance(node, ast.Call)):
+                if not (
+                    isinstance(call.func, ast.Attribute)
+                    and call.func.attr in checked_methods
+                    and call.args
+                ):
+                    continue
+                model_name = _call_receiver_model(call.func.value, aliases, None)
+                if not model_name or model_name not in computed_fields:
+                    continue
+                domain_fields = _domain_field_names(call.args[0], domain_variables)
+                if domain_fields is None:
+                    continue
+                used = domain_fields & computed_fields[model_name]
+                if used:
+                    fail(
+                        "Python ORM domains cannot search non-stored computed "
+                        f"fields {sorted(used)} on {model_name} in {path} "
+                        f"function {function.name}"
+                    )
+
+
 def validate_search_views_do_not_filter_nonstored_computed_fields() -> None:
     computed_fields = _nonstored_computed_fields_by_model()
     if not computed_fields:
@@ -4197,6 +4355,7 @@ def main() -> int:
     validate_rule_review_candidates(source_ids, version_source_refs)
     validate_upgrade_migration(manifest, source_ids, version_source_refs)
     validate_search_views_do_not_filter_nonstored_computed_fields()
+    validate_python_domains_do_not_search_nonstored_computed_fields()
     validate_taxpayer_classification_security()
     validate_external_dataset_security()
     validate_invoice_normalization_security()
