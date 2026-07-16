@@ -274,6 +274,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China workbench state badge clarity capability must be declared")
     if features.get("china_risk_card_state_badge_clarity") is not True:
         fail("China risk card state badge clarity capability must be declared")
+    if features.get("china_report_readiness_badge_clarity") is not True:
+        fail("China report readiness badge clarity capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3005,6 +3007,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China risk card state badge clarity capability is missing from {label}"
             )
+        if "china_report_readiness_badge_clarity" not in content:
+            fail(
+                f"China report readiness badge clarity capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3320,6 +3326,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_prepare_cn_formal_report",
         "action_open_cn_formal_reports",
         "action_cn_report_readiness_kanban_view",
+        'decoration-success="cn_report_readiness_state in (\'ready\', \'issued\')"',
+        'decoration-danger="cn_report_readiness_state in (\'needs_review\', \'needs_remediation\')"',
+        'decoration-success="cn_data_basis_state == \'ready\'"',
+        'decoration-warning="cn_obligation_basis_state in (\'missing\', \'attention\')"',
     ):
         if required not in report_view_content:
             fail(f"China report readiness UI is missing {required}")
@@ -3394,10 +3404,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for test_name in (
         "test_completed_clean_assessment_is_report_ready",
         "test_incomplete_assessment_requires_scan_completion",
+        "test_country_pack_advertises_report_readiness_badge_clarity",
         "test_readiness_navigation_actions_are_scoped_to_assessment",
     ):
         if f"def {test_name}(" not in report_test_content:
             fail(f"China report readiness runtime coverage is missing {test_name}")
+    if "china_report_readiness_badge_clarity" not in report_test_content:
+        fail("China report readiness badge clarity runtime coverage is missing")
 
     data_basis_model_content = (
         ADDON_ROOT / "models" / "assessment_data_basis.py"

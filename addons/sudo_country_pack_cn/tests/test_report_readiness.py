@@ -62,6 +62,13 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertFalse(assessment.cn_report_can_prepare)
         self.assertIn("规则扫描", assessment.cn_report_next_action)
 
+    def test_country_pack_advertises_report_readiness_badge_clarity(self):
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_readiness_badge_clarity"
+            ]
+        )
+
     def test_readiness_navigation_actions_are_scoped_to_assessment(self):
         assessment = self._assessment()
 

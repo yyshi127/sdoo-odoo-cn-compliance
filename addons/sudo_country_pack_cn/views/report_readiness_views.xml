@@ -107,7 +107,10 @@
                                         <field name="period_end"/>
                                     </div>
                                 </div>
-                                <field name="cn_report_readiness_state" widget="badge"/>
+                                <field name="cn_report_readiness_state" widget="badge"
+                                       decoration-success="cn_report_readiness_state in ('ready', 'issued')"
+                                       decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
+                                       decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
                             </div>
                             <div class="mt-3 text-muted">
                                 <field name="cn_report_next_action"/>
@@ -118,7 +121,10 @@
                                         <div class="text-muted small">数据基础</div>
                                         <div class="fw-semibold"><field name="cn_data_basis_next_action"/></div>
                                     </div>
-                                    <field name="cn_data_basis_state" widget="badge"/>
+                                    <field name="cn_data_basis_state" widget="badge"
+                                           decoration-success="cn_data_basis_state == 'ready'"
+                                           decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
+                                           decoration-danger="cn_data_basis_state == 'blocked'"/>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
@@ -127,7 +133,9 @@
                                         <div class="text-muted small">Tax obligation basis</div>
                                         <div class="fw-semibold"><field name="cn_obligation_basis_next_action"/></div>
                                     </div>
-                                    <field name="cn_obligation_basis_state" widget="badge"/>
+                                    <field name="cn_obligation_basis_state" widget="badge"
+                                           decoration-success="cn_obligation_basis_state == 'ready'"
+                                           decoration-warning="cn_obligation_basis_state in ('missing', 'attention')"/>
                                 </div>
                             </div>
                             <div class="row g-2 mt-3">
@@ -232,7 +240,10 @@
                 <group string="中国报告准备度" col="4"
                        invisible="country_id.code != 'CN'">
                     <group>
-                        <field name="cn_report_readiness_state" widget="badge"/>
+                        <field name="cn_report_readiness_state" widget="badge"
+                               decoration-success="cn_report_readiness_state in ('ready', 'issued')"
+                               decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
+                               decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
                         <field name="cn_report_next_action"/>
                         <field name="cn_report_latest_report_id"/>
                     </group>
@@ -241,14 +252,19 @@
                         <field name="cn_report_open_task_count"/>
                         <field name="cn_report_limitation_count"/>
                         <field name="cn_report_pending_tax_impact_count"/>
-                        <field name="cn_data_basis_state" widget="badge"/>
+                        <field name="cn_data_basis_state" widget="badge"
+                               decoration-success="cn_data_basis_state == 'ready'"
+                               decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
+                               decoration-danger="cn_data_basis_state == 'blocked'"/>
                         <field name="cn_data_basis_dataset_count"/>
                         <field name="cn_data_basis_ready_count"/>
                         <field name="cn_data_basis_warning_count"/>
                         <field name="cn_data_basis_blocked_count"/>
                         <field name="cn_data_basis_normalized_record_count"/>
                         <field name="cn_data_basis_next_action"/>
-                        <field name="cn_obligation_basis_state" widget="badge"/>
+                        <field name="cn_obligation_basis_state" widget="badge"
+                               decoration-success="cn_obligation_basis_state == 'ready'"
+                               decoration-warning="cn_obligation_basis_state in ('missing', 'attention')"/>
                         <field name="cn_obligation_basis_candidate_count"/>
                         <field name="cn_obligation_basis_applicable_count"/>
                         <field name="cn_obligation_basis_pending_count"/>
