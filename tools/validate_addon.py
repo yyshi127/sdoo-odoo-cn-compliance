@@ -248,6 +248,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report center visibility capability must be declared")
     if features.get("china_report_obligation_readiness") is not True:
         fail("China report obligation readiness capability must be declared")
+    if features.get("china_report_remediation_verification") is not True:
+        fail("China report remediation verification capability must be declared")
     if features.get("china_traceability_matrix_visibility") is not True:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
@@ -2458,6 +2460,12 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_next_action",
         "obligation_readiness",
         "_obligation_readiness_payload",
+        "remediation_task_count",
+        "remediation_verified_count",
+        "remediation_pending_verification_count",
+        "verification_assessment_id",
+        "verification_assessment_name",
+        "remediation_verification",
         "action_cn_open_report_findings",
         "action_cn_open_report_tasks",
         "action_cn_open_report_evidence",
@@ -2535,6 +2543,8 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "cn_report_traceability_next_action",
+        "remediation_pending_verification_count",
+        "remediation_verified_count",
         "action_cn_open_report_findings",
         "action_cn_open_report_tasks",
         "action_cn_open_report_evidence",
@@ -2557,6 +2567,8 @@ def validate_formal_compliance_report() -> None:
         "不计算净额",
         "AI 分析仅为辅助材料",
         "纳税义务适用性边界",
+        "待验证复扫",
+        "verification_assessment_name",
         "内容快照 SHA-256",
         "批准 SHA-256",
     ):
@@ -2574,6 +2586,7 @@ def validate_formal_compliance_report() -> None:
         "test_pdf_tampering_is_detected_and_download_blocked",
         "test_approval_tampering_is_detected_and_download_blocked",
         "test_open_verification_task_prevents_clear_conclusion",
+        "test_closed_task_without_verification_still_requires_action",
         "test_same_person_approval_requires_recorded_exception",
         "test_new_issue_supersedes_previous_report_without_rewriting_pdf",
         "test_withdrawal_preserves_artifact_and_audit_history",
@@ -2590,6 +2603,8 @@ def validate_formal_compliance_report() -> None:
     for required in (
         "china_traceability_matrix_visibility",
         "china_report_obligation_readiness",
+        "china_report_remediation_verification",
+        "remediation_pending_verification_count",
         "obligation_readiness",
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
@@ -2928,6 +2943,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report readiness capability is missing from {label}")
         if "china_report_obligation_readiness" not in content:
             fail(f"China report obligation readiness capability is missing from {label}")
+        if "china_report_remediation_verification" not in content:
+            fail(f"China report remediation verification capability is missing from {label}")
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_ai_guidance_visibility" not in content:

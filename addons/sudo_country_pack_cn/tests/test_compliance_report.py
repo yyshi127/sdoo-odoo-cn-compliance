@@ -313,6 +313,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_report_remediation_verification"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_traceability_matrix_visibility"
             ]
         )
@@ -443,7 +448,40 @@ class TestChinaFormalComplianceReport(TransactionCase):
         report.invalidate_recordset()
 
         self.assertEqual(report.open_task_count, 1)
+        self.assertEqual(report.remediation_task_count, 1)
+        self.assertEqual(report.remediation_verified_count, 0)
+        self.assertEqual(report.remediation_pending_verification_count, 1)
         self.assertEqual(report.conclusion_state, "limited_action_required")
+        self.assertEqual(
+            report.snapshot_json["tasks"][0]["verification_assessment_id"],
+            assessment.id,
+        )
+
+    def test_closed_task_without_verification_still_requires_action(self):
+        task = self.env["sudo.compliance.task"].create_from_finding(self.finding)
+        task._transition_write(
+            {
+                "state": "done",
+                "verification_state": "failed",
+                "completion_notes": (
+                    "整改处理已经登记，但验证复扫尚未通过，报告不得视为完全闭环。"
+                ),
+            }
+        )
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        self.assertEqual(report.open_task_count, 0)
+        self.assertEqual(report.remediation_task_count, 1)
+        self.assertEqual(report.remediation_verified_count, 0)
+        self.assertEqual(report.remediation_pending_verification_count, 1)
+        self.assertEqual(report.conclusion_state, "limited_action_required")
+        self.assertEqual(
+            report.snapshot_json["tasks"][0]["verification_state"],
+            "failed",
+        )
 
     def test_same_person_approval_requires_recorded_exception(self):
         report = self._report(
@@ -599,5 +637,6 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertIn("不是纳税申报表".encode(), html)
         self.assertIn("不计算净额".encode(), html)
         self.assertIn("AI 分析仅为辅助材料".encode(), html)
+        self.assertIn("待验证复扫".encode(), html)
         self.assertIn("预览稿，尚未签发".encode(), html)
         self.assertIn(report.snapshot_checksum.encode(), html)

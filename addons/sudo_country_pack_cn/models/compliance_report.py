@@ -276,6 +276,15 @@ class SudoChinaComplianceReport(models.Model):
     high_count = fields.Integer(string="高风险", readonly=True, copy=False)
     open_task_count = fields.Integer(string="未关闭整改", readonly=True, copy=False)
     overdue_task_count = fields.Integer(string="逾期整改", readonly=True, copy=False)
+    remediation_task_count = fields.Integer(
+        string="Remediation Tasks", readonly=True, copy=False
+    )
+    remediation_verified_count = fields.Integer(
+        string="Verified Remediation", readonly=True, copy=False
+    )
+    remediation_pending_verification_count = fields.Integer(
+        string="Remediation Pending Verification", readonly=True, copy=False
+    )
     evidence_count = fields.Integer(string="证据记录", readonly=True, copy=False)
     verified_evidence_count = fields.Integer(
         string="已验证证据", readonly=True, copy=False
@@ -474,6 +483,9 @@ class SudoChinaComplianceReport(models.Model):
                     "high_count": 0,
                     "open_task_count": 0,
                     "overdue_task_count": 0,
+                    "remediation_task_count": 0,
+                    "remediation_verified_count": 0,
+                    "remediation_pending_verification_count": 0,
                     "evidence_count": 0,
                     "verified_evidence_count": 0,
                     "tax_impact_pending_count": 0,
@@ -741,6 +753,15 @@ class SudoChinaComplianceReport(models.Model):
                 "due_date": _date_value(task.due_date),
                 "is_overdue": bool(task.is_overdue),
                 "verification_state": task.verification_state,
+                "verification_assessment_id": (
+                    task.verification_assessment_id.id or None
+                ),
+                "verification_assessment_name": (
+                    task.verification_assessment_id.display_name or None
+                ),
+                "verification_assessment_state": (
+                    task.verification_assessment_id.state or None
+                ),
                 "verified_at": _datetime_value(task.verified_at),
                 "verified_by_id": task.verified_by_id.id or None,
                 "completion_notes": task.completion_notes or None,
@@ -894,6 +915,11 @@ class SudoChinaComplianceReport(models.Model):
             )
             or any(
                 task["state"] not in ("done", "cancelled")
+                or (
+                    task["state"] != "cancelled"
+                    and task["verification_state"]
+                    not in ("verified", "not_required")
+                )
                 for task in payload["tasks"]
             )
         )
@@ -983,6 +1009,19 @@ class SudoChinaComplianceReport(models.Model):
             for task in tasks
             if task["state"] not in ("done", "cancelled")
         ]
+        remediation_tasks = [
+            task for task in tasks if task["state"] != "cancelled"
+        ]
+        verified_remediation_tasks = [
+            task
+            for task in remediation_tasks
+            if task["verification_state"] == "verified"
+        ]
+        pending_verification_tasks = [
+            task
+            for task in remediation_tasks
+            if task["verification_state"] not in ("verified", "not_required")
+        ]
         return {
             "conclusion_state": conclusion,
             "has_material_limitations": has_limits,
@@ -992,6 +1031,11 @@ class SudoChinaComplianceReport(models.Model):
             "open_task_count": len(open_tasks),
             "overdue_task_count": len(
                 [task for task in open_tasks if task["is_overdue"]]
+            ),
+            "remediation_task_count": len(remediation_tasks),
+            "remediation_verified_count": len(verified_remediation_tasks),
+            "remediation_pending_verification_count": len(
+                pending_verification_tasks
             ),
             "evidence_count": len(evidence),
             "verified_evidence_count": len(
@@ -1024,6 +1068,7 @@ class SudoChinaComplianceReport(models.Model):
         "has_material_limitations",
         "open_task_count",
         "overdue_task_count",
+        "remediation_pending_verification_count",
     )
     def _compute_cn_report_center_display(self):
         for report in self:
@@ -1074,6 +1119,8 @@ class SudoChinaComplianceReport(models.Model):
                 stage = "issued"
                 if report.open_task_count:
                     next_action = "跟踪未关闭整改，并在整改后重新评估或出具后续版本。"
+                elif report.remediation_pending_verification_count:
+                    next_action = "整改已关闭但仍需验证复扫或确认无需复扫。"
                 elif report.has_material_limitations:
                     next_action = "报告已签发，但使用时必须保留范围和数据限制说明。"
                 else:
@@ -1092,6 +1139,7 @@ class SudoChinaComplianceReport(models.Model):
         "finding_count",
         "open_task_count",
         "overdue_task_count",
+        "remediation_pending_verification_count",
         "evidence_count",
         "verified_evidence_count",
         "tax_impact_pending_count",
@@ -1115,6 +1163,8 @@ class SudoChinaComplianceReport(models.Model):
                 gaps.append("open_tasks")
             if report.overdue_task_count:
                 gaps.append("overdue_tasks")
+            if report.remediation_pending_verification_count:
+                gaps.append("remediation_verification")
             if report.evidence_count != report.verified_evidence_count:
                 gaps.append("evidence")
             if report.tax_impact_pending_count:
@@ -1155,6 +1205,11 @@ class SudoChinaComplianceReport(models.Model):
                 report.cn_report_traceability_state = "action_required"
                 report.cn_report_traceability_next_action = _(
                     "Confirm tax obligation applicability or keep the report limitation visible before relying on distribution."
+                )
+            elif "remediation_verification" in gaps:
+                report.cn_report_traceability_state = "action_required"
+                report.cn_report_traceability_next_action = _(
+                    "Complete remediation verification rescans or document why verification is not required."
                 )
             else:
                 report.cn_report_traceability_state = "action_required"
@@ -1333,6 +1388,9 @@ class SudoChinaComplianceReport(models.Model):
                     "high_count": 0,
                     "open_task_count": 0,
                     "overdue_task_count": 0,
+                    "remediation_task_count": 0,
+                    "remediation_verified_count": 0,
+                    "remediation_pending_verification_count": 0,
                     "evidence_count": 0,
                     "verified_evidence_count": 0,
                     "tax_impact_pending_count": 0,

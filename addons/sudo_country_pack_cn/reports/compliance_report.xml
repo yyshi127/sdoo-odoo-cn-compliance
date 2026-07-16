@@ -205,6 +205,24 @@
                         </table>
 
                         <h2 style="font-size: 17px; color: #17313b;">五、整改与证据状态</h2>
+                        <table class="table table-sm table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>整改任务</th>
+                                    <th>已验证复扫</th>
+                                    <th>待验证复扫</th>
+                                    <th>未关闭整改</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span t-esc="report.remediation_task_count"/></td>
+                                    <td><span t-esc="report.remediation_verified_count"/></td>
+                                    <td><span t-esc="report.remediation_pending_verification_count"/></td>
+                                    <td><span t-esc="report.open_task_count"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
                         <table class="table table-sm table-bordered">
                             <thead>
                                 <tr>
@@ -213,11 +231,12 @@
                                     <th>截止日期</th>
                                     <th>状态</th>
                                     <th>验证状态</th>
+                                    <th>验证评估</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-if="not payload.get('tasks')">
-                                    <td colspan="5">本次快照没有整改任务。</td>
+                                    <td colspan="6">本次快照没有整改任务。</td>
                                 </tr>
                                 <tr t-foreach="payload.get('tasks', [])" t-as="task">
                                     <td><span t-esc="task.get('name')"/></td>
@@ -225,6 +244,7 @@
                                     <td><span t-esc="task.get('due_date') or '-'"/></td>
                                     <td><span t-esc="report.report_label('task', task.get('state'))"/></td>
                                     <td><span t-esc="task.get('verification_state') or '-'"/></td>
+                                    <td><span t-esc="task.get('verification_assessment_name') or '-'"/></td>
                                 </tr>
                             </tbody>
                         </table>

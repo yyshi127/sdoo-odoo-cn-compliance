@@ -56,6 +56,9 @@
                 <field name="high_count"/>
                 <field name="open_task_count"/>
                 <field name="overdue_task_count"/>
+                <field name="remediation_task_count"/>
+                <field name="remediation_verified_count"/>
+                <field name="remediation_pending_verification_count"/>
                 <field name="evidence_count"/>
                 <field name="verified_evidence_count"/>
                 <field name="state"/>
@@ -112,6 +115,11 @@
                                             <span> / 逾期 </span>
                                             <field name="overdue_task_count"/>
                                         </div>
+                                        <div class="text-muted small">
+                                            Verified <field name="remediation_verified_count"/>
+                                            <span> / Pending </span>
+                                            <field name="remediation_pending_verification_count"/>
+                                        </div>
                                     </button>
                                 </div>
                                 <div class="col-4">
@@ -167,6 +175,10 @@
                 <field name="critical_count" decoration-danger="critical_count &gt; 0"/>
                 <field name="high_count" decoration-danger="high_count &gt; 0"/>
                 <field name="open_task_count" decoration-warning="open_task_count &gt; 0"/>
+                <field name="remediation_pending_verification_count"
+                       decoration-warning="remediation_pending_verification_count &gt; 0"
+                       optional="show"/>
+                <field name="remediation_verified_count" optional="hide"/>
                 <field name="conclusion_state" widget="badge"
                        decoration-success="conclusion_state == 'clear'"
                        decoration-danger="conclusion_state in ('action_required', 'limited_action_required')"
@@ -306,6 +318,10 @@
                                    decoration-warning="open_task_count &gt; 0"/>
                             <field name="overdue_task_count"
                                    decoration-danger="overdue_task_count &gt; 0"/>
+                            <field name="remediation_task_count"/>
+                            <field name="remediation_verified_count"/>
+                            <field name="remediation_pending_verification_count"
+                                   decoration-warning="remediation_pending_verification_count &gt; 0"/>
                             <field name="evidence_count"/>
                             <field name="verified_evidence_count"/>
                             <field name="cn_report_traceability_state" widget="badge"/>
