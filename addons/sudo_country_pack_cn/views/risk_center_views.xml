@@ -86,6 +86,11 @@
                 <field name="cn_risk_evidence_state" widget="badge" optional="show"
                        decoration-success="cn_risk_evidence_state == 'verified'"
                        decoration-warning="cn_risk_evidence_state == 'partial'"/>
+                <field name="cn_ai_guidance_state" widget="badge" optional="show"
+                       decoration-success="cn_ai_guidance_state == 'generated'"
+                       decoration-info="cn_ai_guidance_state == 'ready'"
+                       decoration-warning="cn_ai_guidance_state == 'limited'"/>
+                <field name="cn_ai_guidance_next_action" optional="hide"/>
                 <field name="cn_tax_impact_case_count" optional="show"/>
                 <field name="task_is_overdue" invisible="1"/>
             </list>
@@ -123,6 +128,9 @@
                 <field name="task_is_overdue"/>
                 <field name="cn_tax_impact_case_count"/>
                 <field name="ai_analysis_count"/>
+                <field name="cn_ai_guidance_state"/>
+                <field name="cn_ai_guidance_next_action"/>
+                <field name="cn_ai_guidance_input_checksum"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.task_is_overdue.raw_value || record.risk_level.raw_value == 'critical' || record.risk_level.raw_value == 'high' ? 'border-danger' : record.risk_level.raw_value == 'medium' ? 'border-warning' : 'border-info'}">
@@ -164,6 +172,20 @@
                                 </div>
                             </div>
                             <div class="row g-2 mt-3">
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="text-muted small">受控 AI 引导</div>
+                                                <div class="fw-semibold"><field name="cn_ai_guidance_next_action"/></div>
+                                                <div class="text-muted small">
+                                                    输入指纹 <field name="cn_ai_guidance_input_checksum"/>
+                                                </div>
+                                            </div>
+                                            <field name="cn_ai_guidance_state" widget="badge"/>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">复核状态</div>

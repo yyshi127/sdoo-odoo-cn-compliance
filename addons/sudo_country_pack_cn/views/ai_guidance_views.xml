@@ -31,6 +31,12 @@
         <field name="arch" type="xml">
             <field name="review_state" position="after">
                 <field name="ai_analysis_count" optional="show"/>
+                <field name="cn_ai_guidance_state" widget="badge" optional="show"
+                       decoration-success="cn_ai_guidance_state == 'generated'"
+                       decoration-info="cn_ai_guidance_state == 'ready'"
+                       decoration-warning="cn_ai_guidance_state == 'limited'"/>
+                <field name="cn_ai_guidance_next_action" optional="hide"/>
+                <field name="cn_ai_guidance_input_checksum" optional="hide"/>
             </field>
         </field>
     </record>

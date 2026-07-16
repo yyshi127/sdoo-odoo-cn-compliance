@@ -246,6 +246,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("formal compliance report capability must be declared")
     if features.get("china_report_center_visibility") is not True:
         fail("China report center visibility capability must be declared")
+    if features.get("china_ai_guidance_visibility") is not True:
+        fail("China AI guidance visibility capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
         fail("China cross-border workbench overview must be declared")
     if features.get("vat_filing_payment_archive") is not True:
@@ -2884,6 +2886,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report readiness capability is missing from {label}")
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
+        if "china_ai_guidance_visibility" not in content:
+            fail(f"China AI guidance visibility capability is missing from {label}")
         if "china_evidence_center" not in content:
             fail(f"China evidence center capability is missing from {label}")
         if "china_process_visibility" not in content:
@@ -3169,6 +3173,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         '_inherit = "sudo.compliance.finding"',
         "AI_GUIDANCE_PROVIDER",
         "AI_GUIDANCE_PROMPT_VERSION",
+        "cn_ai_guidance_state",
+        "cn_ai_guidance_next_action",
+        "cn_ai_guidance_input_checksum",
         "_cn_ai_guidance_input",
         "_cn_ai_guidance_text",
         "action_generate_cn_ai_guidance",
@@ -3189,6 +3196,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_generate_cn_ai_guidance",
         "action_open_ai_analyses",
         "ai_analysis_count",
+        "cn_ai_guidance_state",
+        "cn_ai_guidance_next_action",
+        "cn_ai_guidance_input_checksum",
         "sudo_global_finance.view_compliance_ai_analysis_list",
     ):
         if required not in ai_view_content:
@@ -3196,6 +3206,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
     if "action_generate_cn_ai_guidance" not in risk_view_content:
         fail("China risk center must expose controlled AI guidance generation")
+    for required in (
+        "cn_ai_guidance_state",
+        "cn_ai_guidance_next_action",
+        "cn_ai_guidance_input_checksum",
+    ):
+        if required not in risk_view_content:
+            fail(f"China risk center AI guidance visibility is missing {required}")
 
     evidence_model_content = (
         ADDON_ROOT / "models" / "evidence_center.py"
@@ -3285,6 +3302,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ).read_text(encoding="utf-8")
     for test_name in (
         "test_generate_controlled_ai_guidance_snapshot",
+        "test_ai_guidance_visibility_marks_limited_inputs",
         "test_country_pack_advertises_controlled_ai_guidance",
     ):
         if f"def {test_name}(" not in ai_test_content:

@@ -1,7 +1,7 @@
 import hashlib
 import json
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 
@@ -24,6 +24,73 @@ def _checksum(payload):
 
 class SudoChinaAiGuidanceFinding(models.Model):
     _inherit = "sudo.compliance.finding"
+
+    cn_ai_guidance_state = fields.Selection(
+        [
+            ("unavailable", "不适用"),
+            ("ready", "可生成"),
+            ("limited", "带限制"),
+            ("generated", "已生成"),
+        ],
+        string="AI 引导状态",
+        compute="_compute_cn_ai_guidance_display",
+    )
+    cn_ai_guidance_next_action = fields.Char(
+        string="AI 引导下一步",
+        compute="_compute_cn_ai_guidance_display",
+    )
+    cn_ai_guidance_input_checksum = fields.Char(
+        string="AI 引导输入指纹",
+        compute="_compute_cn_ai_guidance_display",
+    )
+
+    @api.depends(
+        "assessment_id.country_id",
+        "result",
+        "source_warning",
+        "professional_warning",
+        "missing_fact_keys",
+        "missing_parameter_keys",
+        "ai_analysis_count",
+        "write_date",
+        "current_task_id.write_date",
+    )
+    def _compute_cn_ai_guidance_display(self):
+        for finding in self:
+            if (
+                finding.assessment_id.country_id.code != "CN"
+                or finding.result not in ("fail", "unknown", "error")
+            ):
+                finding.cn_ai_guidance_state = "unavailable"
+                finding.cn_ai_guidance_next_action = _(
+                    "当前事项无需生成中国受控 AI 引导。"
+                )
+                finding.cn_ai_guidance_input_checksum = False
+                continue
+
+            payload = finding._cn_ai_guidance_input()
+            finding.cn_ai_guidance_input_checksum = _checksum(payload)
+            has_limit = (
+                finding.source_warning
+                or finding.professional_warning
+                or bool(finding.missing_fact_keys)
+                or bool(finding.missing_parameter_keys)
+            )
+            if finding.ai_analysis_count:
+                finding.cn_ai_guidance_state = "generated"
+                finding.cn_ai_guidance_next_action = _(
+                    "打开已有 AI 引导，按步骤核对事实、证据、整改和报告限制。"
+                )
+            elif has_limit:
+                finding.cn_ai_guidance_state = "limited"
+                finding.cn_ai_guidance_next_action = _(
+                    "可生成受控 AI 引导，但必须先标明来源、专业签核或数据限制。"
+                )
+            else:
+                finding.cn_ai_guidance_state = "ready"
+                finding.cn_ai_guidance_next_action = _(
+                    "生成受控 AI 引导，获取分步骤处理建议和证据清单。"
+                )
 
     def _cn_ai_guidance_input(self):
         self.ensure_one()

@@ -101,10 +101,15 @@ class TestChinaControlledAiGuidance(TransactionCase):
     def test_generate_controlled_ai_guidance_snapshot(self):
         finding = self._finding()
 
+        self.assertEqual(finding.cn_ai_guidance_state, "ready")
+        self.assertTrue(finding.cn_ai_guidance_next_action)
+        self.assertTrue(finding.cn_ai_guidance_input_checksum)
+
         action = finding.with_user(self.user).action_generate_cn_ai_guidance()
         analysis = self.env["sudo.compliance.ai.analysis"].browse(
             action["res_id"]
         )
+        finding.invalidate_recordset()
 
         self.assertEqual(analysis.finding_id, finding)
         self.assertEqual(analysis.provider_key, "sdoo_cn_controlled_guidance")
@@ -116,10 +121,34 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(analysis.record_checksum)
         self.assertIn("AI 分析仅为辅助材料", analysis.analysis)
         self.assertEqual(analysis.input_snapshot_json["rule_code"], self.rule.code)
+        self.assertEqual(finding.cn_ai_guidance_state, "generated")
+        self.assertEqual(
+            finding.cn_ai_guidance_input_checksum,
+            analysis.input_checksum,
+        )
+
+    def test_ai_guidance_visibility_marks_limited_inputs(self):
+        finding = self._finding()
+        finding._engine_write(
+            {
+                "source_warning": True,
+                "missing_fact_keys": ["cn.missing.fact"],
+            }
+        )
+        finding.invalidate_recordset()
+
+        self.assertEqual(finding.cn_ai_guidance_state, "limited")
+        self.assertTrue(finding.cn_ai_guidance_next_action)
+        self.assertTrue(finding.cn_ai_guidance_input_checksum)
 
     def test_country_pack_advertises_controlled_ai_guidance(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_controlled_ai_guidance"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_guidance_visibility"
             ]
         )
