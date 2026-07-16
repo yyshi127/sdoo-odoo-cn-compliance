@@ -12,6 +12,16 @@ FLOW_STATES = [
 ]
 
 
+def _tax_domain_state(latest_assessment, issue_count, limitation_count):
+    if limitation_count:
+        return "blocked"
+    if issue_count:
+        return "attention"
+    if latest_assessment:
+        return "ready"
+    return "not_started"
+
+
 class SudoChinaComplianceWorkbenchProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
@@ -42,6 +52,14 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     cn_workbench_latest_report_id = fields.Many2one(
         "sudo.cn.compliance.report",
         string="最新正式报告",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_package_label = fields.Char(
+        string="中国包",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_scope_label = fields.Char(
+        string="覆盖范围",
         compute="_compute_cn_workbench",
     )
     cn_workbench_currency_id = fields.Many2one(
@@ -96,6 +114,33 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_iit_issue_count = fields.Integer(
         string="个税勾稽问题",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_vat_domain_state = fields.Selection(
+        FLOW_STATES,
+        string="增值税域",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_cit_domain_state = fields.Selection(
+        FLOW_STATES,
+        string="企业所得税域",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_iit_domain_state = fields.Selection(
+        FLOW_STATES,
+        string="个人所得税域",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_vat_next_action = fields.Char(
+        string="增值税下一步",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_cit_next_action = fields.Char(
+        string="企业所得税下一步",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_iit_next_action = fields.Char(
+        string="个人所得税下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_limitation_count = fields.Integer(
@@ -223,6 +268,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
             profile.cn_workbench_last_assessment_id = latest_assessment
             profile.cn_workbench_latest_report_id = latest_report
+            profile.cn_workbench_package_label = _("中国财税合规包")
+            profile.cn_workbench_scope_label = _(
+                "增值税、企业所得税、个人所得税、电子发票、申报缴款、证据与正式报告"
+            )
             if latest_assessment and latest_assessment.period_start and latest_assessment.period_end:
                 profile.cn_workbench_period_label = _(
                     "%(start)s 至 %(end)s",
@@ -269,6 +318,49 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_iit_issue_count = issue_counts[
                 "sudo.cn.iit.period.reconciliation.issue"
             ]
+            profile.cn_workbench_vat_domain_state = _tax_domain_state(
+                latest_assessment,
+                profile.cn_workbench_vat_issue_count,
+                limitation_count,
+            )
+            profile.cn_workbench_cit_domain_state = _tax_domain_state(
+                latest_assessment,
+                profile.cn_workbench_cit_issue_count,
+                limitation_count,
+            )
+            profile.cn_workbench_iit_domain_state = _tax_domain_state(
+                latest_assessment,
+                profile.cn_workbench_iit_issue_count,
+                limitation_count,
+            )
+            if profile.status != "active":
+                profile.cn_workbench_vat_next_action = _("先启用中国合规档案。")
+                profile.cn_workbench_cit_next_action = _("先启用中国合规档案。")
+                profile.cn_workbench_iit_next_action = _("先启用中国合规档案。")
+            elif not latest_assessment:
+                profile.cn_workbench_vat_next_action = _("运行规则扫描，形成增值税账票申报勾稽结论。")
+                profile.cn_workbench_cit_next_action = _("运行规则扫描，形成企业所得税账税申报勾稽结论。")
+                profile.cn_workbench_iit_next_action = _("运行规则扫描，形成个人所得税工资账表款勾稽结论。")
+            elif limitation_count:
+                profile.cn_workbench_vat_next_action = _("先解除适用地区、证据或报告范围限制。")
+                profile.cn_workbench_cit_next_action = _("先解除适用地区、证据或报告范围限制。")
+                profile.cn_workbench_iit_next_action = _("先解除适用地区、证据或报告范围限制。")
+            else:
+                profile.cn_workbench_vat_next_action = (
+                    _("复核增值税勾稽问题并补齐申报缴款证据。")
+                    if profile.cn_workbench_vat_issue_count
+                    else _("保持增值税账票申报勾稽定期扫描。")
+                )
+                profile.cn_workbench_cit_next_action = (
+                    _("复核企业所得税账税差异并完成影响量化。")
+                    if profile.cn_workbench_cit_issue_count
+                    else _("保持企业所得税账税申报勾稽定期扫描。")
+                )
+                profile.cn_workbench_iit_next_action = (
+                    _("复核个人所得税工资账表款差异并推进整改。")
+                    if profile.cn_workbench_iit_issue_count
+                    else _("保持个人所得税扣缴数据定期扫描。")
+                )
             profile.cn_workbench_limitation_count = limitation_count
             profile.cn_workbench_evidence_count = evidence_count
             profile.cn_workbench_verified_evidence_count = verified_evidence_count

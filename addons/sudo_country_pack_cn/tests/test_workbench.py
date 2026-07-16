@@ -58,6 +58,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_process_visibility"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_tax_domain_overview"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -78,6 +83,16 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_evidence_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_evidence_count, 0)
         self.assertEqual(self.profile.cn_workbench_verified_evidence_count, 0)
+        self.assertEqual(self.profile.cn_workbench_package_label, "中国财税合规包")
+        self.assertIn("增值税", self.profile.cn_workbench_scope_label)
+        self.assertIn("企业所得税", self.profile.cn_workbench_scope_label)
+        self.assertIn("个人所得税", self.profile.cn_workbench_scope_label)
+        self.assertEqual(self.profile.cn_workbench_vat_domain_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_cit_domain_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_iit_domain_state, "not_started")
+        self.assertTrue(self.profile.cn_workbench_vat_next_action)
+        self.assertTrue(self.profile.cn_workbench_cit_next_action)
+        self.assertTrue(self.profile.cn_workbench_iit_next_action)
 
     def test_workbench_navigation_actions_are_scoped_to_profile(self):
         action = self.profile.action_cn_open_workbench_assessments()

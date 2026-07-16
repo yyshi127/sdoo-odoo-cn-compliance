@@ -2898,6 +2898,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China remediation rescan capability is missing from {label}")
         if "china_risk_rule_basis_visibility" not in content:
             fail(f"China risk rule basis capability is missing from {label}")
+        if "china_workbench_tax_domain_overview" not in content:
+            fail(f"China tax domain overview capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2912,6 +2914,14 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_vat_issue_count",
         "cn_workbench_cit_issue_count",
         "cn_workbench_iit_issue_count",
+        "cn_workbench_package_label",
+        "cn_workbench_scope_label",
+        "cn_workbench_vat_domain_state",
+        "cn_workbench_cit_domain_state",
+        "cn_workbench_iit_domain_state",
+        "cn_workbench_vat_next_action",
+        "cn_workbench_cit_next_action",
+        "cn_workbench_iit_next_action",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
         "cn_workbench_remediation_state",
@@ -2940,6 +2950,14 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'view_mode">kanban,list,form',
         "cn_workbench_status",
         "cn_workbench_next_action",
+        "cn_workbench_package_label",
+        "cn_workbench_scope_label",
+        "cn_workbench_vat_domain_state",
+        "cn_workbench_cit_domain_state",
+        "cn_workbench_iit_domain_state",
+        "cn_workbench_vat_next_action",
+        "cn_workbench_cit_next_action",
+        "cn_workbench_iit_next_action",
         "action_cn_open_workbench_assessments",
         "action_cn_open_workbench_vat_issues",
         "action_cn_open_workbench_cit_issues",
@@ -2982,6 +3000,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China workbench runtime coverage is missing {test_name}")
     for required in (
         "china_process_visibility",
+        "china_workbench_tax_domain_overview",
+        "cn_workbench_package_label",
+        "cn_workbench_scope_label",
+        "cn_workbench_vat_domain_state",
+        "cn_workbench_cit_domain_state",
+        "cn_workbench_iit_domain_state",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
         "cn_workbench_remediation_state",
