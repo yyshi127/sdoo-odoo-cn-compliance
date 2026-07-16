@@ -72,6 +72,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
             finding.cn_ai_guidance_input_checksum = _checksum(payload)
             obligation_state = payload.get("obligation_readiness", {}).get("state")
             filing_archive_state = payload.get("filing_archive", {}).get("state")
+            fact_basis_state = payload.get("fact_basis", {}).get("state")
+            evidence_state = payload.get("remediation_evidence", {}).get("state")
             has_limit = (
                 finding.source_warning
                 or finding.professional_warning
@@ -79,6 +81,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 or bool(finding.missing_parameter_keys)
                 or obligation_state in ("not_started", "attention")
                 or filing_archive_state in ("not_started", "attention", "blocked")
+                or fact_basis_state in ("not_started", "blocked")
+                or evidence_state in ("none", "partial")
             )
             if finding.ai_analysis_count:
                 finding.cn_ai_guidance_state = "generated"
@@ -100,6 +104,34 @@ class SudoChinaAiGuidanceFinding(models.Model):
         self.ensure_one()
         task = self.current_task_id
         profile = self.assessment_id.profile_id
+        snapshots = self.fact_snapshot_ids
+        missing_fact_keys = (
+            self.missing_fact_keys
+            if isinstance(self.missing_fact_keys, list)
+            else []
+        )
+        fact_issue_count = len(
+            snapshots.filtered(
+                lambda snapshot: snapshot.quality_state
+                in ("missing", "stale", "truncated", "error")
+                or not snapshot.is_complete
+                or not snapshot.is_full_dataset
+            )
+        )
+        missing_fact_count = len(missing_fact_keys)
+        verified_evidence_count = 0
+        evidence_count = 0
+        if task:
+            evidence_count = len(task.evidence_ids)
+            verified_evidence_count = len(
+                task.evidence_ids.filtered(lambda evidence: evidence.state == "verified")
+            )
+        if evidence_count and evidence_count == verified_evidence_count:
+            evidence_state = "verified"
+        elif evidence_count:
+            evidence_state = "partial"
+        else:
+            evidence_state = "none"
         return {
             "schema": "sdoo.cn.ai-guidance.input.v1",
             "finding_id": self.id,
@@ -126,11 +158,23 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "review_notes": self.review_notes,
             "source_warning": bool(self.source_warning),
             "professional_warning": bool(self.professional_warning),
-            "missing_fact_keys": self.missing_fact_keys,
+            "missing_fact_keys": missing_fact_keys,
             "missing_parameter_keys": self.missing_parameter_keys,
             "fact_snapshot_checksums": sorted(
                 self.fact_snapshot_ids.mapped("checksum")
             ),
+            "fact_basis": {
+                "snapshot_count": len(snapshots),
+                "issue_count": fact_issue_count,
+                "missing_fact_count": missing_fact_count,
+                "state": (
+                    "blocked"
+                    if fact_issue_count or missing_fact_count
+                    else "ready"
+                    if snapshots
+                    else "not_started"
+                ),
+            },
             "obligation_readiness": {
                 "state": profile.cn_workbench_obligation_state,
                 "next_action": profile.cn_workbench_obligation_next_action,
@@ -163,6 +207,11 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 else None,
                 "is_overdue": bool(task.is_overdue) if task else False,
                 "verification_state": task.verification_state if task else None,
+            },
+            "remediation_evidence": {
+                "state": evidence_state,
+                "evidence_count": evidence_count,
+                "verified_evidence_count": verified_evidence_count,
             },
         }
 
@@ -216,6 +265,25 @@ class SudoChinaAiGuidanceFinding(models.Model):
             )
         )
         due_line = task["due_date"] or "尚未设置"
+        fact_basis = payload.get("fact_basis", {})
+        fact_basis_line = (
+            "Fact basis: state=%s; snapshots=%s; issues=%s; missing=%s"
+            % (
+                fact_basis.get("state") or "-",
+                fact_basis.get("snapshot_count") or 0,
+                fact_basis.get("issue_count") or 0,
+                fact_basis.get("missing_fact_count") or 0,
+            )
+        )
+        remediation_evidence = payload.get("remediation_evidence", {})
+        remediation_evidence_line = (
+            "Remediation evidence: state=%s; verified=%s/%s"
+            % (
+                remediation_evidence.get("state") or "-",
+                remediation_evidence.get("verified_evidence_count") or 0,
+                remediation_evidence.get("evidence_count") or 0,
+            )
+        )
         assignee_line = (
             self.current_task_id.assignee_id.display_name
             if self.current_task_id
@@ -234,6 +302,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "三、纳税义务适用性边界\n"
             "%(obligation_line)s\n\n"
             "%(filing_archive_line)s\n\n"
+            "%(fact_basis_line)s\n\n"
+            "%(remediation_evidence_line)s\n\n"
             "四、处理建议\n"
             "%(recommendation)s\n\n"
             "五、证据要求\n"
@@ -257,6 +327,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
             basis=payload["legal_basis"] or "暂无可展示依据摘要。",
             obligation_line=obligation_line,
             filing_archive_line=filing_archive_line,
+            fact_basis_line=fact_basis_line,
+            remediation_evidence_line=remediation_evidence_line,
             recommendation=payload["recommendation"] or "暂无整改建议。",
             evidence=payload["evidence_required"] or "暂无证据要求。",
             warnings="\n".join(warning_lines),

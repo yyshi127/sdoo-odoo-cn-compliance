@@ -1,4 +1,4 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -108,6 +108,52 @@ class TestChinaControlledAiGuidance(TransactionCase):
         assessment._engine_write({"state": "completed"})
         return finding
 
+    def _fact_snapshot(self, finding, suffix="base", quality_state="complete"):
+        definition = self.env["sudo.compliance.fact.definition"].create(
+            {
+                "name": f"AI guidance fact {suffix}",
+                "label": f"AI guidance fact {suffix}",
+                "key": f"cn.ai.guidance.fact.{finding.id}.{suffix}",
+                "version": "TEST-1",
+                "country_id": self.country.id,
+                "value_type": "integer",
+                "provider_key": f"ai_guidance_fact_{suffix}",
+                "provider_version": "1",
+                "source_model": "account.move",
+                "source_description": "Controlled AI guidance test fact.",
+                "completeness_method": "full_domain",
+            }
+        )
+        snapshot = self.env["sudo.compliance.fact.snapshot"]._create_engine(
+            {
+                "assessment_id": finding.assessment_id.id,
+                "definition_id": definition.id,
+                "value_json": 1,
+                "captured_at": fields.Datetime.now(),
+                "source_model": "account.move",
+                "source_domain_json": [("company_id", "=", self.company.id)],
+                "record_count": 1,
+                "aggregation_method": "controlled_test",
+                "is_complete": quality_state == "complete",
+                "is_full_dataset": quality_state == "complete",
+                "quality_state": quality_state,
+                "provider_key": definition.provider_key,
+                "provider_version": "1",
+                "checksum": suffix[:1].ljust(64, "a"),
+            }
+        )
+        self.env.cr.execute(
+            """
+            INSERT INTO sudo_compliance_finding_fact_snapshot_rel
+                        (finding_id, snapshot_id)
+                 VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (finding.id, snapshot.id),
+        )
+        finding.invalidate_recordset()
+        return snapshot
+
     def test_generate_controlled_ai_guidance_snapshot(self):
         self._reset_obligations()
         finding = self._finding()
@@ -167,6 +213,52 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(finding.cn_ai_guidance_next_action)
         self.assertTrue(finding.cn_ai_guidance_input_checksum)
 
+    def test_ai_guidance_includes_fact_basis_and_remediation_evidence(self):
+        self._reset_obligations()
+        finding = self._finding()
+        self._fact_snapshot(finding, "complete")
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+        evidence = self.env["sudo.compliance.evidence"].create(
+            {
+                "name": "AI guidance remediation proof",
+                "company_id": self.company.id,
+                "task_id": task.id,
+                "evidence_type": "remediation_proof",
+                "external_reference": "DMS/CN/AI-GUIDANCE-001",
+            }
+        )
+        evidence.action_submit()
+        evidence.review_notes = (
+            "Reviewed controlled remediation evidence for AI guidance context."
+        )
+        evidence.action_verify()
+        finding.invalidate_recordset()
+
+        payload = finding._cn_ai_guidance_input()
+        self.assertEqual(payload["fact_basis"]["state"], "ready")
+        self.assertEqual(payload["fact_basis"]["snapshot_count"], 1)
+        self.assertEqual(payload["fact_basis"]["issue_count"], 0)
+        self.assertEqual(payload["remediation_evidence"]["state"], "verified")
+        self.assertEqual(payload["remediation_evidence"]["evidence_count"], 1)
+        self.assertEqual(
+            payload["remediation_evidence"]["verified_evidence_count"],
+            1,
+        )
+
+        action = finding.with_user(self.user).action_generate_cn_ai_guidance()
+        analysis = self.env["sudo.compliance.ai.analysis"].browse(
+            action["res_id"]
+        )
+        self.assertIn("Fact basis: state=ready", analysis.analysis)
+        self.assertIn(
+            "Remediation evidence: state=verified",
+            analysis.analysis,
+        )
+        self.assertEqual(
+            analysis.input_snapshot_json["remediation_evidence"]["state"],
+            "verified",
+        )
+
     def test_country_pack_advertises_controlled_ai_guidance(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][
@@ -186,6 +278,11 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_ai_filing_archive_context"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_fact_and_evidence_context"
             ]
         )
 
