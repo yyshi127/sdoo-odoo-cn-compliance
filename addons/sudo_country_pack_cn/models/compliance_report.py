@@ -1027,6 +1027,7 @@ class SudoChinaComplianceReport(models.Model):
             or assessment["error_count"]
             or tax_impact["pending_count"]
             or tax_impact["unquantifiable_count"]
+            or payload["filing_archive"]["state"] in ("blocked", "attention")
             or payload["obligation_readiness"]["state"]
             in ("not_started", "attention")
         )
@@ -1067,6 +1068,14 @@ class SudoChinaComplianceReport(models.Model):
             for row in self._evidence_payload()
         ):
             issues.append(_("已验证证据内容与封存校验和不一致。"))
+        payload = self._snapshot_payload()
+        filing_archive = payload["filing_archive"]
+        if filing_archive["issue_count"]:
+            issues.append(
+                _(
+                    "Filing/payment archives are not sealed; verify filing receipts, payment evidence and checksums before submitting the formal report."
+                )
+            )
         if not self.reviewer_id:
             issues.append(_("尚未指定独立报告批准人。"))
         elif self.company_id not in self.reviewer_id.company_ids:
@@ -1078,7 +1087,6 @@ class SudoChinaComplianceReport(models.Model):
             self.independence_exception_reason
         ):
             issues.append(_("职责未分离时必须填写至少 20 个字符的例外理由。"))
-        payload = self._snapshot_payload()
         conclusion, has_limits = self._derive_conclusion(payload)
         if has_limits and not _text_is_complete(self.limitation_statement):
             obligation_state = payload["obligation_readiness"]["state"]

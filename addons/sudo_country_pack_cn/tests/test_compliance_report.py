@@ -209,6 +209,75 @@ class TestChinaFormalComplianceReport(TransactionCase):
         report.invalidate_recordset()
         return report
 
+    def _vat_run(self, suffix):
+        run = self.env["sudo.cn.vat.period.reconciliation.run"].with_company(
+            self.company
+        ).enqueue(
+            self.profile,
+            "2026-06-01",
+            "2026-06-30",
+            f"VAT-{suffix}",
+        )
+        run.with_company(self.company)._process()
+        run.invalidate_recordset()
+        return run
+
+    def _authority_source(self, suffix):
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": f"formal-report-filing-source-{suffix}.pdf",
+                "raw": f"official filing deadline source {suffix}".encode(),
+                "mimetype": "application/pdf",
+            }
+        )
+        source = self.env["sudo.compliance.authority.source"].create(
+            {
+                "name": f"Formal report filing authority source {suffix}",
+                "country_id": self.country.id,
+                "authority": "State Taxation Administration",
+                "source_type": "form_instruction",
+                "official_url": "https://www.chinatax.gov.cn/",
+                "official_version": f"FORMAL-{suffix}",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-12-31",
+                "snapshot_kind": "official_document",
+                "snapshot_attachment_id": attachment.id,
+            }
+        )
+        source.action_compute_hash()
+        return source
+
+    def _filing_archive(self, suffix):
+        run = self._vat_run(suffix)
+        action = run.action_open_cn_filing_archive()
+        defaults = {
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }
+        source = self._authority_source(suffix)
+        obligation = self.env["sudo.compliance.obligation"].browse(
+            defaults["obligation_id"]
+        )
+        obligation.write(
+            {
+                "applicability": "applicable",
+                "effective_from": "2026-01-01",
+                "authority_source_id": source.id,
+                "justification": "Controlled test authority basis for filing archive.",
+            }
+        )
+        defaults.update(
+            {
+                "due_date": "2026-07-15",
+                "authority_source_id": source.id,
+                "due_date_basis": "Controlled test due date basis.",
+            }
+        )
+        return self.env["sudo.compliance.filing"].with_company(self.company).create(
+            defaults
+        )
+
     def test_submission_freezes_explainable_snapshot_and_audit(self):
         report = self._report()
 
@@ -269,6 +338,23 @@ class TestChinaFormalComplianceReport(TransactionCase):
             "obligation_readiness",
             report.snapshot_json,
         )
+
+    def test_unsealed_filing_archive_blocks_formal_submission(self):
+        filing = self._filing_archive("formal-submit")
+        report = self._report()
+
+        with self.assertRaisesRegex(
+            UserError,
+            "Filing/payment archives are not sealed",
+        ):
+            report.with_user(self.manager).action_submit()
+
+        payload = report._snapshot_payload()
+        self.assertEqual(payload["filing_archive"]["archive_count"], 1)
+        self.assertEqual(payload["filing_archive"]["issue_count"], 1)
+        self.assertEqual(payload["filing_archive"]["state"], "blocked")
+        self.assertEqual(payload["filing_archive"]["archives"][0]["id"], filing.id)
+        self.assertEqual(report._derive_conclusion(payload)[0], "limited_action_required")
 
     def test_report_center_exposes_stage_next_action_and_navigation(self):
         report = self._report()
