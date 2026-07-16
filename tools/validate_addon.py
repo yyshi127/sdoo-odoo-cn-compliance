@@ -272,6 +272,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China workbench filing archive summary capability must be declared")
     if features.get("china_workbench_state_badge_clarity") is not True:
         fail("China workbench state badge clarity capability must be declared")
+    if features.get("china_risk_card_state_badge_clarity") is not True:
+        fail("China risk card state badge clarity capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2999,6 +3001,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China workbench state badge clarity capability is missing from {label}"
             )
+        if "china_risk_card_state_badge_clarity" not in content:
+            fail(
+                f"China risk card state badge clarity capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3610,6 +3616,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_remediation_rescan_visibility",
         "china_risk_rule_basis_visibility",
         "china_traceability_matrix_visibility",
+        "china_risk_card_state_badge_clarity",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
@@ -3736,6 +3743,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_queue_verification_scan",
         "action_cn_open_remediation_verification_assessment",
         "verification_assessment_id",
+        'decoration-danger="risk_level in (\'critical\', \'high\')"',
+        'decoration-success="cn_traceability_state == \'complete\'"',
+        'decoration-warning="cn_remediation_evidence_state == \'partial\'"',
+        'decoration-danger="cn_remediation_rescan_stage in (\'blocked\', \'failed\')"',
     ):
         if required not in risk_view_content:
             fail(f"China risk center UI is missing {required}")

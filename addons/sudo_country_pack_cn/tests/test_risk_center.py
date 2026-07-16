@@ -242,3 +242,8 @@ class TestChinaRiskCenterDisplay(TransactionCase):
                 "china_cross_border_risk_visibility"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_card_state_badge_clarity"
+            ]
+        )
