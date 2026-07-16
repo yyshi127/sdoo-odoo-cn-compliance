@@ -228,9 +228,22 @@ class TestChinaFormalComplianceReport(TransactionCase):
             report.snapshot_json["obligation_readiness"]["candidate_count"],
             len(self.profile.obligation_ids),
         )
+        self.assertEqual(report.snapshot_json["filing_archive"]["state"], "not_started")
+        self.assertEqual(report.snapshot_json["filing_archive"]["archive_count"], 0)
         self.assertEqual(report.finding_count, 1)
         self.assertEqual(report.high_count, 1)
         self.assertEqual(len(report.snapshot_checksum), 64)
+        self.assertEqual(report.snapshot_integrity_state, "verified")
+        with self.assertRaises(UserError):
+            report.with_user(self.manager).write({"title": "Cannot mutate"})
+        event = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("event_key", "=", "cn_compliance_report.submitted"),
+                ("record_id", "=", report.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(event.details_json["snapshot_checksum"], report.snapshot_checksum)
 
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")
@@ -323,20 +336,14 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_report_filing_archive_snapshot"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_traceability_matrix_visibility"
             ]
         )
-        self.assertEqual(report.snapshot_integrity_state, "verified")
-        with self.assertRaisesRegex(UserError, "只有编制中的报告"):
-            report.with_user(self.manager).write({"title": "不能改写"})
-        event = self.env["sudo.compliance.audit.event"].search(
-            [
-                ("event_key", "=", "cn_compliance_report.submitted"),
-                ("record_id", "=", report.id),
-            ],
-            limit=1,
-        )
-        self.assertEqual(event.details_json["snapshot_checksum"], report.snapshot_checksum)
 
     def test_unreviewed_or_unsigned_findings_block_formal_submission(self):
         unreviewed, _finding = self._assessment("unreviewed", review=False)

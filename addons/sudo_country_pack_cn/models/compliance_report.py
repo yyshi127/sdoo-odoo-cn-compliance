@@ -88,6 +88,25 @@ def _text_is_complete(value, minimum=20):
     return len((value or "").strip()) >= minimum
 
 
+def _controlled_filing_domain(assessment):
+    if (
+        not assessment.profile_id
+        or not assessment.period_start
+        or not assessment.period_end
+    ):
+        return [("id", "=", 0)]
+    return [
+        ("profile_id", "=", assessment.profile_id.id),
+        ("period_start", "<=", assessment.period_end),
+        ("period_end", ">=", assessment.period_start),
+        "|",
+        "|",
+        ("cn_vat_reconciliation_run_id", "!=", False),
+        ("cn_cit_reconciliation_run_id", "!=", False),
+        ("cn_iit_reconciliation_run_id", "!=", False),
+    ]
+
+
 class SudoChinaComplianceReport(models.Model):
     _name = "sudo.cn.compliance.report"
     _description = "China Governed Compliance Report"
@@ -666,6 +685,84 @@ class SudoChinaComplianceReport(models.Model):
             "obligations": obligation_rows,
         }
 
+    def _filing_archive_payload(self):
+        self.ensure_one()
+        assessment = self.assessment_id
+        filings = self.env["sudo.compliance.filing"].sudo().search(
+            _controlled_filing_domain(assessment),
+            order="period_start, period_end, filing_code, id",
+        )
+        rows = []
+        sealed_count = 0
+        issue_count = 0
+        for filing in filings:
+            submission_state = filing.cn_submission_integrity_state
+            payment_state = filing.cn_payment_integrity_state
+            evidence_state = filing.cn_filing_center_evidence_state
+            sealed = (
+                submission_state in ("verified", "source_superseded")
+                and payment_state
+                in ("verified", "not_required", "source_superseded")
+                and evidence_state == "verified"
+            )
+            issue = (
+                submission_state in ("changed", "invalid", "unsealed")
+                or payment_state in ("changed", "invalid", "unsealed")
+                or evidence_state != "verified"
+            )
+            if sealed:
+                sealed_count += 1
+            if issue:
+                issue_count += 1
+            rows.append(
+                {
+                    "id": filing.id,
+                    "name": filing.display_name,
+                    "filing_code": filing.filing_code,
+                    "filing_type": filing.filing_type,
+                    "state": filing.state,
+                    "period_start": _date_value(filing.period_start),
+                    "period_end": _date_value(filing.period_end),
+                    "due_date": _date_value(filing.due_date),
+                    "authority_source_id": filing.authority_source_id.id
+                    or None,
+                    "authority_source_name": filing.authority_source_id.name
+                    or None,
+                    "submission_integrity_state": submission_state,
+                    "payment_integrity_state": payment_state,
+                    "evidence_state": evidence_state,
+                    "submission_checksum": filing.cn_submission_checksum
+                    or None,
+                    "payment_checksum": filing.cn_payment_checksum or None,
+                    "sealed": sealed,
+                    "issue": issue,
+                }
+            )
+        if not filings:
+            state = "not_started"
+            next_action = (
+                "No controlled filing/payment archive exists for this report period."
+            )
+        elif issue_count:
+            state = "blocked"
+            next_action = (
+                "Seal filing/payment archives and verify receipt/payment evidence before relying on the report."
+            )
+        elif sealed_count == len(filings):
+            state = "ready"
+            next_action = "Controlled filing/payment archives are sealed."
+        else:
+            state = "attention"
+            next_action = "Review filing/payment archive evidence before sign-off."
+        return {
+            "state": state,
+            "next_action": next_action,
+            "archive_count": len(filings),
+            "sealed_count": sealed_count,
+            "issue_count": issue_count,
+            "archives": rows,
+        }
+
     def _snapshot_payload(self):
         self.ensure_one()
         assessment = self.assessment_id
@@ -876,6 +973,7 @@ class SudoChinaComplianceReport(models.Model):
             },
             "rules": rules,
             "obligation_readiness": self._obligation_readiness_payload(),
+            "filing_archive": self._filing_archive_payload(),
             "facts": facts,
             "findings": findings,
             "tasks": task_rows,

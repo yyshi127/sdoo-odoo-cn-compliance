@@ -538,6 +538,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report rescan gate capability must be declared")
     if features.get("china_report_filing_archive_gate") is not True:
         fail("China report filing archive gate capability must be declared")
+    if features.get("china_report_filing_archive_snapshot") is not True:
+        fail("China report filing archive snapshot capability must be declared")
     if features.get("china_traceability_matrix_visibility") is not True:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
@@ -2766,6 +2768,9 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_next_action",
         "obligation_readiness",
         "_obligation_readiness_payload",
+        "filing_archive",
+        "_filing_archive_payload",
+        "_controlled_filing_domain",
         "remediation_task_count",
         "remediation_verified_count",
         "remediation_pending_verification_count",
@@ -2918,9 +2923,11 @@ def validate_formal_compliance_report() -> None:
         "china_traceability_matrix_visibility",
         "china_report_obligation_readiness",
         "china_report_remediation_verification",
+        "china_report_filing_archive_snapshot",
         "china_formal_report_badge_clarity",
         "remediation_pending_verification_count",
         "obligation_readiness",
+        "filing_archive",
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "action_cn_open_report_evidence",
@@ -3264,6 +3271,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report rescan gate capability is missing from {label}")
         if "china_report_filing_archive_gate" not in content:
             fail(f"China report filing archive gate capability is missing from {label}")
+        if "china_report_filing_archive_snapshot" not in content:
+            fail(
+                f"China report filing archive snapshot capability is missing from {label}"
+            )
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_ai_guidance_visibility" not in content:
