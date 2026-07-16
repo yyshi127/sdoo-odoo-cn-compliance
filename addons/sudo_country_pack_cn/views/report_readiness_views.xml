@@ -43,6 +43,15 @@
                 <field name="cn_report_open_task_count"/>
                 <field name="cn_report_limitation_count"/>
                 <field name="cn_report_pending_tax_impact_count"/>
+                <field name="cn_report_rescan_state" widget="badge"
+                       decoration-success="cn_report_rescan_state == 'verified'"
+                       decoration-danger="cn_report_rescan_state == 'failed'"
+                       decoration-warning="cn_report_rescan_state in ('in_progress', 'pending_rescan', 'evidence_gap')"
+                       decoration-muted="cn_report_rescan_state == 'not_applicable'"/>
+                <field name="cn_report_pending_rescan_count" optional="show"/>
+                <field name="cn_report_failed_rescan_count" optional="show"/>
+                <field name="cn_report_verified_remediation_count" optional="show"/>
+                <field name="cn_report_rescan_next_action" optional="show"/>
                 <field name="cn_data_basis_state" widget="badge"
                        decoration-success="cn_data_basis_state == 'ready'"
                        decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
@@ -80,6 +89,11 @@
                 <field name="cn_report_pending_tax_impact_count"/>
                 <field name="cn_report_latest_report_id"/>
                 <field name="cn_report_can_prepare"/>
+                <field name="cn_report_rescan_state"/>
+                <field name="cn_report_rescan_next_action"/>
+                <field name="cn_report_pending_rescan_count"/>
+                <field name="cn_report_failed_rescan_count"/>
+                <field name="cn_report_verified_remediation_count"/>
                 <field name="cn_data_basis_state"/>
                 <field name="cn_data_basis_dataset_count"/>
                 <field name="cn_data_basis_ready_count"/>
@@ -114,6 +128,24 @@
                             </div>
                             <div class="mt-3 text-muted">
                                 <field name="cn_report_next_action"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Verification rescan gate</div>
+                                        <div class="fw-semibold"><field name="cn_report_rescan_next_action"/></div>
+                                    </div>
+                                    <field name="cn_report_rescan_state" widget="badge"
+                                           decoration-success="cn_report_rescan_state == 'verified'"
+                                           decoration-danger="cn_report_rescan_state == 'failed'"
+                                           decoration-warning="cn_report_rescan_state in ('in_progress', 'pending_rescan', 'evidence_gap')"
+                                           decoration-muted="cn_report_rescan_state == 'not_applicable'"/>
+                                </div>
+                                <div class="d-flex gap-3 text-muted small mt-2">
+                                    <span><field name="cn_report_pending_rescan_count"/> pending</span>
+                                    <span><field name="cn_report_failed_rescan_count"/> failed</span>
+                                    <span><field name="cn_report_verified_remediation_count"/> verified</span>
+                                </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -252,6 +284,15 @@
                         <field name="cn_report_open_task_count"/>
                         <field name="cn_report_limitation_count"/>
                         <field name="cn_report_pending_tax_impact_count"/>
+                        <field name="cn_report_rescan_state" widget="badge"
+                               decoration-success="cn_report_rescan_state == 'verified'"
+                               decoration-danger="cn_report_rescan_state == 'failed'"
+                               decoration-warning="cn_report_rescan_state in ('in_progress', 'pending_rescan', 'evidence_gap')"
+                               decoration-muted="cn_report_rescan_state == 'not_applicable'"/>
+                        <field name="cn_report_rescan_next_action"/>
+                        <field name="cn_report_pending_rescan_count"/>
+                        <field name="cn_report_failed_rescan_count"/>
+                        <field name="cn_report_verified_remediation_count"/>
                         <field name="cn_data_basis_state" widget="badge"
                                decoration-success="cn_data_basis_state == 'ready'"
                                decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"

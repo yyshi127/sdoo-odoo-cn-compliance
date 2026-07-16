@@ -41,6 +41,34 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="待量化税务影响",
         compute="_compute_cn_report_readiness",
     )
+    cn_report_rescan_state = fields.Selection(
+        [
+            ("not_applicable", "No remediation"),
+            ("in_progress", "Remediation in progress"),
+            ("pending_rescan", "Pending verification rescan"),
+            ("failed", "Verification failed"),
+            ("verified", "Verified remediation"),
+            ("evidence_gap", "Evidence gap"),
+        ],
+        string="Report Rescan Gate",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_rescan_next_action = fields.Char(
+        string="Rescan Next Action",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_pending_rescan_count = fields.Integer(
+        string="Pending Rescans",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_failed_rescan_count = fields.Integer(
+        string="Failed Rescans",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_verified_remediation_count = fields.Integer(
+        string="Verified Remediations",
+        compute="_compute_cn_report_readiness",
+    )
     cn_report_latest_report_id = fields.Many2one(
         "sudo.cn.compliance.report",
         string="最新正式报告",
@@ -71,6 +99,31 @@ class SudoChinaReportReadinessAssessment(models.Model):
 
             open_tasks = assessment.finding_ids.mapped("task_ids").filtered(
                 lambda task: task.state in OPEN_TASK_STATES
+            )
+            remediation_tasks = assessment.finding_ids.mapped("task_ids").filtered(
+                lambda task: task.state != "cancelled"
+            )
+            pending_rescan_count = len(
+                remediation_tasks.filtered(
+                    lambda task: task.verification_state == "pending_rescan"
+                )
+            )
+            failed_rescan_count = len(
+                remediation_tasks.filtered(
+                    lambda task: task.verification_state == "failed"
+                )
+            )
+            verified_remediation_count = len(
+                remediation_tasks.filtered(
+                    lambda task: task.state == "done"
+                    and task.verification_state == "verified"
+                )
+            )
+            unverified_done_count = len(
+                remediation_tasks.filtered(
+                    lambda task: task.state == "done"
+                    and task.verification_state not in ("verified", "not_required")
+                )
             )
             review_pending = len(
                 assessment.finding_ids.filtered(
@@ -111,6 +164,9 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 review_pending
                 + source_or_professional_warnings
                 + len(open_tasks)
+                + pending_rescan_count
+                + failed_rescan_count
+                + unverified_done_count
                 + limitation_count
             )
 
@@ -118,7 +174,47 @@ class SudoChinaReportReadinessAssessment(models.Model):
             assessment.cn_report_open_task_count = len(open_tasks)
             assessment.cn_report_limitation_count = limitation_count
             assessment.cn_report_pending_tax_impact_count = pending_tax_impact
+            assessment.cn_report_pending_rescan_count = pending_rescan_count
+            assessment.cn_report_failed_rescan_count = failed_rescan_count
+            assessment.cn_report_verified_remediation_count = (
+                verified_remediation_count
+            )
             assessment.cn_report_issue_count = issue_count
+            if not remediation_tasks:
+                assessment.cn_report_rescan_state = "not_applicable"
+                assessment.cn_report_rescan_next_action = _(
+                    "No remediation tasks require verification rescan."
+                )
+            elif failed_rescan_count:
+                assessment.cn_report_rescan_state = "failed"
+                assessment.cn_report_rescan_next_action = _(
+                    "Review failed verification rescans, reopen remediation, and rerun the exact-period scan before report preparation."
+                )
+            elif pending_rescan_count:
+                assessment.cn_report_rescan_state = "pending_rescan"
+                assessment.cn_report_rescan_next_action = _(
+                    "Wait for verification rescans to finish before preparing the formal report."
+                )
+            elif open_tasks:
+                assessment.cn_report_rescan_state = "in_progress"
+                assessment.cn_report_rescan_next_action = _(
+                    "Close remediation tasks and submit them for verification rescan."
+                )
+            elif unverified_done_count:
+                assessment.cn_report_rescan_state = "evidence_gap"
+                assessment.cn_report_rescan_next_action = _(
+                    "Verify completed remediation evidence or document the verification basis before report sign-off."
+                )
+            elif verified_remediation_count == len(remediation_tasks):
+                assessment.cn_report_rescan_state = "verified"
+                assessment.cn_report_rescan_next_action = _(
+                    "All remediation tasks have verified rescan evidence for report reliance."
+                )
+            else:
+                assessment.cn_report_rescan_state = "evidence_gap"
+                assessment.cn_report_rescan_next_action = _(
+                    "Review remediation verification status before relying on the report."
+                )
 
             if assessment.country_id.code != "CN":
                 assessment.cn_report_readiness_state = False
@@ -127,35 +223,69 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 continue
             if latest_report and latest_report.state == "issued":
                 assessment.cn_report_readiness_state = "issued"
-                assessment.cn_report_next_action = _("查看已签发报告和审计指纹")
+                assessment.cn_report_next_action = _(
+                    "Review the issued report and retained audit trail."
+                )
                 assessment.cn_report_can_prepare = False
             elif latest_report and latest_report.state == "submitted":
                 assessment.cn_report_readiness_state = "submitted"
-                assessment.cn_report_next_action = _("等待独立批准人审批报告")
+                assessment.cn_report_next_action = _(
+                    "Wait for independent report approval."
+                )
                 assessment.cn_report_can_prepare = False
             elif latest_report and latest_report.state == "draft":
                 assessment.cn_report_readiness_state = "draft_report"
-                assessment.cn_report_next_action = _("补齐报告内容并提交独立批准")
+                assessment.cn_report_next_action = _(
+                    "Complete the draft report and submit it for approval."
+                )
                 assessment.cn_report_can_prepare = False
             elif assessment.state != "completed":
                 assessment.cn_report_readiness_state = "needs_scan"
-                assessment.cn_report_next_action = _("先完成规则扫描")
+                assessment.cn_report_next_action = _(
+                    "Complete the rule scan before preparing a formal report."
+                )
                 assessment.cn_report_can_prepare = False
             elif review_pending or source_or_professional_warnings:
                 assessment.cn_report_readiness_state = "needs_review"
-                assessment.cn_report_next_action = _("先完成人工复核和来源/专业签核复核")
+                assessment.cn_report_next_action = _(
+                    "Complete manual review, source review, and professional sign-off checks first."
+                )
+                assessment.cn_report_can_prepare = False
+            elif failed_rescan_count:
+                assessment.cn_report_readiness_state = "needs_remediation"
+                assessment.cn_report_next_action = _(
+                    "Verification rescan failed; complete remediation again before preparing the formal report."
+                )
+                assessment.cn_report_can_prepare = False
+            elif pending_rescan_count:
+                assessment.cn_report_readiness_state = "needs_remediation"
+                assessment.cn_report_next_action = _(
+                    "Verification rescan is pending; wait for the exact-period rescan result before preparing the report."
+                )
+                assessment.cn_report_can_prepare = False
+            elif unverified_done_count:
+                assessment.cn_report_readiness_state = "needs_remediation"
+                assessment.cn_report_next_action = _(
+                    "Completed remediation still needs verified evidence or a documented verification basis."
+                )
                 assessment.cn_report_can_prepare = False
             elif open_tasks:
                 assessment.cn_report_readiness_state = "needs_remediation"
-                assessment.cn_report_next_action = _("先推进未关闭整改或在报告中说明管理层回应")
-                assessment.cn_report_can_prepare = True
+                assessment.cn_report_next_action = _(
+                    "Close all remediation tasks before preparing the formal report."
+                )
+                assessment.cn_report_can_prepare = False
             elif limitation_count:
                 assessment.cn_report_readiness_state = "limited"
-                assessment.cn_report_next_action = _("编制报告时必须披露限制和不确定性")
+                assessment.cn_report_next_action = _(
+                    "Prepare the report only with explicit limitations and uncertainty disclosure."
+                )
                 assessment.cn_report_can_prepare = True
             else:
                 assessment.cn_report_readiness_state = "ready"
-                assessment.cn_report_next_action = _("可以编制正式合规报告")
+                assessment.cn_report_next_action = _(
+                    "The assessment is ready for formal compliance report preparation."
+                )
                 assessment.cn_report_can_prepare = True
 
     def action_cn_open_report_readiness_findings(self):

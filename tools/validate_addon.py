@@ -534,6 +534,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report obligation readiness capability must be declared")
     if features.get("china_report_remediation_verification") is not True:
         fail("China report remediation verification capability must be declared")
+    if features.get("china_report_rescan_gate") is not True:
+        fail("China report rescan gate capability must be declared")
     if features.get("china_traceability_matrix_visibility") is not True:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
@@ -3256,6 +3258,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report obligation readiness capability is missing from {label}")
         if "china_report_remediation_verification" not in content:
             fail(f"China report remediation verification capability is missing from {label}")
+        if "china_report_rescan_gate" not in content:
+            fail(f"China report rescan gate capability is missing from {label}")
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_ai_guidance_visibility" not in content:
@@ -3647,6 +3651,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_report_next_action",
         "cn_report_issue_count",
         "cn_report_can_prepare",
+        "cn_report_rescan_state",
+        "cn_report_rescan_next_action",
+        "cn_report_pending_rescan_count",
+        "cn_report_failed_rescan_count",
+        "cn_report_verified_remediation_count",
         "action_cn_open_report_readiness_findings",
         "action_cn_open_report_readiness_tasks",
     ):
@@ -3667,6 +3676,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_report_open_task_count",
         "cn_report_limitation_count",
         "cn_report_pending_tax_impact_count",
+        "cn_report_rescan_state",
+        "cn_report_rescan_next_action",
+        "cn_report_pending_rescan_count",
+        "cn_report_failed_rescan_count",
+        "cn_report_verified_remediation_count",
         "cn_data_basis_state",
         "cn_data_basis_dataset_count",
         "cn_data_basis_normalized_record_count",
@@ -3756,15 +3770,18 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if required not in risk_test_content:
             fail(f"China cross-border risk visibility coverage is missing {required}")
     for test_name in (
-        "test_completed_clean_assessment_is_report_ready",
+        "test_completed_clean_assessment_discloses_limitations",
         "test_incomplete_assessment_requires_scan_completion",
         "test_country_pack_advertises_report_readiness_badge_clarity",
+        "test_report_readiness_blocks_pending_or_failed_rescans",
         "test_readiness_navigation_actions_are_scoped_to_assessment",
     ):
         if f"def {test_name}(" not in report_test_content:
             fail(f"China report readiness runtime coverage is missing {test_name}")
     if "china_report_readiness_badge_clarity" not in report_test_content:
         fail("China report readiness badge clarity runtime coverage is missing")
+    if "china_report_rescan_gate" not in report_test_content:
+        fail("China report rescan gate runtime coverage is missing")
 
     data_basis_model_content = (
         ADDON_ROOT / "models" / "assessment_data_basis.py"
