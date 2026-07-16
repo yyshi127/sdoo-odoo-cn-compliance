@@ -302,6 +302,37 @@ class SudoChinaComplianceReport(models.Model):
         copy=False,
     )
 
+    cn_report_center_stage = fields.Selection(
+        [
+            ("draft", "编制中"),
+            ("approval", "待批准"),
+            ("issued", "已签发"),
+            ("source_changed", "来源已变化"),
+            ("integrity_issue", "完整性异常"),
+            ("closed", "历史版本"),
+        ],
+        string="报告中心状态",
+        compute="_compute_cn_report_center_display",
+    )
+    cn_report_center_integrity_state = fields.Selection(
+        [
+            ("unsealed", "未封存"),
+            ("verified", "已校验"),
+            ("warning", "需要复核"),
+            ("blocked", "禁止分发"),
+        ],
+        string="报告完整性",
+        compute="_compute_cn_report_center_display",
+    )
+    cn_report_center_next_action = fields.Char(
+        string="下一步动作",
+        compute="_compute_cn_report_center_display",
+    )
+    cn_report_center_period_label = fields.Char(
+        string="报告期间",
+        compute="_compute_cn_report_center_display",
+    )
+
     _assessment_revision_unique = models.Constraint(
         "unique(assessment_id, revision)",
         "同一评估的正式报告版本不能重复。",
@@ -916,6 +947,77 @@ class SudoChinaComplianceReport(models.Model):
 
     @api.depends(
         "state",
+        "period_start",
+        "period_end",
+        "snapshot_integrity_state",
+        "approval_integrity_state",
+        "pdf_integrity_state",
+        "conclusion_state",
+        "has_material_limitations",
+        "open_task_count",
+        "overdue_task_count",
+    )
+    def _compute_cn_report_center_display(self):
+        for report in self:
+            start = fields.Date.to_string(report.period_start) or "-"
+            end = fields.Date.to_string(report.period_end) or "-"
+            report.cn_report_center_period_label = f"{start} ~ {end}"
+
+            issued_like = report.state in ("issued", "superseded", "withdrawn")
+            approval_bad = report.approval_integrity_state in (
+                "missing",
+                "checksum_mismatch",
+            )
+            pdf_bad = report.pdf_integrity_state in (
+                "missing",
+                "checksum_mismatch",
+            )
+            if issued_like and (approval_bad or pdf_bad):
+                integrity = "blocked"
+            elif report.state == "draft":
+                integrity = "unsealed"
+            elif report.snapshot_integrity_state == "source_changed":
+                integrity = "warning"
+            elif issued_like and (
+                report.approval_integrity_state != "verified"
+                or report.pdf_integrity_state != "verified"
+            ):
+                integrity = "warning"
+            else:
+                integrity = "verified"
+            report.cn_report_center_integrity_state = integrity
+
+            if integrity == "blocked":
+                stage = "integrity_issue"
+                next_action = "停止分发，检查审批记录和已签发 PDF 完整性。"
+            elif (
+                report.state != "draft"
+                and report.snapshot_integrity_state == "source_changed"
+            ):
+                stage = "source_changed"
+                next_action = "来源评估、整改或证据已变化，退回后重新提交。"
+            elif report.state == "draft":
+                stage = "draft"
+                next_action = "补全报告内容和批准人，提交独立批准。"
+            elif report.state == "submitted":
+                stage = "approval"
+                next_action = "由指定批准人复核范围、证据、整改和结论后签发。"
+            elif report.state == "issued":
+                stage = "issued"
+                if report.open_task_count:
+                    next_action = "跟踪未关闭整改，并在整改后重新评估或出具后续版本。"
+                elif report.has_material_limitations:
+                    next_action = "报告已签发，但使用时必须保留范围和数据限制说明。"
+                else:
+                    next_action = "报告已签发并可下载归档。"
+            else:
+                stage = "closed"
+                next_action = "历史版本，仅用于审计追溯。"
+            report.cn_report_center_stage = stage
+            report.cn_report_center_next_action = next_action
+
+    @api.depends(
+        "state",
         "snapshot_checksum",
         "title",
         "executive_summary",
@@ -1279,6 +1381,30 @@ class SudoChinaComplianceReport(models.Model):
             "res_model": "sudo.compliance.assessment",
             "view_mode": "form",
             "res_id": self.assessment_id.id,
+            "target": "current",
+        }
+
+    def action_cn_open_report_findings(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("报告相关风险事项"),
+            "res_model": "sudo.compliance.finding",
+            "view_mode": "list,form",
+            "domain": [("assessment_id", "=", self.assessment_id.id)],
+            "context": {"search_default_actionable": 1},
+            "target": "current",
+        }
+
+    def action_cn_open_report_tasks(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("报告相关整改任务"),
+            "res_model": "sudo.compliance.task",
+            "view_mode": "list,form",
+            "domain": [("assessment_id", "=", self.assessment_id.id)],
+            "context": {"search_default_open": 1},
             "target": "current",
         }
 

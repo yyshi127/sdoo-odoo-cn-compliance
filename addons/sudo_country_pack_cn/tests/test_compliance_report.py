@@ -219,6 +219,49 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(report.finding_count, 1)
         self.assertEqual(report.high_count, 1)
         self.assertEqual(len(report.snapshot_checksum), 64)
+
+    def test_report_center_exposes_stage_next_action_and_navigation(self):
+        report = self._report()
+
+        self.assertEqual(report.cn_report_center_stage, "draft")
+        self.assertEqual(report.cn_report_center_integrity_state, "unsealed")
+        self.assertTrue(report.cn_report_center_next_action)
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        self.assertEqual(report.cn_report_center_stage, "approval")
+        self.assertEqual(report.cn_report_center_integrity_state, "verified")
+        self.assertTrue(report.cn_report_center_next_action)
+        self.assertEqual(
+            report.action_cn_open_report_findings()["res_model"],
+            "sudo.compliance.finding",
+        )
+        self.assertIn(
+            ("assessment_id", "=", self.assessment.id),
+            report.action_cn_open_report_findings()["domain"],
+        )
+        self.assertEqual(
+            report.action_cn_open_report_tasks()["res_model"],
+            "sudo.compliance.task",
+        )
+        self.assertIn(
+            ("assessment_id", "=", self.assessment.id),
+            report.action_cn_open_report_tasks()["domain"],
+        )
+
+        self._issue(report)
+        report.invalidate_recordset()
+
+        self.assertEqual(report.cn_report_center_stage, "issued")
+        self.assertEqual(report.cn_report_center_integrity_state, "verified")
+
+    def test_country_pack_advertises_report_center_visibility(self):
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_center_visibility"
+            ]
+        )
         self.assertEqual(report.snapshot_integrity_state, "verified")
         with self.assertRaisesRegex(UserError, "只有编制中的报告"):
             report.with_user(self.manager).write({"title": "不能改写"})

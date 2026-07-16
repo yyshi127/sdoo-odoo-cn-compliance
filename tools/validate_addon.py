@@ -244,6 +244,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("VAT period reconciliation capability must be declared")
     if features.get("formal_compliance_report") is not True:
         fail("formal compliance report capability must be declared")
+    if features.get("china_report_center_visibility") is not True:
+        fail("China report center visibility capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2428,6 +2430,11 @@ def validate_formal_compliance_report() -> None:
         '"sdoo.cn.compliance-report.v1"',
         '"sdoo.cn.compliance-report-approval.v1"',
         "approval_integrity_state",
+        "cn_report_center_stage",
+        "cn_report_center_integrity_state",
+        "cn_report_center_next_action",
+        "action_cn_open_report_findings",
+        "action_cn_open_report_tasks",
         '"submitted", "待独立批准"',
         '"issued", "已签发"',
         '"superseded", "已被替代"',
@@ -2490,10 +2497,17 @@ def validate_formal_compliance_report() -> None:
         ADDON_ROOT / "views" / "compliance_report_views.xml"
     ).read_text(encoding="utf-8")
     for required in (
+        'id="view_cn_formal_compliance_report_kanban"',
         'id="view_cn_formal_compliance_report_list"',
         'id="view_cn_formal_compliance_report_form"',
         'id="action_cn_formal_compliance_reports"',
         'id="menu_cn_formal_compliance_reports"',
+        "kanban,list,form",
+        "cn_report_center_stage",
+        "cn_report_center_integrity_state",
+        "cn_report_center_next_action",
+        "action_cn_open_report_findings",
+        "action_cn_open_report_tasks",
         "提交独立批准",
         "批准并签发",
         "下载已签发 PDF",
@@ -2536,6 +2550,8 @@ def validate_formal_compliance_report() -> None:
         "test_report_is_company_isolated_and_reviewer_must_have_company",
         "test_only_designated_approver_can_return_or_issue",
         "test_report_html_preserves_boundary_and_non_net_tax_impact",
+        "test_report_center_exposes_stage_next_action_and_navigation",
+        "test_country_pack_advertises_report_center_visibility",
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"formal report runtime coverage is missing {test_name}")
