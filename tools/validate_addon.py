@@ -1448,6 +1448,224 @@ def validate_vat_period_reconciliation() -> None:
         fail("VAT period reconciliation requires at least fifteen runtime tests")
 
 
+def validate_cit_period_reconciliation() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/cit_period_reconciliation_cron.xml",
+        "views/cit_accounting_scope_views.xml",
+        "views/cit_period_reconciliation_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("CIT accounting scope and reconciliation files must be loaded")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    for module_name in ("cit_accounting_scope", "cit_period_reconciliation"):
+        if f"from . import {module_name}" not in model_init:
+            fail(f"CIT model must be imported: {module_name}")
+
+    scope_path = ADDON_ROOT / "models" / "cit_accounting_scope.py"
+    run_path = ADDON_ROOT / "models" / "cit_period_reconciliation.py"
+    if not scope_path.is_file() or not run_path.is_file():
+        fail("CIT accounting reconciliation implementation is incomplete")
+    scope_content = scope_path.read_text(encoding="utf-8")
+    run_content = run_path.read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.cit.accounting.scope"',
+        '_name = "sudo.cn.cit.accounting.scope.line"',
+        "_CIT_SCOPE_TRANSITION_MARKER",
+        "_expected_accounts",
+        '("active", "=", True)',
+        "action_populate_from_chart",
+        "action_verify",
+        "verification_checksum",
+        "checksum_mismatch",
+        "同一档案在同一期间只能有一份已核验会计利润口径",
+    ):
+        if required not in scope_content:
+            fail(f"CIT accounting scope contract is missing {required}")
+    if '("deprecated", "=", False)' in scope_content:
+        fail("CIT accounting scope must use the Odoo 19 active account field")
+
+    for required in (
+        "CIT_PERIOD_ENGINE_VERSION",
+        "FOR UPDATE SKIP LOCKED",
+        "MAX_ACCOUNTING_LINES",
+        "MAX_FILING_RECORDS",
+        "MAX_PAYMENT_RECORDS",
+        "_CIT_PERIOD_TRANSITION_MARKER",
+        "accounting_scope_snapshot_checksum",
+        "accounting_snapshot_checksum",
+        "filing_snapshot_checksum",
+        "payment_snapshot_checksum",
+        "result_checksum",
+        "result_integrity_state",
+        "_current_result_checksum",
+        "NO_VERIFIED_CIT_ACCOUNTING_SCOPE",
+        "NO_CURRENT_CIT_FILING",
+        "NO_CURRENT_CIT_PAYMENT_DATASET",
+        "CIT_LEDGER_FILING_PROFIT_DIFFERENCE",
+        "CIT_FILING_TAXABLE_ARITHMETIC_DIFFERENCE",
+        "CIT_PAYABLE_PAYMENT_DIFFERENCE",
+        "CIT_REFUNDABLE_REFUND_DIFFERENCE",
+        "insufficient_data",
+        "受控口径算术一致，不等于合规结论",
+        "cn_cit_period_reconciliation.queued",
+        "cn_cit_period_reconciliation.succeeded",
+    ):
+        if required not in run_content:
+            fail(f"CIT period reconciliation contract is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    governed_models = {
+        "model_sudo_cn_cit_accounting_scope",
+        "model_sudo_cn_cit_accounting_scope_line",
+        "model_sudo_cn_cit_period_reconciliation_run",
+        "model_sudo_cn_cit_period_reconciliation_issue",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in governed_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"CIT reconciliation ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        if [
+            user_row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ] != ["1", "0", "0", "0"]:
+            fail(f"CIT reconciliation users must be read-only: {model_name}")
+        if model_name.endswith(("reconciliation_run", "reconciliation_issue")):
+            manager_row = next(
+                row
+                for row in model_rows
+                if row["group_id:id"].endswith("group_compliance_manager")
+            )
+            if manager_row["perm_unlink"] != "0":
+                fail(f"CIT reconciliation snapshots must not be deleted: {model_name}")
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in governed_models:
+            continue
+        domain = field_text(fields, "domain_force", record.attrib["id"])
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"CIT reconciliation rule lacks company isolation: {model_ref}")
+        ruled_models.add(model_ref)
+    if ruled_models != governed_models:
+        fail("every governed CIT reconciliation model requires a company rule")
+
+    cron_content = (
+        ADDON_ROOT / "data" / "cit_period_reconciliation_cron.xml"
+    ).read_text(encoding="utf-8")
+    if "_cron_process_runs(limit=1)" not in cron_content:
+        fail("CIT reconciliation must use a bounded native Odoo queue")
+
+    facts = (ADDON_ROOT / "data" / "compliance_fact_data.xml").read_text(
+        encoding="utf-8"
+    )
+    provider = (ADDON_ROOT / "models" / "compliance_engine.py").read_text(
+        encoding="utf-8"
+    )
+    for fact_key in (
+        "cn.reconciliation.cit.conclusion_state",
+        "cn.reconciliation.cit.blocking_issue_count",
+        "cn.reconciliation.cit.difference_issue_count",
+        "cn.reconciliation.cit.warning_issue_count",
+        "cn.reconciliation.cit.detail",
+    ):
+        if fact_key not in facts or fact_key not in provider:
+            fail(f"CIT reconciliation fact bridge is missing {fact_key}")
+    if "sdoo.cn.reconciliation.cit-period.fact.v1" not in provider:
+        fail("CIT reconciliation fact snapshot schema is missing")
+    if "run._current_result_checksum()" not in provider:
+        fail("CIT reconciliation facts must verify the complete result checksum")
+
+    scope_view_path = ADDON_ROOT / "views" / "cit_accounting_scope_views.xml"
+    run_view_path = ADDON_ROOT / "views" / "cit_period_reconciliation_views.xml"
+    scope_view = scope_view_path.read_text(encoding="utf-8")
+    run_view = run_view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_cit_accounting_scope_list",
+        "view_cn_cit_accounting_scope_form",
+        "action_cn_cit_accounting_scopes",
+        "menu_cn_cit_accounting_scopes",
+    ):
+        if f'id="{required_id}"' not in scope_view:
+            fail(f"CIT accounting scope UI is missing {required_id}")
+    if "('integrity_state', '=', 'checksum_mismatch')" in scope_view:
+        fail("non-stored CIT scope integrity must not be used as a search domain")
+    for required_id in (
+        "view_cn_cit_period_reconciliation_run_list",
+        "view_cn_cit_period_reconciliation_run_form",
+        "view_cn_cit_period_reconciliation_issue_list",
+        "view_cn_cit_period_reconciliation_issue_form",
+        "view_cn_cit_period_reconciliation_wizard_form",
+        "action_cn_cit_period_reconciliation_runs",
+        "action_cn_cit_period_reconciliation_issues",
+        "action_cn_cit_period_reconciliation_start",
+        "menu_cn_cit_period_reconciliation_runs",
+        "menu_cn_cit_period_reconciliation_start",
+        "menu_cn_cit_period_reconciliation_issues",
+    ):
+        if f'id="{required_id}"' not in run_view:
+            fail(f"CIT period reconciliation UI is missing {required_id}")
+    for boundary_text in (
+        "系统没有把缺少会计口径、申报、缴退税或来源控制解释为通过",
+        "差异不自动等同于少缴、多缴、违法",
+        "当前受控口径算术一致",
+        "不证明纳税调整、税率、优惠、扣除、亏损弥补或申报处理合法",
+        "本页保存执行时点快照",
+        "结果完整性异常",
+        "系统不会自动猜测税种编码",
+    ):
+        if boundary_text not in run_view:
+            fail(f"CIT reconciliation UI boundary is missing: {boundary_text}")
+
+    test_path = ADDON_ROOT / "tests" / "test_cit_period_reconciliation.py"
+    if not test_path.is_file():
+        fail("CIT reconciliation runtime tests are missing")
+    test_content = test_path.read_text(encoding="utf-8")
+    test_tree = ast.parse(test_content)
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 10:
+        fail("CIT reconciliation requires at least ten runtime tests")
+    for test_name in (
+        "test_aligned_run_preserves_separate_book_return_payment_facts",
+        "test_missing_external_sources_is_insufficient_not_aligned",
+        "test_differences_are_review_items_not_blocking_tax_conclusions",
+        "test_missing_profit_chain_field_is_not_treated_as_zero",
+        "test_payment_total_without_principal_blocks_payable_comparison",
+        "test_tampered_verified_scope_blocks_accounting_conclusion",
+        "test_fact_provider_exposes_exact_period_auditable_snapshot",
+        "test_company_rule_hides_other_company_scope",
+        "test_run_and_issue_cannot_be_created_or_changed_manually",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"CIT reconciliation runtime coverage is missing {test_name}")
+
+
 def validate_filing_payment_archive() -> None:
     manifest = ast.literal_eval(
         (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
@@ -1998,6 +2216,7 @@ def main() -> int:
     validate_invoice_reconciliation()
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
+    validate_cit_period_reconciliation()
     validate_filing_payment_archive()
     validate_tax_impact_review()
     validate_formal_compliance_report()

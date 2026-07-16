@@ -4,6 +4,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 EINVOICE_FACT_PREFIX = "cn.reconciliation.einvoice."
 VAT_FACT_PREFIX = "cn.reconciliation.vat."
+CIT_FACT_PREFIX = "cn.reconciliation.cit."
 
 
 class SudoChinaReconciliationAssessmentService(models.AbstractModel):
@@ -159,6 +160,31 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         return engine._cn_reconciliation_assessment_action(assessment)
 
 
+class SudoChinaCitPeriodReconciliationAssessmentRun(models.Model):
+    _inherit = "sudo.cn.cit.period.reconciliation.run"
+
+    def action_queue_compliance_assessment(self):
+        self.ensure_one()
+        if not self.env.user.has_group(
+            "sudo_global_finance.group_compliance_manager"
+        ):
+            raise AccessError(_("只有合规管理员可以发起规则扫描。"))
+        if self.state != "succeeded":
+            raise UserError(_("只能从当前成功企业所得税账税勾稽结果发起规则扫描。"))
+        engine = self.env["sudo.compliance.engine"].with_company(self.company_id)
+        assessment = engine._queue_cn_reconciliation_assessment(
+            self.profile_id,
+            self.period_start,
+            self.period_end,
+            (CIT_FACT_PREFIX,),
+            _(
+                "从企业所得税账税勾稽批次 %(run)s 发起的精确期间规则扫描。",
+                run=self.name,
+            ),
+        )
+        return engine._cn_reconciliation_assessment_action(assessment)
+
+
 class SudoComplianceTask(models.Model):
     _inherit = "sudo.compliance.task"
 
@@ -171,7 +197,7 @@ class SudoComplianceTask(models.Model):
         keys = self.finding_id.rule_version_id.required_fact_ids.mapped("key")
         return tuple(
             prefix
-            for prefix in (EINVOICE_FACT_PREFIX, VAT_FACT_PREFIX)
+            for prefix in (EINVOICE_FACT_PREFIX, VAT_FACT_PREFIX, CIT_FACT_PREFIX)
             if any(key.startswith(prefix) for key in keys)
         )
 

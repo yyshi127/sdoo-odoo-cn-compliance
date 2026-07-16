@@ -6,6 +6,8 @@ from . import profile
 from . import setup_wizard
 from . import tax_data_normalization
 from . import cit_filing_normalization
+from . import cit_accounting_scope
+from . import cit_period_reconciliation
 from . import taxpayer_classification
 from . import vat_accounting_scope
 from . import vat_period_reconciliation

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_cit_accounting_scope_search" model="ir.ui.view">
+        <field name="name">sudo.cn.cit.accounting.scope.search</field>
+        <field name="model">sudo.cn.cit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <search string="企业所得税会计利润口径">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="source_reference"/>
+                <filter name="verified" string="已核验"
+                        domain="[('state', '=', 'verified')]"/>
+                <filter name="draft" string="待核验"
+                        domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_cit_accounting_scope_list" model="ir.ui.view">
+        <field name="name">sudo.cn.cit.accounting.scope.list</field>
+        <field name="model">sudo.cn.cit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <list string="企业所得税会计利润口径"
+                  decoration-success="state == 'verified' and integrity_state == 'verified'"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="source_reference"/>
+                <field name="line_count" sum="科目数"/>
+                <field name="verified_by_id" optional="show"/>
+                <field name="verified_at" optional="hide"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-warning="integrity_state == 'unverified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_cit_accounting_scope_form" model="ir.ui.view">
+        <field name="name">sudo.cn.cit.accounting.scope.form</field>
+        <field name="model">sudo.cn.cit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <form string="企业所得税会计利润口径">
+                <header>
+                    <button name="action_populate_from_chart" type="object"
+                            string="同步损益科目" class="btn-secondary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_verify" type="object"
+                            string="核验口径" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="撤销核验" class="btn-secondary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'verified'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,verified"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="integrity_state != 'checksum_mismatch'">
+                        已核验口径或关联科目信息发生变化，不能用于新的企业所得税账税勾稽。
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        本配置只确定 Odoo 会计利润的取数范围和借贷方向，不定义税前扣除、纳税调整、税率、优惠或其他税法结论。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="适用范围">
+                            <field name="profile_id" options="{'no_create': True}"
+                                   readonly="state == 'verified'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="valid_from" readonly="state == 'verified'"/>
+                            <field name="valid_to" readonly="state == 'verified'"/>
+                            <field name="line_count"/>
+                        </group>
+                        <group string="核验控制">
+                            <field name="source_reference"
+                                   readonly="state == 'verified'"/>
+                            <field name="verified_by_id"/>
+                            <field name="verified_at"/>
+                            <field name="integrity_state" widget="badge"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-warning="integrity_state == 'unverified'"
+                                   decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                            <field name="verification_checksum" widget="CopyClipboardChar"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="scope_note" readonly="state == 'verified'"
+                               placeholder="说明损益科目覆盖、结转凭证、特殊科目、排除项目及当前限制..."/>
+                        <field name="separation_exception_reason"
+                               readonly="state == 'verified'"
+                               placeholder="仅在编制人与核验人为同一人时填写..."/>
+                    </group>
+                    <notebook>
+                        <page string="损益科目范围">
+                            <field name="line_ids" readonly="state == 'verified'">
+                                <list editable="bottom"
+                                      decoration-warning="exception_reason">
+                                    <field name="account_code" readonly="1"/>
+                                    <field name="account_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="account_type"/>
+                                    <field name="role"/>
+                                    <field name="exception_reason" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="工作底稿与证据">
+                            <field name="evidence_attachment_ids" widget="many2many_binary"
+                                   readonly="state == 'verified'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_cit_accounting_scopes" model="ir.actions.act_window">
+        <field name="name">企业所得税会计利润口径</field>
+        <field name="res_model">sudo.cn.cit.accounting.scope</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_cit_accounting_scope_search"/>
+        <field name="context">{'search_default_verified': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_cit_accounting_scopes"
+              name="企业所得税会计利润口径"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_cit_accounting_scopes"
+              sequence="71"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

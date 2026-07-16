@@ -330,4 +330,84 @@
         <field name="evidence_required">True</field>
         <field name="sensitivity">restricted</field>
     </record>
+
+    <record id="fact_cn_cit_reconciliation_conclusion_state_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业所得税账税勾稽结论状态</field>
+        <field name="key">cn.reconciliation.cit.conclusion_state</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">string</field>
+        <field name="provider_key">cn.reconciliation.cit.conclusion_state</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">严格读取同一档案和完全相同期间的唯一当前成功企业所得税账税勾稽；一致只表示当前受控金额算术一致</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cit_reconciliation_blocking_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业所得税账税勾稽阻断问题数</field>
+        <field name="key">cn.reconciliation.cit.blocking_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.cit.blocking_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">会计利润口径、账簿、申报或缴退税来源不完整或不可靠而导致不能比较的问题数</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cit_reconciliation_difference_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业所得税账税勾稽金额差异数</field>
+        <field name="key">cn.reconciliation.cit.difference_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.cit.difference_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">账簿利润、来源申报字段、应补缴款及应退退库之间的非零差异项目数；不等于税务影响额</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cit_reconciliation_warning_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业所得税账税勾稽复核提示数</field>
+        <field name="key">cn.reconciliation.cit.warning_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.cit.warning_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">不阻断算术比较但必须在专业判断中披露的未过账、真实性或复核控制提示数</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cit_reconciliation_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">企业所得税账税勾稽审计详情</field>
+        <field name="key">cn.reconciliation.cit.detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.cit.detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">保存来源状态、损益科目和分录数量、账税利润链、补退税比较、稳定问题代码及五类审计校验和</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
 </odoo>

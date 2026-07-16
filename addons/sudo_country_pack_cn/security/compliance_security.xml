@@ -129,6 +129,38 @@
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
     </record>
 
+    <record id="cn_cit_accounting_scope_company_rule" model="ir.rule">
+        <field name="name">China CIT accounting scopes: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_accounting_scope"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_cit_accounting_scope_line_company_rule" model="ir.rule">
+        <field name="name">China CIT accounting scope lines: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_accounting_scope_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_cit_period_reconciliation_run_company_rule" model="ir.rule">
+        <field name="name">China CIT reconciliation runs: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_period_reconciliation_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_cit_period_reconciliation_issue_company_rule" model="ir.rule">
+        <field name="name">China CIT reconciliation issues: allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_cit_period_reconciliation_issue"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
     <record id="cn_tax_payment_record_company_rule" model="ir.rule">
         <field name="name">China tax payment records: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_tax_payment_record"/>
