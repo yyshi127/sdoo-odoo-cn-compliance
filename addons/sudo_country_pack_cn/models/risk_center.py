@@ -54,6 +54,34 @@ class SudoChinaRiskCenterFinding(models.Model):
         compute="_compute_cn_risk_center_display",
     )
 
+    cn_cross_border_fact_state = fields.Selection(
+        [
+            ("unavailable", "Unavailable"),
+            ("no_transactions", "No Transactions"),
+            ("pending_review", "Pending Review"),
+            ("reviewed", "Reviewed"),
+            ("limited", "Limited"),
+        ],
+        string="Cross-Border Facts",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_cross_border_pending_count = fields.Integer(
+        string="Cross-Border Pending",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_cross_border_reviewed_count = fields.Integer(
+        string="Cross-Border Reviewed",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_cross_border_transaction_count = fields.Integer(
+        string="Cross-Border Total",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_cross_border_next_action = fields.Char(
+        string="Cross-Border Next Action",
+        compute="_compute_cn_risk_center_display",
+    )
+
     cn_risk_rule_basis_state = fields.Selection(
         [
             ("missing", "缺少依据"),
@@ -115,6 +143,13 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_traceability_gap_count,
                 finding.cn_traceability_next_action,
             ) = finding._cn_traceability_summary()
+            (
+                finding.cn_cross_border_fact_state,
+                finding.cn_cross_border_pending_count,
+                finding.cn_cross_border_reviewed_count,
+                finding.cn_cross_border_transaction_count,
+                finding.cn_cross_border_next_action,
+            ) = finding._cn_cross_border_fact_summary()
 
     def _cn_risk_rule_basis_state(self):
         self.ensure_one()
@@ -204,6 +239,73 @@ class SudoChinaRiskCenterFinding(models.Model):
             "action_required",
             len(gaps),
             _("Close remediation, tax impact and verified evidence gaps."),
+        )
+
+    def _cn_cross_border_fact_summary(self):
+        self.ensure_one()
+        snapshots = {
+            snapshot.definition_id.key: snapshot
+            for snapshot in self.fact_snapshot_ids
+        }
+        if (
+            self.rule_id.domain_key != "CN.CROSS_BORDER"
+            and "cn.cross_border.detail" not in snapshots
+        ):
+            return (
+                "unavailable",
+                0,
+                0,
+                0,
+                _("No cross-border fact snapshot is attached to this finding."),
+            )
+
+        detail = snapshots.get("cn.cross_border.detail")
+        pending_snapshot = snapshots.get("cn.cross_border.pending_review_count")
+        reviewed_snapshot = snapshots.get("cn.cross_border.reviewed_transaction_count")
+        detail_value = detail.value_json if detail else {}
+        pending = (
+            pending_snapshot.value_json
+            if pending_snapshot and pending_snapshot.value_json is not None
+            else detail_value.get("pending_review_count")
+        )
+        reviewed = (
+            reviewed_snapshot.value_json
+            if reviewed_snapshot and reviewed_snapshot.value_json is not None
+            else detail_value.get("reviewed_transaction_count")
+        )
+        total = detail_value.get("transaction_count")
+        if not isinstance(pending, int) or not isinstance(reviewed, int):
+            return (
+                "limited",
+                0,
+                0,
+                0,
+                _("Open the rule scan facts and confirm the cross-border snapshot."),
+            )
+        if total is None:
+            total = pending + reviewed
+        if pending:
+            return (
+                "pending_review",
+                pending,
+                reviewed,
+                total,
+                _("Open Cross-Border register and finish controlled review before reporting."),
+            )
+        if reviewed:
+            return (
+                "reviewed",
+                0,
+                reviewed,
+                total,
+                _("Reviewed cross-border facts are available for professional analysis."),
+            )
+        return (
+            "no_transactions",
+            0,
+            0,
+            total,
+            _("No cross-border transactions were captured for this period."),
         )
 
     def action_cn_open_traceability_evidence(self):

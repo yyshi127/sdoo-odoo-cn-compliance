@@ -92,6 +92,14 @@
                        decoration-danger="cn_traceability_state == 'blocked'"/>
                 <field name="cn_traceability_gap_count" optional="show"/>
                 <field name="cn_traceability_next_action" optional="hide"/>
+                <field name="cn_cross_border_fact_state" widget="badge" optional="show"
+                       decoration-success="cn_cross_border_fact_state == 'reviewed'"
+                       decoration-warning="cn_cross_border_fact_state in ('pending_review', 'limited')"
+                       decoration-muted="cn_cross_border_fact_state in ('unavailable', 'no_transactions')"/>
+                <field name="cn_cross_border_pending_count" optional="hide"/>
+                <field name="cn_cross_border_reviewed_count" optional="hide"/>
+                <field name="cn_cross_border_transaction_count" optional="hide"/>
+                <field name="cn_cross_border_next_action" optional="hide"/>
                 <button name="action_cn_open_traceability_evidence" type="object"
                         string="Evidence" class="btn-link"/>
                 <field name="cn_ai_guidance_state" widget="badge" optional="show"
@@ -130,6 +138,11 @@
                 <field name="cn_traceability_state"/>
                 <field name="cn_traceability_gap_count"/>
                 <field name="cn_traceability_next_action"/>
+                <field name="cn_cross_border_fact_state"/>
+                <field name="cn_cross_border_pending_count"/>
+                <field name="cn_cross_border_reviewed_count"/>
+                <field name="cn_cross_border_transaction_count"/>
+                <field name="cn_cross_border_next_action"/>
                 <field name="summary"/>
                 <field name="recommendation"/>
                 <field name="task_assignee_id"/>
@@ -212,6 +225,25 @@
                                             <field name="cn_risk_verified_evidence_count"/>
                                             <span>/</span>
                                             <field name="cn_risk_evidence_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100"
+                                         invisible="cn_cross_border_fact_state == 'unavailable'">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="text-muted small">Cross-Border Facts</div>
+                                                <div class="fw-semibold"><field name="cn_cross_border_next_action"/></div>
+                                                <div class="text-muted small">
+                                                    Pending <field name="cn_cross_border_pending_count"/>
+                                                    <span> / Reviewed </span>
+                                                    <field name="cn_cross_border_reviewed_count"/>
+                                                    <span> / Total </span>
+                                                    <field name="cn_cross_border_transaction_count"/>
+                                                </div>
+                                            </div>
+                                            <field name="cn_cross_border_fact_state" widget="badge"/>
                                         </div>
                                     </div>
                                 </div>

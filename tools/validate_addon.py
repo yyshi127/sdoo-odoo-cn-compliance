@@ -256,6 +256,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China cross-border transaction register capability must be declared")
     if features.get("china_cross_border_rule_facts") is not True:
         fail("China cross-border rule fact bridge capability must be declared")
+    if features.get("china_cross_border_risk_visibility") is not True:
+        fail("China cross-border risk visibility capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2942,6 +2944,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             )
         if "china_cross_border_rule_facts" not in content:
             fail(f"China cross-border rule facts capability is missing from {label}")
+        if "china_cross_border_risk_visibility" not in content:
+            fail(
+                f"China cross-border risk visibility capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3235,6 +3241,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_traceability_gap_count",
         "cn_traceability_next_action",
         "action_cn_open_traceability_evidence",
+        "cn_cross_border_fact_state",
+        "cn_cross_border_pending_count",
+        "cn_cross_border_reviewed_count",
+        "cn_cross_border_transaction_count",
+        "cn_cross_border_next_action",
+        "_cn_cross_border_fact_summary",
         "cn_risk_rule_basis_state",
         "cn_risk_rule_source_count",
         "cn_risk_rule_release_state",
@@ -3252,10 +3264,32 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in risk_model_content:
             fail(f"China risk action guidance model is missing {required}")
+    for required in (
+        "cn_cross_border_fact_state",
+        "cn_cross_border_pending_count",
+        "cn_cross_border_reviewed_count",
+        "cn_cross_border_transaction_count",
+        "cn_cross_border_next_action",
+        "Cross-Border Facts",
+    ):
+        if required not in risk_view_content:
+            fail(f"China cross-border risk visibility UI is missing {required}")
 
     report_test_content = (
         ADDON_ROOT / "tests" / "test_report_readiness.py"
     ).read_text(encoding="utf-8")
+    risk_test_content = (
+        ADDON_ROOT / "tests" / "test_risk_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_cross_border_rule_finding_exposes_fact_review_status",
+        "cn_cross_border_fact_state",
+        "cn_cross_border_pending_count",
+        "cn_cross_border_reviewed_count",
+        "china_cross_border_risk_visibility",
+    ):
+        if required not in risk_test_content:
+            fail(f"China cross-border risk visibility coverage is missing {required}")
     for test_name in (
         "test_completed_clean_assessment_is_report_ready",
         "test_incomplete_assessment_requires_scan_completion",

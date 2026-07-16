@@ -80,6 +80,52 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         assessment._engine_write({"state": "completed"})
         return finding
 
+    def _cross_border_transaction(self):
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "risk-center-cross-border.txt",
+                "raw": b"risk center cross border evidence",
+            }
+        )
+        return self.env["sudo.cn.cross.border.transaction"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "transaction_date": "2026-06-18",
+                "transaction_type": "service_fee",
+                "counterparty_name": "Risk Center Foreign Provider",
+                "counterparty_country_id": self.env.ref("base.us").id,
+                "currency_id": self.currency.id,
+                "amount": 18000.0,
+                "withholding_considered": True,
+                "evidence_attachment_ids": [Command.set(attachment.ids)],
+            }
+        )
+
+    def _cross_border_assessment(self):
+        version = self.env.ref(
+            "sudo_country_pack_cn.rule_version_cn_cross_border_ready_001_draft"
+        )
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-06-30",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(version.ids)],
+                "note": "Risk center cross-border fact visibility test.",
+            }
+        )
+        assessment.action_run_now()
+        return assessment, assessment.finding_ids.filtered(
+            lambda finding: finding.rule_id.code == "CN-CROSS-BORDER-CTRL-001"
+        )
+
     def test_finding_exposes_period_next_action_and_evidence_status(self):
         finding = self._finding()
 
@@ -144,6 +190,29 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(action["res_model"], "sudo.compliance.evidence")
         self.assertIn(("finding_id", "=", finding.id), action["domain"])
 
+    def test_cross_border_rule_finding_exposes_fact_review_status(self):
+        transaction = self._cross_border_transaction()
+        _assessment, finding = self._cross_border_assessment()
+
+        self.assertEqual(finding.result, "fail")
+        self.assertEqual(finding.cn_cross_border_fact_state, "pending_review")
+        self.assertEqual(finding.cn_cross_border_pending_count, 1)
+        self.assertEqual(finding.cn_cross_border_reviewed_count, 0)
+        self.assertEqual(finding.cn_cross_border_transaction_count, 1)
+        self.assertIn("Cross-Border", finding.cn_cross_border_next_action)
+
+        transaction.action_submit()
+        transaction.review_notes = (
+            "Manager reviewed withholding consideration, evidence and limitations."
+        )
+        transaction.action_mark_reviewed()
+        _assessment, reviewed_finding = self._cross_border_assessment()
+
+        self.assertEqual(reviewed_finding.result, "pass")
+        self.assertEqual(reviewed_finding.cn_cross_border_fact_state, "reviewed")
+        self.assertEqual(reviewed_finding.cn_cross_border_pending_count, 0)
+        self.assertEqual(reviewed_finding.cn_cross_border_reviewed_count, 1)
+
     def test_remediation_task_exposes_traceability_gaps(self):
         finding = self._finding()
         task = self.env["sudo.compliance.task"].create_from_finding(finding)
@@ -166,5 +235,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_traceability_matrix_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_cross_border_risk_visibility"
             ]
         )
