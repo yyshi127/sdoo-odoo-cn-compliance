@@ -49,8 +49,14 @@
                 <field name="filing_name"/>
                 <field name="cn_filing_center_period_label"/>
                 <field name="due_date"/>
-                <field name="state" widget="badge"/>
-                <field name="payment_state" widget="badge"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('accepted', 'done')"
+                       decoration-warning="state in ('draft', 'ready', 'submitted')"
+                       decoration-danger="state in ('rejected', 'cancelled')"/>
+                <field name="payment_state" widget="badge"
+                       decoration-success="payment_state in ('paid', 'not_required')"
+                       decoration-warning="payment_state in ('not_paid', 'partial')"
+                       decoration-danger="payment_state in ('failed', 'cancelled')"/>
                 <field name="cn_submission_integrity_state" widget="badge"
                        decoration-success="cn_submission_integrity_state == 'verified'"
                        decoration-warning="cn_submission_integrity_state in ('unsealed', 'source_superseded')"
@@ -111,32 +117,55 @@
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">申报状态</div>
-                                        <div class="fw-semibold"><field name="state" widget="badge"/></div>
+                                        <div class="fw-semibold">
+                                            <field name="state" widget="badge"
+                                                   decoration-success="state in ('accepted', 'done')"
+                                                   decoration-warning="state in ('draft', 'ready', 'submitted')"
+                                                   decoration-danger="state in ('rejected', 'cancelled')"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">缴退税状态</div>
-                                        <div class="fw-semibold"><field name="payment_state" widget="badge"/></div>
+                                        <div class="fw-semibold">
+                                            <field name="payment_state" widget="badge"
+                                                   decoration-success="payment_state in ('paid', 'not_required')"
+                                                   decoration-warning="payment_state in ('not_paid', 'partial')"
+                                                   decoration-danger="payment_state in ('failed', 'cancelled')"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">申报封存</div>
-                                        <div class="fw-semibold"><field name="cn_submission_integrity_state" widget="badge"/></div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_submission_integrity_state" widget="badge"
+                                                   decoration-success="cn_submission_integrity_state == 'verified'"
+                                                   decoration-warning="cn_submission_integrity_state in ('unsealed', 'source_superseded')"
+                                                   decoration-danger="cn_submission_integrity_state in ('changed', 'invalid')"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">缴退税封存</div>
-                                        <div class="fw-semibold"><field name="cn_payment_integrity_state" widget="badge"/></div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_payment_integrity_state" widget="badge"
+                                                   decoration-success="cn_payment_integrity_state in ('verified', 'not_required')"
+                                                   decoration-warning="cn_payment_integrity_state in ('unsealed', 'source_superseded')"
+                                                   decoration-danger="cn_payment_integrity_state in ('changed', 'invalid')"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">正式证据</div>
                                         <div class="fw-semibold">
-                                            <field name="cn_filing_center_evidence_state" widget="badge"/>
+                                            <field name="cn_filing_center_evidence_state" widget="badge"
+                                                   decoration-success="cn_filing_center_evidence_state == 'verified'"
+                                                   decoration-warning="cn_filing_center_evidence_state == 'partial'"
+                                                   decoration-muted="cn_filing_center_evidence_state == 'none'"/>
                                             <span> </span>
                                             <field name="cn_filing_center_verified_evidence_count"/>
                                             <span>/</span>

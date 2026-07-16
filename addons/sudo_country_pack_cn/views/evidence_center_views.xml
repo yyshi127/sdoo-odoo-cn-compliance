@@ -103,7 +103,10 @@
                                         <field name="evidence_date"/>
                                     </div>
                                 </div>
-                                <field name="state" widget="badge"/>
+                                <field name="state" widget="badge"
+                                       decoration-success="state == 'verified'"
+                                       decoration-warning="state == 'submitted'"
+                                       decoration-danger="state == 'rejected'"/>
                             </div>
                             <div class="row g-2 mt-3">
                                 <div class="col-6">

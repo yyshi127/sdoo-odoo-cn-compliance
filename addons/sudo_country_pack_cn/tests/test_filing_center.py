@@ -33,6 +33,11 @@ class TestChinaFilingCenter(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"]["china_filing_center"]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_archive_evidence_badge_clarity"
+            ]
+        )
 
     def test_workbench_opens_profile_scoped_filing_center(self):
         action = self.profile.action_cn_open_workbench_filing_center()

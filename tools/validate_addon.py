@@ -276,6 +276,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China risk card state badge clarity capability must be declared")
     if features.get("china_report_readiness_badge_clarity") is not True:
         fail("China report readiness badge clarity capability must be declared")
+    if features.get("china_archive_evidence_badge_clarity") is not True:
+        fail("China archive and evidence badge clarity capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3011,6 +3013,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China report readiness badge clarity capability is missing from {label}"
             )
+        if "china_archive_evidence_badge_clarity" not in content:
+            fail(
+                f"China archive and evidence badge clarity capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3546,6 +3552,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "document_checksum",
         "verified_by_id",
         "verified_at",
+        'decoration-success="state == \'verified\'"',
+        'decoration-warning="state == \'submitted\'"',
+        'decoration-danger="state == \'rejected\'"',
     ):
         if required not in evidence_view_content:
             fail(f"China evidence center UI is missing {required}")
@@ -3583,6 +3592,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_submission_integrity_state",
         "cn_payment_integrity_state",
         "default_group_by=\"cn_filing_center_kind\"",
+        'decoration-success="state in (\'accepted\', \'done\')"',
+        'decoration-success="payment_state in (\'paid\', \'not_required\')"',
+        'decoration-success="cn_submission_integrity_state == \'verified\'"',
+        'decoration-danger="cn_payment_integrity_state in (\'changed\', \'invalid\')"',
+        'decoration-muted="cn_filing_center_evidence_state == \'none\'"',
     ):
         if required not in filing_view_content:
             fail(f"China filing center UI is missing {required}")
@@ -3652,6 +3666,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_filing_center",
         "test_workbench_opens_profile_scoped_filing_center",
         "china_filing_center",
+        "china_archive_evidence_badge_clarity",
         "action_cn_open_workbench_filing_center",
         "cn_vat_reconciliation_run_id",
         "cn_cit_reconciliation_run_id",
