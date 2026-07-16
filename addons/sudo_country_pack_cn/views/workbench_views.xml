@@ -133,7 +133,11 @@
                                             <field name="cn_workbench_obligation_next_action"/>
                                         </div>
                                     </div>
-                                    <field name="cn_workbench_obligation_state" widget="badge"/>
+                                    <field name="cn_workbench_obligation_state" widget="badge"
+                                           decoration-success="cn_workbench_obligation_state == 'ready'"
+                                           decoration-warning="cn_workbench_obligation_state == 'attention'"
+                                           decoration-danger="cn_workbench_obligation_state == 'blocked'"
+                                           decoration-muted="cn_workbench_obligation_state == 'not_started'"/>
                                 </div>
                                 <div class="row g-2 mt-2">
                                     <div class="col-3">
@@ -164,7 +168,11 @@
                                                 <div class="fw-semibold">增值税</div>
                                                 <div class="text-muted small"><field name="cn_workbench_vat_next_action"/></div>
                                             </div>
-                                            <field name="cn_workbench_vat_domain_state" widget="badge"/>
+                                            <field name="cn_workbench_vat_domain_state" widget="badge"
+                                                   decoration-success="cn_workbench_vat_domain_state == 'ready'"
+                                                   decoration-warning="cn_workbench_vat_domain_state == 'attention'"
+                                                   decoration-danger="cn_workbench_vat_domain_state == 'blocked'"
+                                                   decoration-muted="cn_workbench_vat_domain_state == 'not_started'"/>
                                         </div>
                                         <div class="fw-bold mt-2">
                                             <field name="cn_workbench_vat_issue_count"/>
@@ -180,7 +188,11 @@
                                                 <div class="fw-semibold">企业所得税</div>
                                                 <div class="text-muted small"><field name="cn_workbench_cit_next_action"/></div>
                                             </div>
-                                            <field name="cn_workbench_cit_domain_state" widget="badge"/>
+                                            <field name="cn_workbench_cit_domain_state" widget="badge"
+                                                   decoration-success="cn_workbench_cit_domain_state == 'ready'"
+                                                   decoration-warning="cn_workbench_cit_domain_state == 'attention'"
+                                                   decoration-danger="cn_workbench_cit_domain_state == 'blocked'"
+                                                   decoration-muted="cn_workbench_cit_domain_state == 'not_started'"/>
                                         </div>
                                         <div class="fw-bold mt-2">
                                             <field name="cn_workbench_cit_issue_count"/>
@@ -196,7 +208,11 @@
                                                 <div class="fw-semibold">个人所得税</div>
                                                 <div class="text-muted small"><field name="cn_workbench_iit_next_action"/></div>
                                             </div>
-                                            <field name="cn_workbench_iit_domain_state" widget="badge"/>
+                                            <field name="cn_workbench_iit_domain_state" widget="badge"
+                                                   decoration-success="cn_workbench_iit_domain_state == 'ready'"
+                                                   decoration-warning="cn_workbench_iit_domain_state == 'attention'"
+                                                   decoration-danger="cn_workbench_iit_domain_state == 'blocked'"
+                                                   decoration-muted="cn_workbench_iit_domain_state == 'not_started'"/>
                                         </div>
                                         <div class="fw-bold mt-2">
                                             <field name="cn_workbench_iit_issue_count"/>
@@ -212,7 +228,11 @@
                                                 <div class="fw-semibold">跨境/扣缴</div>
                                                 <div class="text-muted small"><field name="cn_workbench_cross_border_next_action"/></div>
                                             </div>
-                                            <field name="cn_workbench_cross_border_state" widget="badge"/>
+                                            <field name="cn_workbench_cross_border_state" widget="badge"
+                                                   decoration-success="cn_workbench_cross_border_state == 'ready'"
+                                                   decoration-warning="cn_workbench_cross_border_state == 'attention'"
+                                                   decoration-danger="cn_workbench_cross_border_state == 'blocked'"
+                                                   decoration-muted="cn_workbench_cross_border_state == 'not_started'"/>
                                         </div>
                                         <div class="text-muted small mt-2">
                                             <field name="cn_workbench_cross_border_basis"/>
@@ -238,32 +258,56 @@
                                     <button type="object" name="action_cn_open_workbench_assessments"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">1 规则扫描</div>
-                                        <field name="cn_workbench_scan_state" widget="badge"/>
+                                        <field name="cn_workbench_scan_state" widget="badge"
+                                               decoration-success="cn_workbench_scan_state == 'ready'"
+                                               decoration-warning="cn_workbench_scan_state == 'attention'"
+                                               decoration-danger="cn_workbench_scan_state == 'blocked'"
+                                               decoration-muted="cn_workbench_scan_state == 'not_started'"/>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_findings"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">2 风险识别</div>
-                                        <field name="cn_workbench_risk_state" widget="badge"/>
+                                        <field name="cn_workbench_risk_state" widget="badge"
+                                               decoration-success="cn_workbench_risk_state == 'ready'"
+                                               decoration-warning="cn_workbench_risk_state == 'attention'"
+                                               decoration-danger="cn_workbench_risk_state == 'blocked'"
+                                               decoration-muted="cn_workbench_risk_state == 'not_started'"/>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_tasks"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">3 整改跟踪</div>
-                                        <field name="cn_workbench_remediation_state" widget="badge"/>
+                                        <field name="cn_workbench_remediation_state" widget="badge"
+                                               decoration-success="cn_workbench_remediation_state == 'ready'"
+                                               decoration-warning="cn_workbench_remediation_state == 'attention'"
+                                               decoration-danger="cn_workbench_remediation_state == 'blocked'"
+                                               decoration-muted="cn_workbench_remediation_state == 'not_started'"/>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_report_readiness"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">4 报告准备</div>
-                                        <field name="cn_workbench_report_state" widget="badge"/>
+                                        <field name="cn_workbench_report_state" widget="badge"
+                                               decoration-success="cn_workbench_report_state == 'ready'"
+                                               decoration-warning="cn_workbench_report_state == 'attention'"
+                                               decoration-danger="cn_workbench_report_state == 'blocked'"
+                                               decoration-muted="cn_workbench_report_state == 'not_started'"/>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_evidence_center"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">5 证据链</div>
-                                        <field name="cn_workbench_evidence_state" widget="badge"/>
+                                        <field name="cn_workbench_evidence_state" widget="badge"
+                                               decoration-success="cn_workbench_evidence_state == 'ready'"
+                                               decoration-warning="cn_workbench_evidence_state == 'attention'"
+                                               decoration-danger="cn_workbench_evidence_state == 'blocked'"
+                                               decoration-muted="cn_workbench_evidence_state == 'not_started'"/>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_filing_center"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">6 申报缴款档案</div>
-                                        <field name="cn_workbench_filing_archive_state" widget="badge"/>
+                                        <field name="cn_workbench_filing_archive_state" widget="badge"
+                                               decoration-success="cn_workbench_filing_archive_state == 'ready'"
+                                               decoration-warning="cn_workbench_filing_archive_state == 'attention'"
+                                               decoration-danger="cn_workbench_filing_archive_state == 'blocked'"
+                                               decoration-muted="cn_workbench_filing_archive_state == 'not_started'"/>
                                     </button>
                                 </div>
                             </div>
@@ -277,7 +321,11 @@
                                             <field name="cn_workbench_filing_archive_next_action"/>
                                         </div>
                                     </div>
-                                    <field name="cn_workbench_filing_archive_state" widget="badge"/>
+                                    <field name="cn_workbench_filing_archive_state" widget="badge"
+                                           decoration-success="cn_workbench_filing_archive_state == 'ready'"
+                                           decoration-warning="cn_workbench_filing_archive_state == 'attention'"
+                                           decoration-danger="cn_workbench_filing_archive_state == 'blocked'"
+                                           decoration-muted="cn_workbench_filing_archive_state == 'not_started'"/>
                                 </div>
                                 <div class="row g-2 mt-2">
                                     <div class="col-4">
@@ -397,7 +445,13 @@
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="company_id" readonly="1"/></h1>
-                        <h2><field name="cn_workbench_status" widget="badge" readonly="1"/></h2>
+                        <h2>
+                            <field name="cn_workbench_status" widget="badge" readonly="1"
+                                   decoration-success="cn_workbench_status == 'healthy'"
+                                   decoration-warning="cn_workbench_status in ('warning', 'setup_required')"
+                                   decoration-danger="cn_workbench_status == 'action_required'"
+                                   decoration-muted="cn_workbench_status == 'limited'"/>
+                        </h2>
                     </div>
                     <group>
                         <group string="当前判断">
@@ -428,7 +482,11 @@
                             <field name="cn_workbench_limitation_count" readonly="1"/>
                         </group>
                         <group string="纳税义务适用性">
-                            <field name="cn_workbench_obligation_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_obligation_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_obligation_state == 'ready'"
+                                   decoration-warning="cn_workbench_obligation_state == 'attention'"
+                                   decoration-danger="cn_workbench_obligation_state == 'blocked'"
+                                   decoration-muted="cn_workbench_obligation_state == 'not_started'"/>
                             <field name="cn_workbench_obligation_next_action" readonly="1"/>
                             <field name="cn_workbench_obligation_count" readonly="1"/>
                             <field name="cn_workbench_applicable_obligation_count" readonly="1"/>
@@ -436,16 +494,40 @@
                             <field name="cn_workbench_filing_obligation_count" readonly="1"/>
                         </group>
                         <group string="流程总览">
-                            <field name="cn_workbench_scan_state" readonly="1" widget="badge"/>
-                            <field name="cn_workbench_risk_state" readonly="1" widget="badge"/>
-                            <field name="cn_workbench_remediation_state" readonly="1" widget="badge"/>
-                            <field name="cn_workbench_report_state" readonly="1" widget="badge"/>
-                            <field name="cn_workbench_evidence_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_scan_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_scan_state == 'ready'"
+                                   decoration-warning="cn_workbench_scan_state == 'attention'"
+                                   decoration-danger="cn_workbench_scan_state == 'blocked'"
+                                   decoration-muted="cn_workbench_scan_state == 'not_started'"/>
+                            <field name="cn_workbench_risk_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_risk_state == 'ready'"
+                                   decoration-warning="cn_workbench_risk_state == 'attention'"
+                                   decoration-danger="cn_workbench_risk_state == 'blocked'"
+                                   decoration-muted="cn_workbench_risk_state == 'not_started'"/>
+                            <field name="cn_workbench_remediation_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_remediation_state == 'ready'"
+                                   decoration-warning="cn_workbench_remediation_state == 'attention'"
+                                   decoration-danger="cn_workbench_remediation_state == 'blocked'"
+                                   decoration-muted="cn_workbench_remediation_state == 'not_started'"/>
+                            <field name="cn_workbench_report_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_report_state == 'ready'"
+                                   decoration-warning="cn_workbench_report_state == 'attention'"
+                                   decoration-danger="cn_workbench_report_state == 'blocked'"
+                                   decoration-muted="cn_workbench_report_state == 'not_started'"/>
+                            <field name="cn_workbench_evidence_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_evidence_state == 'ready'"
+                                   decoration-warning="cn_workbench_evidence_state == 'attention'"
+                                   decoration-danger="cn_workbench_evidence_state == 'blocked'"
+                                   decoration-muted="cn_workbench_evidence_state == 'not_started'"/>
                             <field name="cn_workbench_verified_evidence_count" readonly="1"/>
                             <field name="cn_workbench_evidence_count" readonly="1"/>
                         </group>
                         <group string="申报与缴款档案">
-                            <field name="cn_workbench_filing_archive_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_filing_archive_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_filing_archive_state == 'ready'"
+                                   decoration-warning="cn_workbench_filing_archive_state == 'attention'"
+                                   decoration-danger="cn_workbench_filing_archive_state == 'blocked'"
+                                   decoration-muted="cn_workbench_filing_archive_state == 'not_started'"/>
                             <field name="cn_workbench_filing_archive_next_action" readonly="1"/>
                             <field name="cn_workbench_filing_archive_count" readonly="1"/>
                             <field name="cn_workbench_sealed_filing_archive_count" readonly="1"/>

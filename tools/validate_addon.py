@@ -270,6 +270,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China cross-border risk visibility capability must be declared")
     if features.get("china_workbench_filing_archive_summary") is not True:
         fail("China workbench filing archive summary capability must be declared")
+    if features.get("china_workbench_state_badge_clarity") is not True:
+        fail("China workbench state badge clarity capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2993,6 +2995,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China filing archive workbench summary capability is missing from {label}"
             )
+        if "china_workbench_state_badge_clarity" not in content:
+            fail(
+                f"China workbench state badge clarity capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3102,6 +3108,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_filing_archive_count",
         "cn_workbench_sealed_filing_archive_count",
         "cn_workbench_filing_archive_issue_count",
+        'decoration-success="cn_workbench_scan_state == \'ready\'"',
+        'decoration-warning="cn_workbench_risk_state == \'attention\'"',
+        'decoration-danger="cn_workbench_remediation_state == \'blocked\'"',
+        'decoration-muted="cn_workbench_filing_archive_state == \'not_started\'"',
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
@@ -3140,6 +3150,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_cross_border_transaction_register",
         "china_cross_border_rule_facts",
         "china_workbench_filing_archive_summary",
+        "china_workbench_state_badge_clarity",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
         "cn_workbench_vat_domain_state",

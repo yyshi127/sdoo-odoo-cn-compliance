@@ -161,6 +161,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_filing_archive_summary"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_state_badge_clarity"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
