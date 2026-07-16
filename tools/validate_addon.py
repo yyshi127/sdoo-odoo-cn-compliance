@@ -241,6 +241,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("governed CIT rule candidate capability must be declared")
     if features.get("cit_filing_settlement_archive") is not True:
         fail("controlled CIT filing and settlement archive capability must be declared")
+    if features.get("iit_withholding_normalization") is not True:
+        fail("controlled IIT withholding normalization capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -890,11 +892,16 @@ def validate_external_dataset_security() -> None:
             == "model_sudo_cn_external_dataset"
         ):
             company_rules.append(fields)
-    if len(company_rules) != 1:
-        fail("external datasets require one company record rule")
-    domain = field_text(company_rules[0], "domain_force", "company rule")
-    if "company_ids" not in domain or "company_id" not in domain:
-        fail("external dataset rule must enforce allowed companies")
+    if len(company_rules) != 2:
+        fail("external datasets require user and manager company record rules")
+    domains = [
+        field_text(rule, "domain_force", "company rule")
+        for rule in company_rules
+    ]
+    if any("company_ids" not in domain or "company_id" not in domain for domain in domains):
+        fail("external dataset rules must enforce allowed companies")
+    if not any("iit_withholding" in domain for domain in domains):
+        fail("external dataset user rule must restrict sensitive IIT sources")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1150,6 +1157,8 @@ def validate_tax_data_normalization() -> None:
         fail("tax data normalization views must be loaded by the manifest")
     if "views/cit_filing_views.xml" not in manifest.get("data", []):
         fail("CIT filing normalization views must be loaded by the manifest")
+    if "views/iit_withholding_views.xml" not in manifest.get("data", []):
+        fail("IIT withholding normalization views must be loaded by the manifest")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1158,6 +1167,8 @@ def validate_tax_data_normalization() -> None:
         fail("tax data normalization models must be imported")
     if "from . import cit_filing_normalization" not in model_init:
         fail("CIT filing normalization models must be imported")
+    if "from . import iit_withholding_normalization" not in model_init:
+        fail("IIT withholding normalization models must be imported")
 
     service_init = (ADDON_ROOT / "services" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1168,15 +1179,18 @@ def validate_tax_data_normalization() -> None:
     contract_path = ADDON_ROOT / "services" / "tax_data_contract.py"
     model_path = ADDON_ROOT / "models" / "tax_data_normalization.py"
     cit_model_path = ADDON_ROOT / "models" / "cit_filing_normalization.py"
+    iit_model_path = ADDON_ROOT / "models" / "iit_withholding_normalization.py"
     if (
         not contract_path.is_file()
         or not model_path.is_file()
         or not cit_model_path.is_file()
+        or not iit_model_path.is_file()
     ):
         fail("tax data normalization implementation is incomplete")
     contract_content = contract_path.read_text(encoding="utf-8")
     model_content = model_path.read_text(encoding="utf-8")
     cit_model_content = cit_model_path.read_text(encoding="utf-8")
+    iit_model_content = iit_model_path.read_text(encoding="utf-8")
     for required in (
         "sdoo.cn.tax-data.v1",
         "duplicate JSON key",
@@ -1226,6 +1240,34 @@ def validate_tax_data_normalization() -> None:
     ):
         if required not in cit_model_content:
             fail(f"CIT filing normalization contract is missing {required}")
+    for required in (
+        '"iit_withholding"',
+        "_IIT_WITHHOLDING_FIELDS",
+        "_IIT_WITHHOLDING_LINE_FIELDS",
+        "_IIT_CONTROLLED_KEY_PATTERN",
+        "_IIT_SOURCE_LINE_KEY",
+        "_validate_iit_lines",
+        "controlled pseudonymous key",
+        "must be a controlled opaque key",
+        "must not contain an identity number",
+    ):
+        if required not in contract_content:
+            fail(f"IIT withholding data contract is missing {required}")
+    for required in (
+        '_name = "sudo.cn.iit.withholding.record"',
+        '_name = "sudo.cn.iit.withholding.line"',
+        "has_declared_person_count",
+        "has_total_income_amount",
+        "has_total_payable_refundable_amount",
+        "IIT_PERSON_COUNT_MISMATCH",
+        "IIT_LINE_COUNT_MISMATCH",
+        "IIT_INCOME_TOTAL_MISMATCH",
+        "IIT_SETTLEMENT_TOTAL_MISMATCH",
+        "line_checksum",
+        "_TAX_NORMALIZED_RECORD_MARKER",
+    ):
+        if required not in iit_model_content:
+            fail(f"IIT withholding normalization contract is missing {required}")
 
     access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
     with access_path.open(encoding="utf-8", newline="") as handle:
@@ -1237,6 +1279,10 @@ def validate_tax_data_normalization() -> None:
         "model_sudo_cn_cit_filing_record",
         "model_sudo_cn_cit_filing_line",
         "model_sudo_cn_tax_payment_record",
+    }
+    manager_only_models = {
+        "model_sudo_cn_iit_withholding_record",
+        "model_sudo_cn_iit_withholding_line",
     }
     expected_groups = {
         "sudo_global_finance.group_compliance_user",
@@ -1263,6 +1309,15 @@ def validate_tax_data_normalization() -> None:
         )
         if manager_row["perm_unlink"] != "0":
             fail(f"tax data audit records must not be deleted: {model_name}")
+    for model_name in manager_only_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != {
+            "sudo_global_finance.group_compliance_manager"
+        }:
+            fail(f"sensitive IIT ACL must be manager-only: {model_name}")
+        manager_row = model_rows[0]
+        if manager_row["perm_read"] != "1" or manager_row["perm_unlink"] != "0":
+            fail(f"sensitive IIT audit ACL is invalid: {model_name}")
 
     security_root = ElementTree.parse(
         ADDON_ROOT / "security" / "compliance_security.xml"
@@ -1272,18 +1327,33 @@ def validate_tax_data_normalization() -> None:
         fields = record_fields(record)
         model_field = fields.get("model_id")
         model_ref = model_field.attrib.get("ref") if model_field is not None else ""
-        if model_ref not in governed_models:
+        if model_ref not in governed_models | manager_only_models:
             continue
         domain = field_text(fields, "domain_force", record.attrib["id"])
         if "company_ids" not in domain or "company_id" not in domain:
             fail(f"tax data rule lacks company isolation: {model_ref}")
         ruled_models.add(model_ref)
-    if ruled_models != governed_models:
+    if ruled_models != governed_models | manager_only_models:
         fail("every governed tax data model requires a company record rule")
+    security_content = (ADDON_ROOT / "security" / "compliance_security.xml").read_text(
+        encoding="utf-8"
+    )
+    for required in (
+        "cn_external_dataset_manager_company_rule",
+        "cn_tax_data_parse_run_manager_company_rule",
+        "('dataset_type', '!=', 'iit_withholding')",
+    ):
+        if required not in security_content:
+            fail(f"sensitive IIT source access control is missing {required}")
 
     view_path = ADDON_ROOT / view_relative_path
     cit_view_path = ADDON_ROOT / "views" / "cit_filing_views.xml"
-    if not view_path.is_file() or not cit_view_path.is_file():
+    iit_view_path = ADDON_ROOT / "views" / "iit_withholding_views.xml"
+    if (
+        not view_path.is_file()
+        or not cit_view_path.is_file()
+        or not iit_view_path.is_file()
+    ):
         fail("tax data normalization UI is missing")
     view_content = view_path.read_text(encoding="utf-8")
     for required_id in (
@@ -1320,6 +1390,27 @@ def validate_tax_data_normalization() -> None:
     ):
         if boundary_text not in cit_view_content:
             fail(f"CIT filing UI boundary is missing: {boundary_text}")
+    iit_view_content = iit_view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_tax_data_parse_run_form_iit",
+        "view_cn_iit_withholding_record_search",
+        "view_cn_iit_withholding_record_list",
+        "view_cn_iit_withholding_record_form",
+        "view_cn_iit_withholding_line_form",
+        "action_cn_iit_withholding_records",
+        "menu_cn_iit_withholding_records",
+        "view_cn_external_dataset_form_iit_results",
+    ):
+        if f'id="{required_id}"' not in iit_view_content:
+            fail(f"IIT withholding normalization UI is missing {required_id}")
+    for boundary_text in (
+        "不计算工资、扣除、税率或应扣税额",
+        "源明细键和人员键只接受受控 HMAC 或不透明值",
+        "不得在标准化契约中写入姓名、身份证件、手机、地址或银行账户",
+        "明确申报为零的字段会保留并显示为零",
+    ):
+        if boundary_text not in iit_view_content:
+            fail(f"IIT withholding UI privacy boundary is missing: {boundary_text}")
 
     pure_test_path = REPOSITORY_ROOT / "tools" / "test_tax_data_contract.py"
     runtime_test_path = ADDON_ROOT / "tests" / "test_tax_data_normalization.py"
@@ -1331,8 +1422,8 @@ def validate_tax_data_normalization() -> None:
         and node.name.startswith("test_")
         for node in ast.walk(test_tree)
     )
-    if test_methods < 13:
-        fail("tax data normalization requires at least thirteen runtime tests")
+    if test_methods < 20:
+        fail("tax data normalization requires at least twenty runtime tests")
 
 
 def validate_vat_period_reconciliation() -> None:

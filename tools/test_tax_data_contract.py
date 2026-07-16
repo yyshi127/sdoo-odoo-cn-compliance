@@ -82,6 +82,42 @@ def cit_filing_payload():
     }
 
 
+def iit_withholding_payload():
+    return {
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": "iit_withholding",
+        "source_schema": "controlled-test-iit-withholding-return",
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [
+            {
+                "source_record_key": "IIT-2026-06",
+                "taxpayer_id": "91440101MA5D123451",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "currency_code": "CNY",
+                "tax_year": 2026,
+                "filing_frequency": "monthly",
+                "return_type_code": "IIT-WITHHOLDING",
+                "declared_person_count": 1,
+                "declared_line_count": 1,
+                "total_income_amount": "10000.00",
+                "total_payable_refundable_amount": "0.00",
+                "lines": [
+                    {
+                        "source_line_key": "opaque:" + "b" * 32,
+                        "subject_key": "hmac-sha256:" + "a" * 64,
+                        "residency_status": "resident",
+                        "income_type_code": "wages_salary",
+                        "current_income_amount": "10000.00",
+                        "payable_refundable_amount": "0.00",
+                    }
+                ],
+            }
+        ],
+    }
+
+
 class TestTaxDataContract(unittest.TestCase):
     def test_valid_filing_contract_preserves_zero_text(self):
         result = CONTRACT.load_tax_data_contract(encoded(filing_payload()))
@@ -201,6 +237,107 @@ class TestTaxDataContract(unittest.TestCase):
         with self.assertRaisesRegex(
             CONTRACT.TaxDataContractError,
             "unknown fields: calculated_by_system",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_iit_withholding_contract_preserves_zero_and_pseudonym(self):
+        result = CONTRACT.load_tax_data_contract(
+            encoded(iit_withholding_payload())
+        )
+
+        self.assertEqual(result.dataset_type, "iit_withholding")
+        self.assertEqual(
+            result.records[0]["total_payable_refundable_amount"],
+            "0.00",
+        )
+        self.assertTrue(
+            result.records[0]["lines"][0]["subject_key"].startswith(
+                "hmac-sha256:"
+            )
+        )
+
+    def test_iit_example_document_is_contract_valid(self):
+        example_path = (
+            ROOT
+            / "docs"
+            / "samples"
+            / "cn_iit_withholding_contract_v1.example.json"
+        )
+
+        result = CONTRACT.load_tax_data_contract(example_path.read_bytes())
+
+        self.assertEqual(result.dataset_type, "iit_withholding")
+        self.assertEqual(len(result.records), 1)
+
+    def test_iit_raw_identity_number_is_rejected_as_subject_key(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"][0]["subject_key"] = (
+            "440101199001011234"
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "controlled pseudonymous key",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_iit_uppercase_hmac_is_rejected_as_noncanonical(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"][0]["subject_key"] = (
+            "hmac-sha256:" + "A" * 64
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "controlled pseudonymous key",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_iit_unknown_person_identity_field_is_rejected(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"][0]["identity_number"] = (
+            "440101199001011234"
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "unknown fields: identity_number",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_iit_source_line_key_cannot_embed_identity_number(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"][0]["source_line_key"] = (
+            "LINE-440101199001011234"
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "must not contain an identity number",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_iit_source_line_key_must_be_controlled_opaque_key(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"][0]["source_line_key"] = (
+            "opaque:employee-alice-0000000000000000"
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "source_line_key must be a controlled opaque key",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_duplicate_iit_source_line_key_is_rejected(self):
+        payload = iit_withholding_payload()
+        payload["records"][0]["lines"].append(
+            dict(payload["records"][0]["lines"][0])
+        )
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "duplicate source_line_key",
         ):
             CONTRACT.load_tax_data_contract(encoded(payload))
 

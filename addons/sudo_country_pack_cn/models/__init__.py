@@ -6,6 +6,7 @@ from . import profile
 from . import setup_wizard
 from . import tax_data_normalization
 from . import cit_filing_normalization
+from . import iit_withholding_normalization
 from . import cit_accounting_scope
 from . import cit_period_reconciliation
 from . import taxpayer_classification

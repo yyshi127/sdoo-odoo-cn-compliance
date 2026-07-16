@@ -22,16 +22,19 @@ TAX_DATA_MAPPING_VERSION = "1.0"
 TAX_DATA_RECORD_MODELS = {
     "vat_filing": "sudo.cn.vat.filing.record",
     "cit_filing": "sudo.cn.cit.filing.record",
+    "iit_withholding": "sudo.cn.iit.withholding.record",
     "tax_payment": "sudo.cn.tax.payment.record",
 }
 TAX_DATA_COUNT_FIELDS = {
     "vat_filing": "vat_filing_count",
     "cit_filing": "cit_filing_count",
+    "iit_withholding": "iit_withholding_count",
     "tax_payment": "tax_payment_count",
 }
 TAX_DATA_KIND_LABELS = {
     "vat_filing": "增值税申报",
     "cit_filing": "企业所得税申报",
+    "iit_withholding": "个人所得税扣缴申报",
     "tax_payment": "税款缴纳",
 }
 
@@ -169,6 +172,9 @@ class SudoChinaTaxDataParseRun(models.Model):
     error_record_count = fields.Integer(string="异常记录数", readonly=True)
     vat_filing_count = fields.Integer(string="增值税申报数", readonly=True)
     cit_filing_count = fields.Integer(string="企业所得税申报数", readonly=True)
+    iit_withholding_count = fields.Integer(
+        string="个人所得税扣缴申报数", readonly=True
+    )
     tax_payment_count = fields.Integer(string="税款缴纳数", readonly=True)
     output_checksum = fields.Char(string="规范化输出 SHA-256", readonly=True)
     error_code = fields.Char(string="失败代码", readonly=True)
@@ -183,6 +189,12 @@ class SudoChinaTaxDataParseRun(models.Model):
         "sudo.cn.cit.filing.record",
         "parse_run_id",
         string="规范化企业所得税申报",
+        readonly=True,
+    )
+    iit_withholding_record_ids = fields.One2many(
+        "sudo.cn.iit.withholding.record",
+        "parse_run_id",
+        string="规范化个人所得税扣缴申报",
         readonly=True,
     )
     tax_payment_record_ids = fields.One2many(
@@ -229,6 +241,7 @@ class SudoChinaTaxDataParseRun(models.Model):
                     "error_record_count": 0,
                     "vat_filing_count": 0,
                     "cit_filing_count": 0,
+                    "iit_withholding_count": 0,
                     "tax_payment_count": 0,
                     "output_checksum": False,
                     "error_code": False,
@@ -455,6 +468,7 @@ class SudoChinaTaxDataParseRun(models.Model):
                     "error_record_count": error_count,
                     "vat_filing_count": 0,
                     "cit_filing_count": 0,
+                    "iit_withholding_count": 0,
                     "tax_payment_count": 0,
                     "output_checksum": output_checksum,
                     "error_code": False,
@@ -1579,6 +1593,10 @@ class SudoChinaExternalDataset(models.Model):
         string="规范化企业所得税申报数",
         compute="_compute_tax_data_result_counts",
     )
+    normalized_iit_withholding_count = fields.Integer(
+        string="规范化个人所得税扣缴申报数",
+        compute="_compute_tax_data_result_counts",
+    )
     normalized_tax_payment_count = fields.Integer(
         string="规范化税款缴纳数",
         compute="_compute_tax_data_result_counts",
@@ -1595,6 +1613,7 @@ class SudoChinaExternalDataset(models.Model):
         "tax_data_parse_run_ids.started_at",
         "tax_data_parse_run_ids.vat_filing_count",
         "tax_data_parse_run_ids.cit_filing_count",
+        "tax_data_parse_run_ids.iit_withholding_count",
         "tax_data_parse_run_ids.tax_payment_count",
         "state",
         "integrity_state",
@@ -1616,6 +1635,9 @@ class SudoChinaExternalDataset(models.Model):
             )
             dataset.normalized_cit_filing_count = (
                 current.cit_filing_count if current else 0
+            )
+            dataset.normalized_iit_withholding_count = (
+                current.iit_withholding_count if current else 0
             )
             dataset.normalized_tax_payment_count = (
                 current.tax_payment_count if current else 0
@@ -1648,6 +1670,9 @@ class SudoChinaExternalDataset(models.Model):
         action_ref = {
             "vat_filing": "sudo_country_pack_cn.action_cn_vat_filing_records",
             "cit_filing": "sudo_country_pack_cn.action_cn_cit_filing_records",
+            "iit_withholding": (
+                "sudo_country_pack_cn.action_cn_iit_withholding_records"
+            ),
             "tax_payment": "sudo_country_pack_cn.action_cn_tax_payment_records",
         }.get(self.dataset_type)
         if not action_ref:
@@ -1668,7 +1693,7 @@ class SudoChinaTaxDataImportWizard(models.TransientModel):
         string="外部数据集",
         required=True,
         check_company=True,
-        domain="[('dataset_type', 'in', ('vat_filing', 'cit_filing', 'tax_payment')), "
+        domain="[('dataset_type', 'in', ('vat_filing', 'cit_filing', 'iit_withholding', 'tax_payment')), "
         "('state', '=', 'sealed')]",
     )
     company_id = fields.Many2one(

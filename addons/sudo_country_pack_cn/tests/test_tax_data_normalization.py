@@ -169,6 +169,67 @@ class TestChinaTaxDataNormalization(TransactionCase):
         record.update(overrides)
         return record
 
+    def _iit_withholding_record(self, suffix="1", **overrides):
+        record = {
+            "source_record_key": f"IIT-2026-06-{suffix}",
+            "taxpayer_name": self.company.name,
+            "taxpayer_id": self.company.partner_id.vat,
+            "jurisdiction_code": "440100",
+            "jurisdiction_name": "测试主管税务机关",
+            "tax_year": 2026,
+            "filing_frequency": "monthly",
+            "return_type_code": "IIT-WITHHOLDING",
+            "return_status": "accepted",
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "submitted_at": "2026-07-10T09:00:00+08:00",
+            "submission_reference": f"IIT-ACK-{suffix}",
+            "revision_number": 0,
+            "currency_code": "CNY",
+            "declared_person_count": 1,
+            "declared_line_count": 1,
+            "total_income_amount": "10000.00",
+            "total_tax_exempt_income_amount": "0.00",
+            "total_basic_deduction_amount": "5000.00",
+            "total_special_deduction_amount": "1000.00",
+            "total_special_additional_deduction_amount": "1000.00",
+            "total_other_deduction_amount": "0.00",
+            "total_donation_deduction_amount": "0.00",
+            "total_taxable_income_amount": "3000.00",
+            "total_tax_calculated_amount": "90.00",
+            "total_tax_relief_amount": "0.00",
+            "total_tax_paid_amount": "0.00",
+            "total_payable_refundable_amount": "90.00",
+            "lines": [
+                {
+                    "source_line_key": "opaque:" + "b" * 32,
+                    "subject_key": "hmac-sha256:" + "a" * 64,
+                    "residency_status": "resident",
+                    "income_type_code": "wages_salary",
+                    "current_income_amount": "10000.00",
+                    "current_tax_exempt_income_amount": "0.00",
+                    "current_basic_deduction_amount": "5000.00",
+                    "current_special_deduction_amount": "1000.00",
+                    "current_other_deduction_amount": "0.00",
+                    "cumulative_income_amount": "60000.00",
+                    "cumulative_basic_deduction_amount": "30000.00",
+                    "cumulative_special_deduction_amount": "6000.00",
+                    "cumulative_special_additional_deduction_amount": "6000.00",
+                    "cumulative_other_deduction_amount": "0.00",
+                    "donation_deduction_amount": "0.00",
+                    "taxable_income_amount": "3000.00",
+                    "tax_rate": "0.03",
+                    "quick_deduction_amount": "0.00",
+                    "tax_calculated_amount": "90.00",
+                    "tax_relief_amount": "0.00",
+                    "tax_paid_amount": "0.00",
+                    "payable_refundable_amount": "90.00",
+                }
+            ],
+        }
+        record.update(overrides)
+        return record
+
     def _contract(self, dataset_type, records):
         return {
             "schema": "sdoo.cn.tax-data.v1",
@@ -263,6 +324,8 @@ class TestChinaTaxDataNormalization(TransactionCase):
             "sudo.cn.vat.filing.line",
             "sudo.cn.cit.filing.record",
             "sudo.cn.cit.filing.line",
+            "sudo.cn.iit.withholding.record",
+            "sudo.cn.iit.withholding.line",
             "sudo.cn.tax.payment.record",
         ):
             with self.assertRaises(AccessError):
@@ -460,6 +523,210 @@ class TestChinaTaxDataNormalization(TransactionCase):
             second.cit_filing_record_ids.line_ids.write(
                 {"line_name": "CHANGED"}
             )
+
+    def test_valid_iit_withholding_is_pseudonymous_and_preserves_zero(self):
+        dataset = self._dataset(
+            "iit_withholding",
+            [self._iit_withholding_record("valid")],
+            suffix="iit-valid",
+        )
+        run = self._start(dataset)
+
+        self.assertTrue(self._process(run))
+
+        record = run.iit_withholding_record_ids
+        line = record.line_ids
+        self.assertEqual(run.state, "succeeded")
+        self.assertEqual(run.iit_withholding_count, 1)
+        self.assertEqual(record.quality_state, "valid")
+        self.assertEqual(record.declared_person_count, 1)
+        self.assertEqual(record.declared_line_count, 1)
+        self.assertTrue(record.has_total_tax_exempt_income_amount)
+        self.assertEqual(record.total_tax_exempt_income_amount, 0.0)
+        self.assertTrue(line.has_current_tax_exempt_income_amount)
+        self.assertEqual(line.current_tax_exempt_income_amount, 0.0)
+        self.assertTrue(line.subject_key.startswith("hmac-sha256:"))
+        self.assertNotIn("identity_number", line._fields)
+        self.assertNotIn("person_name", line._fields)
+        self.assertEqual(len(line.line_checksum), 64)
+        self.assertEqual(len(record.record_checksum), 64)
+        dataset.invalidate_recordset()
+        self.assertEqual(dataset.normalized_iit_withholding_count, 1)
+        action = dataset.action_view_normalized_tax_records()
+        self.assertEqual(action["res_model"], "sudo.cn.iit.withholding.record")
+        self.assertEqual(action["domain"], [("dataset_id", "=", dataset.id)])
+
+    def test_iit_raw_identity_contract_fails_without_normalized_records(self):
+        payload = self._iit_withholding_record("raw-identity")
+        payload["lines"][0]["subject_key"] = "440101199001011234"
+        dataset = self._dataset(
+            "iit_withholding",
+            [payload],
+            suffix="iit-raw-identity",
+        )
+        run = self._start(dataset)
+
+        self.assertFalse(self._process(run))
+
+        self.assertEqual(run.state, "failed")
+        self.assertEqual(run.error_code, "INVALID_TAX_DATA_CONTRACT")
+        self.assertFalse(run.iit_withholding_record_ids)
+
+    def test_iit_count_mismatches_are_visible_errors(self):
+        payload = self._iit_withholding_record(
+            "count-mismatch",
+            declared_person_count=2,
+            declared_line_count=2,
+        )
+        dataset = self._dataset(
+            "iit_withholding",
+            [payload],
+            suffix="iit-count-mismatch",
+        )
+        run = self._start(dataset)
+
+        self.assertTrue(self._process(run))
+
+        record = run.iit_withholding_record_ids
+        codes = {issue["code"] for issue in record.issue_json}
+        self.assertEqual(record.quality_state, "error")
+        self.assertIn("IIT_PERSON_COUNT_MISMATCH", codes)
+        self.assertIn("IIT_LINE_COUNT_MISMATCH", codes)
+
+    def test_iit_summary_line_mismatches_are_visible_warnings(self):
+        payload = self._iit_withholding_record(
+            "summary-mismatch",
+            total_income_amount="9999.00",
+            total_payable_refundable_amount="89.00",
+        )
+        dataset = self._dataset(
+            "iit_withholding",
+            [payload],
+            suffix="iit-summary-mismatch",
+        )
+        run = self._start(dataset)
+
+        self.assertTrue(self._process(run))
+
+        record = run.iit_withholding_record_ids
+        codes = {issue["code"] for issue in record.issue_json}
+        self.assertEqual(record.quality_state, "warning")
+        self.assertIn("IIT_INCOME_TOTAL_MISMATCH", codes)
+        self.assertIn("IIT_SETTLEMENT_TOTAL_MISMATCH", codes)
+
+    def test_iit_records_and_restricted_lines_are_immutable(self):
+        dataset = self._dataset(
+            "iit_withholding",
+            [self._iit_withholding_record("immutable")],
+            suffix="iit-immutable",
+        )
+        run = self._start(dataset)
+        self.assertTrue(self._process(run))
+        record = run.iit_withholding_record_ids
+
+        with self.assertRaises(AccessError):
+            record.write({"total_income_amount": 1.0})
+        with self.assertRaises(AccessError):
+            record.line_ids.write({"subject_key": "opaque:changed00000000"})
+        with self.assertRaises(AccessError):
+            record.line_ids.unlink()
+
+    def test_iit_source_and_results_require_manager_and_allowed_company(self):
+        dataset = self._dataset(
+            "iit_withholding",
+            [self._iit_withholding_record("private")],
+            suffix="iit-private",
+        )
+        run = self._start(dataset)
+        self.assertTrue(self._process(run))
+        record = run.iit_withholding_record_ids
+
+        hidden_dataset = self.env["sudo.cn.external.dataset"].with_user(
+            self.read_only_user
+        ).search([("id", "=", dataset.id)])
+        hidden_run = self.env["sudo.cn.tax.data.parse.run"].with_user(
+            self.read_only_user
+        ).search([("id", "=", run.id)])
+        self.assertFalse(hidden_dataset)
+        self.assertFalse(hidden_run)
+        with self.assertRaises(AccessError):
+            self.env["sudo.cn.iit.withholding.record"].with_user(
+                self.read_only_user
+            ).search([("id", "=", record.id)])
+        with self.assertRaises(AccessError):
+            self.env["sudo.cn.iit.withholding.line"].with_user(
+                self.read_only_user
+            ).search([("withholding_record_id", "=", record.id)])
+
+        other_company = self.env["res.company"].create(
+            {
+                "name": "Other China IIT Company",
+                "currency_id": self.currency.id,
+                "country_id": self.country.id,
+                "account_fiscal_country_id": self.country.id,
+            }
+        )
+        other_company.partner_id.vat = "91310000MA5E67890G"
+        other_profile = self.env["sudo.compliance.profile"].with_company(
+            other_company
+        ).create(
+            {
+                "company_id": other_company.id,
+                "country_id": self.country.id,
+                "country_pack_id": self.env.ref(
+                    "sudo_country_pack_cn.compliance_country_pack_cn"
+                ).id,
+            }
+        )
+        other_manager = self.env["res.users"].create(
+            {
+                "name": "Other China IIT Manager",
+                "login": "other_cn_iit_manager",
+                "company_id": other_company.id,
+                "company_ids": [Command.set(other_company.ids)],
+                "group_ids": [
+                    Command.set(
+                        self.env.ref(
+                            "sudo_global_finance.group_compliance_manager"
+                        ).ids
+                    )
+                ],
+            }
+        )
+        other_payload = self._iit_withholding_record(
+            "other-company",
+            taxpayer_name=other_company.name,
+            taxpayer_id=other_company.partner_id.vat,
+        )
+        other_dataset = self._dataset(
+            "iit_withholding",
+            [other_payload],
+            suffix="iit-other-company",
+            profile=other_profile,
+            company=other_company,
+            reviewer=other_manager,
+        )
+        other_run = self._start(other_dataset, reviewer=other_manager)
+        self.assertTrue(self._process(other_run, reviewer=other_manager))
+
+        hidden_other_record = self.env[
+            "sudo.cn.iit.withholding.record"
+        ].with_user(self.reviewer).search(
+            [("id", "=", other_run.iit_withholding_record_ids.id)]
+        )
+        hidden_other_line = self.env[
+            "sudo.cn.iit.withholding.line"
+        ].with_user(self.reviewer).search(
+            [
+                (
+                    "withholding_record_id",
+                    "=",
+                    other_run.iit_withholding_record_ids.id,
+                )
+            ]
+        )
+        self.assertFalse(hidden_other_record)
+        self.assertFalse(hidden_other_line)
 
     def test_unmasked_account_is_not_persisted(self):
         dataset = self._dataset(

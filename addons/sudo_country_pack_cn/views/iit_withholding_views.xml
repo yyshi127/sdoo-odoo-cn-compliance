@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_tax_data_parse_run_form_iit" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.parse.run.form.iit</field>
+        <field name="model">sudo.cn.tax.data.parse.run</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_tax_data_parse_run_form_cit"/>
+        <field name="arch" type="xml">
+            <field name="cit_filing_count" position="after">
+                <field name="iit_withholding_count"/>
+            </field>
+            <xpath expr="//page[field[@name='cit_filing_record_ids']]"
+                   position="after">
+                <page string="个人所得税扣缴申报"
+                      invisible="dataset_type != 'iit_withholding'">
+                    <field name="iit_withholding_record_ids">
+                        <list create="0" edit="0" delete="0"
+                              decoration-danger="quality_state == 'error'"
+                              decoration-warning="quality_state == 'warning'">
+                            <field name="tax_year"/>
+                            <field name="filing_frequency" widget="badge"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="taxpayer_name"/>
+                            <field name="return_type_code"/>
+                            <field name="return_status" widget="badge"/>
+                            <field name="has_declared_person_count"
+                                   string="人数已提供"/>
+                            <field name="declared_person_count"/>
+                            <field name="has_declared_line_count"
+                                   string="行数已提供" optional="hide"/>
+                            <field name="declared_line_count" optional="hide"/>
+                            <field name="currency_id"/>
+                            <field name="has_total_income_amount"
+                                   string="收入已提供"/>
+                            <field name="total_income_amount"/>
+                            <field name="has_total_payable_refundable_amount"
+                                   string="补退税额已提供"/>
+                            <field name="total_payable_refundable_amount"/>
+                            <field name="quality_state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_withholding_record_search" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.withholding.record.search</field>
+        <field name="model">sudo.cn.iit.withholding.record</field>
+        <field name="arch" type="xml">
+            <search string="个人所得税扣缴申报台账">
+                <field name="taxpayer_name"/>
+                <field name="taxpayer_id"/>
+                <field name="tax_year"/>
+                <field name="return_type_code"/>
+                <field name="submission_reference"/>
+                <field name="dataset_id"/>
+                <filter name="current" string="当前有效导入结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="monthly" string="按月申报"
+                        domain="[('filing_frequency', '=', 'monthly')]"/>
+                <filter name="quality_error" string="数据错误"
+                        domain="[('quality_state', '=', 'error')]"/>
+                <filter name="quality_warning" string="数据警告"
+                        domain="[('quality_state', '=', 'warning')]"/>
+                <separator/>
+                <filter name="group_tax_year" string="纳税年度"
+                        context="{'group_by': 'tax_year'}"/>
+                <filter name="group_frequency" string="申报频次"
+                        context="{'group_by': 'filing_frequency'}"/>
+                <filter name="group_status" string="申报状态"
+                        context="{'group_by': 'return_status'}"/>
+                <filter name="group_dataset" string="数据集"
+                        context="{'group_by': 'dataset_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_withholding_record_list" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.withholding.record.list</field>
+        <field name="model">sudo.cn.iit.withholding.record</field>
+        <field name="arch" type="xml">
+            <list string="个人所得税扣缴申报台账"
+                  create="0" edit="0" delete="0"
+                  decoration-danger="quality_state == 'error'"
+                  decoration-warning="quality_state == 'warning'"
+                  decoration-muted="not is_current_result">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="tax_year"/>
+                <field name="filing_frequency" widget="badge"/>
+                <field name="period_start" optional="hide"/>
+                <field name="period_end"/>
+                <field name="taxpayer_name"/>
+                <field name="return_type_code" optional="hide"/>
+                <field name="return_status" widget="badge"
+                       decoration-success="return_status in ('submitted', 'accepted')"
+                       decoration-warning="return_status in ('draft', 'amended', 'unknown')"
+                       decoration-muted="return_status == 'cancelled'"/>
+                <field name="has_declared_person_count"
+                       string="人数已提供"/>
+                <field name="declared_person_count"/>
+                <field name="has_declared_line_count"
+                       string="行数已提供" optional="hide"/>
+                <field name="declared_line_count" optional="hide"/>
+                <field name="currency_id"/>
+                <field name="has_total_income_amount"
+                       string="收入已提供"/>
+                <field name="total_income_amount" sum="收入合计"/>
+                <field name="total_taxable_income_amount"
+                       sum="应纳税所得额合计" optional="hide"/>
+                <field name="has_total_payable_refundable_amount"
+                       string="补退税额已提供"/>
+                <field name="total_payable_refundable_amount"
+                       sum="应补退税额合计"/>
+                <field name="quality_state" widget="badge"
+                       decoration-success="quality_state == 'valid'"
+                       decoration-warning="quality_state == 'warning'"
+                       decoration-danger="quality_state == 'error'"/>
+                <field name="is_current_result" widget="boolean"/>
+                <field name="dataset_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_withholding_record_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.withholding.record.form</field>
+        <field name="model">sudo.cn.iit.withholding.record</field>
+        <field name="arch" type="xml">
+            <form string="规范化个人所得税扣缴申报"
+                  create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_declared_person_count" invisible="1"/>
+                    <field name="has_declared_line_count" invisible="1"/>
+                    <field name="has_total_income_amount" invisible="1"/>
+                    <field name="has_total_tax_exempt_income_amount" invisible="1"/>
+                    <field name="has_total_basic_deduction_amount" invisible="1"/>
+                    <field name="has_total_special_deduction_amount" invisible="1"/>
+                    <field name="has_total_special_additional_deduction_amount" invisible="1"/>
+                    <field name="has_total_other_deduction_amount" invisible="1"/>
+                    <field name="has_total_donation_deduction_amount" invisible="1"/>
+                    <field name="has_total_taxable_income_amount" invisible="1"/>
+                    <field name="has_total_tax_calculated_amount" invisible="1"/>
+                    <field name="has_total_tax_relief_amount" invisible="1"/>
+                    <field name="has_total_tax_paid_amount" invisible="1"/>
+                    <field name="has_total_payable_refundable_amount" invisible="1"/>
+                    <widget name="web_ribbon" title="非当前导入结果"
+                            bg_color="text-bg-secondary"
+                            invisible="is_current_result"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="quality_state != 'error'">
+                        该记录存在纳税主体、期间、申报人数、明细数量或必要金额错误，不能作为可靠的个人所得税扣缴复核依据。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="quality_state != 'warning'">
+                        该记录可读取，但来源汇总、明细或字段存在必须在后续勾稽、风险判断和报告中披露的限制。
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        本台账只封存来源申报值，不计算工资、扣除、税率或应扣税额；字段和汇总一致也不构成个人所得税合规结论。
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        人员明细仅向合规管理员开放；源明细键和人员键只接受受控 HMAC 或不透明值，不得在标准化契约中写入姓名、身份证件、手机、地址或银行账户。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="申报范围">
+                            <field name="taxpayer_name"/>
+                            <field name="taxpayer_id"/>
+                            <field name="tax_year"/>
+                            <field name="filing_frequency" widget="badge"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="jurisdiction_code"/>
+                            <field name="jurisdiction_name"/>
+                        </group>
+                        <group string="申报状态">
+                            <field name="return_type_code"/>
+                            <field name="return_status" widget="badge"/>
+                            <field name="submitted_at"/>
+                            <field name="submission_reference"/>
+                            <field name="revision_number"/>
+                            <field name="correction_reference"/>
+                            <field name="declared_person_count"
+                                   invisible="not has_declared_person_count"/>
+                            <field name="declared_line_count"
+                                   invisible="not has_declared_line_count"/>
+                        </group>
+                    </group>
+                    <group string="收入与扣除汇总" col="4">
+                        <field name="currency_id"/>
+                        <field name="total_income_amount"
+                               invisible="not has_total_income_amount"/>
+                        <field name="total_tax_exempt_income_amount"
+                               invisible="not has_total_tax_exempt_income_amount"/>
+                        <field name="total_basic_deduction_amount"
+                               invisible="not has_total_basic_deduction_amount"/>
+                        <field name="total_special_deduction_amount"
+                               invisible="not has_total_special_deduction_amount"/>
+                        <field name="total_special_additional_deduction_amount"
+                               invisible="not has_total_special_additional_deduction_amount"/>
+                        <field name="total_other_deduction_amount"
+                               invisible="not has_total_other_deduction_amount"/>
+                        <field name="total_donation_deduction_amount"
+                               invisible="not has_total_donation_deduction_amount"/>
+                    </group>
+                    <group string="税额汇总" col="4">
+                        <field name="total_taxable_income_amount"
+                               invisible="not has_total_taxable_income_amount"/>
+                        <field name="total_tax_calculated_amount"
+                               invisible="not has_total_tax_calculated_amount"/>
+                        <field name="total_tax_relief_amount"
+                               invisible="not has_total_tax_relief_amount"/>
+                        <field name="total_tax_paid_amount"
+                               invisible="not has_total_tax_paid_amount"/>
+                        <field name="total_payable_refundable_amount"
+                               invisible="not has_total_payable_refundable_amount"/>
+                    </group>
+                    <notebook>
+                        <page string="受限人员明细"
+                              groups="sudo_global_finance.group_compliance_manager">
+                            <field name="line_ids" readonly="1">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="sequence"/>
+                                    <field name="source_line_key" optional="hide"/>
+                                    <field name="subject_key"/>
+                                    <field name="residency_status" widget="badge"/>
+                                    <field name="income_type_code"/>
+                                    <field name="has_current_income_amount"
+                                           string="本期收入已提供"/>
+                                    <field name="current_income_amount"/>
+                                    <field name="cumulative_income_amount"
+                                           optional="hide"/>
+                                    <field name="taxable_income_amount"
+                                           optional="hide"/>
+                                    <field name="tax_calculated_amount"
+                                           optional="hide"/>
+                                    <field name="has_payable_refundable_amount"
+                                           string="补退税额已提供"/>
+                                    <field name="payable_refundable_amount"/>
+                                    <field name="line_checksum" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="数据质量与溯源">
+                            <group>
+                                <group>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="is_current_result"/>
+                                    <field name="source_coverage_scope" widget="badge"/>
+                                    <field name="source_authenticity_state" widget="badge"/>
+                                    <field name="source_review_control_state" widget="badge"/>
+                                    <field name="source_integrity_state" widget="badge"/>
+                                </group>
+                                <group>
+                                    <field name="source_record_key"/>
+                                    <field name="dataset_id"/>
+                                    <field name="parse_run_id"/>
+                                    <field name="record_checksum"/>
+                                </group>
+                            </group>
+                            <field name="issue_json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_withholding_line_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.withholding.line.form</field>
+        <field name="model">sudo.cn.iit.withholding.line</field>
+        <field name="arch" type="xml">
+            <form string="个人所得税扣缴申报受限明细"
+                  create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_current_income_amount" invisible="1"/>
+                    <field name="has_current_tax_exempt_income_amount" invisible="1"/>
+                    <field name="has_current_basic_deduction_amount" invisible="1"/>
+                    <field name="has_current_special_deduction_amount" invisible="1"/>
+                    <field name="has_current_other_deduction_amount" invisible="1"/>
+                    <field name="has_cumulative_income_amount" invisible="1"/>
+                    <field name="has_cumulative_basic_deduction_amount" invisible="1"/>
+                    <field name="has_cumulative_special_deduction_amount" invisible="1"/>
+                    <field name="has_cumulative_special_additional_deduction_amount" invisible="1"/>
+                    <field name="has_cumulative_other_deduction_amount" invisible="1"/>
+                    <field name="has_donation_deduction_amount" invisible="1"/>
+                    <field name="has_taxable_income_amount" invisible="1"/>
+                    <field name="has_tax_rate" invisible="1"/>
+                    <field name="has_quick_deduction_amount" invisible="1"/>
+                    <field name="has_tax_calculated_amount" invisible="1"/>
+                    <field name="has_tax_relief_amount" invisible="1"/>
+                    <field name="has_tax_paid_amount" invisible="1"/>
+                    <field name="has_payable_refundable_amount" invisible="1"/>
+                    <div class="alert alert-warning" role="alert">
+                        本明细使用受控假名键，不保存姓名或身份证件；所有数值均为来源申报值，不能单独解释为税额计算正确。
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        来源未提供的金额字段不会显示；明确申报为零的字段会保留并显示为零。
+                    </div>
+                    <group>
+                        <group string="受控索引">
+                            <field name="withholding_record_id"/>
+                            <field name="source_line_key"/>
+                            <field name="subject_key"/>
+                            <field name="residency_status" widget="badge"/>
+                            <field name="income_type_code"/>
+                            <field name="line_checksum"/>
+                        </group>
+                        <group string="本月（次）来源金额">
+                            <field name="current_income_amount"
+                                   invisible="not has_current_income_amount"/>
+                            <field name="current_tax_exempt_income_amount"
+                                   invisible="not has_current_tax_exempt_income_amount"/>
+                            <field name="current_basic_deduction_amount"
+                                   invisible="not has_current_basic_deduction_amount"/>
+                            <field name="current_special_deduction_amount"
+                                   invisible="not has_current_special_deduction_amount"/>
+                            <field name="current_other_deduction_amount"
+                                   invisible="not has_current_other_deduction_amount"/>
+                        </group>
+                    </group>
+                    <group string="累计来源金额" col="4">
+                        <field name="currency_id"/>
+                        <field name="cumulative_income_amount"
+                               invisible="not has_cumulative_income_amount"/>
+                        <field name="cumulative_basic_deduction_amount"
+                               invisible="not has_cumulative_basic_deduction_amount"/>
+                        <field name="cumulative_special_deduction_amount"
+                               invisible="not has_cumulative_special_deduction_amount"/>
+                        <field name="cumulative_special_additional_deduction_amount"
+                               invisible="not has_cumulative_special_additional_deduction_amount"/>
+                        <field name="cumulative_other_deduction_amount"
+                               invisible="not has_cumulative_other_deduction_amount"/>
+                        <field name="donation_deduction_amount"
+                               invisible="not has_donation_deduction_amount"/>
+                    </group>
+                    <group string="税款计算来源字段" col="4">
+                        <field name="taxable_income_amount"
+                               invisible="not has_taxable_income_amount"/>
+                        <field name="tax_rate" widget="percentage"
+                               invisible="not has_tax_rate"/>
+                        <field name="quick_deduction_amount"
+                               invisible="not has_quick_deduction_amount"/>
+                        <field name="tax_calculated_amount"
+                               invisible="not has_tax_calculated_amount"/>
+                        <field name="tax_relief_amount"
+                               invisible="not has_tax_relief_amount"/>
+                        <field name="tax_paid_amount"
+                               invisible="not has_tax_paid_amount"/>
+                        <field name="payable_refundable_amount"
+                               invisible="not has_payable_refundable_amount"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_iit_withholding_records" model="ir.actions.act_window">
+        <field name="name">个人所得税扣缴申报台账</field>
+        <field name="res_model">sudo.cn.iit.withholding.record</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_iit_withholding_record_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">尚无个人所得税扣缴申报标准化记录</p>
+            <p>先以合规管理员身份在外部监管数据中封存脱敏 JSON，再执行受控导入。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_iit_withholding_records"
+              name="个税扣缴申报台账"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_iit_withholding_records" sequence="53"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <record id="view_cn_external_dataset_form_iit_results" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form.iit.results</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_external_dataset_form_cit_results"/>
+        <field name="arch" type="xml">
+            <button name="action_import_tax_data" position="attributes">
+                <attribute name="invisible">state != 'sealed' or integrity_state != 'verified' or dataset_type not in ('vat_filing', 'cit_filing', 'iit_withholding', 'tax_payment')</attribute>
+            </button>
+            <xpath expr="//button[field[@name='normalized_tax_payment_count']]"
+                   position="before">
+                <button name="action_view_normalized_tax_records" type="object"
+                        class="oe_stat_button" icon="fa-users"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="normalized_iit_withholding_count == 0">
+                    <field name="normalized_iit_withholding_count"
+                           widget="statinfo" string="个税扣缴申报"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

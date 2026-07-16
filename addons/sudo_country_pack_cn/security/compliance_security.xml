@@ -29,8 +29,15 @@
     <record id="cn_external_dataset_company_rule" model="ir.rule">
         <field name="name">China external datasets: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_external_dataset"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">[('company_id', 'in', company_ids), ('dataset_type', '!=', 'iit_withholding')]</field>
         <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_external_dataset_manager_company_rule" model="ir.rule">
+        <field name="name">China external datasets: managers in allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_external_dataset"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('sudo_global_finance.group_compliance_manager'))]"/>
     </record>
 
     <record id="cn_external_parse_run_company_rule" model="ir.rule">
@@ -92,9 +99,17 @@
     <record id="cn_tax_data_parse_run_company_rule" model="ir.rule">
         <field name="name">China tax data import runs: allowed companies</field>
         <field name="model_id" ref="model_sudo_cn_tax_data_parse_run"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">[('company_id', 'in', company_ids), ('dataset_type', '!=', 'iit_withholding')]</field>
         <field name="groups"
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_tax_data_parse_run_manager_company_rule" model="ir.rule">
+        <field name="name">China tax data import runs: managers in allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_tax_data_parse_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_manager'))]"/>
     </record>
 
     <record id="cn_vat_filing_record_company_rule" model="ir.rule">
@@ -127,6 +142,22 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups"
                eval="[(4, ref('sudo_global_finance.group_compliance_user'))]"/>
+    </record>
+
+    <record id="cn_iit_withholding_record_manager_company_rule" model="ir.rule">
+        <field name="name">China IIT withholding returns: managers in allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_iit_withholding_record"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_manager'))]"/>
+    </record>
+
+    <record id="cn_iit_withholding_line_manager_company_rule" model="ir.rule">
+        <field name="name">China IIT withholding restricted details: managers in allowed companies</field>
+        <field name="model_id" ref="model_sudo_cn_iit_withholding_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups"
+               eval="[(4, ref('sudo_global_finance.group_compliance_manager'))]"/>
     </record>
 
     <record id="cn_cit_accounting_scope_company_rule" model="ir.rule">
