@@ -1,4 +1,4 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -55,7 +55,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         ).create(
             {
                 "profile_id": self.profile.id,
-                "evaluation_date": "2026-07-01",
+                "evaluation_date": "2026-12-31",
                 "period_start": "2026-06-01",
                 "period_end": "2026-06-30",
                 "rule_version_ids": [Command.set(self.rule_version.ids)],
@@ -106,25 +106,173 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
 
     def _cross_border_assessment(self):
-        version = self.env.ref(
-            "sudo_country_pack_cn.rule_version_cn_cross_border_ready_001_draft"
+        rule = self.env["sudo.compliance.rule"].search(
+            [("code", "=", "CN-CROSS-BORDER-CTRL-001")], limit=1
         )
+        if not rule:
+            rule = self.env["sudo.compliance.rule"].create(
+                {
+                    "name": "Risk Center Cross-Border Display Test Rule",
+                    "code": "CN-CROSS-BORDER-CTRL-001",
+                    "country_id": self.country.id,
+                    "domain_key": "CN.CROSS_BORDER",
+                }
+            )
+        version = self.env["sudo.compliance.rule.version"].search(
+            [
+                ("rule_id", "=", rule.id),
+                ("version", "=", "RISK-CENTER-FACT-TEST"),
+            ],
+            limit=1,
+        )
+        if not version:
+            version = self.env["sudo.compliance.rule.version"].create(
+                {
+                    "rule_id": rule.id,
+                    "version": "RISK-CENTER-FACT-TEST",
+                    "effective_from": "2026-01-01",
+                    "next_review_date": "2027-01-01",
+                    "evaluator_type": "manual",
+                    "requires_human_review": True,
+                }
+            )
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company
         ).create(
             {
                 "profile_id": self.profile.id,
-                "evaluation_date": "2026-06-30",
+                "evaluation_date": "2026-07-01",
                 "period_start": "2026-06-01",
                 "period_end": "2026-06-30",
                 "rule_version_ids": [Command.set(version.ids)],
                 "note": "Risk center cross-border fact visibility test.",
             }
         )
-        assessment.action_run_now()
-        return assessment, assessment.finding_ids.filtered(
-            lambda finding: finding.rule_id.code == "CN-CROSS-BORDER-CTRL-001"
+        pending = self.env["sudo.cn.cross.border.transaction"].search_count(
+            [
+                ("profile_id", "=", self.profile.id),
+                ("state", "!=", "reviewed"),
+            ]
         )
+        reviewed = self.env["sudo.cn.cross.border.transaction"].search_count(
+            [
+                ("profile_id", "=", self.profile.id),
+                ("state", "=", "reviewed"),
+            ]
+        )
+        finding = self.env["sudo.compliance.finding"]._create_engine(
+            {
+                "assessment_id": assessment.id,
+                "rule_id": rule.id,
+                "rule_version_id": version.id,
+                "result": "fail" if pending else "pass",
+                "risk_level": "high" if pending else "info",
+                "title": "Risk center cross-border fact finding",
+                "summary": "Controlled cross-border facts for risk center display.",
+                "recommendation": "Review controlled cross-border facts.",
+                "evidence_required": "Keep reviewed cross-border evidence.",
+                "requires_human_review": True,
+                "checksum": ("x" * 64),
+            }
+        )
+        assessment._engine_write({"state": "completed"})
+        self._fact_snapshot(
+            finding,
+            "cross_pending",
+            key="cn.cross_border.pending_review_count",
+            value=pending,
+        )
+        self._fact_snapshot(
+            finding,
+            "cross_reviewed",
+            key="cn.cross_border.reviewed_transaction_count",
+            value=reviewed,
+        )
+        self._fact_snapshot(
+            finding,
+            "cross_detail",
+            key="cn.cross_border.detail",
+            value={
+                "pending_review_count": pending,
+                "reviewed_transaction_count": reviewed,
+                "transaction_count": pending + reviewed,
+            },
+            value_type="json",
+        )
+        return assessment, finding
+
+    def _fact_snapshot(
+        self,
+        finding,
+        suffix="base",
+        quality_state="complete",
+        key=None,
+        value=3,
+        value_type="integer",
+    ):
+        key = key or f"cn.risk.center.fact.{finding.id}.{suffix}"
+        definition = self.env["sudo.compliance.fact.definition"].search(
+            [("key", "=", key)], limit=1
+        )
+        if not definition:
+            definition = self.env["sudo.compliance.fact.definition"].create(
+                {
+                    "name": f"Risk Center Fact {suffix}",
+                    "label": f"Risk center fact {suffix}",
+                    "key": key,
+                    "version": "TEST-1",
+                    "country_id": self.country.id,
+                    "value_type": value_type,
+                    "provider_key": f"risk_center_fact_{suffix}",
+                    "provider_version": "1",
+                    "source_model": "account.move",
+                    "source_description": "Controlled risk center test fact.",
+                    "completeness_method": "full_domain",
+                }
+            )
+        snapshot = self.env["sudo.compliance.fact.snapshot"]._create_engine(
+            {
+                "name": f"Risk center snapshot {suffix}",
+                "assessment_id": finding.assessment_id.id,
+                "definition_id": definition.id,
+                "value_json": value,
+                "captured_at": fields.Datetime.now(),
+                "source_model": "account.move",
+                "source_domain_json": [("company_id", "=", self.company.id)],
+                "record_count": 3,
+                "aggregation_method": "controlled_test",
+                "is_complete": quality_state == "complete",
+                "is_full_dataset": quality_state == "complete",
+                "quality_state": quality_state,
+                "provider_key": definition.provider_key,
+                "provider_version": "1",
+                "checksum": suffix[:1].ljust(64, "d"),
+            }
+        )
+        self.env.cr.execute(
+            """
+            INSERT INTO sudo_compliance_finding_fact_snapshot_rel
+                        (finding_id, snapshot_id)
+                 VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (finding.id, snapshot.id),
+        )
+        finding.invalidate_recordset()
+        return snapshot
+
+    def _set_task_verification_state(self, task, state):
+        self.env.cr.execute(
+            """
+            UPDATE sudo_compliance_task
+               SET state = %s,
+                   verification_state = %s,
+                   verification_assessment_id = %s
+             WHERE id = %s
+            """,
+            ("pending_review", state, task.assessment_id.id, task.id),
+        )
+        task.invalidate_recordset()
 
     def test_finding_exposes_period_next_action_and_evidence_status(self):
         finding = self._finding()
@@ -135,6 +283,9 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_risk_evidence_state, "none")
         self.assertEqual(finding.cn_risk_evidence_count, 0)
         self.assertEqual(finding.cn_risk_verified_evidence_count, 0)
+        self.assertEqual(finding.cn_risk_fact_snapshot_count, 0)
+        self.assertEqual(finding.cn_risk_fact_issue_count, 0)
+        self.assertIn("No rule fact snapshots", finding.cn_risk_fact_summary)
 
     def test_country_pack_advertises_risk_action_guidance(self):
         self.assertTrue(
@@ -150,12 +301,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         task._transition_write({"state": "pending_review"})
         self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")
 
-        task._transition_write(
-            {
-                "verification_state": "pending_rescan",
-                "verification_assessment_id": finding.assessment_id.id,
-            }
-        )
+        self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_rescan_stage, "pending_rescan")
 
         action = task.action_cn_open_remediation_verification_assessment()
@@ -190,6 +336,23 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(action["res_model"], "sudo.compliance.evidence")
         self.assertIn(("finding_id", "=", finding.id), action["domain"])
 
+    def test_finding_exposes_fact_snapshot_summary(self):
+        finding = self._finding()
+        snapshot = self._fact_snapshot(finding, "complete")
+
+        self.assertEqual(finding.cn_risk_fact_snapshot_count, 1)
+        self.assertEqual(finding.cn_risk_fact_issue_count, 0)
+        self.assertIn(snapshot.definition_id.label, finding.cn_risk_fact_summary)
+        self.assertIn("complete", finding.cn_risk_fact_summary)
+
+    def test_finding_flags_incomplete_fact_snapshots(self):
+        finding = self._finding()
+        self._fact_snapshot(finding, "limited", quality_state="truncated")
+
+        self.assertEqual(finding.cn_risk_fact_snapshot_count, 1)
+        self.assertEqual(finding.cn_risk_fact_issue_count, 1)
+        self.assertIn("truncated", finding.cn_risk_fact_summary)
+
     def test_cross_border_rule_finding_exposes_fact_review_status(self):
         transaction = self._cross_border_transaction()
         _assessment, finding = self._cross_border_assessment()
@@ -200,6 +363,9 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_cross_border_reviewed_count, 0)
         self.assertEqual(finding.cn_cross_border_transaction_count, 1)
         self.assertIn("Cross-Border", finding.cn_cross_border_next_action)
+        self.assertGreater(finding.cn_risk_fact_snapshot_count, 0)
+        self.assertGreaterEqual(finding.cn_risk_fact_issue_count, 0)
+        self.assertIn("=", finding.cn_risk_fact_summary)
 
         transaction.action_submit()
         transaction.review_notes = (
@@ -223,7 +389,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
         self.assertGreater(task.cn_remediation_traceability_gap_count, 0)
 
-        task._transition_write({"verification_state": "pending_rescan"})
+        self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")
 
     def test_country_pack_advertises_risk_rule_basis_visibility(self):
@@ -245,5 +411,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_card_state_badge_clarity"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_fact_basis_visibility"
             ]
         )

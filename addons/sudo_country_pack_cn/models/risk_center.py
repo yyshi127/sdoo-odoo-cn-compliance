@@ -40,6 +40,19 @@ class SudoChinaRiskCenterFinding(models.Model):
         compute="_compute_cn_risk_center_display",
     )
 
+    cn_risk_fact_snapshot_count = fields.Integer(
+        string="Fact Snapshots",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_fact_issue_count = fields.Integer(
+        string="Fact Issues",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_fact_summary = fields.Char(
+        string="Fact Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+
     cn_traceability_state = fields.Selection(
         TRACEABILITY_STATES,
         string="Traceability",
@@ -137,6 +150,11 @@ class SudoChinaRiskCenterFinding(models.Model):
             finding.cn_risk_rule_basis_state = (
                 finding._cn_risk_rule_basis_state()
             )
+            (
+                finding.cn_risk_fact_snapshot_count,
+                finding.cn_risk_fact_issue_count,
+                finding.cn_risk_fact_summary,
+            ) = finding._cn_risk_fact_summary()
             finding.cn_risk_next_action = finding._cn_risk_next_action()
             (
                 finding.cn_traceability_state,
@@ -176,6 +194,36 @@ class SudoChinaRiskCenterFinding(models.Model):
             "res_id": self.rule_version_id.id,
             "target": "current",
         }
+
+    def _cn_risk_fact_summary(self):
+        self.ensure_one()
+        snapshots = self.fact_snapshot_ids
+        missing_count = len(self.missing_fact_keys or [])
+        if not snapshots:
+            if missing_count:
+                return (
+                    0,
+                    missing_count,
+                    _("Missing required facts: %s")
+                    % ", ".join(self.missing_fact_keys[:3]),
+                )
+            return (0, 0, _("No rule fact snapshots are attached."))
+
+        issue_count = missing_count
+        labels = []
+        for snapshot in snapshots[:4]:
+            label = snapshot.definition_id.label or snapshot.definition_id.key
+            quality = snapshot.quality_state or "unknown"
+            labels.append("%s=%s" % (label, quality))
+            if quality in ("missing", "stale", "truncated", "error"):
+                issue_count += 1
+            elif not snapshot.is_complete or not snapshot.is_full_dataset:
+                issue_count += 1
+        if len(snapshots) > 4:
+            labels.append(_("+%s more") % (len(snapshots) - 4))
+        if missing_count:
+            labels.append(_("missing %s") % missing_count)
+        return (len(snapshots), issue_count, "; ".join(labels))
 
     def _cn_risk_next_action(self):
         self.ensure_one()

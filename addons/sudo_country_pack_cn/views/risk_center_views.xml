@@ -62,6 +62,9 @@
                        decoration-warning="review_state in ('pending', 'correction_required')"/>
                 <field name="title"/>
                 <field name="cn_risk_period_label"/>
+                <field name="cn_risk_fact_snapshot_count" optional="show"/>
+                <field name="cn_risk_fact_issue_count" optional="show"/>
+                <field name="cn_risk_fact_summary" optional="show"/>
                 <field name="cn_risk_next_action" optional="show"/>
                 <field name="rule_id"/>
                 <field name="cn_risk_rule_basis_state" widget="badge" optional="show"
@@ -132,6 +135,9 @@
                 <field name="cn_risk_rule_professional_state"/>
                 <field name="cn_risk_period_label"/>
                 <field name="cn_risk_next_action"/>
+                <field name="cn_risk_fact_snapshot_count"/>
+                <field name="cn_risk_fact_issue_count"/>
+                <field name="cn_risk_fact_summary"/>
                 <field name="cn_risk_evidence_state"/>
                 <field name="cn_risk_evidence_count"/>
                 <field name="cn_risk_verified_evidence_count"/>
@@ -184,6 +190,16 @@
                             </div>
                             <div class="mt-3 small text-muted">
                                 <field name="summary"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">Fact basis</div>
+                                <div class="fw-semibold"><field name="cn_risk_fact_summary"/></div>
+                                <div class="text-muted small">
+                                    <field name="cn_risk_fact_snapshot_count"/>
+                                    <span> snapshots · </span>
+                                    <field name="cn_risk_fact_issue_count"/>
+                                    <span> issues</span>
+                                </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
