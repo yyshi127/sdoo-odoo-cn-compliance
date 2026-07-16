@@ -133,9 +133,38 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(action["res_model"], "sudo.compliance.rule.version")
         self.assertEqual(action["res_id"], self.rule_version.id)
 
+    def test_finding_exposes_traceability_gaps_and_evidence_navigation(self):
+        finding = self._finding()
+
+        self.assertEqual(finding.cn_traceability_state, "blocked")
+        self.assertGreater(finding.cn_traceability_gap_count, 0)
+        self.assertTrue(finding.cn_traceability_next_action)
+
+        action = finding.action_cn_open_traceability_evidence()
+        self.assertEqual(action["res_model"], "sudo.compliance.evidence")
+        self.assertIn(("finding_id", "=", finding.id), action["domain"])
+
+    def test_remediation_task_exposes_traceability_gaps(self):
+        finding = self._finding()
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+
+        self.assertEqual(
+            task.cn_remediation_traceability_state,
+            "action_required",
+        )
+        self.assertGreater(task.cn_remediation_traceability_gap_count, 0)
+
+        task._transition_write({"verification_state": "pending_rescan"})
+        self.assertEqual(task.cn_remediation_traceability_state, "blocked")
+
     def test_country_pack_advertises_risk_rule_basis_visibility(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_rule_basis_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_traceability_matrix_visibility"
             ]
         )

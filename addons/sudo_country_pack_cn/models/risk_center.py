@@ -8,6 +8,13 @@ EVIDENCE_STATES = [
 ]
 
 
+TRACEABILITY_STATES = [
+    ("blocked", "Blocked"),
+    ("action_required", "Action Required"),
+    ("complete", "Complete"),
+]
+
+
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
 
@@ -30,6 +37,20 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
     cn_risk_verified_evidence_count = fields.Integer(
         string="已验证证据",
+        compute="_compute_cn_risk_center_display",
+    )
+
+    cn_traceability_state = fields.Selection(
+        TRACEABILITY_STATES,
+        string="Traceability",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_traceability_gap_count = fields.Integer(
+        string="Traceability Gaps",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_traceability_next_action = fields.Char(
+        string="Traceability Next Action",
         compute="_compute_cn_risk_center_display",
     )
 
@@ -89,6 +110,11 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding._cn_risk_rule_basis_state()
             )
             finding.cn_risk_next_action = finding._cn_risk_next_action()
+            (
+                finding.cn_traceability_state,
+                finding.cn_traceability_gap_count,
+                finding.cn_traceability_next_action,
+            ) = finding._cn_traceability_summary()
 
     def _cn_risk_rule_basis_state(self):
         self.ensure_one()
@@ -142,6 +168,61 @@ class SudoChinaRiskCenterFinding(models.Model):
         return _("持续跟踪规则复扫、证据链和报告披露。")
 
 
+    def _cn_traceability_summary(self):
+        self.ensure_one()
+        gaps = []
+        if self.cn_risk_rule_basis_state != "ready":
+            gaps.append("rule_basis")
+        if self.result in ("unknown", "error"):
+            gaps.append("scan_result")
+        if self.review_state == "pending":
+            gaps.append("human_review")
+        if self.review_state == "correction_required" and not self.current_task_id:
+            gaps.append("remediation_task")
+        if self.current_task_id and self.current_task_id.state not in (
+            "done",
+            "cancelled",
+        ):
+            gaps.append("remediation_closure")
+        if self.cn_risk_evidence_state != "verified":
+            gaps.append("evidence")
+        if not self.cn_tax_impact_case_count and self.result in (
+            "fail",
+            "unknown",
+            "error",
+        ):
+            gaps.append("tax_impact")
+        if not gaps:
+            return ("complete", 0, _("Traceability is complete for reporting."))
+        if set(gaps) & {"rule_basis", "scan_result", "human_review"}:
+            return (
+                "blocked",
+                len(gaps),
+                _("Complete rule basis, scan result and human review before reporting."),
+            )
+        return (
+            "action_required",
+            len(gaps),
+            _("Close remediation, tax impact and verified evidence gaps."),
+        )
+
+    def action_cn_open_traceability_evidence(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Traceability Evidence"),
+            "res_model": "sudo.compliance.evidence",
+            "view_mode": "list,form",
+            "domain": [
+                "|",
+                ("finding_id", "=", self.id),
+                ("task_id", "=", self.current_task_id.id),
+            ],
+            "context": {"default_finding_id": self.id},
+            "target": "current",
+        }
+
+
 class SudoChinaRiskCenterTask(models.Model):
     _inherit = "sudo.compliance.task"
 
@@ -164,6 +245,20 @@ class SudoChinaRiskCenterTask(models.Model):
     )
     cn_remediation_verified_evidence_count = fields.Integer(
         string="已验证证据",
+        compute="_compute_cn_remediation_display",
+    )
+
+    cn_remediation_traceability_state = fields.Selection(
+        TRACEABILITY_STATES,
+        string="Traceability",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_traceability_gap_count = fields.Integer(
+        string="Traceability Gaps",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_traceability_next_action = fields.Char(
+        string="Traceability Next Action",
         compute="_compute_cn_remediation_display",
     )
 
@@ -206,6 +301,11 @@ class SudoChinaRiskCenterTask(models.Model):
                 task._cn_remediation_rescan_stage()
             )
             task.cn_remediation_next_action = task._cn_remediation_next_action()
+            (
+                task.cn_remediation_traceability_state,
+                task.cn_remediation_traceability_gap_count,
+                task.cn_remediation_traceability_next_action,
+            ) = task._cn_remediation_traceability_summary()
 
     def _cn_remediation_rescan_stage(self):
         self.ensure_one()
@@ -261,6 +361,29 @@ class SudoChinaRiskCenterTask(models.Model):
             "res_id": self.verification_assessment_id.id,
             "target": "current",
         }
+
+    def _cn_remediation_traceability_summary(self):
+        self.ensure_one()
+        gaps = []
+        if self.state not in ("done", "cancelled"):
+            gaps.append("task_closure")
+        if self.verification_state in ("pending_rescan", "failed"):
+            gaps.append("verification_rescan")
+        if self.cn_remediation_evidence_state != "verified":
+            gaps.append("evidence")
+        if not gaps:
+            return ("complete", 0, _("Remediation traceability is complete."))
+        if "verification_rescan" in gaps:
+            return (
+                "blocked",
+                len(gaps),
+                _("Resolve verification rescan before report sign-off."),
+            )
+        return (
+            "action_required",
+            len(gaps),
+            _("Close the task and verify remediation evidence."),
+        )
 
 
 def _period_label(period_start, period_end):

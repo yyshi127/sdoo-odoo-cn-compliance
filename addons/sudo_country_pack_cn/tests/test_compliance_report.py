@@ -249,6 +249,13 @@ class TestChinaFormalComplianceReport(TransactionCase):
             ("assessment_id", "=", self.assessment.id),
             report.action_cn_open_report_tasks()["domain"],
         )
+        self.assertEqual(report.cn_report_traceability_state, "blocked")
+        self.assertGreater(report.cn_report_traceability_gap_count, 0)
+        self.assertTrue(report.cn_report_traceability_next_action)
+        self.assertEqual(
+            report.action_cn_open_report_evidence()["res_model"],
+            "sudo.compliance.evidence",
+        )
 
         self._issue(report)
         report.invalidate_recordset()
@@ -260,6 +267,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_center_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_traceability_matrix_visibility"
             ]
         )
         self.assertEqual(report.snapshot_integrity_state, "verified")

@@ -333,6 +333,24 @@ class SudoChinaComplianceReport(models.Model):
         compute="_compute_cn_report_center_display",
     )
 
+    cn_report_traceability_state = fields.Selection(
+        [
+            ("blocked", "Blocked"),
+            ("action_required", "Action Required"),
+            ("complete", "Complete"),
+        ],
+        string="Traceability",
+        compute="_compute_cn_report_traceability",
+    )
+    cn_report_traceability_gap_count = fields.Integer(
+        string="Traceability Gaps",
+        compute="_compute_cn_report_traceability",
+    )
+    cn_report_traceability_next_action = fields.Char(
+        string="Traceability Next Action",
+        compute="_compute_cn_report_traceability",
+    )
+
     _assessment_revision_unique = models.Constraint(
         "unique(assessment_id, revision)",
         "同一评估的正式报告版本不能重复。",
@@ -1017,6 +1035,72 @@ class SudoChinaComplianceReport(models.Model):
             report.cn_report_center_next_action = next_action
 
     @api.depends(
+        "snapshot_checksum",
+        "snapshot_integrity_state",
+        "approval_integrity_state",
+        "pdf_integrity_state",
+        "finding_count",
+        "open_task_count",
+        "overdue_task_count",
+        "evidence_count",
+        "verified_evidence_count",
+        "tax_impact_pending_count",
+        "assessment_id.finding_ids.cn_traceability_gap_count",
+        "assessment_id.finding_ids.task_ids.cn_remediation_traceability_gap_count",
+    )
+    def _compute_cn_report_traceability(self):
+        for report in self:
+            gaps = []
+            if not report.snapshot_checksum:
+                gaps.append("snapshot")
+            if report.snapshot_integrity_state == "source_changed":
+                gaps.append("source_changed")
+            if report.approval_integrity_state in ("missing", "checksum_mismatch"):
+                gaps.append("approval_integrity")
+            if report.pdf_integrity_state in ("missing", "checksum_mismatch"):
+                gaps.append("pdf_integrity")
+            if report.open_task_count:
+                gaps.append("open_tasks")
+            if report.overdue_task_count:
+                gaps.append("overdue_tasks")
+            if report.evidence_count != report.verified_evidence_count:
+                gaps.append("evidence")
+            if report.tax_impact_pending_count:
+                gaps.append("tax_impact")
+            if any(report.assessment_id.finding_ids.mapped("cn_traceability_gap_count")):
+                gaps.append("finding_traceability")
+            if any(
+                report.assessment_id.finding_ids.mapped(
+                    "task_ids.cn_remediation_traceability_gap_count"
+                )
+            ):
+                gaps.append("remediation_traceability")
+
+            unique_gap_count = len(set(gaps))
+            report.cn_report_traceability_gap_count = unique_gap_count
+            if not unique_gap_count:
+                report.cn_report_traceability_state = "complete"
+                report.cn_report_traceability_next_action = _(
+                    "Report traceability is complete."
+                )
+            elif set(gaps) & {
+                "snapshot",
+                "source_changed",
+                "approval_integrity",
+                "pdf_integrity",
+                "finding_traceability",
+            }:
+                report.cn_report_traceability_state = "blocked"
+                report.cn_report_traceability_next_action = _(
+                    "Refresh the report snapshot and close source or finding traceability gaps."
+                )
+            else:
+                report.cn_report_traceability_state = "action_required"
+                report.cn_report_traceability_next_action = _(
+                    "Close remediation, evidence and tax impact gaps before distribution."
+                )
+
+    @api.depends(
         "state",
         "snapshot_checksum",
         "title",
@@ -1405,6 +1489,18 @@ class SudoChinaComplianceReport(models.Model):
             "view_mode": "list,form",
             "domain": [("assessment_id", "=", self.assessment_id.id)],
             "context": {"search_default_open": 1},
+            "target": "current",
+        }
+
+    def action_cn_open_report_evidence(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Report Evidence"),
+            "res_model": "sudo.compliance.evidence",
+            "view_mode": "list,form",
+            "domain": [("id", "in", self.assessment_id.report_evidence_ids.ids)],
+            "context": {"search_default_group_state": 1},
             "target": "current",
         }
 

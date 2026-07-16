@@ -86,6 +86,14 @@
                 <field name="cn_risk_evidence_state" widget="badge" optional="show"
                        decoration-success="cn_risk_evidence_state == 'verified'"
                        decoration-warning="cn_risk_evidence_state == 'partial'"/>
+                <field name="cn_traceability_state" widget="badge" optional="show"
+                       decoration-success="cn_traceability_state == 'complete'"
+                       decoration-warning="cn_traceability_state == 'action_required'"
+                       decoration-danger="cn_traceability_state == 'blocked'"/>
+                <field name="cn_traceability_gap_count" optional="show"/>
+                <field name="cn_traceability_next_action" optional="hide"/>
+                <button name="action_cn_open_traceability_evidence" type="object"
+                        string="Evidence" class="btn-link"/>
                 <field name="cn_ai_guidance_state" widget="badge" optional="show"
                        decoration-success="cn_ai_guidance_state == 'generated'"
                        decoration-info="cn_ai_guidance_state == 'ready'"
@@ -119,6 +127,9 @@
                 <field name="cn_risk_evidence_state"/>
                 <field name="cn_risk_evidence_count"/>
                 <field name="cn_risk_verified_evidence_count"/>
+                <field name="cn_traceability_state"/>
+                <field name="cn_traceability_gap_count"/>
+                <field name="cn_traceability_next_action"/>
                 <field name="summary"/>
                 <field name="recommendation"/>
                 <field name="task_assignee_id"/>
@@ -203,6 +214,21 @@
                                             <field name="cn_risk_evidence_count"/>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="col-12">
+                                    <button name="action_cn_open_traceability_evidence" type="object"
+                                            class="btn btn-light w-100 text-start">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="text-muted small">Traceability</div>
+                                                <div class="fw-semibold"><field name="cn_traceability_next_action"/></div>
+                                                <div class="text-muted small">
+                                                    Gaps <field name="cn_traceability_gap_count"/>
+                                                </div>
+                                            </div>
+                                            <field name="cn_traceability_state" widget="badge"/>
+                                        </div>
+                                    </button>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
@@ -318,6 +344,12 @@
                 <field name="cn_remediation_evidence_state" widget="badge" optional="show"
                        decoration-success="cn_remediation_evidence_state == 'verified'"
                        decoration-warning="cn_remediation_evidence_state == 'partial'"/>
+                <field name="cn_remediation_traceability_state" widget="badge" optional="show"
+                       decoration-success="cn_remediation_traceability_state == 'complete'"
+                       decoration-warning="cn_remediation_traceability_state == 'action_required'"
+                       decoration-danger="cn_remediation_traceability_state == 'blocked'"/>
+                <field name="cn_remediation_traceability_gap_count" optional="show"/>
+                <field name="cn_remediation_traceability_next_action" optional="hide"/>
                 <button name="action_queue_verification_scan" type="object"
                         string="发起复扫" class="btn-link"
                         invisible="cn_remediation_rescan_stage != 'ready_for_rescan'"/>
@@ -354,6 +386,9 @@
                 <field name="cn_remediation_evidence_state"/>
                 <field name="cn_remediation_evidence_count"/>
                 <field name="cn_remediation_verified_evidence_count"/>
+                <field name="cn_remediation_traceability_state"/>
+                <field name="cn_remediation_traceability_gap_count"/>
+                <field name="cn_remediation_traceability_next_action"/>
                 <field name="recommendation_snapshot"/>
                 <field name="is_overdue"/>
                 <templates>
@@ -402,6 +437,20 @@
                                             <field name="cn_remediation_verified_evidence_count"/>
                                             <span>/</span>
                                             <field name="cn_remediation_evidence_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="text-muted small">Traceability</div>
+                                                <div class="fw-semibold"><field name="cn_remediation_traceability_next_action"/></div>
+                                                <div class="text-muted small">
+                                                    Gaps <field name="cn_remediation_traceability_gap_count"/>
+                                                </div>
+                                            </div>
+                                            <field name="cn_remediation_traceability_state" widget="badge"/>
                                         </div>
                                     </div>
                                 </div>

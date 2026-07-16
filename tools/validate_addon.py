@@ -246,6 +246,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("formal compliance report capability must be declared")
     if features.get("china_report_center_visibility") is not True:
         fail("China report center visibility capability must be declared")
+    if features.get("china_traceability_matrix_visibility") is not True:
+        fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
         fail("China AI guidance visibility capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
@@ -2437,8 +2439,12 @@ def validate_formal_compliance_report() -> None:
         "cn_report_center_stage",
         "cn_report_center_integrity_state",
         "cn_report_center_next_action",
+        "cn_report_traceability_state",
+        "cn_report_traceability_gap_count",
+        "cn_report_traceability_next_action",
         "action_cn_open_report_findings",
         "action_cn_open_report_tasks",
+        "action_cn_open_report_evidence",
         '"submitted", "待独立批准"',
         '"issued", "已签发"',
         '"superseded", "已被替代"',
@@ -2510,8 +2516,12 @@ def validate_formal_compliance_report() -> None:
         "cn_report_center_stage",
         "cn_report_center_integrity_state",
         "cn_report_center_next_action",
+        "cn_report_traceability_state",
+        "cn_report_traceability_gap_count",
+        "cn_report_traceability_next_action",
         "action_cn_open_report_findings",
         "action_cn_open_report_tasks",
+        "action_cn_open_report_evidence",
         "提交独立批准",
         "批准并签发",
         "下载已签发 PDF",
@@ -2559,6 +2569,14 @@ def validate_formal_compliance_report() -> None:
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"formal report runtime coverage is missing {test_name}")
+    for required in (
+        "china_traceability_matrix_visibility",
+        "cn_report_traceability_state",
+        "cn_report_traceability_gap_count",
+        "action_cn_open_report_evidence",
+    ):
+        if required not in test_content:
+            fail(f"formal report traceability coverage is missing {required}")
 
 
 def validate_official_source_change_monitoring() -> None:
@@ -2904,6 +2922,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China remediation rescan capability is missing from {label}")
         if "china_risk_rule_basis_visibility" not in content:
             fail(f"China risk rule basis capability is missing from {label}")
+        if "china_traceability_matrix_visibility" not in content:
+            fail(f"China traceability matrix capability is missing from {label}")
         if "china_workbench_tax_domain_overview" not in content:
             fail(f"China tax domain overview capability is missing from {label}")
         if "china_workbench_cross_border_overview" not in content:
@@ -3105,6 +3125,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_traceability_state",
+        "cn_traceability_gap_count",
+        "cn_traceability_next_action",
+        "action_cn_open_traceability_evidence",
         "cn_risk_rule_basis_state",
         "cn_risk_rule_source_count",
         "cn_risk_rule_release_state",
@@ -3113,6 +3137,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",
+        "cn_remediation_traceability_state",
+        "cn_remediation_traceability_gap_count",
+        "cn_remediation_traceability_next_action",
         "cn_remediation_rescan_stage",
         "action_cn_open_remediation_verification_assessment",
         "sudo.compliance.evidence",
@@ -3318,15 +3345,22 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_remediation_rescan_visibility",
         "test_finding_exposes_rule_basis_status_and_navigation",
         "test_country_pack_advertises_risk_rule_basis_visibility",
+        "test_finding_exposes_traceability_gaps_and_evidence_navigation",
+        "test_remediation_task_exposes_traceability_gaps",
         "china_risk_action_guidance",
         "china_remediation_rescan_visibility",
         "china_risk_rule_basis_visibility",
+        "china_traceability_matrix_visibility",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_traceability_state",
+        "cn_traceability_gap_count",
+        "action_cn_open_traceability_evidence",
         "cn_risk_rule_basis_state",
         "action_cn_open_risk_rule_version",
         "cn_remediation_rescan_stage",
+        "cn_remediation_traceability_state",
         "action_cn_open_remediation_verification_assessment",
     ):
         if required not in risk_test_content:
@@ -3424,6 +3458,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_traceability_state",
+        "cn_traceability_gap_count",
+        "cn_traceability_next_action",
+        "action_cn_open_traceability_evidence",
         "cn_risk_rule_basis_state",
         "cn_risk_rule_source_count",
         "cn_risk_rule_release_state",
@@ -3432,6 +3470,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",
+        "cn_remediation_traceability_state",
+        "cn_remediation_traceability_gap_count",
+        "cn_remediation_traceability_next_action",
         "cn_remediation_rescan_stage",
         "action_queue_verification_scan",
         "action_cn_open_remediation_verification_assessment",
