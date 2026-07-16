@@ -72,6 +72,11 @@
                 <field name="cn_workbench_evidence_state"/>
                 <field name="cn_workbench_evidence_count"/>
                 <field name="cn_workbench_verified_evidence_count"/>
+                <field name="cn_workbench_filing_archive_state"/>
+                <field name="cn_workbench_filing_archive_next_action"/>
+                <field name="cn_workbench_filing_archive_count"/>
+                <field name="cn_workbench_sealed_filing_archive_count"/>
+                <field name="cn_workbench_filing_archive_issue_count"/>
                 <field name="cn_workbench_latest_report_id"/>
                 <field name="cn_workbench_package_label"/>
                 <field name="cn_workbench_scope_label"/>
@@ -255,8 +260,40 @@
                                         <div class="text-muted small">5 证据链</div>
                                         <field name="cn_workbench_evidence_state" widget="badge"/>
                                     </button>
+                                    <button type="object" name="action_cn_open_workbench_filing_center"
+                                            class="btn btn-light border text-start flex-fill">
+                                        <div class="text-muted small">6 申报缴款档案</div>
+                                        <field name="cn_workbench_filing_archive_state" widget="badge"/>
+                                    </button>
                                 </div>
                             </div>
+
+                            <button type="object" name="action_cn_open_workbench_filing_center"
+                                    class="btn btn-light w-100 text-start border mt-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold">申报与缴款档案</div>
+                                        <div class="text-muted small">
+                                            <field name="cn_workbench_filing_archive_next_action"/>
+                                        </div>
+                                    </div>
+                                    <field name="cn_workbench_filing_archive_state" widget="badge"/>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-4">
+                                        <div class="text-muted small">受控档案</div>
+                                        <div class="fw-bold"><field name="cn_workbench_filing_archive_count"/></div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted small">已封存</div>
+                                        <div class="fw-bold"><field name="cn_workbench_sealed_filing_archive_count"/></div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted small">待处理</div>
+                                        <div class="fw-bold"><field name="cn_workbench_filing_archive_issue_count"/></div>
+                                    </div>
+                                </div>
+                            </button>
 
                             <div class="row g-2 mt-3">
                                 <div class="col-6">
@@ -406,6 +443,13 @@
                             <field name="cn_workbench_evidence_state" readonly="1" widget="badge"/>
                             <field name="cn_workbench_verified_evidence_count" readonly="1"/>
                             <field name="cn_workbench_evidence_count" readonly="1"/>
+                        </group>
+                        <group string="申报与缴款档案">
+                            <field name="cn_workbench_filing_archive_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_filing_archive_next_action" readonly="1"/>
+                            <field name="cn_workbench_filing_archive_count" readonly="1"/>
+                            <field name="cn_workbench_sealed_filing_archive_count" readonly="1"/>
+                            <field name="cn_workbench_filing_archive_issue_count" readonly="1"/>
                         </group>
                     </group>
                     <div class="d-flex flex-wrap gap-2 mt-3">

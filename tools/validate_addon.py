@@ -268,6 +268,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China cross-border rule fact bridge capability must be declared")
     if features.get("china_cross_border_risk_visibility") is not True:
         fail("China cross-border risk visibility capability must be declared")
+    if features.get("china_workbench_filing_archive_summary") is not True:
+        fail("China workbench filing archive summary capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2987,6 +2989,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China cross-border risk visibility capability is missing from {label}"
             )
+        if "china_workbench_filing_archive_summary" not in content:
+            fail(
+                f"China filing archive workbench summary capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3029,6 +3035,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_evidence_state",
         "cn_workbench_evidence_count",
         "cn_workbench_verified_evidence_count",
+        "cn_workbench_filing_archive_state",
+        "cn_workbench_filing_archive_next_action",
+        "cn_workbench_filing_archive_count",
+        "cn_workbench_sealed_filing_archive_count",
+        "cn_workbench_filing_archive_issue_count",
         "action_cn_open_workbench_findings",
         "action_cn_open_workbench_tasks",
         "action_cn_open_workbench_tax_impacts",
@@ -3086,6 +3097,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_evidence_state",
         "cn_workbench_verified_evidence_count",
         "cn_workbench_evidence_count",
+        "cn_workbench_filing_archive_state",
+        "cn_workbench_filing_archive_next_action",
+        "cn_workbench_filing_archive_count",
+        "cn_workbench_sealed_filing_archive_count",
+        "cn_workbench_filing_archive_issue_count",
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
@@ -3123,6 +3139,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_workbench_cross_border_overview",
         "china_cross_border_transaction_register",
         "china_cross_border_rule_facts",
+        "china_workbench_filing_archive_summary",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
         "cn_workbench_vat_domain_state",
@@ -3141,6 +3158,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_remediation_state",
         "cn_workbench_report_state",
         "cn_workbench_evidence_state",
+        "cn_workbench_filing_archive_state",
+        "cn_workbench_filing_archive_next_action",
+        "cn_workbench_filing_archive_count",
+        "cn_workbench_filing_archive_issue_count",
     ):
         if required not in test_content:
             fail(f"China process visibility runtime coverage is missing {required}")

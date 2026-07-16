@@ -156,6 +156,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_cross_border_rule_facts"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_filing_archive_summary"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -176,6 +181,14 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_evidence_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_evidence_count, 0)
         self.assertEqual(self.profile.cn_workbench_verified_evidence_count, 0)
+        self.assertEqual(
+            self.profile.cn_workbench_filing_archive_state,
+            "not_started",
+        )
+        self.assertEqual(self.profile.cn_workbench_filing_archive_count, 0)
+        self.assertEqual(self.profile.cn_workbench_sealed_filing_archive_count, 0)
+        self.assertEqual(self.profile.cn_workbench_filing_archive_issue_count, 0)
+        self.assertTrue(self.profile.cn_workbench_filing_archive_next_action)
         self.assertEqual(self.profile.cn_workbench_package_label, "中国财税合规包")
         self.assertIn("增值税", self.profile.cn_workbench_scope_label)
         self.assertIn("企业所得税", self.profile.cn_workbench_scope_label)
@@ -337,6 +350,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
         obligation_action = self.profile.action_cn_open_workbench_obligations()
         self.assertEqual(obligation_action["res_model"], "sudo.compliance.obligation")
         self.assertIn(("profile_id", "=", self.profile.id), obligation_action["domain"])
+
+        filing_action = self.profile.action_cn_open_workbench_filing_center()
+        self.assertEqual(filing_action["res_model"], "sudo.compliance.filing")
+        self.assertIn(("profile_id", "=", self.profile.id), filing_action["domain"])
 
     def test_workbench_marks_obligation_readiness_after_review(self):
         source = self.env.ref(

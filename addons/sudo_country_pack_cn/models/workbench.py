@@ -39,6 +39,17 @@ def _cross_border_state(classification, limitation_count):
     return "ready"
 
 
+def _controlled_filing_domain(profile):
+    return [
+        ("profile_id", "=", profile.id),
+        "|",
+        "|",
+        ("cn_vat_reconciliation_run_id", "!=", False),
+        ("cn_cit_reconciliation_run_id", "!=", False),
+        ("cn_iit_reconciliation_run_id", "!=", False),
+    ]
+
+
 class SudoChinaComplianceWorkbenchProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
@@ -244,6 +255,28 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
 
+    cn_workbench_filing_archive_state = fields.Selection(
+        FLOW_STATES,
+        string="Filing Archive State",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_filing_archive_next_action = fields.Char(
+        string="Filing Archive Next Action",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_filing_archive_count = fields.Integer(
+        string="Controlled Filing Archives",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_sealed_filing_archive_count = fields.Integer(
+        string="Sealed Filing Archives",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_filing_archive_issue_count = fields.Integer(
+        string="Filing Archive Issues",
+        compute="_compute_cn_workbench",
+    )
+
     def _compute_cn_workbench(self):
         today = fields.Date.context_today(self)
         Assessment = self.env["sudo.compliance.assessment"].sudo()
@@ -255,6 +288,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Classification = self.env["sudo.cn.taxpayer.classification"].sudo()
         CrossBorder = self.env["sudo.cn.cross.border.transaction"].sudo()
         Obligation = self.env["sudo.compliance.obligation"].sudo()
+        Filing = self.env["sudo.compliance.filing"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -351,6 +385,21 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             evidence_count = Evidence.search_count(evidence_domain)
             verified_evidence_count = Evidence.search_count(
                 evidence_domain + [("state", "=", "verified")]
+            )
+            filing_archives = Filing.search(_controlled_filing_domain(profile))
+            sealed_filing_archives = filing_archives.filtered(
+                lambda filing: filing.cn_submission_integrity_state
+                in ("verified", "source_superseded")
+                and filing.cn_payment_integrity_state
+                in ("verified", "not_required", "source_superseded")
+                and filing.cn_filing_center_evidence_state == "verified"
+            )
+            filing_archive_issues = filing_archives.filtered(
+                lambda filing: filing.cn_submission_integrity_state
+                in ("changed", "invalid", "unsealed")
+                or filing.cn_payment_integrity_state
+                in ("changed", "invalid", "unsealed")
+                or filing.cn_filing_center_evidence_state != "verified"
             )
 
             profile.cn_workbench_last_assessment_id = latest_assessment
@@ -520,6 +569,13 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_limitation_count = limitation_count
             profile.cn_workbench_evidence_count = evidence_count
             profile.cn_workbench_verified_evidence_count = verified_evidence_count
+            profile.cn_workbench_filing_archive_count = len(filing_archives)
+            profile.cn_workbench_sealed_filing_archive_count = len(
+                sealed_filing_archives
+            )
+            profile.cn_workbench_filing_archive_issue_count = len(
+                filing_archive_issues
+            )
 
             if not latest_assessment:
                 profile.cn_workbench_scan_state = "not_started"
@@ -560,6 +616,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             else:
                 profile.cn_workbench_evidence_state = "not_started"
 
+            if not filing_archives:
+                profile.cn_workbench_filing_archive_state = "not_started"
+                profile.cn_workbench_filing_archive_next_action = _(
+                    "Create controlled filing/payment archives from VAT, CIT and IIT reconciliation runs."
+                )
+            elif filing_archive_issues:
+                profile.cn_workbench_filing_archive_state = "attention"
+                profile.cn_workbench_filing_archive_next_action = _(
+                    "Review filing/payment archive integrity and verified evidence before relying on filings."
+                )
+            elif len(sealed_filing_archives) == len(filing_archives):
+                profile.cn_workbench_filing_archive_state = "ready"
+                profile.cn_workbench_filing_archive_next_action = _(
+                    "Controlled filing/payment archive chain is sealed; keep receipts and payment evidence current."
+                )
+            else:
+                profile.cn_workbench_filing_archive_state = "attention"
+                profile.cn_workbench_filing_archive_next_action = _(
+                    "Seal submission and payment evidence for all controlled filing archives."
+                )
+
             if profile.country_id.code != "CN":
                 profile.cn_workbench_status = False
                 profile.cn_workbench_next_action = False
@@ -581,6 +658,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_finding_count
                 or profile.cn_workbench_open_task_count
                 or profile.cn_workbench_pending_tax_impact_count
+                or profile.cn_workbench_filing_archive_issue_count
                 or reconciliation_issue_count
             ):
                 profile.cn_workbench_status = "warning"
