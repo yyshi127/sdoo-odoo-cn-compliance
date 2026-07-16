@@ -2836,6 +2836,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China report readiness view must be loaded")
     if "views/ai_guidance_views.xml" not in data_files:
         fail("China AI guidance view must be loaded")
+    if "views/evidence_center_views.xml" not in data_files:
+        fail("China evidence center view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2860,6 +2862,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report readiness capability is missing from {label}")
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
+        if "china_evidence_center" not in content:
+            fail(f"China evidence center capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2900,6 +2904,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_cit_issues",
         "action_cn_open_workbench_iit_issues",
         "action_cn_open_workbench_report_readiness",
+        "action_cn_open_workbench_evidence_center",
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
@@ -2930,6 +2935,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China report readiness model must be imported")
     if "from . import ai_guidance" not in model_init:
         fail("China AI guidance model must be imported")
+    if "from . import evidence_center" not in model_init:
+        fail("China evidence center model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -3017,6 +3024,46 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
     if "action_generate_cn_ai_guidance" not in risk_view_content:
         fail("China risk center must expose controlled AI guidance generation")
+
+    evidence_model_content = (
+        ADDON_ROOT / "models" / "evidence_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.profile"',
+        "action_cn_open_workbench_evidence_center",
+        "sudo_country_pack_cn.action_cn_evidence_center",
+        "sudo.compliance.evidence",
+        "assessment_id.profile_id",
+        "finding_id.assessment_id.profile_id",
+        "task_id.assessment_id.profile_id",
+        "filing_id.profile_id",
+    ):
+        if required not in evidence_model_content:
+            fail(f"China evidence center contract is missing {required}")
+
+    evidence_view_content = (
+        ADDON_ROOT / "views" / "evidence_center_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_evidence_center_search"',
+        'id="view_cn_evidence_center_list"',
+        'id="view_cn_evidence_center_kanban"',
+        'id="view_cn_evidence_center_form_inherit"',
+        'id="action_cn_evidence_center"',
+        'id="menu_cn_evidence_center"',
+        "sudo.compliance.evidence",
+        "default_group_by=\"state\"",
+        "search_default_cn_related",
+        "assessment_id.country_id.code",
+        "finding_id.assessment_id.country_id.code",
+        "task_id.assessment_id.country_id.code",
+        "filing_id.country_id.code",
+        "document_checksum",
+        "verified_by_id",
+        "verified_at",
+    ):
+        if required not in evidence_view_content:
+            fail(f"China evidence center UI is missing {required}")
 
     if "from . import test_ai_guidance" not in tests_init:
         fail("China controlled AI guidance runtime tests must be imported")

@@ -48,6 +48,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_report_readiness"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_evidence_center"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -86,3 +91,7 @@ class TestChinaComplianceWorkbench(TransactionCase):
         readiness_action = self.profile.action_cn_open_workbench_report_readiness()
         self.assertEqual(readiness_action["res_model"], "sudo.compliance.assessment")
         self.assertIn(("profile_id", "=", self.profile.id), readiness_action["domain"])
+
+        evidence_action = self.profile.action_cn_open_workbench_evidence_center()
+        self.assertEqual(evidence_action["res_model"], "sudo.compliance.evidence")
+        self.assertIn(("company_id", "=", self.company.id), evidence_action["domain"])
