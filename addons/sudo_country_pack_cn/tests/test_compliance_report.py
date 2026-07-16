@@ -161,6 +161,52 @@ class TestChinaFormalComplianceReport(TransactionCase):
             finding.with_user(self.manager).action_require_correction()
         return assessment, finding
 
+    def _fact_snapshot(self, finding, suffix="base", quality_state="complete"):
+        definition = self.env["sudo.compliance.fact.definition"].create(
+            {
+                "name": f"Formal report fact {suffix}",
+                "label": f"Formal report fact {suffix}",
+                "key": f"cn.report.fact.{finding.id}.{suffix}",
+                "version": "TEST-1",
+                "country_id": self.country.id,
+                "value_type": "integer",
+                "provider_key": f"formal_report_fact_{suffix}",
+                "provider_version": "1",
+                "source_model": "account.move",
+                "source_description": "Controlled formal report test fact.",
+                "completeness_method": "full_domain",
+            }
+        )
+        snapshot = self.env["sudo.compliance.fact.snapshot"]._create_engine(
+            {
+                "assessment_id": finding.assessment_id.id,
+                "definition_id": definition.id,
+                "value_json": 1,
+                "captured_at": fields.Datetime.now(),
+                "source_model": "account.move",
+                "source_domain_json": [("company_id", "=", self.company.id)],
+                "record_count": 1,
+                "aggregation_method": "controlled_test",
+                "is_complete": quality_state == "complete",
+                "is_full_dataset": quality_state == "complete",
+                "quality_state": quality_state,
+                "provider_key": definition.provider_key,
+                "provider_version": "1",
+                "checksum": suffix[:1].ljust(64, "f"),
+            }
+        )
+        self.env.cr.execute(
+            """
+            INSERT INTO sudo_compliance_finding_fact_snapshot_rel
+                        (finding_id, snapshot_id)
+                 VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (finding.id, snapshot.id),
+        )
+        finding.invalidate_recordset()
+        return snapshot
+
     def _report(self, assessment=None, preparer=None, reviewer=None, **values):
         assessment = assessment or self.assessment
         preparer = preparer or self.manager
@@ -299,6 +345,10 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertEqual(report.snapshot_json["filing_archive"]["state"], "not_started")
         self.assertEqual(report.snapshot_json["filing_archive"]["archive_count"], 0)
+        self.assertEqual(report.snapshot_json["fact_basis"]["state"], "blocked")
+        self.assertEqual(report.fact_snapshot_count, 0)
+        self.assertEqual(report.finding_without_fact_count, 1)
+        self.assertEqual(report.cn_report_fact_basis_state, "blocked")
         self.assertEqual(report.finding_count, 1)
         self.assertEqual(report.high_count, 1)
         self.assertEqual(len(report.snapshot_checksum), 64)
@@ -313,6 +363,24 @@ class TestChinaFormalComplianceReport(TransactionCase):
             limit=1,
         )
         self.assertEqual(event.details_json["snapshot_checksum"], report.snapshot_checksum)
+
+    def test_submission_summarizes_report_fact_basis(self):
+        snapshot = self._fact_snapshot(self.finding, "complete")
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        self.assertEqual(report.snapshot_json["fact_basis"]["state"], "ready")
+        self.assertEqual(report.snapshot_json["fact_basis"]["snapshot_count"], 1)
+        self.assertEqual(report.fact_snapshot_count, 1)
+        self.assertEqual(report.fact_issue_count, 0)
+        self.assertEqual(report.finding_without_fact_count, 0)
+        self.assertEqual(report.cn_report_fact_basis_state, "ready")
+        self.assertIn(
+            snapshot.checksum,
+            report.snapshot_json["findings"][0]["fact_snapshot_checksums"],
+        )
 
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")
@@ -423,6 +491,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_filing_archive_snapshot"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_fact_basis_visibility"
             ]
         )
         self.assertTrue(

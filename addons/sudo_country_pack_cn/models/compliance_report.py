@@ -107,6 +107,47 @@ def _controlled_filing_domain(assessment):
     ]
 
 
+def _fact_basis_summary(payload):
+    facts = payload.get("facts") or []
+    findings = payload.get("findings") or []
+    issue_states = {"missing", "stale", "truncated", "error"}
+    issue_count = len(
+        [
+            fact
+            for fact in facts
+            if fact.get("quality_state") in issue_states
+            or not fact.get("is_complete")
+            or not fact.get("is_full_dataset")
+        ]
+    )
+    findings_without_facts = len(
+        [
+            finding
+            for finding in findings
+            if finding.get("result") in ("fail", "unknown", "error")
+            and not finding.get("fact_snapshot_checksums")
+        ]
+    )
+    if issue_count or findings_without_facts:
+        state = "blocked"
+        next_action = (
+            "Review missing, stale or incomplete fact snapshots before relying on the report."
+        )
+    elif facts:
+        state = "ready"
+        next_action = "Report findings are linked to controlled fact snapshots."
+    else:
+        state = "not_started"
+        next_action = "No controlled fact snapshots are attached to this report."
+    return {
+        "state": state,
+        "next_action": next_action,
+        "snapshot_count": len(facts),
+        "issue_count": issue_count,
+        "finding_without_fact_count": findings_without_facts,
+    }
+
+
 class SudoChinaComplianceReport(models.Model):
     _name = "sudo.cn.compliance.report"
     _description = "China Governed Compliance Report"
@@ -330,6 +371,16 @@ class SudoChinaComplianceReport(models.Model):
         copy=False,
     )
 
+    fact_snapshot_count = fields.Integer(
+        string="Fact Snapshots", readonly=True, copy=False
+    )
+    fact_issue_count = fields.Integer(
+        string="Fact Issues", readonly=True, copy=False
+    )
+    finding_without_fact_count = fields.Integer(
+        string="Findings Without Facts", readonly=True, copy=False
+    )
+
     cn_report_center_stage = fields.Selection(
         [
             ("draft", "编制中"),
@@ -378,6 +429,19 @@ class SudoChinaComplianceReport(models.Model):
         string="Traceability Next Action",
         compute="_compute_cn_report_traceability",
     )
+    cn_report_fact_basis_state = fields.Selection(
+        [
+            ("not_started", "Not Started"),
+            ("ready", "Ready"),
+            ("blocked", "Blocked"),
+        ],
+        string="Fact Basis",
+        compute="_compute_cn_report_fact_basis",
+    )
+    cn_report_fact_basis_next_action = fields.Char(
+        string="Fact Basis Next Action",
+        compute="_compute_cn_report_fact_basis",
+    )
 
     _assessment_revision_unique = models.Constraint(
         "unique(assessment_id, revision)",
@@ -420,6 +484,9 @@ class SudoChinaComplianceReport(models.Model):
         "reviewed_underpayment_amount",
         "reviewed_overpayment_amount",
         "reviewed_timing_amount",
+        "fact_snapshot_count",
+        "fact_issue_count",
+        "finding_without_fact_count",
     }
     _identity_fields = {
         "name",
@@ -511,6 +578,9 @@ class SudoChinaComplianceReport(models.Model):
                     "reviewed_underpayment_amount": 0.0,
                     "reviewed_overpayment_amount": 0.0,
                     "reviewed_timing_amount": 0.0,
+                    "fact_snapshot_count": 0,
+                    "fact_issue_count": 0,
+                    "finding_without_fact_count": 0,
                 }
             )
             normalized_list.append(values)
@@ -912,7 +982,7 @@ class SudoChinaComplianceReport(models.Model):
             for analysis in assessment.report_ai_analysis_ids.sorted("id")
         ]
 
-        return {
+        payload = {
             "schema": "sdoo.cn.compliance-report.v1",
             "report": {
                 "id": self.id,
@@ -1000,6 +1070,8 @@ class SudoChinaComplianceReport(models.Model):
             },
             "ai_analysis_metadata": ai_rows,
         }
+        payload["fact_basis"] = _fact_basis_summary(payload)
+        return payload
 
     @api.model
     def _derive_conclusion(self, payload):
@@ -1109,6 +1181,7 @@ class SudoChinaComplianceReport(models.Model):
         tasks = payload["tasks"]
         evidence = payload["evidence"]
         tax_impact = payload["tax_impact"]
+        fact_basis = payload.get("fact_basis") or _fact_basis_summary(payload)
         conclusion, has_limits = self._derive_conclusion(payload)
         open_tasks = [
             task
@@ -1161,6 +1234,11 @@ class SudoChinaComplianceReport(models.Model):
             "reviewed_timing_amount": float(
                 tax_impact["reviewed_timing_amount"]
             ),
+            "fact_snapshot_count": fact_basis["snapshot_count"],
+            "fact_issue_count": fact_basis["issue_count"],
+            "finding_without_fact_count": fact_basis[
+                "finding_without_fact_count"
+            ],
         }
 
     @api.depends(
@@ -1237,6 +1315,29 @@ class SudoChinaComplianceReport(models.Model):
             report.cn_report_center_stage = stage
             report.cn_report_center_next_action = next_action
 
+    def _current_fact_basis(self):
+        self.ensure_one()
+        if self.snapshot_json and self.snapshot_json.get("fact_basis"):
+            return self.snapshot_json["fact_basis"]
+        if not self.assessment_id:
+            return _fact_basis_summary({})
+        return _fact_basis_summary(self._snapshot_payload())
+
+    @api.depends(
+        "snapshot_json",
+        "fact_snapshot_count",
+        "fact_issue_count",
+        "finding_without_fact_count",
+        "assessment_id.fact_snapshot_ids.write_date",
+        "assessment_id.finding_ids.write_date",
+        "assessment_id.finding_ids.fact_snapshot_ids.write_date",
+    )
+    def _compute_cn_report_fact_basis(self):
+        for report in self:
+            basis = report._current_fact_basis()
+            report.cn_report_fact_basis_state = basis["state"]
+            report.cn_report_fact_basis_next_action = basis["next_action"]
+
     @api.depends(
         "snapshot_checksum",
         "snapshot_integrity_state",
@@ -1249,6 +1350,8 @@ class SudoChinaComplianceReport(models.Model):
         "evidence_count",
         "verified_evidence_count",
         "tax_impact_pending_count",
+        "fact_issue_count",
+        "finding_without_fact_count",
         "assessment_id.profile_id.obligation_ids.write_date",
         "assessment_id.profile_id.obligation_ids.authority_source_id.write_date",
         "assessment_id.finding_ids.cn_traceability_gap_count",
@@ -1275,6 +1378,9 @@ class SudoChinaComplianceReport(models.Model):
                 gaps.append("evidence")
             if report.tax_impact_pending_count:
                 gaps.append("tax_impact")
+            fact_basis = report._current_fact_basis()
+            if fact_basis["state"] == "blocked":
+                gaps.append("fact_basis")
             if report.assessment_id.profile_id.cn_workbench_obligation_state in (
                 "not_started",
                 "attention",
@@ -1301,6 +1407,7 @@ class SudoChinaComplianceReport(models.Model):
                 "source_changed",
                 "approval_integrity",
                 "pdf_integrity",
+                "fact_basis",
                 "finding_traceability",
             }:
                 report.cn_report_traceability_state = "blocked"
@@ -1503,6 +1610,9 @@ class SudoChinaComplianceReport(models.Model):
                     "reviewed_underpayment_amount": 0.0,
                     "reviewed_overpayment_amount": 0.0,
                     "reviewed_timing_amount": 0.0,
+                    "fact_snapshot_count": 0,
+                    "fact_issue_count": 0,
+                    "finding_without_fact_count": 0,
                 }
             )
             self.env["sudo.compliance.audit.event"]._log_records(

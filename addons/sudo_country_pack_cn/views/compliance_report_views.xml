@@ -50,8 +50,13 @@
                 <field name="cn_report_traceability_state"/>
                 <field name="cn_report_traceability_gap_count"/>
                 <field name="cn_report_traceability_next_action"/>
+                <field name="cn_report_fact_basis_state"/>
+                <field name="cn_report_fact_basis_next_action"/>
                 <field name="conclusion_state"/>
                 <field name="finding_count"/>
+                <field name="fact_snapshot_count"/>
+                <field name="fact_issue_count"/>
+                <field name="finding_without_fact_count"/>
                 <field name="critical_count"/>
                 <field name="high_count"/>
                 <field name="open_task_count"/>
@@ -105,6 +110,26 @@
                                            decoration-success="cn_report_traceability_state == 'complete'"
                                            decoration-warning="cn_report_traceability_state == 'action_required'"
                                            decoration-danger="cn_report_traceability_state == 'blocked'"/>
+                                </div>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Fact basis</div>
+                                        <div class="fw-semibold"><field name="cn_report_fact_basis_next_action"/></div>
+                                        <div class="text-muted small">
+                                            <field name="fact_snapshot_count"/>
+                                            <span> snapshots · </span>
+                                            <field name="fact_issue_count"/>
+                                            <span> issues · </span>
+                                            <field name="finding_without_fact_count"/>
+                                            <span> findings without facts</span>
+                                        </div>
+                                    </div>
+                                    <field name="cn_report_fact_basis_state" widget="badge"
+                                           decoration-success="cn_report_fact_basis_state == 'ready'"
+                                           decoration-danger="cn_report_fact_basis_state == 'blocked'"
+                                           decoration-muted="cn_report_fact_basis_state == 'not_started'"/>
                                 </div>
                             </div>
                             <div class="row g-2 mt-3">
@@ -188,6 +213,15 @@
                        decoration-danger="cn_report_traceability_state == 'blocked'"/>
                 <field name="cn_report_traceability_gap_count" optional="show"/>
                 <field name="cn_report_traceability_next_action" optional="hide"/>
+                <field name="cn_report_fact_basis_state" widget="badge" optional="show"
+                       decoration-success="cn_report_fact_basis_state == 'ready'"
+                       decoration-danger="cn_report_fact_basis_state == 'blocked'"
+                       decoration-muted="cn_report_fact_basis_state == 'not_started'"/>
+                <field name="fact_snapshot_count" optional="show"/>
+                <field name="fact_issue_count" optional="show"
+                       decoration-danger="fact_issue_count &gt; 0"/>
+                <field name="finding_without_fact_count" optional="show"
+                       decoration-danger="finding_without_fact_count &gt; 0"/>
                 <field name="critical_count" decoration-danger="critical_count &gt; 0"/>
                 <field name="high_count" decoration-danger="high_count &gt; 0"/>
                 <field name="open_task_count" decoration-warning="open_task_count &gt; 0"/>
@@ -352,6 +386,18 @@
                                    decoration-warning="cn_report_traceability_state == 'action_required'"
                                    decoration-danger="cn_report_traceability_state == 'blocked'"/>
                             <field name="cn_report_traceability_gap_count"/>
+                        </group>
+                        <group string="Fact basis">
+                            <field name="cn_report_fact_basis_state" widget="badge"
+                                   decoration-success="cn_report_fact_basis_state == 'ready'"
+                                   decoration-danger="cn_report_fact_basis_state == 'blocked'"
+                                   decoration-muted="cn_report_fact_basis_state == 'not_started'"/>
+                            <field name="cn_report_fact_basis_next_action"/>
+                            <field name="fact_snapshot_count"/>
+                            <field name="fact_issue_count"
+                                   decoration-danger="fact_issue_count &gt; 0"/>
+                            <field name="finding_without_fact_count"
+                                   decoration-danger="finding_without_fact_count &gt; 0"/>
                         </group>
                     </group>
 
