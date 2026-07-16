@@ -56,6 +56,7 @@ class TestChinaCountryPack(TransactionCase):
         self.assertTrue(features["reconciliation"])
         self.assertTrue(features["reconciliation_fact_bridge"])
         self.assertTrue(features["rule_nature_governance"])
+        self.assertTrue(features["cit_governed_rule_candidates"])
         self.assertTrue(
             self.country_pack.capability_json["governance"][
                 "rule_release_requires_nature_classification"
@@ -64,7 +65,7 @@ class TestChinaCountryPack(TransactionCase):
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )
-        self.assertEqual(len(rules), 7)
+        self.assertEqual(len(rules), 9)
         self.assertFalse(
             rules.mapped("version_ids").filtered(
                 lambda version: version.state == "active"

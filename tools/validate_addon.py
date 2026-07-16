@@ -37,6 +37,7 @@ OFFICIAL_SOURCE_HOSTS = {
     "kjs.mof.gov.cn",
     "www.mof.gov.cn",
     "www.gov.cn",
+    "xzfg.moj.gov.cn",
 }
 EXPECTED_OFFICIAL_SOURCE_URLS = {
     "source_cn_accounting_law_2024_candidate": (
@@ -59,6 +60,12 @@ EXPECTED_OFFICIAL_SOURCE_URLS = {
     ),
     "source_cn_electronic_voucher_standard_2025_candidate": (
         "https://www.mof.gov.cn/jrttts/202505/t20250521_3964264.htm"
+    ),
+    "source_cn_cit_law_2018_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100009/c5193018/content.html"
+    ),
+    "source_cn_cit_regulation_2024_candidate": (
+        "https://xzfg.moj.gov.cn/law/download?LawID=1741&type=pdf"
     ),
 }
 EXPECTED_SOURCE_URL_REPLACEMENTS = {
@@ -85,6 +92,9 @@ ALLOWED_CN_RULE_NATURES = {
     "data_readiness",
 }
 CONTROL_RULE_NATURES = {"internal_control", "data_readiness"}
+ALLOWED_CN_RULE_HANDLERS = {
+    "cn.cit.reconciliation.review.v1": "1",
+}
 ALLOWED_CN_CITATION_TYPES = {
     "direct_requirement",
     "supporting_context",
@@ -481,17 +491,6 @@ def validate_rule_drafts(
             fail(f"{xml_id} references an unknown China rule")
         rules_with_versions.add(rule_id)
 
-        condition_field = fields.get("condition_json")
-        if condition_field is None:
-            fail(f"{xml_id} has no declarative condition")
-        condition = literal_eval_field(condition_field, xml_id)
-        used_fact_keys = condition_fact_keys(condition)
-        if not used_fact_keys:
-            fail(f"{xml_id} condition does not reference a fact")
-        unknown_keys = used_fact_keys - fact_keys
-        if unknown_keys:
-            fail(f"{xml_id} references unknown facts: {sorted(unknown_keys)}")
-
         required_field = fields.get("required_fact_ids")
         if required_field is None:
             fail(f"{xml_id} has no required fact declaration")
@@ -501,12 +500,40 @@ def validate_rule_drafts(
         required_keys = {fact_ids[ref] for ref in required_refs if ref in fact_ids}
         if len(required_keys) != len(required_refs):
             fail(f"{xml_id} references an unknown fact definition")
-        missing_required_keys = used_fact_keys - required_keys
-        if missing_required_keys:
-            fail(
-                f"{xml_id} condition facts are not declared: "
-                f"{sorted(missing_required_keys)}"
-            )
+        if not required_keys:
+            fail(f"{xml_id} has no required facts")
+
+        evaluator_type = field_text(fields, "evaluator_type", xml_id)
+        if evaluator_type == "declarative":
+            condition_field = fields.get("condition_json")
+            if condition_field is None:
+                fail(f"{xml_id} has no declarative condition")
+            condition = literal_eval_field(condition_field, xml_id)
+            used_fact_keys = condition_fact_keys(condition)
+            if not used_fact_keys:
+                fail(f"{xml_id} condition does not reference a fact")
+            unknown_keys = used_fact_keys - fact_keys
+            if unknown_keys:
+                fail(
+                    f"{xml_id} references unknown facts: "
+                    f"{sorted(unknown_keys)}"
+                )
+            missing_required_keys = used_fact_keys - required_keys
+            if missing_required_keys:
+                fail(
+                    f"{xml_id} condition facts are not declared: "
+                    f"{sorted(missing_required_keys)}"
+                )
+        elif evaluator_type == "handler":
+            handler_key = field_text(fields, "handler_key", xml_id)
+            handler_version = field_text(fields, "handler_version", xml_id)
+            if ALLOWED_CN_RULE_HANDLERS.get(handler_key) != handler_version:
+                fail(
+                    f"{xml_id} uses an unaudited handler or version: "
+                    f"{handler_key}@{handler_version}"
+                )
+        else:
+            fail(f"{xml_id} uses an unsupported evaluator: {evaluator_type}")
 
     if rules_with_versions != set(rules):
         fail("every packaged China rule must have a draft version")
@@ -561,8 +588,8 @@ def validate_rule_review_candidates(
     ]
     if len(packet_records) != len(version_source_refs):
         fail("every packaged China rule version requires one review packet")
-    if len(citation_records) != 14:
-        fail("packaged China review candidates require fourteen citations")
+    if len(citation_records) != 20:
+        fail("packaged China review candidates require twenty citations")
 
     required_packet_fields = {
         "scope_summary",
@@ -719,13 +746,19 @@ def validate_upgrade_migration(
             source_url_migrations.append((content, replacements))
     if len(nature_backfill_migrations) != 1:
         fail("exactly one migration must backfill governed China rule natures")
-    if len(link_migrations) != 1:
-        fail("exactly one upgrade migration must govern rule source links")
-    content, links = link_migrations[0]
-    normalized_links = {
-        version_id: set(candidates)
-        for version_id, candidates in links.items()
-    }
+    if not link_migrations:
+        fail("upgrade migrations must govern rule source links")
+    normalized_links = {}
+    for content, links in link_migrations:
+        if "Command.link" not in content or "Command.set" in content:
+            fail("upgrade migrations must preserve existing rule source links")
+        for version_id, candidates in links.items():
+            if version_id in normalized_links:
+                fail(
+                    "rule source links cannot be redefined by a later "
+                    f"migration: {version_id}"
+                )
+            normalized_links[version_id] = set(candidates)
     if normalized_links != version_source_refs:
         fail("upgrade migration must cover every packaged rule draft")
     linked_sources = {
@@ -735,9 +768,6 @@ def validate_upgrade_migration(
     }
     if linked_sources != source_ids:
         fail("upgrade migration must cover every official source candidate")
-    if "Command.link" not in content or "Command.set" in content:
-        fail("upgrade migration must preserve existing rule source links")
-
     if len(source_url_migrations) != 1:
         fail("exactly one migration must govern official source URL changes")
     source_content, replacements = source_url_migrations[0]

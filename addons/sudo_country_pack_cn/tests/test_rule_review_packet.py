@@ -10,6 +10,8 @@ PACKET_XMLIDS = (
     "review_packet_cn_profile_tax_001_draft",
     "review_packet_cn_einvoice_reconciliation_ready_001_draft",
     "review_packet_cn_vat_reconciliation_ready_001_draft",
+    "review_packet_cn_cit_reconciliation_ready_001_draft",
+    "review_packet_cn_cit_reconciliation_control_001_draft",
 )
 
 
@@ -50,8 +52,8 @@ class TestChinaRuleReviewPacket(TransactionCase):
         )
 
     def test_packaged_candidates_cover_every_linked_source(self):
-        self.assertEqual(len(self.packets), 7)
-        self.assertEqual(len(self.packets.mapped("citation_ids")), 14)
+        self.assertEqual(len(self.packets), 9)
+        self.assertEqual(len(self.packets.mapped("citation_ids")), 20)
         self.assertEqual(set(self.packets.mapped("readiness_state")), {"ready"})
         for packet in self.packets:
             self.assertEqual(

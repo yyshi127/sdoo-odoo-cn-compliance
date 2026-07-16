@@ -1,9 +1,10 @@
+import hashlib
 import json
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import tagged
+from odoo.tests import new_test_user, tagged
 
 
 @tagged("post_install", "-at_install")
@@ -335,6 +336,232 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         provider = self.env["sudo.compliance.engine"]._fact_provider_registry()[key]
         return provider(assessment, False)
 
+    def _activate_cit_reconciliation_test_rule(self):
+        author = new_test_user(
+            self.env,
+            login="cn_cit_bridge_rule_author",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_rule_author"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        approver = new_test_user(
+            self.env,
+            login="cn_cit_bridge_rule_approver",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_rule_approver"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        professional = new_test_user(
+            self.env,
+            login="cn_cit_bridge_professional_reviewer",
+            groups=(
+                "base.group_user,"
+                "sudo_global_finance.group_compliance_professional_reviewer"
+            ),
+            company_id=self.company.id,
+            company_ids=[self.company.id],
+        )
+        source = self.env[
+            "sudo.compliance.authority.source"
+        ].with_user(author).create(
+            {
+                "name": "中国企业所得税勾稽闭环测试受控来源",
+                "country_id": self.country.id,
+                "authority": "测试主管税务机关",
+                "source_type": "tax_guide",
+                "snapshot_kind": "official_web_capture",
+                "official_url": (
+                    "https://example.test/cn-cit-reconciliation-control"
+                ),
+                "official_version": "TEST-2026.1",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-07-16",
+            }
+        )
+        attachment = self.env["ir.attachment"].with_user(author).create(
+            {
+                "name": "cn-cit-reconciliation-test-source.html",
+                "raw": b"Controlled China CIT reconciliation test source",
+                "mimetype": "text/html",
+                "res_model": source._name,
+                "res_id": source.id,
+            }
+        )
+        source.with_user(author).write(
+            {"snapshot_attachment_id": attachment.id}
+        )
+        source.with_user(author).action_compute_hash()
+        source.with_user(author).action_submit_review()
+        source.with_user(approver).action_approve()
+
+        fact_definitions = self.env[
+            "sudo.compliance.fact.definition"
+        ].browse(
+            [
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_cit_reconciliation_conclusion_state_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_cit_reconciliation_blocking_count_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_cit_reconciliation_difference_count_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_cit_reconciliation_warning_count_v1"
+                ).id,
+                self.env.ref(
+                    "sudo_country_pack_cn."
+                    "fact_cn_cit_reconciliation_detail_v1"
+                ).id,
+            ]
+        )
+        rule = self.env["sudo.compliance.rule"].with_user(author).create(
+            {
+                "name": "中国企业所得税勾稽闭环运行时测试规则",
+                "code": "CN-TEST-CIT-RECON-E2E",
+                "country_id": self.country.id,
+                "domain_key": "CN.CIT.TEST",
+                "cn_rule_nature": "internal_control",
+                "description": "仅用于运行时验证三态规则扫描与整改复扫闭环。",
+            }
+        )
+        version = self.env[
+            "sudo.compliance.rule.version"
+        ].with_user(author).create(
+            {
+                "rule_id": rule.id,
+                "version": "TEST-2026.1",
+                "effective_from": "2026-01-01",
+                "next_review_date": "2027-07-16",
+                "evaluator_type": "handler",
+                "handler_key": "cn.cit.reconciliation.review.v1",
+                "handler_version": "1",
+                "risk_level": "high",
+                "stale_policy": "block_all",
+                "authority_source_ids": [Command.set(source.ids)],
+                "required_fact_ids": [Command.set(fact_definitions.ids)],
+                "legal_basis_summary": "受控运行时测试来源。",
+                "failure_message": "企业所得税勾稽存在待复核差异。",
+                "pass_message": "企业所得税勾稽在测试范围内一致。",
+                "unknown_message": "数据不可比较或仍有复核提示。",
+                "recommended_actions": "补齐来源并重新执行企业所得税勾稽。",
+                "evidence_required": "受控来源、差异调节和复核证据。",
+                "requires_human_review": True,
+            }
+        )
+        packet = self.env["sudo.cn.rule.review.packet"].with_user(
+            author
+        ).create(
+            {
+                "rule_version_id": version.id,
+                "scope_summary": "仅验证企业所得税勾稽运行时测试期间。",
+                "applicability_assumptions": "测试来源和事实定义完整。",
+                "exclusions_limitations": "不构成真实中国税务结论。",
+                "conclusion_boundary": "仅验证系统治理闭环。",
+                "reviewer_questions": "确认测试载荷和三态结论边界。",
+            }
+        )
+        self.env["sudo.cn.rule.review.citation"].with_user(author).create(
+            {
+                "packet_id": packet.id,
+                "source_id": source.id,
+                "citation_type": "internal_control_rationale",
+                "locator": "运行时测试来源",
+                "claim_summary": "仅用于验证系统运行时控制。",
+                "applicability_note": "不得用于真实财税判断。",
+            }
+        )
+        self.env["sudo.compliance.rule.test.case"].with_user(author).create(
+            [
+                {
+                    "name": "企业所得税勾稽一致",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.cit.conclusion_state": "aligned",
+                        "cn.reconciliation.cit.blocking_issue_count": 0,
+                        "cn.reconciliation.cit.difference_issue_count": 0,
+                        "cn.reconciliation.cit.warning_issue_count": 0,
+                        "cn.reconciliation.cit.detail": {},
+                    },
+                    "evaluation_date": "2026-07-16",
+                    "expected_result": "pass",
+                },
+                {
+                    "name": "企业所得税勾稽存在差异",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.cit.conclusion_state": "differences",
+                        "cn.reconciliation.cit.blocking_issue_count": 0,
+                        "cn.reconciliation.cit.difference_issue_count": 1,
+                        "cn.reconciliation.cit.warning_issue_count": 0,
+                        "cn.reconciliation.cit.detail": {},
+                    },
+                    "evaluation_date": "2026-07-16",
+                    "expected_result": "fail",
+                },
+                {
+                    "name": "企业所得税勾稽数据不足",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.cit.conclusion_state": (
+                            "insufficient_data"
+                        ),
+                        "cn.reconciliation.cit.blocking_issue_count": 1,
+                        "cn.reconciliation.cit.difference_issue_count": 0,
+                        "cn.reconciliation.cit.warning_issue_count": 0,
+                        "cn.reconciliation.cit.detail": {},
+                    },
+                    "evaluation_date": "2026-07-16",
+                    "expected_result": "unknown",
+                },
+                {
+                    "name": "企业所得税勾稽仍有复核提示",
+                    "rule_version_id": version.id,
+                    "facts_json": {
+                        "cn.reconciliation.cit.conclusion_state": "aligned",
+                        "cn.reconciliation.cit.blocking_issue_count": 0,
+                        "cn.reconciliation.cit.difference_issue_count": 0,
+                        "cn.reconciliation.cit.warning_issue_count": 1,
+                        "cn.reconciliation.cit.detail": {},
+                    },
+                    "evaluation_date": "2026-07-16",
+                    "expected_result": "unknown",
+                },
+            ]
+        )
+        version.with_user(author).action_run_tests()
+        evidence = b"China CIT reconciliation professional test workpaper"
+        version.with_user(professional).write(
+            {
+                "professional_qualification": "中国财税专业测试资质",
+                "professional_review_notes": (
+                    "仅验证三态规则治理、事实快照和整改闭环。"
+                ),
+                "professional_evidence_reference": (
+                    "TEST/CN/CIT-RECON/%s" % version.id
+                ),
+                "professional_evidence_checksum": hashlib.sha256(
+                    evidence
+                ).hexdigest(),
+            }
+        )
+        version.with_user(professional).action_professional_signoff()
+        version.with_user(author).action_submit_review()
+        version.with_user(approver).action_approve()
+        version.with_user(approver).action_activate()
+        return version
+
     def test_scope_populates_full_chart_and_is_immutable_after_review(self):
         scope = self._verified_scope("governance")
         expected = scope._expected_accounts(self.company)
@@ -543,6 +770,149 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(run.result_integrity_state, "checksum_mismatch")
         with self.assertRaisesRegex(UserError, "结果完整性异常"):
             self._fact("cn.reconciliation.cit.conclusion_state")
+
+    def test_cit_reconciliation_drives_remediation_and_exact_period_rescan(self):
+        self.profile._write_import({"status": "active"})
+        version = self._activate_cit_reconciliation_test_rule()
+        initial_run = self._queue()
+        self.assertTrue(initial_run.with_user(self.reviewer)._process())
+        self.assertEqual(initial_run.conclusion_state, "insufficient_data")
+
+        assessment_action = initial_run.with_user(
+            self.reviewer
+        ).action_queue_compliance_assessment()
+        assessment = self.env["sudo.compliance.assessment"].browse(
+            assessment_action["res_id"]
+        )
+        self.assertEqual(assessment.state, "queued")
+        self.assertEqual(assessment.period_start.isoformat(), "2026-06-01")
+        self.assertEqual(assessment.period_end.isoformat(), "2026-06-30")
+        self.assertEqual(assessment.rule_version_ids, version)
+
+        assessment.with_user(self.reviewer).action_run_now()
+        finding = assessment.finding_ids
+        self.assertEqual(finding.result, "unknown")
+        self.assertEqual(finding.cn_rule_nature, "internal_control")
+        self.assertEqual(
+            finding.result_details_json["reason"],
+            "data_not_comparable",
+        )
+        self.assertFalse(finding.source_warning)
+        self.assertFalse(finding.professional_warning)
+        snapshots = {
+            snapshot.definition_id.key: snapshot
+            for snapshot in finding.fact_snapshot_ids
+        }
+        self.assertEqual(
+            snapshots[
+                "cn.reconciliation.cit.conclusion_state"
+            ].source_record_ids_json,
+            initial_run.ids,
+        )
+        self.assertEqual(
+            snapshots[
+                "cn.reconciliation.cit.blocking_issue_count"
+            ].value_json,
+            initial_run.blocking_issue_count,
+        )
+
+        finding.with_user(self.reviewer).write(
+            {
+                "review_notes": (
+                    "已核对企业所得税勾稽数据阻断和三态规则边界，确认需要"
+                    "补齐受控来源并建立整改任务。"
+                )
+            }
+        )
+        finding.with_user(self.reviewer).action_require_correction()
+        impact_action = finding.with_user(
+            self.reviewer
+        ).action_create_cn_tax_impact_case()
+        self.assertEqual(impact_action["view_mode"], "form")
+        self.assertEqual(
+            impact_action["context"]["default_assessment_id"],
+            assessment.id,
+        )
+
+        task_action = finding.with_user(self.reviewer).action_create_task()
+        task = self.env["sudo.compliance.task"].browse(task_action["res_id"])
+        task.with_user(self.reviewer).write(
+            {
+                "completion_notes": (
+                    "已补齐受控损益口径、企业所得税申报和缴税来源并重新勾稽。"
+                ),
+                "external_evidence_reference": (
+                    "TEST/CN/CIT-REMEDIATION/2026-06"
+                ),
+            }
+        )
+        task.with_user(self.reviewer).action_done()
+        self.assertEqual(task.state, "pending_review")
+        self.assertEqual(task.verification_state, "pending_rescan")
+
+        self._seed_complete_sources("compliance-remediated")
+        replacement_run = self._queue()
+        self.assertTrue(replacement_run.with_user(self.reviewer)._process())
+        self.assertEqual(replacement_run.conclusion_state, "aligned")
+        initial_run.invalidate_recordset(["state"])
+        self.assertEqual(initial_run.state, "superseded")
+
+        verification_action = task.with_user(
+            self.reviewer
+        ).action_queue_verification_scan()
+        verification = self.env["sudo.compliance.assessment"].browse(
+            verification_action["res_id"]
+        )
+        self.assertEqual(verification.period_start, assessment.period_start)
+        self.assertEqual(verification.period_end, assessment.period_end)
+        self.assertEqual(verification.rule_version_ids, version)
+        verification.with_user(self.reviewer).action_run_now()
+        self.assertEqual(verification.finding_ids.result, "pass")
+        self.assertEqual(
+            verification.fact_snapshot_ids.filtered(
+                lambda snapshot: snapshot.definition_id.key
+                == "cn.reconciliation.cit.conclusion_state"
+            ).source_record_ids_json,
+            replacement_run.ids,
+        )
+
+        evidence = self.env["sudo.compliance.evidence"].with_user(
+            self.reviewer
+        ).create(
+            {
+                "name": "企业所得税勾稽整改验证证据",
+                "company_id": self.company.id,
+                "task_id": task.id,
+                "evidence_type": "remediation_proof",
+                "external_reference": (
+                    "TEST/CN/CIT-REMEDIATION/VERIFIED-2026-06"
+                ),
+            }
+        )
+        evidence.with_user(self.reviewer).action_submit()
+        evidence.with_user(self.reviewer).review_notes = (
+            "已核对替代批次、精确期间、来源范围和结果校验和。"
+        )
+        evidence.with_user(self.reviewer).action_verify()
+        task.with_user(self.reviewer).action_verify_remediation()
+
+        self.assertEqual(task.state, "done")
+        self.assertEqual(task.verification_state, "verified")
+        self.assertEqual(task.verification_assessment_id, verification)
+        self.assertEqual(task.verification_finding_id.result, "pass")
+        event = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("model_name", "=", task._name),
+                ("record_id", "=", task.id),
+                ("event_key", "=", "task.verification_scan_queued"),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        self.assertEqual(
+            event.details_json["scope"],
+            "cn_reconciliation_exact_period",
+        )
 
     def test_company_rule_hides_other_company_scope(self):
         other_company = self.env["res.company"].create(

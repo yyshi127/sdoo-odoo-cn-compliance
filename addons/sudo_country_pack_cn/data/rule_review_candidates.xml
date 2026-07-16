@@ -189,4 +189,76 @@
         <field name="claim_summary">发票管理办法规定经营业务开具、取得和报销凭证边界，为发票侧数据来源和异常复核提供背景。</field>
         <field name="applicability_note">发票金额与账务或申报一致不证明发票符合规定，差异为零也不能替代发票真实性和业务实质复核。</field>
     </record>
+
+    <record id="review_packet_cn_cit_reconciliation_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_cit_reconciliation_ready_001_draft"/>
+        <field name="scope_summary">适用于当前中国合规档案及评估期间；仅检查是否存在唯一、完整、审计指纹有效的企业所得税账簿利润、申报和缴退税勾稽结果，并区分数据可比较与数据阻断。</field>
+        <field name="applicability_assumptions">损益科目口径已经独立核验，申报和缴退税来源覆盖完全相同的主体及期间，币种和申报类型明确，当前成功批次未被后续来源替代。</field>
+        <field name="exclusions_limitations">不判断纳税人身份、优惠资格、收入和扣除口径、关联交易、资产税务处理、亏损弥补、税率、应纳税额、申报时限或是否少缴税；金额差异不阻止“数据可比较”通过。</field>
+        <field name="conclusion_boundary">通过只表示受控来源具备比较条件；失败只表示数据准备存在阻断。两者都不是所得税申报、缴税或违法结论，必须与差异复核控制及专业判断结合。</field>
+        <field name="reviewer_questions">请确认预缴与年度汇算清缴的期间映射、修订申报选择、缴款和退库状态口径、会计利润范围、允许的零记录声明、币种处理，以及哪些阻断必须在正式评估前解决。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_ready_001_cit_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_cit_law_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第五条、第二十一条、第二十二条、第五十三条、第五十四条</field>
+        <field name="claim_summary">企业所得税法提供应纳税所得额、会计与税法差异调整、应纳税额以及纳税年度和申报缴纳的一般框架；本规则据此建立账簿、申报和缴退税来源可比较性的内部控制。</field>
+        <field name="applicability_note">法条没有规定本系统的数据模型或自动勾稽方法，必须由专业人员核对企业身份、申报类型、适用期间及现行政策后使用。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_ready_001_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_cit_regulation_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第九条、第一百二十七条至第一百二十九条</field>
+        <field name="claim_summary">实施条例提供权责发生制、预缴依据、申报表和财务报告附送以及计税货币的一般背景，用于设计来源期间、口径和币种准备度检查。</field>
+        <field name="applicability_note">条文背景不能替代现行申报表口径、电子税务局状态或主管税务机关要求核验，也不证明来源金额正确。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_ready_001_collection" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_ready_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_tax_collection_law_2015_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第二十五条</field>
+        <field name="claim_summary">税收征收管理法提供纳税申报及报送资料的一般框架，为保留受控申报来源、覆盖范围和回执线索提供背景。</field>
+        <field name="applicability_note">本引用不把系统中的数据缺口直接认定为未申报、虚假申报或违法，具体义务和事实必须由专业人员复核。</field>
+    </record>
+
+    <record id="review_packet_cn_cit_reconciliation_control_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_cit_reconciliation_control_001_draft"/>
+        <field name="scope_summary">适用于已完成数据准备的同一主体和完全相同期间；分别比较账簿会计利润与申报会计利润、申报利润调整链、应补税与有效缴款、应退税与实际退库，并保留稳定问题代码和审计校验和。</field>
+        <field name="applicability_assumptions">唯一当前成功勾稽批次通过完整性校验，账簿口径、申报版本、缴退税状态和币种均已核验，差异阈值仅用于算术比较而非税务重要性判断。</field>
+        <field name="exclusions_limitations">不自动判断差异原因、税前扣除资格、优惠、税率、应纳税额、滞纳金、处罚或违法；不同差异项不得简单相加为税务影响额，数据阻断和警告只返回待确认。</field>
+        <field name="conclusion_boundary">失败只表示一个或多个受控金额差异需要复核；待确认表示数据不可比较、状态矛盾或仍有提示；通过只表示当前范围没有金额差异和提示，均须人工复核且不构成税务结论。</field>
+        <field name="reviewer_questions">请确认四组比较的专业边界、修订申报和冲正选择、预缴与年度汇算衔接、跨期缴退税、会计结转影响、差异重要性、专业复核证据及何时允许关闭整改。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_control_001_cit_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_control_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_cit_law_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第五条、第二十一条、第二十二条、第五十三条、第五十四条</field>
+        <field name="claim_summary">企业所得税法中所得额、会计税法差异调整、应纳税额和申报缴纳框架，为账税及缴退税金额分层复核提供内控推导背景。</field>
+        <field name="applicability_note">算术差异只是复核线索，不能仅凭差异方向或金额推断少缴税、应补税、违法或处罚风险。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_control_001_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_control_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_cit_regulation_2024_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第九条、第一百二十七条至第一百二十九条</field>
+        <field name="claim_summary">实施条例中的会计基础、预缴、申报附送资料和货币背景，支持对账簿口径、申报利润链和缴退税来源进行分层复核。</field>
+        <field name="applicability_note">必须核对企业采用的会计制度、申报表版本和主管税务机关数据；系统比较不能替代税务调整底稿及专业意见。</field>
+    </record>
+    <record id="review_citation_cn_cit_reconciliation_control_001_accounting" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cit_reconciliation_control_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_accounting_law_2024_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第九条、第十条、第十三条</field>
+        <field name="claim_summary">会计法提供实际经济业务、会计凭证和账簿记录的一般背景，为受控会计利润范围及证据链复核提供上下文。</field>
+        <field name="applicability_note">Odoo 已过账记录和附件存在不自动证明会计处理或原始凭证真实、合法、完整，仍需专业复核。</field>
+    </record>
 </odoo>

@@ -22,6 +22,7 @@ INVOICE_MOVE_TYPES = (
     "out_receipt",
     "in_receipt",
 )
+CIT_RECONCILIATION_REVIEW_HANDLER = "cn.cit.reconciliation.review.v1"
 
 
 def _json_checksum(payload):
@@ -121,6 +122,84 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             }
         )
         return providers
+
+    def _rule_handler_registry(self):
+        handlers = super()._rule_handler_registry()
+        handlers[CIT_RECONCILIATION_REVIEW_HANDLER] = (
+            self._evaluate_cn_cit_reconciliation_review
+        )
+        return handlers
+
+    @staticmethod
+    def _evaluate_cn_cit_reconciliation_review(
+        _assessment, _version, facts, _parameters
+    ):
+        state = facts.get("cn.reconciliation.cit.conclusion_state")
+        counts = {
+            "blocking": facts.get(
+                "cn.reconciliation.cit.blocking_issue_count"
+            ),
+            "differences": facts.get(
+                "cn.reconciliation.cit.difference_issue_count"
+            ),
+            "warnings": facts.get(
+                "cn.reconciliation.cit.warning_issue_count"
+            ),
+        }
+        details = {
+            "conclusion_state": state,
+            "issue_counts": counts,
+        }
+
+        def valid_count(value):
+            return (
+                isinstance(value, int)
+                and not isinstance(value, bool)
+                and value >= 0
+            )
+
+        if state not in {"aligned", "differences", "insufficient_data"} or not all(
+            valid_count(value) for value in counts.values()
+        ):
+            details["reason"] = "invalid_fact_payload"
+            return {
+                "result": "unknown",
+                "requires_human_review": True,
+                "details": details,
+            }
+
+        blocking = counts["blocking"]
+        differences = counts["differences"]
+        warnings = counts["warnings"]
+        state_is_consistent = {
+            "aligned": blocking == 0 and differences == 0,
+            "differences": blocking == 0 and differences > 0,
+            "insufficient_data": blocking > 0,
+        }[state]
+        if not state_is_consistent:
+            details["reason"] = "inconsistent_reconciliation_state"
+            return {
+                "result": "unknown",
+                "requires_human_review": True,
+                "details": details,
+            }
+        if state == "insufficient_data":
+            details["reason"] = "data_not_comparable"
+            result = "unknown"
+        elif state == "differences":
+            details["reason"] = "differences_require_review"
+            result = "fail"
+        elif warnings:
+            details["reason"] = "warnings_require_review"
+            result = "unknown"
+        else:
+            details["reason"] = "controlled_amounts_aligned"
+            result = "pass"
+        return {
+            "result": result,
+            "requires_human_review": True,
+            "details": details,
+        }
 
     @staticmethod
     def _reconciliation_period_domain(assessment):

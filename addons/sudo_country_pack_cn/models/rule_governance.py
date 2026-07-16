@@ -18,6 +18,8 @@ CN_RULE_NATURE_BY_CODE = {
     "CN-PROFILE-TAX-001": "data_readiness",
     "CN-DATA-EINV-RECON-001": "data_readiness",
     "CN-DATA-VAT-RECON-001": "data_readiness",
+    "CN-DATA-CIT-RECON-001": "data_readiness",
+    "CN-CIT-RECON-CTRL-001": "internal_control",
 }
 
 _CONTROL_NATURES = {"internal_control", "data_readiness"}
