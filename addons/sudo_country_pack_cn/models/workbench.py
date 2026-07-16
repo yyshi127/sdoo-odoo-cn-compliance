@@ -335,6 +335,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             [("profile_id", "=", self.id)],
         )
 
+    def action_cn_open_workbench_report_readiness(self):
+        self.ensure_one()
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_cn_report_readiness",
+            raise_if_not_found=False,
+        )
+        if action:
+            result = action.sudo().read()[0]
+            result["domain"] = [("profile_id", "=", self.id)]
+            result["context"] = {
+                "search_default_cn_assessments": 1,
+                "search_default_completed": 1,
+            }
+            return result
+        return self._cn_action(
+            _("报告准备度"),
+            "sudo.compliance.assessment",
+            [("profile_id", "=", self.id)],
+            {"search_default_completed": 1},
+        )
+
     def action_cn_open_workbench_vat_issues(self):
         self.ensure_one()
         action = self.env.ref(

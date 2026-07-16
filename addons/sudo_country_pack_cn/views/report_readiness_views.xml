@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_report_readiness_search" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.cn.report.readiness.search</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="arch" type="xml">
+            <search string="中国报告准备度">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <filter name="cn_assessments" string="中国评估"
+                        domain="[('country_id.code', '=', 'CN')]"/>
+                <filter name="completed" string="扫描完成"
+                        domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <filter name="group_company" string="按公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_period" string="按期间结束月"
+                        context="{'group_by': 'period_end:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_report_readiness_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.cn.report.readiness.list</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="arch" type="xml">
+            <list string="中国报告准备度" create="0" delete="0"
+                  decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
+                  decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"
+                  decoration-success="cn_report_readiness_state in ('ready', 'issued')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="profile_id"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="state" widget="badge"/>
+                <field name="cn_report_readiness_state" widget="badge"
+                       decoration-success="cn_report_readiness_state in ('ready', 'issued')"
+                       decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
+                       decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
+                <field name="cn_report_issue_count"/>
+                <field name="cn_report_open_task_count"/>
+                <field name="cn_report_limitation_count"/>
+                <field name="cn_report_pending_tax_impact_count"/>
+                <field name="cn_report_next_action"/>
+                <field name="cn_report_latest_report_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_report_readiness_kanban" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.cn.report.readiness.kanban</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="arch" type="xml">
+            <kanban string="中国报告准备度" class="o_kanban_dashboard"
+                    create="0" quick_create="0" sample="0">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="state"/>
+                <field name="cn_report_readiness_state"/>
+                <field name="cn_report_next_action"/>
+                <field name="cn_report_issue_count"/>
+                <field name="cn_report_open_task_count"/>
+                <field name="cn_report_limitation_count"/>
+                <field name="cn_report_pending_tax_impact_count"/>
+                <field name="cn_report_latest_report_id"/>
+                <field name="cn_report_can_prepare"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_report_readiness_state.raw_value == 'ready' || record.cn_report_readiness_state.raw_value == 'issued' ? 'border-success' : record.cn_report_readiness_state.raw_value == 'needs_review' || record.cn_report_readiness_state.raw_value == 'needs_remediation' ? 'border-danger' : 'border-warning'}">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="fw-bold fs-5">
+                                        <field name="company_id"/>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <field name="period_start"/>
+                                        <span> 至 </span>
+                                        <field name="period_end"/>
+                                    </div>
+                                </div>
+                                <field name="cn_report_readiness_state" widget="badge"/>
+                            </div>
+                            <div class="mt-3 text-muted">
+                                <field name="cn_report_next_action"/>
+                            </div>
+                            <div class="row g-2 mt-3">
+                                <div class="col-6">
+                                    <button type="object" name="action_cn_open_report_readiness_findings"
+                                            class="btn btn-light w-100 text-start">
+                                        <div class="text-muted small">准备度问题</div>
+                                        <div class="fw-bold"><field name="cn_report_issue_count"/></div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="object" name="action_cn_open_report_readiness_tasks"
+                                            class="btn btn-light w-100 text-start">
+                                        <div class="text-muted small">未关闭整改</div>
+                                        <div class="fw-bold"><field name="cn_report_open_task_count"/></div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">限制项</div>
+                                        <div class="fw-bold"><field name="cn_report_limitation_count"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">待量化影响</div>
+                                        <div class="fw-bold"><field name="cn_report_pending_tax_impact_count"/></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button name="action_prepare_cn_formal_report" type="object"
+                                        class="btn btn-primary btn-sm"
+                                        invisible="not cn_report_can_prepare">
+                                    编制正式报告
+                                </button>
+                                <button name="action_open_cn_formal_reports" type="object"
+                                        class="btn btn-outline-secondary btn-sm"
+                                        invisible="not cn_report_latest_report_id">
+                                    查看正式报告
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_compliance_assessment_cn_report_readiness_form" model="ir.ui.view">
+        <field name="name">sudo.compliance.assessment.cn.report.readiness.form</field>
+        <field name="model">sudo.compliance.assessment</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_assessment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_prepare_cn_formal_report" type="object"
+                        class="oe_stat_button" icon="fa-file-text-o"
+                        invisible="country_id.code != 'CN' or not cn_report_can_prepare">
+                    <field name="cn_report_readiness_state" widget="statinfo"
+                           string="报告准备度"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group string="中国报告准备度" col="4"
+                       invisible="country_id.code != 'CN'">
+                    <group>
+                        <field name="cn_report_readiness_state" widget="badge"/>
+                        <field name="cn_report_next_action"/>
+                        <field name="cn_report_latest_report_id"/>
+                    </group>
+                    <group>
+                        <field name="cn_report_issue_count"/>
+                        <field name="cn_report_open_task_count"/>
+                        <field name="cn_report_limitation_count"/>
+                        <field name="cn_report_pending_tax_impact_count"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_cn_report_readiness" model="ir.actions.act_window">
+        <field name="name">中国报告准备度</field>
+        <field name="res_model">sudo.compliance.assessment</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_cn_report_readiness_search"/>
+        <field name="domain">[('country_id.code', '=', 'CN')]</field>
+        <field name="context">{'search_default_cn_assessments': 1, 'search_default_completed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">还没有中国合规评估</p>
+            <p>完成规则扫描后，可以在这里判断是否具备正式报告编制条件。</p>
+        </field>
+    </record>
+
+    <record id="action_cn_report_readiness_kanban_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_cn_report_readiness_kanban"/>
+        <field name="act_window_id" ref="action_cn_report_readiness"/>
+    </record>
+
+    <record id="action_cn_report_readiness_list_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_cn_report_readiness_list"/>
+        <field name="act_window_id" ref="action_cn_report_readiness"/>
+    </record>
+
+    <record id="action_cn_report_readiness_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="sudo_global_finance.view_compliance_assessment_form"/>
+        <field name="act_window_id" ref="action_cn_report_readiness"/>
+    </record>
+
+    <menuitem id="menu_cn_report_readiness"
+              name="中国报告准备度"
+              parent="sudo_global_finance.menu_global_finance_root"
+              action="action_cn_report_readiness"
+              sequence="25"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

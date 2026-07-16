@@ -2832,6 +2832,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China compliance workbench view must be loaded")
     if "views/risk_center_views.xml" not in data_files:
         fail("China risk center view must be loaded")
+    if "views/report_readiness_views.xml" not in data_files:
+        fail("China report readiness view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2852,6 +2854,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         for required in ("china_risk_center", "china_remediation_tracker"):
             if required not in content:
                 fail(f"China risk UX capability is missing from {label}: {required}")
+        if "china_report_readiness" not in content:
+            fail(f"China report readiness capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2872,6 +2876,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_reports",
         "action_cn_risk_center",
         "action_cn_remediation_tracker",
+        "action_cn_open_workbench_report_readiness",
+        "action_cn_report_readiness",
     ):
         if required not in model_content:
             fail(f"China workbench contract is missing {required}")
@@ -2889,6 +2895,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_vat_issues",
         "action_cn_open_workbench_cit_issues",
         "action_cn_open_workbench_iit_issues",
+        "action_cn_open_workbench_report_readiness",
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
@@ -2902,6 +2909,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     )
     if "from . import test_workbench" not in tests_init:
         fail("China workbench runtime tests must be imported")
+    if "from . import test_report_readiness" not in tests_init:
+        fail("China report readiness runtime tests must be imported")
     test_content = (
         ADDON_ROOT / "tests" / "test_workbench.py"
     ).read_text(encoding="utf-8")
@@ -2912,6 +2921,57 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"China workbench runtime coverage is missing {test_name}")
+
+    if "from . import report_readiness" not in model_init:
+        fail("China report readiness model must be imported")
+    report_model_content = (
+        ADDON_ROOT / "models" / "report_readiness.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.assessment"',
+        "cn_report_readiness_state",
+        "cn_report_next_action",
+        "cn_report_issue_count",
+        "cn_report_can_prepare",
+        "action_cn_open_report_readiness_findings",
+        "action_cn_open_report_readiness_tasks",
+    ):
+        if required not in report_model_content:
+            fail(f"China report readiness contract is missing {required}")
+
+    report_view_content = (
+        ADDON_ROOT / "views" / "report_readiness_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="action_cn_report_readiness"',
+        'id="menu_cn_report_readiness"',
+        'id="view_cn_report_readiness_kanban"',
+        'id="view_cn_report_readiness_list"',
+        'id="view_cn_report_readiness_search"',
+        "cn_report_readiness_state",
+        "cn_report_next_action",
+        "cn_report_open_task_count",
+        "cn_report_limitation_count",
+        "cn_report_pending_tax_impact_count",
+        "action_prepare_cn_formal_report",
+        "action_open_cn_formal_reports",
+        "action_cn_report_readiness_kanban_view",
+    ):
+        if required not in report_view_content:
+            fail(f"China report readiness UI is missing {required}")
+    if "('cn_report_readiness_state'" in report_view_content:
+        fail("China report readiness must not search on non-stored readiness state")
+
+    report_test_content = (
+        ADDON_ROOT / "tests" / "test_report_readiness.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_completed_clean_assessment_is_report_ready",
+        "test_incomplete_assessment_requires_scan_completion",
+        "test_readiness_navigation_actions_are_scoped_to_assessment",
+    ):
+        if f"def {test_name}(" not in report_test_content:
+            fail(f"China report readiness runtime coverage is missing {test_name}")
 
     risk_view_content = (
         ADDON_ROOT / "views" / "risk_center_views.xml"
