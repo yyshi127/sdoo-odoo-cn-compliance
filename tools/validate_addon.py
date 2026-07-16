@@ -2840,6 +2840,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China evidence center view must be loaded")
     if "views/filing_center_views.xml" not in data_files:
         fail("China filing center view must be loaded")
+    if "views/data_readiness_center_views.xml" not in data_files:
+        fail("China data readiness center view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2872,6 +2874,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China risk action guidance capability is missing from {label}")
         if "china_filing_center" not in content:
             fail(f"China filing center capability is missing from {label}")
+        if "china_data_readiness_center" not in content:
+            fail(f"China data readiness center capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2919,6 +2923,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_cit_issues",
         "action_cn_open_workbench_iit_issues",
         "action_cn_open_workbench_report_readiness",
+        "action_cn_open_workbench_data_readiness",
         "action_cn_open_workbench_evidence_center",
         "action_cn_open_workbench_filing_center",
         "cn_workbench_scan_state",
@@ -2974,6 +2979,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China risk center display model must be imported")
     if "from . import filing_center" not in model_init:
         fail("China filing center model must be imported")
+    if "from . import data_readiness_center" not in model_init:
+        fail("China data readiness center model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -3199,6 +3206,60 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in filing_test_content:
             fail(f"China filing center runtime coverage is missing {required}")
+
+    data_readiness_model_content = (
+        ADDON_ROOT / "models" / "data_readiness_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.cn.external.dataset"',
+        '_inherit = "sudo.compliance.profile"',
+        "cn_data_readiness_stage",
+        "cn_data_readiness_period_label",
+        "cn_data_readiness_record_count",
+        "cn_data_readiness_next_action",
+        "action_cn_open_workbench_data_readiness",
+        "sudo_country_pack_cn.action_cn_data_readiness_center",
+    ):
+        if required not in data_readiness_model_content:
+            fail(f"China data readiness center model is missing {required}")
+
+    data_readiness_view_content = (
+        ADDON_ROOT / "views" / "data_readiness_center_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_data_readiness_center_search"',
+        'id="view_cn_data_readiness_center_list"',
+        'id="view_cn_data_readiness_center_kanban"',
+        'id="action_cn_data_readiness_center"',
+        'id="menu_cn_data_readiness_center"',
+        "sudo.cn.external.dataset",
+        "cn_data_readiness_stage",
+        "cn_data_readiness_next_action",
+        "cn_data_readiness_record_count",
+        "action_view_parse_runs",
+        "action_view_tax_data_parse_runs",
+        "action_view_normalized_tax_records",
+        'default_group_by="dataset_type"',
+    ):
+        if required not in data_readiness_view_content:
+            fail(f"China data readiness center UI is missing {required}")
+
+    if "from . import test_data_readiness_center" not in tests_init:
+        fail("China data readiness center runtime tests must be imported")
+    data_readiness_test_content = (
+        ADDON_ROOT / "tests" / "test_data_readiness_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_country_pack_advertises_data_readiness_center",
+        "test_workbench_opens_profile_scoped_data_readiness_center",
+        "test_dataset_exposes_readiness_next_action",
+        "china_data_readiness_center",
+        "action_cn_open_workbench_data_readiness",
+        "cn_data_readiness_stage",
+        "cn_data_readiness_next_action",
+    ):
+        if required not in data_readiness_test_content:
+            fail(f"China data readiness center runtime coverage is missing {required}")
 
     for required in (
         'id="action_cn_risk_center"',

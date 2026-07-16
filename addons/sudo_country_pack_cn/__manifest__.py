@@ -1,7 +1,7 @@
 {
     "name": "Sdoo China Country Pack",
     "summary": "Governed China fiscal compliance profiles and country-pack foundations",
-    "version": "19.0.1.36.0",
+    "version": "19.0.1.37.0",
     "category": "Accounting/Accounting",
     "author": "Sdoo",
     "license": "LGPL-3",
@@ -32,6 +32,7 @@
         "views/workbench_views.xml",
         "views/risk_center_views.xml",
         "views/compliance_integration_views.xml",
+        "views/data_readiness_center_views.xml",
         "views/invoice_normalization_views.xml",
         "views/invoice_reconciliation_views.xml",
         "views/tax_data_normalization_views.xml",
