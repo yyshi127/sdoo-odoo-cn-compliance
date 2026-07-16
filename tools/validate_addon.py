@@ -254,6 +254,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China cross-border workbench overview must be declared")
     if features.get("china_cross_border_transaction_register") is not True:
         fail("China cross-border transaction register capability must be declared")
+    if features.get("china_cross_border_rule_facts") is not True:
+        fail("China cross-border rule fact bridge capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -635,8 +637,8 @@ def validate_rule_review_candidates(
     ]
     if len(packet_records) != len(version_source_refs):
         fail("every packaged China rule version requires one review packet")
-    if len(citation_records) != 26:
-        fail("packaged China review candidates require twenty-six citations")
+    if len(citation_records) != 29:
+        fail("packaged China review candidates require twenty-nine citations")
 
     required_packet_fields = {
         "scope_summary",
@@ -2938,6 +2940,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China cross-border transaction register capability is missing from {label}"
             )
+        if "china_cross_border_rule_facts" not in content:
+            fail(f"China cross-border rule facts capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3047,6 +3051,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_workbench_surfaces_cross_border_identity_boundary",
         "test_workbench_surfaces_cross_border_transaction_register",
         "test_cross_border_transaction_review_freezes_checksum",
+        "test_cross_border_fact_provider_exposes_period_snapshot",
         "test_workbench_navigation_actions_are_scoped_to_profile",
     ):
         if f"def {test_name}(" not in test_content:
@@ -3056,6 +3061,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_workbench_tax_domain_overview",
         "china_workbench_cross_border_overview",
         "china_cross_border_transaction_register",
+        "china_cross_border_rule_facts",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
         "cn_workbench_vat_domain_state",
@@ -3111,6 +3117,39 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in cross_border_view_content:
             fail(f"China cross-border transaction UI is missing {required}")
+
+    fact_content = (
+        ADDON_ROOT / "data" / "compliance_fact_data.xml"
+    ).read_text(encoding="utf-8")
+    rule_content = (
+        ADDON_ROOT / "data" / "compliance_rule_drafts.xml"
+    ).read_text(encoding="utf-8")
+    engine_content = (
+        ADDON_ROOT / "models" / "compliance_engine.py"
+    ).read_text(encoding="utf-8")
+    for fact_key in (
+        "cn.cross_border.pending_review_count",
+        "cn.cross_border.reviewed_transaction_count",
+        "cn.cross_border.detail",
+    ):
+        if fact_key not in fact_content or fact_key not in engine_content:
+            fail(f"China cross-border fact bridge is missing {fact_key}")
+    for required in (
+        "sdoo.cn.cross-border-facts.v1",
+        "_provide_cn_cross_border_pending_review_count",
+        "_provide_cn_cross_border_reviewed_transaction_count",
+        "_provide_cn_cross_border_detail",
+    ):
+        if required not in engine_content:
+            fail(f"China cross-border fact provider is missing {required}")
+    for required in (
+        "CN-CROSS-BORDER-CTRL-001",
+        "rule_version_cn_cross_border_ready_001_draft",
+        "test_cn_cross_border_ready_001_pass",
+        "test_cn_cross_border_ready_001_fail",
+    ):
+        if required not in rule_content:
+            fail(f"China cross-border draft rule coverage is missing {required}")
 
     access_content = (
         ADDON_ROOT / "security" / "ir.model.access.csv"

@@ -48,6 +48,10 @@ class TestChinaRuleDrafts(TransactionCase):
                     "sudo_country_pack_cn."
                     "rule_version_cn_iit_reconciliation_control_001_draft"
                 ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "rule_version_cn_cross_border_ready_001_draft"
+                ).id,
             ]
         )
         cls.sources = cls.env["sudo.compliance.authority.source"].browse(
@@ -135,6 +139,7 @@ class TestChinaRuleDrafts(TransactionCase):
             "CN-CIT-RECON-CTRL-001": "internal_control",
             "CN-DATA-IIT-RECON-001": "data_readiness",
             "CN-IIT-RECON-CTRL-001": "internal_control",
+            "CN-CROSS-BORDER-CTRL-001": "data_readiness",
         }
         actual = {
             version.rule_id.code: version.cn_rule_nature
@@ -305,7 +310,7 @@ class TestChinaRuleDrafts(TransactionCase):
 
     def test_all_packaged_draft_cases_evaluate_as_expected(self):
         cases = self.versions.mapped("test_case_ids")
-        self.assertEqual(len(cases), 28)
+        self.assertEqual(len(cases), 30)
         for case in cases:
             self.assertTrue(case._run_case(), case.display_name)
             self.assertEqual(case.last_result, case.expected_result)

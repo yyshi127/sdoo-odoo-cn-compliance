@@ -490,4 +490,51 @@
         <field name="evidence_required">True</field>
         <field name="sensitivity">restricted</field>
     </record>
+    <record id="fact_cn_cross_border_pending_review_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">Cross-border facts pending controlled review</field>
+        <field name="key">cn.cross_border.pending_review_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.cross_border.pending_review_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cross.border.transaction</field>
+        <field name="source_description">Counts draft and submitted controlled cross-border transaction facts in the assessment period. This is a review workflow signal, not a withholding tax conclusion.</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">controlled_cross_border_period_register</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cross_border_reviewed_transaction_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">Reviewed cross-border transaction facts</field>
+        <field name="key">cn.cross_border.reviewed_transaction_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.cross_border.reviewed_transaction_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cross.border.transaction</field>
+        <field name="source_description">Counts reviewed controlled cross-border transaction facts in the assessment period. A reviewed fact only freezes evidence and review notes; it does not conclude tax treatment.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">controlled_cross_border_period_register</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_cross_border_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">Cross-border transaction audit detail</field>
+        <field name="key">cn.cross_border.detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.cross_border.detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cross.border.transaction</field>
+        <field name="source_description">Period snapshot of controlled cross-border transaction counts, pending IDs and reviewed checksum references. It excludes attachment contents and does not produce legal or tax conclusions.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">controlled_cross_border_period_register</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
 </odoo>

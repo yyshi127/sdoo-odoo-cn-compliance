@@ -146,6 +146,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_cross_border_transaction_register"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_cross_border_rule_facts"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -228,6 +233,53 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(len(transaction.snapshot_checksum), 64)
         with self.assertRaises(AccessError):
             transaction.write({"amount": 13000.0})
+
+    def test_cross_border_fact_provider_exposes_period_snapshot(self):
+        self.profile._write_import({"status": "active"})
+        transaction = self._cross_border_transaction()
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-01-31",
+                "period_start": "2026-01-01",
+                "period_end": "2026-01-31",
+                "note": "Cross-border fact provider test assessment.",
+            }
+        )
+        engine = self.env["sudo.compliance.engine"]
+
+        pending = engine._provide_cn_cross_border_pending_review_count(
+            assessment,
+            None,
+        )
+        detail = engine._provide_cn_cross_border_detail(assessment, None)
+        self.assertEqual(pending["value"], 1)
+        self.assertEqual(detail["value"]["schema"], "sdoo.cn.cross-border-facts.v1")
+        self.assertEqual(detail["value"]["pending_transaction_ids"], transaction.ids)
+
+        transaction.action_submit()
+        transaction.review_notes = (
+            "Manager reviewed withholding consideration, evidence and limitations."
+        )
+        transaction.action_mark_reviewed()
+
+        pending = engine._provide_cn_cross_border_pending_review_count(
+            assessment,
+            None,
+        )
+        reviewed = engine._provide_cn_cross_border_reviewed_transaction_count(
+            assessment,
+            None,
+        )
+        detail = engine._provide_cn_cross_border_detail(assessment, None)
+        self.assertEqual(pending["value"], 0)
+        self.assertEqual(reviewed["value"], 1)
+        self.assertIn(
+            transaction.snapshot_checksum,
+            detail["value"]["reviewed_snapshot_checksums"],
+        )
 
     def test_workbench_navigation_actions_are_scoped_to_profile(self):
         action = self.profile.action_cn_open_workbench_assessments()

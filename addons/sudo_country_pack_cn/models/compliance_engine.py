@@ -135,6 +135,13 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.reconciliation.iit.detail": (
                     self._provide_cn_iit_reconciliation_detail
                 ),
+                "cn.cross_border.pending_review_count": (
+                    self._provide_cn_cross_border_pending_review_count
+                ),
+                "cn.cross_border.reviewed_transaction_count": (
+                    self._provide_cn_cross_border_reviewed_transaction_count
+                ),
+                "cn.cross_border.detail": self._provide_cn_cross_border_detail,
             }
         )
         return providers
@@ -1340,6 +1347,113 @@ class SudoChinaComplianceEngine(models.AbstractModel):
         return self._provide_cn_iit_reconciliation_value(
             assessment, lambda detail: detail
         )
+
+    @staticmethod
+    def _cross_border_transaction_domain(assessment):
+        domain = [("profile_id", "=", assessment.profile_id.id)]
+        if assessment.period_start:
+            domain.append(("transaction_date", ">=", assessment.period_start))
+        if assessment.period_end:
+            domain.append(("transaction_date", "<=", assessment.period_end))
+        return domain
+
+    def _cn_cross_border_transactions(self, assessment):
+        domain = self._cross_border_transaction_domain(assessment)
+        return (
+            self.env["sudo.cn.cross.border.transaction"]
+            .sudo()
+            .with_company(assessment.company_id)
+            .search(domain, order="transaction_date, id")
+        ), domain
+
+    def _cn_cross_border_fact_payload(self, assessment):
+        transactions, domain = self._cn_cross_border_transactions(assessment)
+        state_counts = Counter(transactions.mapped("state"))
+        type_counts = Counter(transactions.mapped("transaction_type"))
+        pending = transactions.filtered(
+            lambda transaction: transaction.state in ("draft", "submitted")
+        )
+        reviewed = transactions.filtered(
+            lambda transaction: transaction.state == "reviewed"
+        )
+        detail = {
+            "schema": "sdoo.cn.cross-border-facts.v1",
+            "profile_id": assessment.profile_id.id,
+            "company_id": assessment.company_id.id,
+            "period_start": fields.Date.to_string(assessment.period_start),
+            "period_end": fields.Date.to_string(assessment.period_end),
+            "transaction_count": len(transactions),
+            "pending_review_count": len(pending),
+            "reviewed_transaction_count": len(reviewed),
+            "state_counts": dict(sorted(state_counts.items())),
+            "transaction_type_counts": dict(sorted(type_counts.items())),
+            "pending_transaction_ids": pending.ids,
+            "reviewed_snapshot_checksums": sorted(
+                reviewed.mapped("snapshot_checksum")
+            ),
+            "related_party_count": len(
+                transactions.filtered(lambda transaction: transaction.related_party)
+            ),
+            "withholding_not_considered_count": len(
+                transactions.filtered(
+                    lambda transaction: not transaction.withholding_considered
+                )
+            ),
+        }
+        return transactions, domain, detail
+
+    def _provide_cn_cross_border_pending_review_count(
+        self, assessment, _definition
+    ):
+        transactions, domain, detail = self._cn_cross_border_fact_payload(
+            assessment
+        )
+        return {
+            "value": detail["pending_review_count"],
+            "source_model": "sudo.cn.cross.border.transaction",
+            "source_record_ids": transactions.ids,
+            "source_domain": domain,
+            "record_count": len(transactions),
+            "aggregation_method": "controlled_cross_border_period_register",
+            "is_complete": bool(assessment.period_start and assessment.period_end),
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
+
+    def _provide_cn_cross_border_reviewed_transaction_count(
+        self, assessment, _definition
+    ):
+        transactions, domain, detail = self._cn_cross_border_fact_payload(
+            assessment
+        )
+        return {
+            "value": detail["reviewed_transaction_count"],
+            "source_model": "sudo.cn.cross.border.transaction",
+            "source_record_ids": transactions.ids,
+            "source_domain": domain,
+            "record_count": len(transactions),
+            "aggregation_method": "controlled_cross_border_period_register",
+            "is_complete": bool(assessment.period_start and assessment.period_end),
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
+
+    def _provide_cn_cross_border_detail(self, assessment, _definition):
+        transactions, domain, detail = self._cn_cross_border_fact_payload(
+            assessment
+        )
+        return {
+            "value": detail,
+            "source_model": "sudo.cn.cross.border.transaction",
+            "source_record_ids": transactions.ids,
+            "source_domain": domain,
+            "record_count": len(transactions),
+            "aggregation_method": "controlled_cross_border_period_register",
+            "checksum": _json_checksum(detail),
+            "is_complete": bool(assessment.period_start and assessment.period_end),
+            "is_full_dataset": True,
+            "provider_version": "1",
+        }
 
     def _taxpayer_classifications(self, assessment):
         classifications = self.env[

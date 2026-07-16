@@ -333,4 +333,39 @@
         <field name="claim_summary">办法中的全员全额申报、税款缴库、工资薪金累计预扣、信息提供、保存与保密要求，为聚合人数金额差异复核和敏感数据最小化提供上下文。</field>
         <field name="applicability_note">具体计算、扣除和人员信息正确性仍需人员级受控底稿核对；聚合事实不得反向暴露姓名、证件号码或稳定人员键。</field>
     </record>
+    <record id="review_packet_cn_cross_border_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_cross_border_ready_001_draft"/>
+        <field name="scope_summary">Applies to controlled cross-border transaction fact records in the exact assessment period. The draft only checks whether every captured fact has completed manager review and evidence freeze.</field>
+        <field name="applicability_assumptions">Cross-border facts are entered from controlled contracts, invoices, payment references, service or asset location support and related-party indicators; the period boundary follows transaction date.</field>
+        <field name="exclusions_limitations">Does not determine withholding tax, treaty relief, transfer pricing, customs, VAT, foreign exchange registration, permanent establishment, beneficial ownership, source rules, tax rate, filing deadline, penalty or underpayment.</field>
+        <field name="conclusion_boundary">Pass only means no draft or submitted cross-border fact remains in the controlled register for the assessment period. Fail only means facts still require review before later professional analysis can rely on them.</field>
+        <field name="reviewer_questions">Confirm which transaction types must be captured, whether the transaction-date period boundary is sufficient, what evidence minimums are required, when a record can be cancelled, and how reviewed facts should feed later withholding and transfer-pricing analysis.</field>
+    </record>
+    <record id="review_citation_cn_cross_border_ready_001_cit_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cross_border_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_cit_law_2018_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">Articles on enterprise income tax framework and non-resident enterprise context.</field>
+        <field name="claim_summary">The candidate source provides background for enterprise income tax and non-resident matters, supporting a controlled fact register for later professional review.</field>
+        <field name="applicability_note">This citation does not by itself determine withholding obligations or tax treatment for any transaction.</field>
+    </record>
+    <record id="review_citation_cn_cross_border_ready_001_iit_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cross_border_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_iit_law_2018_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">Articles on withholding agents and taxable income framework.</field>
+        <field name="claim_summary">The candidate source provides background for individual income tax withholding concepts that may be relevant to cross-border service or individual payment facts.</field>
+        <field name="applicability_note">The current draft only governs data readiness and does not determine personal income tax treatment.</field>
+    </record>
+    <record id="review_citation_cn_cross_border_ready_001_collection" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_cross_border_ready_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_tax_collection_law_2015_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">General taxpayer, withholding agent, filing and truthful data submission context.</field>
+        <field name="claim_summary">The candidate source supports retaining controlled evidence and reviewable factual basis before using cross-border data in compliance assessments.</field>
+        <field name="applicability_note">Evidence and review readiness are internal-control prerequisites and are not a statutory conclusion.</field>
+    </record>
 </odoo>

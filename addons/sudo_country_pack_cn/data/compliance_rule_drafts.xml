@@ -754,4 +754,69 @@
         <field name="expected_result">unknown</field>
         <field name="source_case_note">金额人数一致不能覆盖其他复核提示。</field>
     </record>
+    <record id="rule_cn_cross_border_ready_001" model="sudo.compliance.rule">
+        <field name="name">Cross-border controlled fact review readiness</field>
+        <field name="code">CN-CROSS-BORDER-CTRL-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.CROSS_BORDER</field>
+        <field name="cn_rule_nature">data_readiness</field>
+        <field name="description">Checks whether controlled cross-border transaction facts in the assessment period have all been submitted and reviewed. This is a governed data-readiness control and does not determine withholding tax, treaty relief, transfer pricing, customs, VAT or foreign exchange compliance.</field>
+    </record>
+    <record id="rule_version_cn_cross_border_ready_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_cross_border_ready_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'fact': 'cn.cross_border.pending_review_count',
+            'operator': 'eq',
+            'value': 0
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_cit_law_2018_candidate'),
+            ref('source_cn_iit_law_2018_candidate'),
+            ref('source_cn_tax_collection_law_2015_candidate')
+        ])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_cross_border_pending_review_count_v1'),
+            ref('fact_cn_cross_border_reviewed_transaction_count_v1'),
+            ref('fact_cn_cross_border_detail_v1')
+        ])]"/>
+        <field name="legal_basis_summary">Internal controlled data-readiness draft for cross-border fact review. Candidate official sources are registered but are not yet captured as governed source snapshots, independently reviewed or signed off by China tax professionals; this draft therefore does not constitute a statutory withholding, treaty, transfer-pricing, customs, VAT or foreign-exchange conclusion.</field>
+        <field name="failure_message">The assessment period contains cross-border transaction facts that are still draft or submitted and therefore have not completed controlled review.</field>
+        <field name="pass_message">No draft or submitted cross-border transaction facts were found for the assessment period. Reviewed facts, if any, remain subject to professional tax analysis.</field>
+        <field name="unknown_message">The cross-border fact register could not be read with sufficient period scope, so no passing conclusion can be formed.</field>
+        <field name="recommended_actions">Open the Cross-Border register, attach contracts, invoices, payment evidence and filing references, record withholding consideration, submit each record and complete manager review before relying on the facts in reports.</field>
+        <field name="evidence_required">Contracts, payment references, invoices, service or asset location support, related-party analysis references, withholding consideration notes and controlled review notes.</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_cross_border_ready_001_pass" model="sudo.compliance.rule.test.case">
+        <field name="name">All cross-border facts are reviewed or none exist</field>
+        <field name="rule_version_id" ref="rule_version_cn_cross_border_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.cross_border.pending_review_count': 0,
+            'cn.cross_border.reviewed_transaction_count': 1,
+            'cn.cross_border.detail': {'pending_review_count': 0}
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">Internal data-readiness positive case; not an official legal case.</field>
+    </record>
+    <record id="test_cn_cross_border_ready_001_fail" model="sudo.compliance.rule.test.case">
+        <field name="name">Cross-border facts still await controlled review</field>
+        <field name="rule_version_id" ref="rule_version_cn_cross_border_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.cross_border.pending_review_count': 2,
+            'cn.cross_border.reviewed_transaction_count': 1,
+            'cn.cross_border.detail': {'pending_review_count': 2}
+        }"/>
+        <field name="evaluation_date">2026-07-15</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">Internal data-readiness negative case; not an official legal case.</field>
+    </record>
 </odoo>
