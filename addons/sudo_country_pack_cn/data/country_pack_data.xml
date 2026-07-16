@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.60.0</field>
+        <field name="version">19.0.1.61.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -64,6 +64,7 @@
                 'china_archive_evidence_badge_clarity': True,
                 'china_formal_report_badge_clarity': True,
                 'china_data_readiness_badge_clarity': True,
+                'china_workbench_data_readiness_summary': True,
                 'vat_filing_payment_archive': True,
                 'cit_filing_normalization': True,
                 'cit_accounting_reconciliation': True,

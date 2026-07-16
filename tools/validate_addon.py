@@ -3032,6 +3032,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China data readiness badge clarity capability is missing from {label}"
             )
+        if "china_workbench_data_readiness_summary" not in content:
+            fail(
+                f"China workbench data readiness summary capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3048,6 +3052,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_iit_issue_count",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
+        "cn_workbench_data_state",
+        "cn_workbench_data_next_action",
+        "cn_workbench_dataset_count",
+        "cn_workbench_ready_dataset_count",
+        "sudo.cn.external.dataset",
         "cn_workbench_vat_domain_state",
         "cn_workbench_cit_domain_state",
         "cn_workbench_iit_domain_state",
@@ -3102,6 +3111,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_next_action",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
+        "cn_workbench_data_state",
+        "cn_workbench_data_next_action",
+        "cn_workbench_dataset_count",
+        "cn_workbench_ready_dataset_count",
         "cn_workbench_vat_domain_state",
         "cn_workbench_cit_domain_state",
         "cn_workbench_iit_domain_state",
@@ -3129,6 +3142,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_data_readiness",
         "action_cn_open_workbench_evidence_center",
         "action_cn_open_workbench_filing_center",
+        'decoration-success="cn_workbench_data_state == \'ready\'"',
+        'decoration-danger="cn_workbench_data_state == \'blocked\'"',
+        "可扫描 / 总数据集",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
         "cn_workbench_remediation_state",
@@ -3166,6 +3182,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for test_name in (
         "test_country_pack_advertises_china_workbench_feature",
         "test_workbench_summarizes_profile_setup_state",
+        "test_workbench_summarizes_pending_data_readiness",
         "test_workbench_surfaces_cross_border_identity_boundary",
         "test_workbench_surfaces_cross_border_transaction_register",
         "test_cross_border_transaction_review_freezes_checksum",
@@ -3184,8 +3201,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_cross_border_rule_facts",
         "china_workbench_filing_archive_summary",
         "china_workbench_state_badge_clarity",
+        "china_workbench_data_readiness_summary",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
+        "cn_workbench_data_state",
+        "cn_workbench_data_next_action",
+        "cn_workbench_dataset_count",
+        "cn_workbench_ready_dataset_count",
         "cn_workbench_vat_domain_state",
         "cn_workbench_cit_domain_state",
         "cn_workbench_iit_domain_state",

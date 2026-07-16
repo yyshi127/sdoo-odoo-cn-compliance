@@ -166,6 +166,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_state_badge_clarity"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_data_readiness_summary"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -176,6 +181,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_high_risk_count, 0)
         self.assertEqual(self.profile.cn_workbench_open_task_count, 0)
         self.assertEqual(self.profile.cn_workbench_underpayment_amount, 0)
+        self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_dataset_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ready_dataset_count, 0)
+        self.assertTrue(self.profile.cn_workbench_data_next_action)
         self.assertEqual(self.profile.cn_workbench_scan_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_risk_state, "not_started")
         self.assertEqual(
@@ -218,6 +227,25 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
         self.assertEqual(self.profile.cn_workbench_cross_border_transaction_count, 0)
         self.assertEqual(self.profile.cn_workbench_cross_border_pending_count, 0)
+
+    def test_workbench_summarizes_pending_data_readiness(self):
+        self.env["sudo.cn.external.dataset"].create(
+            {
+                "profile_id": self.profile.id,
+                "dataset_type": "vat_filing",
+                "period_start": "2026-01-01",
+                "period_end": "2026-01-31",
+                "coverage_scope": "partial",
+                "declared_record_count": 10,
+                "currency_id": self.currency_cny.id,
+            }
+        )
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_data_state, "attention")
+        self.assertEqual(self.profile.cn_workbench_dataset_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ready_dataset_count, 0)
+        self.assertIn("封存", self.profile.cn_workbench_data_next_action)
 
     def test_workbench_surfaces_cross_border_identity_boundary(self):
         self.profile._write_import({"status": "active"})

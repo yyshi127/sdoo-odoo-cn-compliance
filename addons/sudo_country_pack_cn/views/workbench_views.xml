@@ -31,6 +31,13 @@
                        decoration-warning="cn_workbench_status in ('warning', 'limited', 'setup_required')"
                        decoration-success="cn_workbench_status == 'healthy'"/>
                 <field name="cn_workbench_period_label"/>
+                <field name="cn_workbench_data_state" widget="badge"
+                       decoration-success="cn_workbench_data_state == 'ready'"
+                       decoration-warning="cn_workbench_data_state == 'attention'"
+                       decoration-danger="cn_workbench_data_state == 'blocked'"
+                       decoration-muted="cn_workbench_data_state == 'not_started'"/>
+                <field name="cn_workbench_ready_dataset_count"/>
+                <field name="cn_workbench_dataset_count"/>
                 <field name="cn_workbench_high_risk_count"/>
                 <field name="cn_workbench_open_task_count"/>
                 <field name="cn_workbench_overdue_task_count"/>
@@ -65,6 +72,10 @@
                 <field name="cn_workbench_underpayment_amount"/>
                 <field name="cn_workbench_reconciliation_issue_count"/>
                 <field name="cn_workbench_limitation_count"/>
+                <field name="cn_workbench_data_state"/>
+                <field name="cn_workbench_data_next_action"/>
+                <field name="cn_workbench_dataset_count"/>
+                <field name="cn_workbench_ready_dataset_count"/>
                 <field name="cn_workbench_scan_state"/>
                 <field name="cn_workbench_risk_state"/>
                 <field name="cn_workbench_remediation_state"/>
@@ -253,7 +264,17 @@
                                     <button type="object" name="action_cn_open_workbench_data_readiness"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">0 数据准备</div>
-                                        <span class="badge rounded-pill text-bg-info">来源/封存/解析</span>
+                                        <field name="cn_workbench_data_state" widget="badge"
+                                               decoration-success="cn_workbench_data_state == 'ready'"
+                                               decoration-warning="cn_workbench_data_state == 'attention'"
+                                               decoration-danger="cn_workbench_data_state == 'blocked'"
+                                               decoration-muted="cn_workbench_data_state == 'not_started'"/>
+                                        <div class="text-muted small mt-1">
+                                            <field name="cn_workbench_ready_dataset_count"/>
+                                            <span> / </span>
+                                            <field name="cn_workbench_dataset_count"/>
+                                            <span> 可扫描 / 总数据集</span>
+                                        </div>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_assessments"
                                             class="btn btn-light border text-start flex-fill">

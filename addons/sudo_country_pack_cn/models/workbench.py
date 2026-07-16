@@ -90,6 +90,23 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="覆盖范围",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_data_state = fields.Selection(
+        FLOW_STATES,
+        string="数据准备状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_data_next_action = fields.Char(
+        string="数据准备下一步",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_dataset_count = fields.Integer(
+        string="受控数据集",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ready_dataset_count = fields.Integer(
+        string="可扫描数据集",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_currency_id = fields.Many2one(
         related="company_id.currency_id",
         string="工作台币种",
@@ -289,6 +306,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         CrossBorder = self.env["sudo.cn.cross.border.transaction"].sudo()
         Obligation = self.env["sudo.compliance.obligation"].sudo()
         Filing = self.env["sudo.compliance.filing"].sudo()
+        Dataset = self.env["sudo.cn.external.dataset"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -401,6 +419,16 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 in ("changed", "invalid", "unsealed")
                 or filing.cn_filing_center_evidence_state != "verified"
             )
+            datasets = Dataset.search([("profile_id", "=", profile.id)])
+            current_datasets = datasets.filtered(
+                lambda dataset: dataset.state != "superseded"
+            )
+            ready_datasets = current_datasets.filtered(
+                lambda dataset: dataset.cn_data_readiness_stage == "ready"
+            )
+            blocked_datasets = current_datasets.filtered(
+                lambda dataset: dataset.cn_data_readiness_stage == "blocked"
+            )
 
             profile.cn_workbench_last_assessment_id = latest_assessment
             profile.cn_workbench_latest_report_id = latest_report
@@ -445,6 +473,28 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 ImpactCase.search(reviewed_impact_domain).mapped("impact_amount")
             )
             profile.cn_workbench_reconciliation_issue_count = reconciliation_issue_count
+            profile.cn_workbench_dataset_count = len(current_datasets)
+            profile.cn_workbench_ready_dataset_count = len(ready_datasets)
+            if not current_datasets:
+                profile.cn_workbench_data_state = "not_started"
+                profile.cn_workbench_data_next_action = _(
+                    "登记电子发票、纳税申报、缴款、工资和银行等受控数据来源后再扫描。"
+                )
+            elif blocked_datasets:
+                profile.cn_workbench_data_state = "blocked"
+                profile.cn_workbench_data_next_action = _(
+                    "先修复数据集完整性或真实性失败，再运行规则扫描。"
+                )
+            elif len(ready_datasets) == len(current_datasets):
+                profile.cn_workbench_data_state = "ready"
+                profile.cn_workbench_data_next_action = _(
+                    "受控数据来源已封存并可用于规则扫描；按期间持续更新。"
+                )
+            else:
+                profile.cn_workbench_data_state = "attention"
+                profile.cn_workbench_data_next_action = _(
+                    "补齐封存、真实性验证和解析/规范化记录后再扫描。"
+                )
             profile.cn_workbench_vat_issue_count = issue_counts[
                 "sudo.cn.vat.period.reconciliation.issue"
             ]
