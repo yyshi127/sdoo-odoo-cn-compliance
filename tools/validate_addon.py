@@ -2864,6 +2864,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_evidence_center" not in content:
             fail(f"China evidence center capability is missing from {label}")
+        if "china_process_visibility" not in content:
+            fail(f"China process visibility capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2878,6 +2880,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_vat_issue_count",
         "cn_workbench_cit_issue_count",
         "cn_workbench_iit_issue_count",
+        "cn_workbench_scan_state",
+        "cn_workbench_risk_state",
+        "cn_workbench_remediation_state",
+        "cn_workbench_report_state",
+        "cn_workbench_evidence_state",
+        "cn_workbench_evidence_count",
+        "cn_workbench_verified_evidence_count",
         "action_cn_open_workbench_findings",
         "action_cn_open_workbench_tasks",
         "action_cn_open_workbench_tax_impacts",
@@ -2905,6 +2914,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_iit_issues",
         "action_cn_open_workbench_report_readiness",
         "action_cn_open_workbench_evidence_center",
+        "cn_workbench_scan_state",
+        "cn_workbench_risk_state",
+        "cn_workbench_remediation_state",
+        "cn_workbench_report_state",
+        "cn_workbench_evidence_state",
+        "cn_workbench_verified_evidence_count",
+        "cn_workbench_evidence_count",
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
@@ -2930,6 +2946,16 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"China workbench runtime coverage is missing {test_name}")
+    for required in (
+        "china_process_visibility",
+        "cn_workbench_scan_state",
+        "cn_workbench_risk_state",
+        "cn_workbench_remediation_state",
+        "cn_workbench_report_state",
+        "cn_workbench_evidence_state",
+    ):
+        if required not in test_content:
+            fail(f"China process visibility runtime coverage is missing {required}")
 
     if "from . import report_readiness" not in model_init:
         fail("China report readiness model must be imported")

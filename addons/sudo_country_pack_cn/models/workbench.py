@@ -4,6 +4,12 @@ from odoo import _, fields, models
 OPEN_TASK_STATES = ("open", "in_progress", "waiting", "pending_review", "blocked")
 REVIEW_FINDING_STATES = ("pending", "correction_required")
 HIGH_RISK_LEVELS = ("high", "critical")
+FLOW_STATES = [
+    ("not_started", "未开始"),
+    ("ready", "已就绪"),
+    ("attention", "需处理"),
+    ("blocked", "受限"),
+]
 
 
 class SudoChinaComplianceWorkbenchProfile(models.Model):
@@ -96,6 +102,39 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="范围/证据限制",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_scan_state = fields.Selection(
+        FLOW_STATES,
+        string="扫描状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_risk_state = fields.Selection(
+        FLOW_STATES,
+        string="风险状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_remediation_state = fields.Selection(
+        FLOW_STATES,
+        string="整改状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_report_state = fields.Selection(
+        FLOW_STATES,
+        string="报告状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_evidence_state = fields.Selection(
+        FLOW_STATES,
+        string="证据状态",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_evidence_count = fields.Integer(
+        string="证据记录",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_verified_evidence_count = fields.Integer(
+        string="已验证证据",
+        compute="_compute_cn_workbench",
+    )
 
     def _compute_cn_workbench(self):
         today = fields.Date.context_today(self)
@@ -104,6 +143,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Task = self.env["sudo.compliance.task"].sudo()
         ImpactCase = self.env["sudo.cn.tax.impact.case"].sudo()
         Report = self.env["sudo.cn.compliance.report"].sudo()
+        Evidence = self.env["sudo.compliance.evidence"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -166,6 +206,20 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 "limited_action_required",
             ):
                 limitation_count += 1
+            evidence_domain = [
+                ("company_id", "=", profile.company_id.id),
+                "|",
+                "|",
+                "|",
+                ("assessment_id.profile_id", "=", profile.id),
+                ("finding_id.assessment_id.profile_id", "=", profile.id),
+                ("task_id.assessment_id.profile_id", "=", profile.id),
+                ("filing_id.profile_id", "=", profile.id),
+            ]
+            evidence_count = Evidence.search_count(evidence_domain)
+            verified_evidence_count = Evidence.search_count(
+                evidence_domain + [("state", "=", "verified")]
+            )
 
             profile.cn_workbench_last_assessment_id = latest_assessment
             profile.cn_workbench_latest_report_id = latest_report
@@ -216,6 +270,47 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 "sudo.cn.iit.period.reconciliation.issue"
             ]
             profile.cn_workbench_limitation_count = limitation_count
+            profile.cn_workbench_evidence_count = evidence_count
+            profile.cn_workbench_verified_evidence_count = verified_evidence_count
+
+            if not latest_assessment:
+                profile.cn_workbench_scan_state = "not_started"
+            elif latest_assessment.state == "completed":
+                profile.cn_workbench_scan_state = "ready"
+            else:
+                profile.cn_workbench_scan_state = "attention"
+
+            if limitation_count:
+                profile.cn_workbench_risk_state = "blocked"
+            elif profile.cn_workbench_high_risk_count or profile.cn_workbench_finding_count:
+                profile.cn_workbench_risk_state = "attention"
+            elif latest_assessment:
+                profile.cn_workbench_risk_state = "ready"
+            else:
+                profile.cn_workbench_risk_state = "not_started"
+
+            if limitation_count:
+                profile.cn_workbench_remediation_state = "blocked"
+            elif profile.cn_workbench_open_task_count or profile.cn_workbench_overdue_task_count:
+                profile.cn_workbench_remediation_state = "attention"
+            elif latest_assessment:
+                profile.cn_workbench_remediation_state = "ready"
+            else:
+                profile.cn_workbench_remediation_state = "not_started"
+
+            if latest_report and latest_report.state == "issued":
+                profile.cn_workbench_report_state = "ready"
+            elif latest_report or latest_assessment:
+                profile.cn_workbench_report_state = "attention"
+            else:
+                profile.cn_workbench_report_state = "not_started"
+
+            if evidence_count and evidence_count == verified_evidence_count:
+                profile.cn_workbench_evidence_state = "ready"
+            elif evidence_count:
+                profile.cn_workbench_evidence_state = "attention"
+            else:
+                profile.cn_workbench_evidence_state = "not_started"
 
             if profile.country_id.code != "CN":
                 profile.cn_workbench_status = False

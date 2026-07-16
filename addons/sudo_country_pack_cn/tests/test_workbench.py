@@ -53,6 +53,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_evidence_center"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_process_visibility"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -63,6 +68,16 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_high_risk_count, 0)
         self.assertEqual(self.profile.cn_workbench_open_task_count, 0)
         self.assertEqual(self.profile.cn_workbench_underpayment_amount, 0)
+        self.assertEqual(self.profile.cn_workbench_scan_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_risk_state, "not_started")
+        self.assertEqual(
+            self.profile.cn_workbench_remediation_state,
+            "not_started",
+        )
+        self.assertEqual(self.profile.cn_workbench_report_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_evidence_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_evidence_count, 0)
+        self.assertEqual(self.profile.cn_workbench_verified_evidence_count, 0)
 
     def test_workbench_navigation_actions_are_scoped_to_profile(self):
         action = self.profile.action_cn_open_workbench_assessments()
