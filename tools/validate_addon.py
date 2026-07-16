@@ -546,6 +546,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China AI guidance visibility capability must be declared")
     if features.get("china_ai_obligation_context") is not True:
         fail("China AI obligation context capability must be declared")
+    if features.get("china_ai_filing_archive_context") is not True:
+        fail("China AI filing archive context capability must be declared")
     if features.get("china_obligation_readiness_visibility") is not True:
         fail("China obligation readiness visibility capability must be declared")
     if features.get("china_assessment_obligation_basis") is not True:
@@ -3281,6 +3283,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China AI guidance visibility capability is missing from {label}")
         if "china_ai_obligation_context" not in content:
             fail(f"China AI obligation context capability is missing from {label}")
+        if "china_ai_filing_archive_context" not in content:
+            fail(f"China AI filing archive context capability is missing from {label}")
         if "china_evidence_center" not in content:
             fail(f"China evidence center capability is missing from {label}")
         if "china_process_visibility" not in content:
@@ -3869,8 +3873,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_ai_guidance_next_action",
         "cn_ai_guidance_input_checksum",
         "obligation_readiness",
+        "filing_archive",
         "cn_workbench_obligation_state",
         "cn_workbench_pending_obligation_count",
+        "cn_workbench_filing_archive_state",
+        "cn_workbench_filing_archive_next_action",
+        "Filing/payment archive",
         "_cn_ai_guidance_input",
         "_cn_ai_guidance_text",
         "action_generate_cn_ai_guidance",
@@ -4008,13 +4016,16 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_generate_controlled_ai_guidance_snapshot",
         "test_ai_guidance_visibility_marks_limited_inputs",
         "test_country_pack_advertises_controlled_ai_guidance",
-        "test_ai_guidance_marks_ready_after_obligations_are_reviewed",
+        "test_ai_guidance_stays_limited_until_filing_archives_exist",
     ):
         if f"def {test_name}(" not in ai_test_content:
             fail(f"China controlled AI guidance runtime coverage is missing {test_name}")
     for required in (
         "china_ai_obligation_context",
+        "china_ai_filing_archive_context",
         "obligation_readiness",
+        "filing_archive",
+        "Filing/payment archive",
         "pending_review_count",
         "_reset_obligations",
     ):

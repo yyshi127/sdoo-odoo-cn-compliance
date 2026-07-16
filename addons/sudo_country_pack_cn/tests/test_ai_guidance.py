@@ -73,7 +73,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
             }
         )
 
-    def _finding(self):
+    def _finding(self, source_warning=False, missing_fact_keys=None):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company
         ).create(
@@ -98,8 +98,9 @@ class TestChinaControlledAiGuidance(TransactionCase):
                 "recommendation": "Review facts and remediate.",
                 "evidence_required": "Keep controlled evidence.",
                 "requires_human_review": True,
-                "source_warning": False,
+                "source_warning": source_warning,
                 "professional_warning": False,
+                "missing_fact_keys": missing_fact_keys or [],
                 "result_details_json": {"affected_count": 1},
                 "checksum": "b" * 64,
             }
@@ -132,9 +133,14 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertIn("AI 分析仅为辅助材料", analysis.analysis)
         self.assertEqual(analysis.input_snapshot_json["rule_code"], self.rule.code)
         self.assertIn("obligation_readiness", analysis.input_snapshot_json)
+        self.assertIn("filing_archive", analysis.input_snapshot_json)
         self.assertEqual(
             analysis.input_snapshot_json["obligation_readiness"]["state"],
             "attention",
+        )
+        self.assertEqual(
+            analysis.input_snapshot_json["filing_archive"]["state"],
+            "not_started",
         )
         self.assertEqual(
             analysis.input_snapshot_json["obligation_readiness"][
@@ -142,6 +148,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
             ],
             len(self.profile.obligation_ids),
         )
+        self.assertIn("Filing/payment archive", analysis.analysis)
         self.assertEqual(finding.cn_ai_guidance_state, "generated")
         self.assertEqual(
             finding.cn_ai_guidance_input_checksum,
@@ -150,12 +157,9 @@ class TestChinaControlledAiGuidance(TransactionCase):
 
     def test_ai_guidance_visibility_marks_limited_inputs(self):
         self._reset_obligations()
-        finding = self._finding()
-        finding._engine_write(
-            {
-                "source_warning": True,
-                "missing_fact_keys": ["cn.missing.fact"],
-            }
+        finding = self._finding(
+            source_warning=True,
+            missing_fact_keys=["cn.missing.fact"],
         )
         finding.invalidate_recordset()
 
@@ -179,8 +183,13 @@ class TestChinaControlledAiGuidance(TransactionCase):
                 "china_ai_obligation_context"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_filing_archive_context"
+            ]
+        )
 
-    def test_ai_guidance_marks_ready_after_obligations_are_reviewed(self):
+    def test_ai_guidance_stays_limited_until_filing_archives_exist(self):
         self._reset_obligations()
         source = self.env.ref(
             "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate"
@@ -194,7 +203,8 @@ class TestChinaControlledAiGuidance(TransactionCase):
         )
         finding = self._finding()
 
-        self.assertEqual(finding.cn_ai_guidance_state, "ready")
+        self.assertEqual(finding.cn_ai_guidance_state, "limited")
         payload = finding._cn_ai_guidance_input()
         self.assertEqual(payload["obligation_readiness"]["state"], "ready")
         self.assertEqual(payload["obligation_readiness"]["pending_review_count"], 0)
+        self.assertEqual(payload["filing_archive"]["state"], "not_started")

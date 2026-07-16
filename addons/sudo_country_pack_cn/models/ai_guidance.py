@@ -71,12 +71,14 @@ class SudoChinaAiGuidanceFinding(models.Model):
             payload = finding._cn_ai_guidance_input()
             finding.cn_ai_guidance_input_checksum = _checksum(payload)
             obligation_state = payload.get("obligation_readiness", {}).get("state")
+            filing_archive_state = payload.get("filing_archive", {}).get("state")
             has_limit = (
                 finding.source_warning
                 or finding.professional_warning
                 or bool(finding.missing_fact_keys)
                 or bool(finding.missing_parameter_keys)
                 or obligation_state in ("not_started", "attention")
+                or filing_archive_state in ("not_started", "attention", "blocked")
             )
             if finding.ai_analysis_count:
                 finding.cn_ai_guidance_state = "generated"
@@ -143,6 +145,15 @@ class SudoChinaAiGuidanceFinding(models.Model):
                     profile.cn_workbench_filing_obligation_count
                 ),
             },
+            "filing_archive": {
+                "state": profile.cn_workbench_filing_archive_state,
+                "next_action": profile.cn_workbench_filing_archive_next_action,
+                "archive_count": profile.cn_workbench_filing_archive_count,
+                "sealed_count": (
+                    profile.cn_workbench_sealed_filing_archive_count
+                ),
+                "issue_count": profile.cn_workbench_filing_archive_issue_count,
+            },
             "task": {
                 "id": task.id or None,
                 "state": task.state if task else None,
@@ -192,6 +203,18 @@ class SudoChinaAiGuidanceFinding(models.Model):
             filing=obligation_readiness.get("filing_obligation_count") or 0,
             next_action=obligation_readiness.get("next_action") or "-",
         )
+        filing_archive = payload.get("filing_archive", {})
+        filing_archive_line = (
+            "Filing/payment archive: state=%s; archives=%s; sealed=%s; "
+            "issues=%s; next=%s"
+            % (
+                filing_archive.get("state") or "-",
+                filing_archive.get("archive_count") or 0,
+                filing_archive.get("sealed_count") or 0,
+                filing_archive.get("issue_count") or 0,
+                filing_archive.get("next_action") or "-",
+            )
+        )
         due_line = task["due_date"] or "尚未设置"
         assignee_line = (
             self.current_task_id.assignee_id.display_name
@@ -210,6 +233,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "官方依据摘要：\n%(basis)s\n\n"
             "三、纳税义务适用性边界\n"
             "%(obligation_line)s\n\n"
+            "%(filing_archive_line)s\n\n"
             "四、处理建议\n"
             "%(recommendation)s\n\n"
             "五、证据要求\n"
@@ -232,6 +256,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             summary=payload["summary"] or "暂无规则结论摘要。",
             basis=payload["legal_basis"] or "暂无可展示依据摘要。",
             obligation_line=obligation_line,
+            filing_archive_line=filing_archive_line,
             recommendation=payload["recommendation"] or "暂无整改建议。",
             evidence=payload["evidence_required"] or "暂无证据要求。",
             warnings="\n".join(warning_lines),
@@ -271,7 +296,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 "professional_warning": bool(self.professional_warning),
             }
         )
-        action = self.action_open_ai_analyses()
+        action = self.sudo().action_open_ai_analyses()
         action["res_id"] = analysis.id
         action["view_mode"] = "form"
         action["views"] = [(False, "form")]
