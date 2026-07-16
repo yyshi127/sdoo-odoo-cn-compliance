@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_compliance_finding_cn_ai_guidance_form" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.cn.ai.guidance.form</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='review_state']" position="before">
+                <button name="action_generate_cn_ai_guidance" type="object"
+                        string="生成受控 AI 引导"
+                        groups="sudo_global_finance.group_compliance_user"
+                        invisible="assessment_id.country_id.code != 'CN' or result not in ('fail', 'unknown', 'error')"/>
+            </xpath>
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="cn_ai_guidance_button_box">
+                    <button name="action_open_ai_analyses" type="object"
+                            class="oe_stat_button" icon="fa-magic"
+                            invisible="ai_analysis_count == 0">
+                        <field name="ai_analysis_count" widget="statinfo"
+                               string="AI 引导"/>
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_compliance_finding_cn_ai_guidance_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.finding.cn.ai.guidance.list</field>
+        <field name="model">sudo.compliance.finding</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_list"/>
+        <field name="arch" type="xml">
+            <field name="review_state" position="after">
+                <field name="ai_analysis_count" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_ai_analysis_cn_guidance_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.ai.analysis.cn.guidance.list</field>
+        <field name="model">sudo.compliance.ai.analysis</field>
+        <field name="inherit_id" ref="sudo_global_finance.view_compliance_ai_analysis_list"/>
+        <field name="arch" type="xml">
+            <field name="provider_key" position="after">
+                <field name="jurisdiction_code" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>

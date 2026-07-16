@@ -2834,6 +2834,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China risk center view must be loaded")
     if "views/report_readiness_views.xml" not in data_files:
         fail("China report readiness view must be loaded")
+    if "views/ai_guidance_views.xml" not in data_files:
+        fail("China AI guidance view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2856,6 +2858,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
                 fail(f"China risk UX capability is missing from {label}: {required}")
         if "china_report_readiness" not in content:
             fail(f"China report readiness capability is missing from {label}")
+        if "china_controlled_ai_guidance" not in content:
+            fail(f"China controlled AI guidance capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2924,6 +2928,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
     if "from . import report_readiness" not in model_init:
         fail("China report readiness model must be imported")
+    if "from . import ai_guidance" not in model_init:
+        fail("China AI guidance model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -2962,6 +2968,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     if "('cn_report_readiness_state'" in report_view_content:
         fail("China report readiness must not search on non-stored readiness state")
 
+    risk_view_content = (
+        ADDON_ROOT / "views" / "risk_center_views.xml"
+    ).read_text(encoding="utf-8")
+
     report_test_content = (
         ADDON_ROOT / "tests" / "test_report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -2973,9 +2983,53 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if f"def {test_name}(" not in report_test_content:
             fail(f"China report readiness runtime coverage is missing {test_name}")
 
-    risk_view_content = (
-        ADDON_ROOT / "views" / "risk_center_views.xml"
+    ai_model_content = (
+        ADDON_ROOT / "models" / "ai_guidance.py"
     ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.finding"',
+        "AI_GUIDANCE_PROVIDER",
+        "AI_GUIDANCE_PROMPT_VERSION",
+        "_cn_ai_guidance_input",
+        "_cn_ai_guidance_text",
+        "action_generate_cn_ai_guidance",
+        "sudo.compliance.ai.analysis",
+        "state\": \"fallback\"",
+        "AI 分析仅为辅助材料",
+    ):
+        if required not in ai_model_content:
+            fail(f"China controlled AI guidance contract is missing {required}")
+
+    ai_view_content = (
+        ADDON_ROOT / "views" / "ai_guidance_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_compliance_finding_cn_ai_guidance_form"',
+        'id="view_compliance_finding_cn_ai_guidance_list"',
+        'id="view_compliance_ai_analysis_cn_guidance_list"',
+        "action_generate_cn_ai_guidance",
+        "action_open_ai_analyses",
+        "ai_analysis_count",
+        "sudo_global_finance.view_compliance_ai_analysis_list",
+    ):
+        if required not in ai_view_content:
+            fail(f"China controlled AI guidance UI is missing {required}")
+
+    if "action_generate_cn_ai_guidance" not in risk_view_content:
+        fail("China risk center must expose controlled AI guidance generation")
+
+    if "from . import test_ai_guidance" not in tests_init:
+        fail("China controlled AI guidance runtime tests must be imported")
+    ai_test_content = (
+        ADDON_ROOT / "tests" / "test_ai_guidance.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_generate_controlled_ai_guidance_snapshot",
+        "test_country_pack_advertises_controlled_ai_guidance",
+    ):
+        if f"def {test_name}(" not in ai_test_content:
+            fail(f"China controlled AI guidance runtime coverage is missing {test_name}")
+
     for required in (
         'id="action_cn_risk_center"',
         'id="menu_cn_risk_center"',

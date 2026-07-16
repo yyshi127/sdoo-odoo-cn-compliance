@@ -27,3 +27,4 @@ from . import source_monitoring
 from . import jurisdiction
 from . import workbench
 from . import report_readiness
+from . import ai_guidance

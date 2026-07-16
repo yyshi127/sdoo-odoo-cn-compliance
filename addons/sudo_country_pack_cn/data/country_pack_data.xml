@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.31.0</field>
+        <field name="version">19.0.1.32.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -29,6 +29,7 @@
                 'reconciliation_fact_bridge': True,
                 'filing_control': True,
                 'controlled_ai': True,
+                'china_controlled_ai_guidance': True,
                 'source_governance': True,
                 'rule_nature_governance': True,
                 'tax_impact_review': True,
