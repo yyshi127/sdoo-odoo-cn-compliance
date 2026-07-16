@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_compliance_authority_source_list_cn_monitor"
+            model="ir.ui.view">
+        <field name="name">sudo.compliance.authority.source.list.cn.monitor</field>
+        <field name="model">sudo.compliance.authority.source</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_authority_source_list"/>
+        <field name="arch" type="xml">
+            <field name="next_review_date" position="after">
+                <field name="cn_monitor_enabled" optional="hide"/>
+                <field name="cn_next_monitor_date" optional="hide"/>
+                <field name="cn_last_monitor_state" widget="badge" optional="show"
+                       decoration-success="cn_last_monitor_state == 'unchanged'"
+                       decoration-warning="cn_last_monitor_state == 'changed'"
+                       decoration-danger="cn_last_monitor_state == 'failed'"
+                       decoration-muted="cn_last_monitor_state == 'never'"/>
+                <field name="cn_latest_impacted_rule_count" optional="hide"/>
+                <field name="cn_latest_active_rule_count" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_compliance_authority_source_form_cn_monitor"
+            model="ir.ui.view">
+        <field name="name">sudo.compliance.authority.source.form.cn.monitor</field>
+        <field name="model">sudo.compliance.authority.source</field>
+        <field name="inherit_id"
+               ref="sudo_global_finance.view_compliance_authority_source_form"/>
+        <field name="arch" type="xml">
+            <field name="status" position="before">
+                <button name="action_cn_queue_monitor" type="object"
+                        string="检查远端变化" icon="fa-refresh"
+                        groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"
+                        invisible="not cn_is_source or status != 'valid' or not official_url or not content_hash"/>
+            </field>
+            <xpath expr="//form/sheet/div[hasclass('oe_title')]" position="before">
+                <field name="cn_is_source" invisible="1"/>
+                <field name="cn_monitor_run_count" invisible="1"/>
+                <field name="cn_latest_change_candidate_id" invisible="1"/>
+                <div class="oe_button_box" name="cn_monitor_button_box"
+                     invisible="not cn_is_source">
+                    <button name="action_cn_open_monitor_runs" type="object"
+                            class="oe_stat_button" icon="fa-history"
+                            invisible="cn_monitor_run_count == 0">
+                        <field name="cn_monitor_run_count" widget="statinfo"
+                               string="远端检查"/>
+                    </button>
+                    <button name="action_cn_open_change_candidate" type="object"
+                            class="oe_stat_button" icon="fa-code-fork"
+                            invisible="not cn_latest_change_candidate_id">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">变化候选</span>
+                        </div>
+                    </button>
+                </div>
+            </xpath>
+            <field name="review_notes" position="after">
+                <group string="中国来源时效监控" invisible="not cn_is_source">
+                    <group>
+                        <field name="cn_monitor_enabled"
+                               groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"/>
+                        <field name="cn_monitor_interval_days"
+                               invisible="not cn_monitor_enabled"
+                               groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"/>
+                        <field name="cn_next_monitor_date"
+                               invisible="not cn_monitor_enabled"
+                               groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"/>
+                    </group>
+                    <group>
+                        <field name="cn_last_monitor_state" widget="badge" readonly="1"
+                               decoration-success="cn_last_monitor_state == 'unchanged'"
+                               decoration-warning="cn_last_monitor_state == 'changed'"
+                               decoration-danger="cn_last_monitor_state == 'failed'"
+                               decoration-muted="cn_last_monitor_state == 'never'"/>
+                        <field name="cn_last_monitor_at" readonly="1"/>
+                        <field name="cn_latest_monitor_run_id" readonly="1"/>
+                        <field name="cn_monitor_predecessor_id" readonly="1"
+                               invisible="not cn_monitor_predecessor_id"/>
+                    </group>
+                    <field name="cn_last_monitor_message" readonly="1"
+                           invisible="not cn_last_monitor_message"/>
+                </group>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_cn_source_monitor_run_search" model="ir.ui.view">
+        <field name="name">sudo.cn.authority.source.monitor.run.search</field>
+        <field name="model">sudo.cn.authority.source.monitor.run</field>
+        <field name="arch" type="xml">
+            <search string="来源远端检查">
+                <field name="name"/>
+                <field name="source_id"/>
+                <field name="requested_by_id"/>
+                <filter name="open" string="待处理"
+                        domain="[('state', 'in', ('queued', 'processing'))]"/>
+                <filter name="changed" string="检测到变化"
+                        domain="[('state', '=', 'changed')]"/>
+                <filter name="failed" string="检查失败"
+                        domain="[('state', '=', 'failed')]"/>
+                <filter name="active_rules" string="影响生效规则"
+                        domain="[('active_impacted_rule_count', '&gt;', 0)]"/>
+                <group>
+                    <filter name="group_source" string="官方来源"
+                            context="{'group_by': 'source_id'}"/>
+                    <filter name="group_state" string="检查结果"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_request_kind" string="发起方式"
+                            context="{'group_by': 'request_kind'}"/>
+                    <filter name="group_month" string="检查月份"
+                            context="{'group_by': 'requested_at:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_source_monitor_run_list" model="ir.ui.view">
+        <field name="name">sudo.cn.authority.source.monitor.run.list</field>
+        <field name="model">sudo.cn.authority.source.monitor.run</field>
+        <field name="arch" type="xml">
+            <list string="中国官方来源远端检查" create="0" delete="0"
+                  decoration-success="state == 'unchanged'"
+                  decoration-warning="state == 'changed'"
+                  decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="source_id"/>
+                <field name="request_kind" widget="badge"/>
+                <field name="requested_at"/>
+                <field name="requested_by_id" widget="many2one_avatar_user"
+                       optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'unchanged'"
+                       decoration-warning="state == 'changed'"
+                       decoration-danger="state == 'failed'"
+                       decoration-info="state in ('queued', 'processing')"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="impacted_rule_count"/>
+                <field name="active_impacted_rule_count"/>
+                <field name="candidate_source_id" optional="show"/>
+                <field name="result_integrity_state" widget="badge"
+                       decoration-success="result_integrity_state == 'verified'"
+                       decoration-danger="result_integrity_state == 'checksum_mismatch'"
+                       decoration-muted="result_integrity_state == 'unavailable'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_source_monitor_run_form" model="ir.ui.view">
+        <field name="name">sudo.cn.authority.source.monitor.run.form</field>
+        <field name="model">sudo.cn.authority.source.monitor.run</field>
+        <field name="arch" type="xml">
+            <form string="中国官方来源远端检查" create="0" delete="0">
+                <header>
+                    <button name="action_process_now" type="object"
+                            string="立即执行" class="btn-primary" icon="fa-play"
+                            groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'queued'"/>
+                    <button name="action_cancel" type="object"
+                            string="取消" icon="fa-times"
+                            groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'queued'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="queued,processing,unchanged,changed,failed,cancelled"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="检测到远端变化"
+                            bg_color="text-bg-warning" invisible="state != 'changed'"/>
+                    <widget name="web_ribbon" title="检查失败"
+                            bg_color="text-bg-danger" invisible="state != 'failed'"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_source" type="object"
+                                class="oe_stat_button" icon="fa-book">
+                            <div class="o_stat_info"><span class="o_stat_text">原批准来源</span></div>
+                        </button>
+                        <button name="action_open_candidate" type="object"
+                                class="oe_stat_button" icon="fa-code-fork"
+                                invisible="not candidate_source_id">
+                            <div class="o_stat_info"><span class="o_stat_text">变化候选</span></div>
+                        </button>
+                        <button name="action_open_impacted_rules" type="object"
+                                class="oe_stat_button" icon="fa-sitemap"
+                                invisible="impacted_rule_count == 0">
+                            <field name="impacted_rule_count" widget="statinfo"
+                                   string="受影响规则"/>
+                        </button>
+                    </div>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'unchanged'">
+                        远端内容与批准快照逐字节 SHA-256 一致；仍应按复核计划检查适用范围和解释是否变化。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'changed'">
+                        原批准快照未被覆盖。变化内容已保存为独立草稿候选，必须经过来源独立复核和规则影响判断。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        检查失败不会把原来源解释为未变化；请查看错误并重新排队。
+                    </div>
+                    <group>
+                        <group string="检查范围">
+                            <field name="source_id" readonly="1"/>
+                            <field name="country_id" readonly="1"/>
+                            <field name="request_kind" widget="badge" readonly="1"/>
+                            <field name="requested_by_id" widget="many2one_avatar_user"
+                                   readonly="1"/>
+                        </group>
+                        <group string="执行时间">
+                            <field name="requested_at" readonly="1"/>
+                            <field name="started_at" readonly="1"/>
+                            <field name="completed_at" readonly="1"/>
+                            <field name="result_integrity_state" widget="badge"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="检查结论">
+                        <field name="result_summary" nolabel="1" readonly="1"/>
+                        <field name="error_code" readonly="1"
+                               invisible="not error_code"/>
+                        <field name="error_message" readonly="1"
+                               invisible="not error_message"/>
+                    </group>
+                    <notebook>
+                        <page string="内容比较">
+                            <group>
+                                <group>
+                                    <field name="baseline_content_hash" readonly="1"/>
+                                    <field name="source_snapshot_checksum" readonly="1"/>
+                                    <field name="remote_content_hash" readonly="1"/>
+                                    <field name="candidate_content_hash" readonly="1"
+                                           invisible="not candidate_content_hash"/>
+                                </group>
+                                <group>
+                                    <field name="remote_final_url" widget="url" readonly="1"/>
+                                    <field name="remote_http_status" readonly="1"/>
+                                    <field name="remote_content_type" readonly="1"/>
+                                    <field name="remote_content_size" readonly="1"/>
+                                    <field name="remote_etag" readonly="1"/>
+                                    <field name="remote_last_modified" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="变化候选" invisible="not candidate_source_id">
+                                <field name="candidate_source_id" readonly="1"/>
+                                <field name="candidate_integrity_state" widget="badge"
+                                       readonly="1"
+                                       decoration-success="candidate_integrity_state == 'verified'"
+                                       decoration-danger="candidate_integrity_state in ('missing', 'changed')"/>
+                            </group>
+                        </page>
+                        <page string="规则影响">
+                            <group>
+                                <field name="impacted_rule_count" readonly="1"/>
+                                <field name="active_impacted_rule_count" readonly="1"/>
+                                <field name="review_impacted_rule_count" readonly="1"/>
+                                <field name="impact_snapshot_checksum" readonly="1"/>
+                            </group>
+                            <field name="impacted_rule_version_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="rule_id"/>
+                                    <field name="version"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="test_state" widget="badge"/>
+                                    <field name="professional_review_state" widget="badge"/>
+                                    <field name="effective_from"/>
+                                    <field name="effective_to"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="技术审计"
+                              groups="sudo_global_finance.group_compliance_manager">
+                            <field name="source_snapshot_json" readonly="1"/>
+                            <field name="impact_snapshot_json" readonly="1"/>
+                            <field name="result_checksum" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_source_monitor_runs" model="ir.actions.act_window">
+        <field name="name">来源时效监控</field>
+        <field name="res_model">sudo.cn.authority.source.monitor.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_source_monitor_run_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_source_monitor_runs" name="来源时效监控"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_source_monitor_runs" sequence="25"
+              groups="sudo_global_finance.group_compliance_rule_author,sudo_global_finance.group_compliance_rule_approver,sudo_global_finance.group_compliance_manager"/>
+</odoo>

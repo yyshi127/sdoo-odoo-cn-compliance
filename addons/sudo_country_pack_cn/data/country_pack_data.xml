@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.26.0</field>
+        <field name="version">19.0.1.27.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -42,6 +42,7 @@
                 'iit_accounting_reconciliation': True,
                 'iit_governed_rule_candidates': True,
                 'iit_filing_settlement_archive': True,
+                'official_source_change_monitoring': True,
                 'multi_company': True
             },
             'governance': {

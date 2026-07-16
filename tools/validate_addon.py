@@ -264,6 +264,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("governed IIT rule candidate capability must be declared")
     if features.get("iit_filing_settlement_archive") is not True:
         fail("controlled IIT filing and settlement archive capability must be declared")
+    if features.get("official_source_change_monitoring") is not True:
+        fail("governed official source change monitoring must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -2533,6 +2535,140 @@ def validate_formal_compliance_report() -> None:
             fail(f"formal report runtime coverage is missing {test_name}")
 
 
+def validate_official_source_change_monitoring() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/source_monitoring_cron.xml",
+        "views/source_monitoring_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("official source monitoring files must be loaded by the manifest")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import source_monitoring" not in model_init:
+        fail("official source monitoring model must be imported")
+
+    model_content = (
+        ADDON_ROOT / "models" / "source_monitoring.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "SourceBaselineIntegrityError",
+        "_CN_SOURCE_MONITOR_SCHEDULE_MARKER",
+        'source.with_context(lang="en_US").snapshot_payload()',
+        "source._download_official_snapshot",
+        "source.action_mark_change_detected()",
+        "_create_change_candidate",
+        '"official_version": False',
+        '"published_date": False',
+        '"cn_monitor_enabled": False',
+        "candidate_integrity_state",
+        "result_integrity_state",
+        "impact_snapshot_checksum",
+        "FOR UPDATE SKIP LOCKED",
+        "models.UniqueIndex",
+    ):
+        if required not in model_content:
+            fail(f"official source monitoring contract is missing {required}")
+    for forbidden in (
+        "action_approve(",
+        "action_submit_review(",
+        "action_professional_signoff(",
+        "action_activate(",
+    ):
+        if forbidden in model_content:
+            fail(
+                "source monitoring must not automatically approve sources or "
+                f"rules: {forbidden}"
+            )
+
+    candidates = (
+        ADDON_ROOT / "data" / "official_source_candidates.xml"
+    ).read_text(encoding="utf-8")
+    for forbidden in (
+        'name="cn_monitor_enabled"',
+        'name="cn_next_monitor_date"',
+        'name="cn_last_monitor_state"',
+    ):
+        if forbidden in candidates:
+            fail("packaged official source candidates must not start monitoring")
+
+    cron_content = (
+        ADDON_ROOT / "data" / "source_monitoring_cron.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "_cron_enqueue_due_sources(limit=20)",
+        "_cron_process_runs(limit=2)",
+    ):
+        if required not in cron_content:
+            fail(f"bounded source monitoring cron is missing {required}")
+
+    view_content = (
+        ADDON_ROOT / "views" / "source_monitoring_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "检查远端变化",
+        "来源时效监控",
+        "原批准快照未被覆盖",
+        "必须经过来源独立复核和规则影响判断",
+        "检查失败不会把原来源解释为未变化",
+        "受影响规则",
+    ):
+        if required not in view_content:
+            fail(f"official source monitoring UI is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        access_rows = {row["id"]: row for row in csv.DictReader(handle)}
+    expected_access = {
+        "access_cn_source_monitor_run_user": ["1", "0", "0", "0"],
+        "access_cn_source_monitor_run_author": ["1", "1", "1", "0"],
+        "access_cn_source_monitor_run_approver": ["1", "0", "0", "0"],
+        "access_cn_source_monitor_run_manager": ["1", "1", "1", "0"],
+    }
+    for access_id, expected in expected_access.items():
+        row = access_rows.get(access_id)
+        if not row:
+            fail(f"official source monitoring ACL is missing {access_id}")
+        actual = [
+            row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ]
+        if actual != expected:
+            fail(f"official source monitoring ACL is unsafe: {access_id}")
+
+    tests_init = (ADDON_ROOT / "tests" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import test_source_monitoring" not in tests_init:
+        fail("official source monitoring runtime tests must be imported")
+    test_path = ADDON_ROOT / "tests" / "test_source_monitoring.py"
+    test_content = test_path.read_text(encoding="utf-8")
+    test_tree = ast.parse(test_content)
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 11:
+        fail("official source monitoring requires at least eleven runtime tests")
+    for test_name in (
+        "test_packaged_candidates_remain_draft_and_unmonitored",
+        "test_unchanged_remote_content_preserves_approved_source",
+        "test_changed_content_creates_draft_and_snapshots_rule_impact",
+        "test_network_failure_does_not_claim_source_is_unchanged",
+        "test_approved_snapshot_tampering_quarantines_source",
+        "test_cron_only_queues_due_valid_enabled_sources",
+        "test_scheduled_request_cannot_be_spoofed",
+        "test_frozen_snapshot_tampering_breaks_result_integrity",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"official source monitoring runtime coverage is missing {test_name}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -2733,6 +2869,7 @@ def main() -> int:
     validate_filing_payment_archive()
     validate_tax_impact_review()
     validate_formal_compliance_report()
+    validate_official_source_change_monitoring()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
