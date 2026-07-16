@@ -122,3 +122,20 @@ class TestChinaRiskCenterDisplay(TransactionCase):
                 "china_remediation_rescan_visibility"
             ]
         )
+
+    def test_finding_exposes_rule_basis_status_and_navigation(self):
+        finding = self._finding()
+
+        self.assertEqual(finding.cn_risk_rule_basis_state, "missing")
+        self.assertEqual(finding.cn_risk_rule_source_count, 0)
+
+        action = finding.action_cn_open_risk_rule_version()
+        self.assertEqual(action["res_model"], "sudo.compliance.rule.version")
+        self.assertEqual(action["res_id"], self.rule_version.id)
+
+    def test_country_pack_advertises_risk_rule_basis_visibility(self):
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_rule_basis_visibility"
+            ]
+        )

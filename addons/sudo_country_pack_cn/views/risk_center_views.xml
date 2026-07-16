@@ -64,6 +64,15 @@
                 <field name="cn_risk_period_label"/>
                 <field name="cn_risk_next_action" optional="show"/>
                 <field name="rule_id"/>
+                <field name="cn_risk_rule_basis_state" widget="badge" optional="show"
+                       decoration-success="cn_risk_rule_basis_state == 'ready'"
+                       decoration-warning="cn_risk_rule_basis_state in ('source_warning', 'professional_pending', 'active_attention')"
+                       decoration-danger="cn_risk_rule_basis_state == 'missing'"/>
+                <field name="cn_risk_rule_source_count" optional="show"/>
+                <field name="cn_risk_rule_release_state" widget="badge" optional="hide"/>
+                <field name="cn_risk_rule_professional_state" widget="badge" optional="hide"/>
+                <button name="action_cn_open_risk_rule_version" type="object"
+                        string="规则版本" class="btn-link"/>
                 <field name="assessment_id" optional="hide"/>
                 <field name="task_assignee_id" widget="many2one_avatar_user"/>
                 <field name="task_due_date"/>
@@ -92,9 +101,14 @@
                 <field name="title"/>
                 <field name="company_id"/>
                 <field name="rule_id"/>
+                <field name="rule_version_id"/>
                 <field name="result"/>
                 <field name="risk_level"/>
                 <field name="review_state"/>
+                <field name="cn_risk_rule_basis_state"/>
+                <field name="cn_risk_rule_source_count"/>
+                <field name="cn_risk_rule_release_state"/>
+                <field name="cn_risk_rule_professional_state"/>
                 <field name="cn_risk_period_label"/>
                 <field name="cn_risk_next_action"/>
                 <field name="cn_risk_evidence_state"/>
@@ -136,6 +150,18 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
                                 <div class="fw-semibold"><field name="cn_risk_next_action"/></div>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">规则依据</div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_risk_rule_source_count"/>
+                                            <span> 个官方来源</span>
+                                        </div>
+                                    </div>
+                                    <field name="cn_risk_rule_basis_state" widget="badge"/>
+                                </div>
                             </div>
                             <div class="row g-2 mt-3">
                                 <div class="col-6">
@@ -183,6 +209,10 @@
                                         class="btn btn-outline-primary btn-sm"
                                         groups="sudo_global_finance.group_compliance_user">
                                     生成受控 AI 引导
+                                </button>
+                                <button name="action_cn_open_risk_rule_version" type="object"
+                                        class="btn btn-outline-secondary btn-sm">
+                                    规则版本
                                 </button>
                             </div>
                         </div>

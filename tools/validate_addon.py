@@ -2880,6 +2880,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China assessment data basis capability is missing from {label}")
         if "china_remediation_rescan_visibility" not in content:
             fail(f"China remediation rescan capability is missing from {label}")
+        if "china_risk_rule_basis_visibility" not in content:
+            fail(f"China risk rule basis capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3042,6 +3044,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_risk_rule_basis_state",
+        "cn_risk_rule_source_count",
+        "cn_risk_rule_release_state",
+        "cn_risk_rule_professional_state",
+        "action_cn_open_risk_rule_version",
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",
@@ -3234,11 +3241,16 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_risk_action_guidance",
         "test_remediation_task_exposes_rescan_stage_and_navigation",
         "test_country_pack_advertises_remediation_rescan_visibility",
+        "test_finding_exposes_rule_basis_status_and_navigation",
+        "test_country_pack_advertises_risk_rule_basis_visibility",
         "china_risk_action_guidance",
         "china_remediation_rescan_visibility",
+        "china_risk_rule_basis_visibility",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_risk_rule_basis_state",
+        "action_cn_open_risk_rule_version",
         "cn_remediation_rescan_stage",
         "action_cn_open_remediation_verification_assessment",
     ):
@@ -3337,6 +3349,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_risk_rule_basis_state",
+        "cn_risk_rule_source_count",
+        "cn_risk_rule_release_state",
+        "cn_risk_rule_professional_state",
+        "action_cn_open_risk_rule_version",
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",

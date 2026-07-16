@@ -33,6 +33,32 @@ class SudoChinaRiskCenterFinding(models.Model):
         compute="_compute_cn_risk_center_display",
     )
 
+    cn_risk_rule_basis_state = fields.Selection(
+        [
+            ("missing", "缺少依据"),
+            ("source_warning", "来源需复核"),
+            ("professional_pending", "专业待签核"),
+            ("active_attention", "规则需关注"),
+            ("ready", "依据可追溯"),
+        ],
+        string="依据状态",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_rule_source_count = fields.Integer(
+        string="官方来源",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_rule_release_state = fields.Selection(
+        related="rule_version_id.cn_release_state",
+        string="规则发布状态",
+        readonly=True,
+    )
+    cn_risk_rule_professional_state = fields.Selection(
+        related="rule_version_id.professional_review_state",
+        string="专业签核",
+        readonly=True,
+    )
+
     def _compute_cn_risk_center_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         for finding in self:
@@ -56,7 +82,39 @@ class SudoChinaRiskCenterFinding(models.Model):
                 evidence_count,
                 verified_evidence_count,
             )
+            finding.cn_risk_rule_source_count = len(
+                finding.rule_version_id.authority_source_ids
+            )
+            finding.cn_risk_rule_basis_state = (
+                finding._cn_risk_rule_basis_state()
+            )
             finding.cn_risk_next_action = finding._cn_risk_next_action()
+
+    def _cn_risk_rule_basis_state(self):
+        self.ensure_one()
+        version = self.rule_version_id
+        if not version or not version.authority_source_ids:
+            return "missing"
+        if self.source_warning or not version.cn_governance_ready:
+            return "source_warning"
+        if version.professional_review_state != "approved":
+            return "professional_pending"
+        if version.cn_release_state == "active_attention":
+            return "active_attention"
+        return "ready"
+
+    def action_cn_open_risk_rule_version(self):
+        self.ensure_one()
+        if not self.rule_version_id:
+            return False
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("风险规则版本"),
+            "res_model": "sudo.compliance.rule.version",
+            "view_mode": "form",
+            "res_id": self.rule_version_id.id,
+            "target": "current",
+        }
 
     def _cn_risk_next_action(self):
         self.ensure_one()
