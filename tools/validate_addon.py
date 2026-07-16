@@ -2826,6 +2826,87 @@ def validate_china_jurisdiction_governance(manifest: dict[str, object]) -> None:
             fail(f"China jurisdiction runtime coverage is missing {test_name}")
 
 
+def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
+    data_files = set(manifest.get("data", []))
+    if "views/workbench_views.xml" not in data_files:
+        fail("China compliance workbench view must be loaded")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import workbench" not in model_init:
+        fail("China compliance workbench model must be imported")
+
+    hook_content = (ADDON_ROOT / "hooks.py").read_text(encoding="utf-8")
+    data_content = (
+        ADDON_ROOT / "data" / "country_pack_data.xml"
+    ).read_text(encoding="utf-8")
+    for content, label in (
+        (hook_content, "hook metadata"),
+        (data_content, "country pack data"),
+    ):
+        if "china_compliance_workbench" not in content:
+            fail(f"China workbench capability is missing from {label}")
+
+    model_content = (
+        ADDON_ROOT / "models" / "workbench.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.profile"',
+        "cn_workbench_status",
+        "cn_workbench_high_risk_count",
+        "cn_workbench_open_task_count",
+        "cn_workbench_pending_tax_impact_count",
+        "cn_workbench_underpayment_amount",
+        "cn_workbench_vat_issue_count",
+        "cn_workbench_cit_issue_count",
+        "cn_workbench_iit_issue_count",
+        "action_cn_open_workbench_findings",
+        "action_cn_open_workbench_tasks",
+        "action_cn_open_workbench_tax_impacts",
+        "action_cn_open_workbench_reports",
+    ):
+        if required not in model_content:
+            fail(f"China workbench contract is missing {required}")
+
+    view_content = (
+        ADDON_ROOT / "views" / "workbench_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="action_cn_compliance_workbench"',
+        'id="menu_cn_compliance_workbench"',
+        'view_mode">kanban,list,form',
+        "cn_workbench_status",
+        "cn_workbench_next_action",
+        "action_cn_open_workbench_assessments",
+        "action_cn_open_workbench_vat_issues",
+        "action_cn_open_workbench_cit_issues",
+        "action_cn_open_workbench_iit_issues",
+    ):
+        if required not in view_content:
+            fail(f"China workbench UI is missing {required}")
+    if "group_by': 'cn_workbench_status'" in view_content:
+        fail("China workbench must not group by a non-stored computed status")
+    if "('cn_workbench_status'" in view_content:
+        fail("China workbench must not search on a non-stored computed status")
+
+    tests_init = (ADDON_ROOT / "tests" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import test_workbench" not in tests_init:
+        fail("China workbench runtime tests must be imported")
+    test_content = (
+        ADDON_ROOT / "tests" / "test_workbench.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_country_pack_advertises_china_workbench_feature",
+        "test_workbench_summarizes_profile_setup_state",
+        "test_workbench_navigation_actions_are_scoped_to_profile",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"China workbench runtime coverage is missing {test_name}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -3028,6 +3109,7 @@ def main() -> int:
     validate_formal_compliance_report()
     validate_official_source_change_monitoring()
     validate_china_jurisdiction_governance(manifest)
+    validate_china_compliance_workbench(manifest)
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
