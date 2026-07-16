@@ -252,6 +252,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China AI guidance visibility capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
         fail("China cross-border workbench overview must be declared")
+    if features.get("china_cross_border_transaction_register") is not True:
+        fail("China cross-border transaction register capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2880,12 +2882,16 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China filing center view must be loaded")
     if "views/data_readiness_center_views.xml" not in data_files:
         fail("China data readiness center view must be loaded")
+    if "views/cross_border_views.xml" not in data_files:
+        fail("China cross-border transaction view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
     )
     if "from . import workbench" not in model_init:
         fail("China compliance workbench model must be imported")
+    if "from . import cross_border" not in model_init:
+        fail("China cross-border transaction model must be imported")
 
     hook_content = (ADDON_ROOT / "hooks.py").read_text(encoding="utf-8")
     data_content = (
@@ -2928,6 +2934,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China tax domain overview capability is missing from {label}")
         if "china_workbench_cross_border_overview" not in content:
             fail(f"China cross-border overview capability is missing from {label}")
+        if "china_cross_border_transaction_register" not in content:
+            fail(
+                f"China cross-border transaction register capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2953,6 +2963,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
+        "cn_workbench_cross_border_transaction_count",
+        "cn_workbench_cross_border_pending_count",
         "action_cn_open_workbench_taxpayer_classifications",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
@@ -2993,7 +3005,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
-        "action_cn_open_workbench_taxpayer_classifications",
+        "cn_workbench_cross_border_transaction_count",
+        "cn_workbench_cross_border_pending_count",
+        "action_cn_open_workbench_cross_border_transactions",
         "action_cn_open_workbench_assessments",
         "action_cn_open_workbench_vat_issues",
         "action_cn_open_workbench_cit_issues",
@@ -3031,6 +3045,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_china_workbench_feature",
         "test_workbench_summarizes_profile_setup_state",
         "test_workbench_surfaces_cross_border_identity_boundary",
+        "test_workbench_surfaces_cross_border_transaction_register",
+        "test_cross_border_transaction_review_freezes_checksum",
         "test_workbench_navigation_actions_are_scoped_to_profile",
     ):
         if f"def {test_name}(" not in test_content:
@@ -3039,6 +3055,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_process_visibility",
         "china_workbench_tax_domain_overview",
         "china_workbench_cross_border_overview",
+        "china_cross_border_transaction_register",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
         "cn_workbench_vat_domain_state",
@@ -3047,6 +3064,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
+        "cn_workbench_cross_border_transaction_count",
+        "cn_workbench_cross_border_pending_count",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
         "cn_workbench_remediation_state",
@@ -3055,6 +3074,54 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in test_content:
             fail(f"China process visibility runtime coverage is missing {required}")
+
+    cross_border_model_content = (
+        ADDON_ROOT / "models" / "cross_border.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.cross.border.transaction"',
+        "profile_id",
+        "counterparty_country_id",
+        "related_party",
+        "withholding_considered",
+        "evidence_attachment_ids",
+        "snapshot_checksum",
+        "cn_cross_border_readiness_state",
+        "sdoo.cn.cross-border-transaction.v1",
+        "action_submit",
+        "action_mark_reviewed",
+        "action_cn_open_workbench_cross_border_transactions",
+    ):
+        if required not in cross_border_model_content:
+            fail(f"China cross-border transaction model is missing {required}")
+
+    cross_border_view_content = (
+        ADDON_ROOT / "views" / "cross_border_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="action_cn_cross_border_transactions"',
+        'id="menu_cn_cross_border_transactions"',
+        'id="view_cn_cross_border_transaction_kanban"',
+        'id="view_cn_cross_border_transaction_list"',
+        'id="view_cn_cross_border_transaction_form"',
+        "counterparty_country_id",
+        "withholding_considered",
+        "snapshot_checksum",
+        "action_mark_reviewed",
+    ):
+        if required not in cross_border_view_content:
+            fail(f"China cross-border transaction UI is missing {required}")
+
+    access_content = (
+        ADDON_ROOT / "security" / "ir.model.access.csv"
+    ).read_text(encoding="utf-8")
+    if "model_sudo_cn_cross_border_transaction" not in access_content:
+        fail("China cross-border transaction access control is missing")
+    security_content = (
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).read_text(encoding="utf-8")
+    if "cn_cross_border_transaction_company_rule" not in security_content:
+        fail("China cross-border transaction company rule is missing")
 
     if "from . import report_readiness" not in model_init:
         fail("China report readiness model must be imported")

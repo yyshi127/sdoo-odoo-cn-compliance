@@ -1,4 +1,5 @@
 from odoo import Command
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -36,6 +37,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "country_id": cls.country_cn.id,
             }
         )
+        cls.foreign_country = cls.env.ref("base.us")
+        cls.env.user.groups_id = [
+            Command.link(cls.env.ref("sudo_global_finance.group_compliance_manager").id)
+        ]
 
     def _classification(self, **overrides):
         attachment = self.env["ir.attachment"].create(
@@ -68,6 +73,34 @@ class TestChinaComplianceWorkbench(TransactionCase):
         classification = self.env["sudo.cn.taxpayer.classification"].create(values)
         classification.action_verify()
         return classification
+
+    def _cross_border_transaction(self, **overrides):
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "workbench-cross-border-transaction.txt",
+                "raw": b"controlled cross border transaction evidence",
+            }
+        )
+        values = {
+            "profile_id": self.profile.id,
+            "period_start": "2026-01-01",
+            "period_end": "2026-01-31",
+            "transaction_date": "2026-01-15",
+            "transaction_type": "service_fee",
+            "counterparty_name": "US Service Provider",
+            "counterparty_country_id": self.foreign_country.id,
+            "related_party": True,
+            "contract_reference": "CB-TEST-001",
+            "payment_reference": "PAY-CB-001",
+            "service_or_asset_location": "United States",
+            "currency_id": self.currency_cny.id,
+            "amount": 12000.0,
+            "withholding_considered": True,
+            "withholding_note": "Withholding was considered for this controlled test fact.",
+            "evidence_attachment_ids": [Command.set(attachment.ids)],
+        }
+        values.update(overrides)
+        return self.env["sudo.cn.cross.border.transaction"].create(values)
 
     def test_country_pack_advertises_china_workbench_feature(self):
         self.assertTrue(
@@ -108,6 +141,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_cross_border_overview"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_cross_border_transaction_register"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -141,6 +179,8 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_cross_border_state, "not_started")
         self.assertTrue(self.profile.cn_workbench_cross_border_basis)
         self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
+        self.assertEqual(self.profile.cn_workbench_cross_border_transaction_count, 0)
+        self.assertEqual(self.profile.cn_workbench_cross_border_pending_count, 0)
 
     def test_workbench_surfaces_cross_border_identity_boundary(self):
         self.profile._write_import({"status": "active"})
@@ -157,6 +197,37 @@ class TestChinaComplianceWorkbench(TransactionCase):
         action = self.profile.action_cn_open_workbench_taxpayer_classifications()
         self.assertEqual(action["res_model"], "sudo.cn.taxpayer.classification")
         self.assertIn(("profile_id", "=", self.profile.id), action["domain"])
+
+    def test_workbench_surfaces_cross_border_transaction_register(self):
+        self.profile._write_import({"status": "active"})
+        transaction = self._cross_border_transaction()
+
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_cross_border_state, "attention")
+        self.assertEqual(self.profile.cn_workbench_cross_border_transaction_count, 1)
+        self.assertEqual(self.profile.cn_workbench_cross_border_pending_count, 1)
+        action = self.profile.action_cn_open_workbench_cross_border_transactions()
+        self.assertEqual(action["res_model"], "sudo.cn.cross.border.transaction")
+        self.assertIn(("profile_id", "=", self.profile.id), action["domain"])
+        self.assertEqual(transaction.cn_cross_border_readiness_state, "draft")
+
+    def test_cross_border_transaction_review_freezes_checksum(self):
+        self.profile._write_import({"status": "active"})
+        transaction = self._cross_border_transaction()
+
+        transaction.action_submit()
+        self.assertEqual(transaction.state, "submitted")
+        transaction.review_notes = (
+            "Manager reviewed withholding consideration, evidence and limitations."
+        )
+        transaction.action_mark_reviewed()
+
+        self.assertEqual(transaction.state, "reviewed")
+        self.assertEqual(transaction.cn_cross_border_readiness_state, "reviewed")
+        self.assertEqual(len(transaction.snapshot_checksum), 64)
+        with self.assertRaises(AccessError):
+            transaction.write({"amount": 13000.0})
 
     def test_workbench_navigation_actions_are_scoped_to_profile(self):
         action = self.profile.action_cn_open_workbench_assessments()
@@ -189,3 +260,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
         evidence_action = self.profile.action_cn_open_workbench_evidence_center()
         self.assertEqual(evidence_action["res_model"], "sudo.compliance.evidence")
         self.assertIn(("company_id", "=", self.company.id), evidence_action["domain"])
+
+        cross_border_action = self.profile.action_cn_open_workbench_cross_border_transactions()
+        self.assertEqual(
+            cross_border_action["res_model"],
+            "sudo.cn.cross.border.transaction",
+        )
+        self.assertIn(("profile_id", "=", self.profile.id), cross_border_action["domain"])

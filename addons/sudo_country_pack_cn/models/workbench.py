@@ -173,6 +173,14 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="跨境下一步",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_cross_border_transaction_count = fields.Integer(
+        string="Cross-Border Transactions",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_cross_border_pending_count = fields.Integer(
+        string="Cross-Border Pending Review",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_limitation_count = fields.Integer(
         string="范围/证据限制",
         compute="_compute_cn_workbench",
@@ -220,6 +228,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Report = self.env["sudo.cn.compliance.report"].sudo()
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         Classification = self.env["sudo.cn.taxpayer.classification"].sudo()
+        CrossBorder = self.env["sudo.cn.cross.border.transaction"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -260,6 +269,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 ("integrity_state", "=", "verified"),
                 ("quantification_state", "=", "reviewed"),
                 ("impact_direction", "=", "potential_underpayment"),
+            ]
+            cross_border_domain = [("profile_id", "=", profile.id)]
+            cross_border_pending_domain = cross_border_domain + [
+                ("state", "in", ("draft", "submitted")),
             ]
 
             issue_counts = {}
@@ -367,10 +380,19 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_iit_issue_count,
                 limitation_count,
             )
-            profile.cn_workbench_cross_border_state = _cross_border_state(
+            profile.cn_workbench_cross_border_transaction_count = (
+                CrossBorder.search_count(cross_border_domain)
+            )
+            profile.cn_workbench_cross_border_pending_count = (
+                CrossBorder.search_count(cross_border_pending_domain)
+            )
+            cross_border_state = _cross_border_state(
                 current_classification,
                 limitation_count,
             )
+            if profile.cn_workbench_cross_border_pending_count:
+                cross_border_state = "attention"
+            profile.cn_workbench_cross_border_state = cross_border_state
             if not current_classification:
                 profile.cn_workbench_cross_border_basis = _("尚无当前有效纳税人身份快照")
             elif current_classification._current_integrity_state() != "verified":

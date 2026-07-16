@@ -25,6 +25,7 @@ from . import rule_review_packet
 from . import rule_governance
 from . import source_monitoring
 from . import jurisdiction
+from . import cross_border
 from . import workbench
 from . import report_readiness
 from . import ai_guidance
