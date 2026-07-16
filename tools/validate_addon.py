@@ -2876,6 +2876,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China filing center capability is missing from {label}")
         if "china_data_readiness_center" not in content:
             fail(f"China data readiness center capability is missing from {label}")
+        if "china_assessment_data_basis" not in content:
+            fail(f"China assessment data basis capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2981,6 +2983,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China filing center model must be imported")
     if "from . import data_readiness_center" not in model_init:
         fail("China data readiness center model must be imported")
+    if "from . import assessment_data_basis" not in model_init:
+        fail("China assessment data basis model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -3010,6 +3014,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_report_open_task_count",
         "cn_report_limitation_count",
         "cn_report_pending_tax_impact_count",
+        "cn_data_basis_state",
+        "cn_data_basis_dataset_count",
+        "cn_data_basis_normalized_record_count",
+        "cn_data_basis_next_action",
+        "action_cn_open_assessment_data_basis",
         "action_prepare_cn_formal_report",
         "action_open_cn_formal_reports",
         "action_cn_report_readiness_kanban_view",
@@ -3049,6 +3058,41 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if f"def {test_name}(" not in report_test_content:
             fail(f"China report readiness runtime coverage is missing {test_name}")
+
+    data_basis_model_content = (
+        ADDON_ROOT / "models" / "assessment_data_basis.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.assessment"',
+        "cn_data_basis_state",
+        "cn_data_basis_dataset_count",
+        "cn_data_basis_ready_count",
+        "cn_data_basis_warning_count",
+        "cn_data_basis_blocked_count",
+        "cn_data_basis_normalized_record_count",
+        "cn_data_basis_next_action",
+        "action_cn_open_assessment_data_basis",
+        "sudo_country_pack_cn.action_cn_data_readiness_center",
+    ):
+        if required not in data_basis_model_content:
+            fail(f"China assessment data basis model is missing {required}")
+
+    if "from . import test_assessment_data_basis" not in tests_init:
+        fail("China assessment data basis runtime tests must be imported")
+    data_basis_test_content = (
+        ADDON_ROOT / "tests" / "test_assessment_data_basis.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_country_pack_advertises_assessment_data_basis",
+        "test_assessment_without_datasets_shows_missing_data_basis",
+        "test_assessment_opens_period_scoped_data_basis",
+        "test_draft_dataset_makes_data_basis_warning",
+        "china_assessment_data_basis",
+        "cn_data_basis_state",
+        "action_cn_open_assessment_data_basis",
+    ):
+        if required not in data_basis_test_content:
+            fail(f"China assessment data basis runtime coverage is missing {required}")
 
     ai_model_content = (
         ADDON_ROOT / "models" / "ai_guidance.py"
