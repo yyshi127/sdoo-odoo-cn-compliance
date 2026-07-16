@@ -70,11 +70,13 @@ class SudoChinaAiGuidanceFinding(models.Model):
 
             payload = finding._cn_ai_guidance_input()
             finding.cn_ai_guidance_input_checksum = _checksum(payload)
+            obligation_state = payload.get("obligation_readiness", {}).get("state")
             has_limit = (
                 finding.source_warning
                 or finding.professional_warning
                 or bool(finding.missing_fact_keys)
                 or bool(finding.missing_parameter_keys)
+                or obligation_state in ("not_started", "attention")
             )
             if finding.ai_analysis_count:
                 finding.cn_ai_guidance_state = "generated"
@@ -95,6 +97,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
     def _cn_ai_guidance_input(self):
         self.ensure_one()
         task = self.current_task_id
+        profile = self.assessment_id.profile_id
         return {
             "schema": "sdoo.cn.ai-guidance.input.v1",
             "finding_id": self.id,
@@ -126,6 +129,20 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "fact_snapshot_checksums": sorted(
                 self.fact_snapshot_ids.mapped("checksum")
             ),
+            "obligation_readiness": {
+                "state": profile.cn_workbench_obligation_state,
+                "next_action": profile.cn_workbench_obligation_next_action,
+                "candidate_count": profile.cn_workbench_obligation_count,
+                "applicable_count": (
+                    profile.cn_workbench_applicable_obligation_count
+                ),
+                "pending_review_count": (
+                    profile.cn_workbench_pending_obligation_count
+                ),
+                "filing_obligation_count": (
+                    profile.cn_workbench_filing_obligation_count
+                ),
+            },
             "task": {
                 "id": task.id or None,
                 "state": task.state if task else None,
@@ -157,10 +174,24 @@ class SudoChinaAiGuidanceFinding(models.Model):
             warning_lines.append(
                 "- 存在缺失参数，需要确认适用参数来源和期间。"
             )
+        obligation_readiness = payload.get("obligation_readiness", {})
+        if obligation_readiness.get("state") in ("not_started", "attention"):
+            warning_lines.append(
+                "- 纳税义务适用性尚未完全确认；AI 引导只能作为处理线索，不能替代义务适用判断或申报结论。"
+            )
         if not warning_lines:
             warning_lines.append("- 当前未发现来源、签核或事实缺口警示。")
 
         task = payload["task"]
+        obligation_line = _(
+            "状态 %(state)s；候选 %(candidate)s；已适用 %(applicable)s；待确认 %(pending)s；申报类 %(filing)s；下一步：%(next_action)s",
+            state=obligation_readiness.get("state") or "-",
+            candidate=obligation_readiness.get("candidate_count") or 0,
+            applicable=obligation_readiness.get("applicable_count") or 0,
+            pending=obligation_readiness.get("pending_review_count") or 0,
+            filing=obligation_readiness.get("filing_obligation_count") or 0,
+            next_action=obligation_readiness.get("next_action") or "-",
+        )
         due_line = task["due_date"] or "尚未设置"
         assignee_line = (
             self.current_task_id.assignee_id.display_name
@@ -177,18 +208,21 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "二、原因与依据\n"
             "%(summary)s\n\n"
             "官方依据摘要：\n%(basis)s\n\n"
-            "三、处理建议\n"
+            "三、纳税义务适用性边界\n"
+            "%(obligation_line)s\n\n"
+            "四、处理建议\n"
             "%(recommendation)s\n\n"
-            "四、证据要求\n"
+            "五、证据要求\n"
             "%(evidence)s\n\n"
-            "五、当前限制与注意事项\n"
+            "六、当前限制与注意事项\n"
             "%(warnings)s\n\n"
-            "六、下一步操作\n"
+            "七、下一步操作\n"
             "1. 由责任人核对命中事实、期间和适用规则。\n"
-            "2. 按证据要求补齐或封存正式证据。\n"
-            "3. 对可能影响税额的事项建立税务影响复核。\n"
-            "4. 若需要整改，按整改任务推进并在完成后发起验证复扫。\n"
-            "5. 编制正式报告前，确认所有限制、不确定性和管理层回应已记录。\n\n"
+            "2. 先确认纳税义务适用性和官方来源，再把扫描结果用于申报或报告结论。\n"
+            "3. 按证据要求补齐或封存正式证据。\n"
+            "4. 对可能影响税额的事项建立税务影响复核。\n"
+            "5. 若需要整改，按整改任务推进并在完成后发起验证复扫。\n"
+            "6. 编制正式报告前，确认所有限制、不确定性和管理层回应已记录。\n\n"
             "整改跟踪：负责人 %(assignee)s；截止日期 %(due)s；当前状态 %(task_state)s；验证状态 %(verification)s。",
             risk=payload["risk_level"],
             result=payload["result"],
@@ -197,6 +231,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             period_end=payload["period_end"] or "-",
             summary=payload["summary"] or "暂无规则结论摘要。",
             basis=payload["legal_basis"] or "暂无可展示依据摘要。",
+            obligation_line=obligation_line,
             recommendation=payload["recommendation"] or "暂无整改建议。",
             evidence=payload["evidence_required"] or "暂无证据要求。",
             warnings="\n".join(warning_lines),

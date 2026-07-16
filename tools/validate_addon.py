@@ -250,6 +250,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
         fail("China AI guidance visibility capability must be declared")
+    if features.get("china_ai_obligation_context") is not True:
+        fail("China AI obligation context capability must be declared")
     if features.get("china_obligation_readiness_visibility") is not True:
         fail("China obligation readiness visibility capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
@@ -2918,6 +2920,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_ai_guidance_visibility" not in content:
             fail(f"China AI guidance visibility capability is missing from {label}")
+        if "china_ai_obligation_context" not in content:
+            fail(f"China AI obligation context capability is missing from {label}")
         if "china_evidence_center" not in content:
             fail(f"China evidence center capability is missing from {label}")
         if "china_process_visibility" not in content:
@@ -3366,6 +3370,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_ai_guidance_state",
         "cn_ai_guidance_next_action",
         "cn_ai_guidance_input_checksum",
+        "obligation_readiness",
+        "cn_workbench_obligation_state",
+        "cn_workbench_pending_obligation_count",
         "_cn_ai_guidance_input",
         "_cn_ai_guidance_text",
         "action_generate_cn_ai_guidance",
@@ -3494,9 +3501,18 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_generate_controlled_ai_guidance_snapshot",
         "test_ai_guidance_visibility_marks_limited_inputs",
         "test_country_pack_advertises_controlled_ai_guidance",
+        "test_ai_guidance_marks_ready_after_obligations_are_reviewed",
     ):
         if f"def {test_name}(" not in ai_test_content:
             fail(f"China controlled AI guidance runtime coverage is missing {test_name}")
+    for required in (
+        "china_ai_obligation_context",
+        "obligation_readiness",
+        "pending_review_count",
+        "_reset_obligations",
+    ):
+        if required not in ai_test_content:
+            fail(f"China AI obligation context runtime coverage is missing {required}")
 
     risk_test_content = (
         ADDON_ROOT / "tests" / "test_risk_center.py"

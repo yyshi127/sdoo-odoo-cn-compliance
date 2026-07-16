@@ -64,6 +64,15 @@ class TestChinaControlledAiGuidance(TransactionCase):
             }
         )
 
+    def _reset_obligations(self):
+        self.profile.obligation_ids.write(
+            {
+                "applicability": "unknown",
+                "authority_source_id": False,
+                "justification": "Reset for controlled AI guidance test isolation.",
+            }
+        )
+
     def _finding(self):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company
@@ -99,9 +108,10 @@ class TestChinaControlledAiGuidance(TransactionCase):
         return finding
 
     def test_generate_controlled_ai_guidance_snapshot(self):
+        self._reset_obligations()
         finding = self._finding()
 
-        self.assertEqual(finding.cn_ai_guidance_state, "ready")
+        self.assertEqual(finding.cn_ai_guidance_state, "limited")
         self.assertTrue(finding.cn_ai_guidance_next_action)
         self.assertTrue(finding.cn_ai_guidance_input_checksum)
 
@@ -121,6 +131,17 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(analysis.record_checksum)
         self.assertIn("AI 分析仅为辅助材料", analysis.analysis)
         self.assertEqual(analysis.input_snapshot_json["rule_code"], self.rule.code)
+        self.assertIn("obligation_readiness", analysis.input_snapshot_json)
+        self.assertEqual(
+            analysis.input_snapshot_json["obligation_readiness"]["state"],
+            "attention",
+        )
+        self.assertEqual(
+            analysis.input_snapshot_json["obligation_readiness"][
+                "pending_review_count"
+            ],
+            len(self.profile.obligation_ids),
+        )
         self.assertEqual(finding.cn_ai_guidance_state, "generated")
         self.assertEqual(
             finding.cn_ai_guidance_input_checksum,
@@ -128,6 +149,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
         )
 
     def test_ai_guidance_visibility_marks_limited_inputs(self):
+        self._reset_obligations()
         finding = self._finding()
         finding._engine_write(
             {
@@ -152,3 +174,27 @@ class TestChinaControlledAiGuidance(TransactionCase):
                 "china_ai_guidance_visibility"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_obligation_context"
+            ]
+        )
+
+    def test_ai_guidance_marks_ready_after_obligations_are_reviewed(self):
+        self._reset_obligations()
+        source = self.env.ref(
+            "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate"
+        )
+        self.profile.obligation_ids.write(
+            {
+                "applicability": "not_applicable",
+                "authority_source_id": source.id,
+                "justification": "Reviewed as not applicable for the controlled AI guidance test.",
+            }
+        )
+        finding = self._finding()
+
+        self.assertEqual(finding.cn_ai_guidance_state, "ready")
+        payload = finding._cn_ai_guidance_input()
+        self.assertEqual(payload["obligation_readiness"]["state"], "ready")
+        self.assertEqual(payload["obligation_readiness"]["pending_review_count"], 0)
