@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_filing_center_search" model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.cn.center.search</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="arch" type="xml">
+            <search string="中国申报缴款档案">
+                <field name="filing_name"/>
+                <field name="company_id"/>
+                <field name="profile_id"/>
+                <field name="filing_code"/>
+                <field name="state"/>
+                <field name="payment_state"/>
+                <filter name="cn_controlled" string="中国受控档案"
+                        domain="['|', '|', ('cn_vat_reconciliation_run_id', '!=', False), ('cn_cit_reconciliation_run_id', '!=', False), ('cn_iit_reconciliation_run_id', '!=', False)]"/>
+                <filter name="submission_unsealed" string="申报待封存"
+                        domain="[('cn_submission_integrity_state', '=', 'unsealed')]"/>
+                <filter name="payment_unsealed" string="缴退税待封存"
+                        domain="[('cn_payment_integrity_state', '=', 'unsealed')]"/>
+                <filter name="integrity_issue" string="完整性异常"
+                        domain="['|', ('cn_submission_integrity_state', 'in', ('changed', 'invalid')), ('cn_payment_integrity_state', 'in', ('changed', 'invalid'))]"/>
+                <filter name="evidence_gap" string="证据未完整验证"
+                        domain="[('cn_filing_center_evidence_state', '!=', 'verified')]"/>
+                <separator/>
+                <filter name="group_kind" string="按税种"
+                        context="{'group_by': 'cn_filing_center_kind'}"/>
+                <filter name="group_state" string="按申报状态"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_payment_state" string="按缴退税状态"
+                        context="{'group_by': 'payment_state'}"/>
+                <filter name="group_company" string="按公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_due_month" string="按截止月份"
+                        context="{'group_by': 'due_date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_filing_center_list" model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.cn.center.list</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="arch" type="xml">
+            <list string="中国申报缴款档案" create="0" delete="0"
+                  decoration-danger="cn_submission_integrity_state in ('changed', 'invalid') or cn_payment_integrity_state in ('changed', 'invalid')"
+                  decoration-warning="cn_submission_integrity_state == 'unsealed' or cn_payment_integrity_state == 'unsealed'"
+                  decoration-success="cn_submission_integrity_state == 'verified' and cn_payment_integrity_state in ('verified', 'not_required')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="cn_filing_center_kind" widget="badge"/>
+                <field name="filing_name"/>
+                <field name="cn_filing_center_period_label"/>
+                <field name="due_date"/>
+                <field name="state" widget="badge"/>
+                <field name="payment_state" widget="badge"/>
+                <field name="cn_submission_integrity_state" widget="badge"
+                       decoration-success="cn_submission_integrity_state == 'verified'"
+                       decoration-warning="cn_submission_integrity_state in ('unsealed', 'source_superseded')"
+                       decoration-danger="cn_submission_integrity_state in ('changed', 'invalid')"/>
+                <field name="cn_payment_integrity_state" widget="badge"
+                       decoration-success="cn_payment_integrity_state in ('verified', 'not_required')"
+                       decoration-warning="cn_payment_integrity_state in ('unsealed', 'source_superseded')"
+                       decoration-danger="cn_payment_integrity_state in ('changed', 'invalid')"/>
+                <field name="cn_filing_center_evidence_state" widget="badge"
+                       decoration-success="cn_filing_center_evidence_state == 'verified'"
+                       decoration-warning="cn_filing_center_evidence_state == 'partial'"/>
+                <field name="cn_filing_center_next_action" optional="show"/>
+                <field name="filing_code" optional="hide"/>
+                <field name="profile_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_filing_center_kanban" model="ir.ui.view">
+        <field name="name">sudo.compliance.filing.cn.center.kanban</field>
+        <field name="model">sudo.compliance.filing</field>
+        <field name="arch" type="xml">
+            <kanban string="中国申报缴款档案" class="o_kanban_dashboard"
+                    create="0" quick_create="0" sample="0" default_group_by="cn_filing_center_kind">
+                <field name="filing_name"/>
+                <field name="company_id"/>
+                <field name="filing_code"/>
+                <field name="cn_filing_center_kind"/>
+                <field name="cn_filing_center_period_label"/>
+                <field name="cn_filing_center_next_action"/>
+                <field name="cn_filing_center_evidence_state"/>
+                <field name="cn_filing_center_evidence_count"/>
+                <field name="cn_filing_center_verified_evidence_count"/>
+                <field name="due_date"/>
+                <field name="state"/>
+                <field name="payment_state"/>
+                <field name="cn_submission_integrity_state"/>
+                <field name="cn_payment_integrity_state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_submission_integrity_state.raw_value == 'changed' || record.cn_submission_integrity_state.raw_value == 'invalid' || record.cn_payment_integrity_state.raw_value == 'changed' || record.cn_payment_integrity_state.raw_value == 'invalid' ? 'border-danger' : record.cn_submission_integrity_state.raw_value == 'unsealed' || record.cn_payment_integrity_state.raw_value == 'unsealed' ? 'border-warning' : 'border-success'}">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="fw-bold"><field name="filing_name"/></div>
+                                    <div class="text-muted small">
+                                        <field name="company_id"/>
+                                        <span> · </span>
+                                        <field name="cn_filing_center_period_label"/>
+                                    </div>
+                                </div>
+                                <field name="cn_filing_center_kind" widget="badge"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">下一步</div>
+                                <div class="fw-semibold"><field name="cn_filing_center_next_action"/></div>
+                            </div>
+                            <div class="row g-2 mt-3">
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">申报状态</div>
+                                        <div class="fw-semibold"><field name="state" widget="badge"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">缴退税状态</div>
+                                        <div class="fw-semibold"><field name="payment_state" widget="badge"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">申报封存</div>
+                                        <div class="fw-semibold"><field name="cn_submission_integrity_state" widget="badge"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">缴退税封存</div>
+                                        <div class="fw-semibold"><field name="cn_payment_integrity_state" widget="badge"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">正式证据</div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_filing_center_evidence_state" widget="badge"/>
+                                            <span> </span>
+                                            <field name="cn_filing_center_verified_evidence_count"/>
+                                            <span>/</span>
+                                            <field name="cn_filing_center_evidence_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-muted small">
+                                截止日：<field name="due_date"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_cn_filing_center" model="ir.actions.act_window">
+        <field name="name">中国申报缴款档案</field>
+        <field name="res_model">sudo.compliance.filing</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_cn_filing_center_search"/>
+        <field name="domain">['|', '|', ('cn_vat_reconciliation_run_id', '!=', False), ('cn_cit_reconciliation_run_id', '!=', False), ('cn_iit_reconciliation_run_id', '!=', False)]</field>
+        <field name="context">{'search_default_cn_controlled': 1, 'search_default_group_kind': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">尚未形成中国申报缴款档案</p>
+            <p>从增值税、企业所得税或个人所得税勾稽批次建立受控申报缴款档案后，可在这里集中查看申报、缴退税、证据和完整性状态。</p>
+        </field>
+    </record>
+
+    <record id="action_cn_filing_center_kanban_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_cn_filing_center_kanban"/>
+        <field name="act_window_id" ref="action_cn_filing_center"/>
+    </record>
+
+    <record id="action_cn_filing_center_list_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_cn_filing_center_list"/>
+        <field name="act_window_id" ref="action_cn_filing_center"/>
+    </record>
+
+    <record id="action_cn_filing_center_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="sudo_global_finance.view_compliance_filing_form"/>
+        <field name="act_window_id" ref="action_cn_filing_center"/>
+    </record>
+
+    <menuitem id="menu_cn_filing_center"
+              name="中国申报缴款档案"
+              parent="sudo_global_finance.menu_global_finance_root"
+              action="action_cn_filing_center"
+              sequence="32"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

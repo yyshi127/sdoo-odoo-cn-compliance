@@ -2838,6 +2838,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China AI guidance view must be loaded")
     if "views/evidence_center_views.xml" not in data_files:
         fail("China evidence center view must be loaded")
+    if "views/filing_center_views.xml" not in data_files:
+        fail("China filing center view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2868,6 +2870,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China process visibility capability is missing from {label}")
         if "china_risk_action_guidance" not in content:
             fail(f"China risk action guidance capability is missing from {label}")
+        if "china_filing_center" not in content:
+            fail(f"China filing center capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2916,6 +2920,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_iit_issues",
         "action_cn_open_workbench_report_readiness",
         "action_cn_open_workbench_evidence_center",
+        "action_cn_open_workbench_filing_center",
         "cn_workbench_scan_state",
         "cn_workbench_risk_state",
         "cn_workbench_remediation_state",
@@ -2967,6 +2972,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China evidence center model must be imported")
     if "from . import risk_center" not in model_init:
         fail("China risk center display model must be imported")
+    if "from . import filing_center" not in model_init:
+        fail("China filing center model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -3111,10 +3118,49 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if required not in evidence_view_content:
             fail(f"China evidence center UI is missing {required}")
 
+    filing_model_content = (
+        ADDON_ROOT / "models" / "filing_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.filing"',
+        '_inherit = "sudo.compliance.profile"',
+        "cn_filing_center_kind",
+        "cn_filing_center_period_label",
+        "cn_filing_center_next_action",
+        "cn_filing_center_evidence_state",
+        "action_cn_open_workbench_filing_center",
+        "sudo_country_pack_cn.action_cn_filing_center",
+    ):
+        if required not in filing_model_content:
+            fail(f"China filing center model is missing {required}")
+
+    filing_view_content = (
+        ADDON_ROOT / "views" / "filing_center_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_filing_center_search"',
+        'id="view_cn_filing_center_list"',
+        'id="view_cn_filing_center_kanban"',
+        'id="action_cn_filing_center"',
+        'id="menu_cn_filing_center"',
+        "sudo.compliance.filing",
+        "cn_filing_center_kind",
+        "cn_filing_center_period_label",
+        "cn_filing_center_next_action",
+        "cn_filing_center_evidence_state",
+        "cn_submission_integrity_state",
+        "cn_payment_integrity_state",
+        "default_group_by=\"cn_filing_center_kind\"",
+    ):
+        if required not in filing_view_content:
+            fail(f"China filing center UI is missing {required}")
+
     if "from . import test_ai_guidance" not in tests_init:
         fail("China controlled AI guidance runtime tests must be imported")
     if "from . import test_risk_center" not in tests_init:
         fail("China risk center display runtime tests must be imported")
+    if "from . import test_filing_center" not in tests_init:
+        fail("China filing center runtime tests must be imported")
     ai_test_content = (
         ADDON_ROOT / "tests" / "test_ai_guidance.py"
     ).read_text(encoding="utf-8")
@@ -3138,6 +3184,21 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in risk_test_content:
             fail(f"China risk center display runtime coverage is missing {required}")
+
+    filing_test_content = (
+        ADDON_ROOT / "tests" / "test_filing_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_country_pack_advertises_filing_center",
+        "test_workbench_opens_profile_scoped_filing_center",
+        "china_filing_center",
+        "action_cn_open_workbench_filing_center",
+        "cn_vat_reconciliation_run_id",
+        "cn_cit_reconciliation_run_id",
+        "cn_iit_reconciliation_run_id",
+    ):
+        if required not in filing_test_content:
+            fail(f"China filing center runtime coverage is missing {required}")
 
     for required in (
         'id="action_cn_risk_center"',

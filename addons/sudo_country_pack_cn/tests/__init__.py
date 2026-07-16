@@ -17,3 +17,4 @@ from . import test_workbench
 from . import test_report_readiness
 from . import test_ai_guidance
 from . import test_risk_center
+from . import test_filing_center

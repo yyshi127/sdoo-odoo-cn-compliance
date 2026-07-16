@@ -183,6 +183,10 @@
                                         class="btn btn-outline-primary btn-sm">
                                     证据中心
                                 </button>
+                                <button type="object" name="action_cn_open_workbench_filing_center"
+                                        class="btn btn-outline-primary btn-sm">
+                                    申报缴款档案
+                                </button>
                                 <button type="object" name="action_cn_open_workbench_vat_issues"
                                         class="btn btn-outline-secondary btn-sm">
                                     增值税勾稽
@@ -266,6 +270,8 @@
                                 string="查看报告准备度"/>
                         <button name="action_cn_open_workbench_evidence_center" type="object"
                                 string="查看证据中心"/>
+                        <button name="action_cn_open_workbench_filing_center" type="object"
+                                string="查看申报缴款档案"/>
                         <button name="action_cn_open_workbench_vat_issues" type="object"
                                 string="增值税勾稽问题"/>
                         <button name="action_cn_open_workbench_cit_issues" type="object"
