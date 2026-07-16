@@ -2830,6 +2830,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     data_files = set(manifest.get("data", []))
     if "views/workbench_views.xml" not in data_files:
         fail("China compliance workbench view must be loaded")
+    if "views/risk_center_views.xml" not in data_files:
+        fail("China risk center view must be loaded")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -2847,6 +2849,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if "china_compliance_workbench" not in content:
             fail(f"China workbench capability is missing from {label}")
+        for required in ("china_risk_center", "china_remediation_tracker"):
+            if required not in content:
+                fail(f"China risk UX capability is missing from {label}: {required}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2865,6 +2870,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_tasks",
         "action_cn_open_workbench_tax_impacts",
         "action_cn_open_workbench_reports",
+        "action_cn_risk_center",
+        "action_cn_remediation_tracker",
     ):
         if required not in model_content:
             fail(f"China workbench contract is missing {required}")
@@ -2905,6 +2912,40 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"China workbench runtime coverage is missing {test_name}")
+
+    risk_view_content = (
+        ADDON_ROOT / "views" / "risk_center_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="action_cn_risk_center"',
+        'id="menu_cn_risk_center"',
+        'id="view_cn_risk_center_finding_kanban"',
+        'id="view_cn_risk_center_finding_list"',
+        'id="view_cn_risk_center_finding_search"',
+        'id="action_cn_remediation_tracker"',
+        'id="menu_cn_remediation_tracker"',
+        'id="view_cn_remediation_tracker_task_kanban"',
+        'id="view_cn_remediation_tracker_task_list"',
+        'id="view_cn_remediation_tracker_task_search"',
+        'action_cn_risk_center_kanban_view',
+        'action_cn_remediation_tracker_kanban_view',
+        "assessment_id.profile_id.country_id.code",
+        "task_assignee_id",
+        "task_due_date",
+        "task_verification_state",
+        "cn_tax_impact_case_count",
+        "verification_state",
+        "default_group_by=\"state\"",
+    ):
+        if required not in risk_view_content:
+            fail(f"China risk center UI is missing {required}")
+    for forbidden in (
+        "current_date",
+        "('cn_workbench_status'",
+        "group_by': 'cn_workbench_status'",
+    ):
+        if forbidden in risk_view_content:
+            fail(f"China risk center has unsafe UI expression: {forbidden}")
 
 
 def validate_xbrl_parser_addon() -> None:

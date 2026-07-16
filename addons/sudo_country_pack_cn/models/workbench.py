@@ -264,6 +264,17 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
     def action_cn_open_workbench_findings(self):
         self.ensure_one()
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_cn_risk_center",
+            raise_if_not_found=False,
+        )
+        if action:
+            result = action.sudo().read()[0]
+            result["domain"] = [
+                ("assessment_id.profile_id", "=", self.id),
+                ("result", "in", ("fail", "unknown", "error")),
+            ]
+            return result
         return self._cn_action(
             _("风险事项"),
             "sudo.compliance.finding",
@@ -272,6 +283,17 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
     def action_cn_open_workbench_tasks(self):
         self.ensure_one()
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_cn_remediation_tracker",
+            raise_if_not_found=False,
+        )
+        if action:
+            result = action.sudo().read()[0]
+            result["domain"] = [
+                ("assessment_id.profile_id", "=", self.id),
+                ("task_type", "=", "remediation"),
+            ]
+            return result
         return self._cn_action(
             _("整改任务"),
             "sudo.compliance.task",
