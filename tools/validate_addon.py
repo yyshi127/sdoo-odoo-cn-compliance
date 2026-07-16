@@ -235,6 +235,12 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
         fail("controlled CIT filing normalization capability must be declared")
+    if features.get("cit_accounting_reconciliation") is not True:
+        fail("controlled CIT accounting reconciliation capability must be declared")
+    if features.get("cit_governed_rule_candidates") is not True:
+        fail("governed CIT rule candidate capability must be declared")
+    if features.get("cit_filing_settlement_archive") is not True:
+        fail("controlled CIT filing and settlement archive capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:

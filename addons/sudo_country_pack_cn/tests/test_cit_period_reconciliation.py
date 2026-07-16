@@ -3,7 +3,7 @@ import json
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import new_test_user, tagged
 
 
@@ -76,6 +76,15 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
                 "company_id": cls.company.id,
                 "company_ids": [Command.set(cls.company.ids)],
                 "group_ids": [Command.set(user_group.ids)],
+            }
+        )
+        cls.filing_source_approver = cls.env["res.users"].create(
+            {
+                "name": "China CIT Filing Source Approver",
+                "login": "cn_cit_filing_source_approver",
+                "company_id": cls.company.id,
+                "company_ids": [Command.set(cls.company.ids)],
+                "group_ids": [Command.set(manager_group.ids)],
             }
         )
         cls.balance_account = cls.env["account.account"].with_company(
@@ -320,6 +329,92 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         filing_run = self._create_tax_records("cit_filing", suffix, [filing])
         payment_run = self._create_tax_records("tax_payment", suffix, [payment])
         return {"scope": scope, "filing_run": filing_run, "payment_run": payment_run}
+
+    def _valid_filing_authority_source(self, suffix):
+        attachment = self._attachment(
+            f"official-cit-filing-deadline-{suffix}.pdf",
+            f"official CIT filing deadline source {suffix}".encode(),
+        )
+        source = self.env["sudo.compliance.authority.source"].with_user(
+            self.reviewer
+        ).create(
+            {
+                "name": f"企业所得税申报期限官方依据 {suffix}",
+                "country_id": self.country.id,
+                "authority": "国家税务总局",
+                "source_type": "form_instruction",
+                "official_url": "https://www.chinatax.gov.cn/",
+                "official_version": f"TEST-{suffix}",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-12-31",
+                "snapshot_kind": "official_document",
+                "snapshot_attachment_id": attachment.id,
+            }
+        )
+        source.with_user(self.reviewer).action_compute_hash()
+        source.with_user(self.reviewer).action_submit_review()
+        source.with_user(self.filing_source_approver).action_approve()
+        return source
+
+    def _controlled_filing_archive(self, run, suffix):
+        action = run.with_user(self.reviewer).action_open_cn_filing_archive()
+        defaults = {
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }
+        source = self._valid_filing_authority_source(suffix)
+        obligation = self.env["sudo.compliance.obligation"].browse(
+            defaults["obligation_id"]
+        )
+        obligation.write(
+            {
+                "applicability": "applicable",
+                "effective_from": "2026-01-01",
+                "authority_source_id": source.id,
+                "justification": (
+                    "依据已复核官方资料和测试公司所得税申报身份，"
+                    "确认当前期间适用企业所得税申报义务。"
+                ),
+            }
+        )
+        defaults.update(
+            {
+                "due_date": "2026-07-15",
+                "authority_source_id": source.id,
+                "due_date_basis": (
+                    "依据已复核官方资料、来源申报类型和测试期间，"
+                    "人工确认本期截止日；未由系统自动推断。"
+                ),
+            }
+        )
+        return self.env["sudo.compliance.filing"].with_user(
+            self.reviewer
+        ).with_company(self.company).create(defaults)
+
+    def _verified_filing_evidence(self, filing, suffix, evidence_type):
+        evidence = self.env["sudo.compliance.evidence"].with_user(
+            self.reader
+        ).with_company(self.company).create(
+            {
+                "name": f"企业所得税受控档案证据 {suffix}",
+                "company_id": self.company.id,
+                "filing_id": filing.id,
+                "evidence_type": evidence_type,
+                "external_reference": (
+                    f"TEST-CIT-ARCHIVE/{suffix}; 保管人=测试合规管理员; "
+                    "访问方式=受控测试索引; 保留期限=测试期间"
+                ),
+                "evidence_date": "2026-07-15",
+                "issuer": "测试主管税务机关",
+            }
+        )
+        evidence.with_user(self.reader).action_submit()
+        evidence.with_user(self.reviewer).write(
+            {"review_notes": "已与受控企业所得税申报或缴退税来源逐项核对。"}
+        )
+        evidence.with_user(self.reviewer).action_verify()
+        return evidence
 
     def _assessment(self, start="2026-06-01", end="2026-06-30"):
         return self.env["sudo.compliance.assessment"].create(
@@ -913,6 +1008,334 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
             event.details_json["scope"],
             "cn_reconciliation_exact_period",
         )
+
+    def test_filing_archive_action_does_not_infer_legal_deadline(self):
+        self._seed_complete_sources("cit-archive-no-inference")
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+
+        action = run.with_user(self.reviewer).action_open_cn_filing_archive()
+
+        self.assertEqual(action["res_model"], "sudo.compliance.filing")
+        self.assertEqual(
+            action["context"]["default_cn_cit_reconciliation_run_id"],
+            run.id,
+        )
+        self.assertNotIn("default_due_date", action["context"])
+        self.assertNotIn("default_authority_source_id", action["context"])
+        self.assertNotIn("default_due_date_basis", action["context"])
+
+    def test_cit_payable_archive_seals_submission_and_payment_chain(self):
+        self._seed_complete_sources("cit-archive-payable")
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(run, "cit-archive-payable")
+        receipt = self._verified_filing_evidence(
+            filing,
+            "cit-archive-payable-receipt",
+            "filing_receipt",
+        )
+
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        filing.invalidate_recordset()
+
+        self.assertEqual(filing.state, "submitted")
+        self.assertEqual(filing.cn_cit_settlement_kind, "payable")
+        self.assertEqual(filing.cn_submission_evidence_ids, receipt)
+        self.assertEqual(filing.cn_submission_integrity_state, "verified")
+        self.assertEqual(
+            filing.cn_submission_snapshot_json["schema"],
+            "sdoo.cn.cit-filing-archive.v1",
+        )
+        self.assertEqual(
+            filing.cn_submission_snapshot_json["reconciliation"]["run_id"],
+            run.id,
+        )
+
+        payment_evidence = self._verified_filing_evidence(
+            filing,
+            "cit-archive-payable-proof",
+            "payment_proof",
+        )
+        filing.with_user(self.reviewer).action_mark_paid()
+        filing.invalidate_recordset()
+
+        self.assertEqual(filing.payment_state, "paid")
+        self.assertEqual(filing.cn_payment_evidence_ids, payment_evidence)
+        self.assertEqual(filing.cn_payment_integrity_state, "verified")
+        self.assertEqual(
+            filing.cn_payment_snapshot_json["schema"],
+            "sdoo.cn.cit-settlement-archive.v1",
+        )
+        self.assertEqual(
+            filing.cn_payment_snapshot_json["settlement_kind"],
+            "payable",
+        )
+        self.assertEqual(
+            filing.cn_cit_effective_paid_principal_amount,
+            run.effective_paid_principal_amount,
+        )
+        reopened = run.with_user(self.reviewer).action_open_cn_filing_archive()
+        self.assertEqual(reopened["res_id"], filing.id)
+        run.invalidate_recordset(["filing_archive_count"])
+        self.assertEqual(run.filing_archive_count, 1)
+        event_keys = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("model_name", "=", filing._name),
+                ("record_id", "=", filing.id),
+            ]
+        ).mapped("event_key")
+        self.assertIn("cn.cit_filing_archive.sealed", event_keys)
+        self.assertIn("cn.cit_payment_archive.sealed", event_keys)
+
+    def test_cit_refund_archive_keeps_refund_distinct_from_payment(self):
+        filing_values = self._cit_filing(
+            "cit-archive-refund",
+            payable=0.0,
+            refundable=18.0,
+        )
+        refund_values = self._payment(
+            "cit-archive-refund",
+            amount=18.0,
+            status="refunded",
+        )
+        self._seed_complete_sources(
+            "cit-archive-refund",
+            filing_values=filing_values,
+            payment_values=refund_values,
+        )
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(run, "cit-archive-refund")
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-refund-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        refund_evidence = self._verified_filing_evidence(
+            filing,
+            "cit-archive-refund-proof",
+            "refund_receipt",
+        )
+
+        filing.with_user(self.reviewer).action_seal_cn_cit_refund()
+        filing.invalidate_recordset()
+
+        self.assertEqual(filing.cn_cit_settlement_kind, "refund")
+        self.assertFalse(filing.payment_required)
+        self.assertEqual(filing.payment_state, "not_required")
+        self.assertEqual(filing.cn_payment_evidence_ids, refund_evidence)
+        self.assertEqual(filing.cn_payment_integrity_state, "verified")
+        self.assertEqual(
+            filing.cn_payment_snapshot_json["settlement_kind"],
+            "refund",
+        )
+        self.assertEqual(
+            filing.cn_cit_refunded_principal_amount,
+            run.refunded_principal_amount,
+        )
+        with self.assertRaisesRegex(AccessError, "封存后不能修改"):
+            filing.write({"cn_cit_refund_reference": "CHANGED"})
+        event_keys = self.env["sudo.compliance.audit.event"].search(
+            [
+                ("model_name", "=", filing._name),
+                ("record_id", "=", filing.id),
+            ]
+        ).mapped("event_key")
+        self.assertIn("cn.cit_refund_archive.sealed", event_keys)
+
+    def test_cit_filing_archive_requires_verified_formal_receipt(self):
+        self._seed_complete_sources("cit-archive-no-receipt")
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(run, "cit-archive-no-receipt")
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+
+        with self.assertRaisesRegex(UserError, "已验证的正式申报回执"):
+            filing.with_user(self.reviewer).action_submit()
+
+    def test_cit_filing_archive_blocks_conflicting_settlement_directions(self):
+        filing_values = self._cit_filing(
+            "cit-archive-conflict",
+            payable=12.5,
+            refundable=5.0,
+        )
+        self._seed_complete_sources(
+            "cit-archive-conflict",
+            filing_values=filing_values,
+        )
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(run, "cit-archive-conflict")
+        filing.with_user(self.reviewer).action_prepare()
+
+        self.assertEqual(filing.cn_cit_settlement_kind, "conflict")
+        with self.assertRaisesRegex(UserError, "同时存在正数应补和应退"):
+            filing.with_user(self.reviewer).action_ready()
+
+    def test_cit_payable_archive_rejects_unreconciled_payment(self):
+        filing_values = self._cit_filing(
+            "cit-archive-payable-difference",
+            payable=20.0,
+        )
+        self._seed_complete_sources(
+            "cit-archive-payable-difference",
+            filing_values=filing_values,
+        )
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(
+            run,
+            "cit-archive-payable-difference",
+        )
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-payable-difference-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-payable-difference-proof",
+            "payment_proof",
+        )
+
+        with self.assertRaisesRegex(UserError, "尚未勾稽一致"):
+            filing.with_user(self.reviewer).action_mark_paid()
+
+    def test_cit_refund_archive_rejects_unreconciled_refund(self):
+        filing_values = self._cit_filing(
+            "cit-archive-refund-difference",
+            payable=0.0,
+            refundable=20.0,
+        )
+        refund_values = self._payment(
+            "cit-archive-refund-difference",
+            amount=12.5,
+            status="refunded",
+        )
+        self._seed_complete_sources(
+            "cit-archive-refund-difference",
+            filing_values=filing_values,
+            payment_values=refund_values,
+        )
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(
+            run,
+            "cit-archive-refund-difference",
+        )
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-refund-difference-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-refund-difference-proof",
+            "refund_receipt",
+        )
+
+        with self.assertRaisesRegex(UserError, "尚未勾稽一致"):
+            filing.with_user(self.reviewer).action_seal_cn_cit_refund()
+
+    def test_cit_filing_archive_detects_reconciliation_tampering(self):
+        self._seed_complete_sources("cit-archive-tampering")
+        run = self._queue()
+        self.assertTrue(run.with_user(self.reviewer)._process())
+        filing = self._controlled_filing_archive(run, "cit-archive-tampering")
+        self._verified_filing_evidence(
+            filing,
+            "cit-archive-tampering-receipt",
+            "filing_receipt",
+        )
+        filing.with_user(self.reviewer).action_prepare()
+        filing.with_user(self.reviewer).action_ready()
+        filing.with_user(self.reviewer).action_submit()
+        self.assertEqual(filing.cn_submission_integrity_state, "verified")
+
+        self.env.cr.execute(
+            """
+            UPDATE sudo_cn_cit_period_reconciliation_run
+               SET result_checksum = %s
+             WHERE id = %s
+            """,
+            ["0" * 64, run.id],
+        )
+        run.invalidate_recordset(["result_checksum"])
+        filing.invalidate_recordset(["cn_submission_integrity_state"])
+        self.assertEqual(filing.cn_submission_integrity_state, "changed")
+
+    def test_cit_filing_archive_rejects_cross_company_reconciliation(self):
+        other_company = self.env["res.company"].create(
+            {
+                "name": "Other China CIT Filing Company",
+                "country_id": self.country.id,
+                "account_fiscal_country_id": self.country.id,
+                "currency_id": self.currency.id,
+            }
+        )
+        other_profile = self.env["sudo.compliance.profile"].with_company(
+            other_company
+        ).create(
+            {
+                "company_id": other_company.id,
+                "country_id": self.country.id,
+                "country_pack_id": self.country_pack.id,
+            }
+        )
+        self.reviewer.write(
+            {"company_ids": [Command.link(other_company.id)]}
+        )
+        other_run = self.env[
+            "sudo.cn.cit.period.reconciliation.run"
+        ].with_user(self.reviewer).with_company(other_company).enqueue(
+            other_profile,
+            "2026-06-01",
+            "2026-06-30",
+            "quarterly_prepayment",
+            "CIT",
+        )
+        source = self._valid_filing_authority_source(
+            "cit-archive-cross-company"
+        )
+        obligation = self.profile.obligation_ids.filtered(
+            lambda item: item.code == "CN-CIT"
+        )[:1]
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            "当前公司和合规档案",
+        ):
+            self.env["sudo.compliance.filing"].with_company(self.company).create(
+                {
+                    "filing_name": "Cross-company CIT filing",
+                    "profile_id": self.profile.id,
+                    "obligation_id": obligation.id,
+                    "filing_code": "CN-CIT",
+                    "filing_type": "cn_cit_return",
+                    "authority": "主管税务机关",
+                    "period_start": "2026-06-01",
+                    "period_end": "2026-06-30",
+                    "due_date": "2026-07-15",
+                    "authority_source_id": source.id,
+                    "due_date_basis": "人工确认测试期间截止日。",
+                    "assignee_id": self.reviewer.id,
+                    "payment_required": True,
+                    "cn_cit_reconciliation_run_id": other_run.id,
+                }
+            )
 
     def test_company_rule_hides_other_company_scope(self):
         other_company = self.env["res.company"].create(

@@ -57,6 +57,7 @@ class TestChinaCountryPack(TransactionCase):
         self.assertTrue(features["reconciliation_fact_bridge"])
         self.assertTrue(features["rule_nature_governance"])
         self.assertTrue(features["cit_governed_rule_candidates"])
+        self.assertTrue(features["cit_filing_settlement_archive"])
         self.assertTrue(
             self.country_pack.capability_json["governance"][
                 "rule_release_requires_nature_classification"

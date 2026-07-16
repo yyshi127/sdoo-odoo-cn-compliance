@@ -12,6 +12,7 @@ from . import taxpayer_classification
 from . import vat_accounting_scope
 from . import vat_period_reconciliation
 from . import filing_archive
+from . import cit_filing_archive
 from . import reconciliation_assessment
 from . import tax_impact_review
 from . import compliance_report
