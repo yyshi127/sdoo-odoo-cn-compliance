@@ -138,6 +138,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_obligation_readiness_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_workbench_cross_border_overview"
             ]
         )
@@ -181,6 +186,15 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(self.profile.cn_workbench_vat_next_action)
         self.assertTrue(self.profile.cn_workbench_cit_next_action)
         self.assertTrue(self.profile.cn_workbench_iit_next_action)
+        self.assertEqual(
+            self.profile.cn_workbench_obligation_count,
+            len(self.profile.obligation_ids),
+        )
+        self.assertEqual(self.profile.cn_workbench_obligation_state, "attention")
+        self.assertEqual(self.profile.cn_workbench_pending_obligation_count, 7)
+        self.assertEqual(self.profile.cn_workbench_applicable_obligation_count, 0)
+        self.assertEqual(self.profile.cn_workbench_filing_obligation_count, 0)
+        self.assertTrue(self.profile.cn_workbench_obligation_next_action)
         self.assertEqual(self.profile.cn_workbench_cross_border_state, "not_started")
         self.assertTrue(self.profile.cn_workbench_cross_border_basis)
         self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
@@ -319,3 +333,35 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "sudo.cn.cross.border.transaction",
         )
         self.assertIn(("profile_id", "=", self.profile.id), cross_border_action["domain"])
+
+        obligation_action = self.profile.action_cn_open_workbench_obligations()
+        self.assertEqual(obligation_action["res_model"], "sudo.compliance.obligation")
+        self.assertIn(("profile_id", "=", self.profile.id), obligation_action["domain"])
+
+    def test_workbench_marks_obligation_readiness_after_review(self):
+        source = self.env.ref(
+            "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate"
+        )
+        self.profile.obligation_ids.write(
+            {
+                "applicability": "not_applicable",
+                "authority_source_id": source.id,
+                "justification": "Reviewed as not applicable for the controlled workbench test.",
+            }
+        )
+        vat_obligation = self.profile.obligation_ids.filtered(
+            lambda obligation: obligation.code == "CN-VAT"
+        )
+        vat_obligation.write(
+            {
+                "applicability": "applicable",
+                "justification": "Reviewed as applicable for the controlled workbench test.",
+            }
+        )
+
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_obligation_state, "ready")
+        self.assertEqual(self.profile.cn_workbench_pending_obligation_count, 0)
+        self.assertEqual(self.profile.cn_workbench_applicable_obligation_count, 1)
+        self.assertEqual(self.profile.cn_workbench_filing_obligation_count, 1)

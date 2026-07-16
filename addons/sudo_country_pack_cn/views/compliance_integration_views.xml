@@ -360,6 +360,26 @@
                 <attribute name="placeholder">填写营业执照、公司章程、决议或其他受控依据...</attribute>
             </field>
             <xpath expr="//field[@name='obligation_ids']/.." position="before">
+                <page string="中国纳税义务概览" invisible="not is_china_profile">
+                    <div class="alert alert-warning" role="alert"
+                         invisible="cn_workbench_obligation_state != 'attention'">
+                        候选义务仍有待确认项。正式使用申报归档、规则扫描和报告结论前，请先确认适用性并关联受控官方来源。
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cn_workbench_obligation_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_obligation_next_action" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="cn_workbench_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_applicable_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_pending_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_filing_obligation_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <button name="action_cn_open_workbench_obligations" type="object"
+                            string="打开纳税义务清单" class="btn-primary"/>
+                </page>
                 <page string="中国纳税人身份" invisible="not is_china_profile">
                     <field name="cn_taxpayer_classification_ids"
                            context="{'default_profile_id': id}">

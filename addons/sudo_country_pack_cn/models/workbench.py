@@ -160,6 +160,31 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="个人所得税下一步",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_obligation_state = fields.Selection(
+        FLOW_STATES,
+        string="Tax Obligation Readiness",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_obligation_next_action = fields.Char(
+        string="Tax Obligation Next Action",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_obligation_count = fields.Integer(
+        string="Candidate Obligations",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_applicable_obligation_count = fields.Integer(
+        string="Applicable Obligations",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_pending_obligation_count = fields.Integer(
+        string="Obligations Needing Review",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_filing_obligation_count = fields.Integer(
+        string="Applicable Filing Obligations",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_cross_border_state = fields.Selection(
         FLOW_STATES,
         string="跨境与源泉扣缴域",
@@ -229,6 +254,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         Classification = self.env["sudo.cn.taxpayer.classification"].sudo()
         CrossBorder = self.env["sudo.cn.cross.border.transaction"].sudo()
+        Obligation = self.env["sudo.compliance.obligation"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -274,6 +300,20 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             cross_border_pending_domain = cross_border_domain + [
                 ("state", "in", ("draft", "submitted")),
             ]
+            obligations = Obligation.search([("profile_id", "=", profile.id)])
+            applicable_obligations = obligations.filtered(
+                lambda obligation: obligation.applicability == "applicable"
+            )
+            pending_obligations = obligations.filtered(
+                lambda obligation: obligation.applicability == "unknown"
+                or (
+                    obligation.applicability == "applicable"
+                    and not obligation.authority_source_id
+                )
+            )
+            filing_obligations = applicable_obligations.filtered(
+                lambda obligation: obligation.filing_required
+            )
 
             issue_counts = {}
             for model_name in issue_models:
@@ -380,6 +420,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_iit_issue_count,
                 limitation_count,
             )
+            profile.cn_workbench_obligation_count = len(obligations)
+            profile.cn_workbench_applicable_obligation_count = len(
+                applicable_obligations
+            )
+            profile.cn_workbench_pending_obligation_count = len(pending_obligations)
+            profile.cn_workbench_filing_obligation_count = len(filing_obligations)
+            if not obligations:
+                profile.cn_workbench_obligation_state = "not_started"
+                profile.cn_workbench_obligation_next_action = _(
+                    "Seed the China candidate obligation list from the compliance profile."
+                )
+            elif pending_obligations:
+                profile.cn_workbench_obligation_state = "attention"
+                profile.cn_workbench_obligation_next_action = _(
+                    "Review candidate tax obligations, confirm applicability, and link official sources before relying on filing controls."
+                )
+            else:
+                profile.cn_workbench_obligation_state = "ready"
+                profile.cn_workbench_obligation_next_action = _(
+                    "Obligation applicability has been reviewed; keep sources current and rescan periodically."
+                )
             profile.cn_workbench_cross_border_transaction_count = (
                 CrossBorder.search_count(cross_border_domain)
             )
@@ -505,6 +566,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             elif profile.status != "active":
                 profile.cn_workbench_status = "setup_required"
                 profile.cn_workbench_next_action = _("先完善并启用中国合规档案")
+            elif profile.cn_workbench_obligation_state == "attention":
+                profile.cn_workbench_status = "warning"
+                profile.cn_workbench_next_action = _(
+                    "Confirm China tax obligation applicability before treating scan results as complete."
+                )
             elif limitation_count:
                 profile.cn_workbench_status = "limited"
                 profile.cn_workbench_next_action = _("补齐适用地区、证据和报告限制说明")
@@ -549,6 +615,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         return self._cn_action(
             _("中国纳税人身份快照"),
             "sudo.cn.taxpayer.classification",
+            [("profile_id", "=", self.id)],
+            {"default_profile_id": self.id},
+        )
+
+    def action_cn_open_workbench_obligations(self):
+        self.ensure_one()
+        return self._cn_action(
+            _("China Tax Obligations"),
+            "sudo.compliance.obligation",
             [("profile_id", "=", self.id)],
             {"default_profile_id": self.id},
         )

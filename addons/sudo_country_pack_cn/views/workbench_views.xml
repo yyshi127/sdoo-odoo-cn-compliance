@@ -81,6 +81,12 @@
                 <field name="cn_workbench_vat_next_action"/>
                 <field name="cn_workbench_cit_next_action"/>
                 <field name="cn_workbench_iit_next_action"/>
+                <field name="cn_workbench_obligation_state"/>
+                <field name="cn_workbench_obligation_next_action"/>
+                <field name="cn_workbench_obligation_count"/>
+                <field name="cn_workbench_applicable_obligation_count"/>
+                <field name="cn_workbench_pending_obligation_count"/>
+                <field name="cn_workbench_filing_obligation_count"/>
                 <field name="cn_workbench_cross_border_state"/>
                 <field name="cn_workbench_cross_border_basis"/>
                 <field name="cn_workbench_cross_border_next_action"/>
@@ -112,6 +118,37 @@
                             <div class="mt-3 text-muted">
                                 <field name="cn_workbench_next_action"/>
                             </div>
+
+                            <button type="object" name="action_cn_open_workbench_obligations"
+                                    class="btn btn-light w-100 text-start border mt-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold">纳税义务适用性</div>
+                                        <div class="text-muted small">
+                                            <field name="cn_workbench_obligation_next_action"/>
+                                        </div>
+                                    </div>
+                                    <field name="cn_workbench_obligation_state" widget="badge"/>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-3">
+                                        <div class="text-muted small">候选</div>
+                                        <div class="fw-bold"><field name="cn_workbench_obligation_count"/></div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">已适用</div>
+                                        <div class="fw-bold"><field name="cn_workbench_applicable_obligation_count"/></div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">待确认</div>
+                                        <div class="fw-bold"><field name="cn_workbench_pending_obligation_count"/></div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">申报类</div>
+                                        <div class="fw-bold"><field name="cn_workbench_filing_obligation_count"/></div>
+                                    </div>
+                                </div>
+                            </button>
 
                             <div class="row g-2 mt-3">
                                 <div class="col-3">
@@ -271,6 +308,10 @@
                                         class="btn btn-outline-primary btn-sm">
                                     数据准备中心
                                 </button>
+                                <button type="object" name="action_cn_open_workbench_obligations"
+                                        class="btn btn-outline-primary btn-sm">
+                                    纳税义务
+                                </button>
                                 <button type="object" name="action_cn_open_workbench_assessments"
                                         class="btn btn-primary btn-sm">
                                     规则扫描
@@ -349,6 +390,14 @@
                             <field name="cn_workbench_iit_issue_count" readonly="1"/>
                             <field name="cn_workbench_limitation_count" readonly="1"/>
                         </group>
+                        <group string="纳税义务适用性">
+                            <field name="cn_workbench_obligation_state" readonly="1" widget="badge"/>
+                            <field name="cn_workbench_obligation_next_action" readonly="1"/>
+                            <field name="cn_workbench_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_applicable_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_pending_obligation_count" readonly="1"/>
+                            <field name="cn_workbench_filing_obligation_count" readonly="1"/>
+                        </group>
                         <group string="流程总览">
                             <field name="cn_workbench_scan_state" readonly="1" widget="badge"/>
                             <field name="cn_workbench_risk_state" readonly="1" widget="badge"/>
@@ -362,6 +411,8 @@
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         <button name="action_cn_open_workbench_data_readiness" type="object"
                                 string="查看数据准备中心" class="btn-secondary"/>
+                        <button name="action_cn_open_workbench_obligations" type="object"
+                                string="查看纳税义务"/>
                         <button name="action_cn_open_workbench_assessments" type="object"
                                 string="查看规则扫描" class="btn-primary"/>
                         <button name="action_cn_open_workbench_findings" type="object"

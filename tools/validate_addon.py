@@ -250,6 +250,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
         fail("China AI guidance visibility capability must be declared")
+    if features.get("china_obligation_readiness_visibility") is not True:
+        fail("China obligation readiness visibility capability must be declared")
     if features.get("china_workbench_cross_border_overview") is not True:
         fail("China cross-border workbench overview must be declared")
     if features.get("china_cross_border_transaction_register") is not True:
@@ -2936,6 +2938,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China traceability matrix capability is missing from {label}")
         if "china_workbench_tax_domain_overview" not in content:
             fail(f"China tax domain overview capability is missing from {label}")
+        if "china_obligation_readiness_visibility" not in content:
+            fail(f"China obligation readiness capability is missing from {label}")
         if "china_workbench_cross_border_overview" not in content:
             fail(f"China cross-border overview capability is missing from {label}")
         if "china_cross_border_transaction_register" not in content:
@@ -2970,6 +2974,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_vat_next_action",
         "cn_workbench_cit_next_action",
         "cn_workbench_iit_next_action",
+        "cn_workbench_obligation_state",
+        "cn_workbench_obligation_next_action",
+        "cn_workbench_obligation_count",
+        "cn_workbench_applicable_obligation_count",
+        "cn_workbench_pending_obligation_count",
+        "cn_workbench_filing_obligation_count",
+        "action_cn_open_workbench_obligations",
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
@@ -3012,6 +3023,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_vat_next_action",
         "cn_workbench_cit_next_action",
         "cn_workbench_iit_next_action",
+        "cn_workbench_obligation_state",
+        "cn_workbench_obligation_next_action",
+        "cn_workbench_obligation_count",
+        "cn_workbench_applicable_obligation_count",
+        "cn_workbench_pending_obligation_count",
+        "cn_workbench_filing_obligation_count",
+        "action_cn_open_workbench_obligations",
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
@@ -3059,12 +3077,14 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_cross_border_transaction_review_freezes_checksum",
         "test_cross_border_fact_provider_exposes_period_snapshot",
         "test_workbench_navigation_actions_are_scoped_to_profile",
+        "test_workbench_marks_obligation_readiness_after_review",
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"China workbench runtime coverage is missing {test_name}")
     for required in (
         "china_process_visibility",
         "china_workbench_tax_domain_overview",
+        "china_obligation_readiness_visibility",
         "china_workbench_cross_border_overview",
         "china_cross_border_transaction_register",
         "china_cross_border_rule_facts",
@@ -3073,6 +3093,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_vat_domain_state",
         "cn_workbench_cit_domain_state",
         "cn_workbench_iit_domain_state",
+        "cn_workbench_obligation_state",
+        "cn_workbench_pending_obligation_count",
+        "action_cn_open_workbench_obligations",
         "cn_workbench_cross_border_state",
         "cn_workbench_cross_border_basis",
         "cn_workbench_cross_border_next_action",
