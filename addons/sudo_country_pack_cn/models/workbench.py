@@ -253,6 +253,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="整改状态",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_rescan_state = fields.Selection(
+        FLOW_STATES,
+        string="Verification Rescan State",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_pending_rescan_count = fields.Integer(
+        string="Pending Verification Rescans",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_failed_rescan_count = fields.Integer(
+        string="Failed Verification Rescans",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_verified_remediation_count = fields.Integer(
+        string="Verified Remediations",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rescan_next_action = fields.Char(
+        string="Verification Rescan Next Action",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_report_state = fields.Selection(
         FLOW_STATES,
         string="报告状态",
@@ -344,7 +365,6 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             ]
             reviewed_impact_domain = impact_domain + [
                 ("state", "=", "reviewed"),
-                ("integrity_state", "=", "verified"),
                 ("quantification_state", "=", "reviewed"),
                 ("impact_direction", "=", "potential_underpayment"),
             ]
@@ -458,6 +478,20 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_overdue_task_count = Task.search_count(
                 task_domain + [("due_date", "<", today)]
             )
+            profile.cn_workbench_pending_rescan_count = Task.search_count(
+                task_domain + [("verification_state", "=", "pending_rescan")]
+            )
+            profile.cn_workbench_failed_rescan_count = Task.search_count(
+                task_domain + [("verification_state", "=", "failed")]
+            )
+            profile.cn_workbench_verified_remediation_count = Task.search_count(
+                [
+                    ("assessment_id.profile_id", "=", profile.id),
+                    ("task_type", "=", "remediation"),
+                    ("state", "=", "done"),
+                    ("verification_state", "=", "verified"),
+                ]
+            )
             profile.cn_workbench_tax_impact_case_count = ImpactCase.search_count(
                 impact_domain
             )
@@ -469,8 +503,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                     ("quantification_state", "in", ("not_assessed", "preliminary")),
                 ]
             )
+            reviewed_underpayment_cases = ImpactCase.search(
+                reviewed_impact_domain
+            ).filtered(lambda case: case.integrity_state == "verified")
             profile.cn_workbench_underpayment_amount = sum(
-                ImpactCase.search(reviewed_impact_domain).mapped("impact_amount")
+                reviewed_underpayment_cases.mapped("impact_amount")
             )
             profile.cn_workbench_reconciliation_issue_count = reconciliation_issue_count
             profile.cn_workbench_dataset_count = len(current_datasets)
@@ -651,6 +688,37 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_remediation_state = "ready"
             else:
                 profile.cn_workbench_remediation_state = "not_started"
+
+            if limitation_count:
+                profile.cn_workbench_rescan_state = "blocked"
+                profile.cn_workbench_rescan_next_action = _(
+                    "Resolve scope, data or evidence limitations before treating remediation rescans as conclusive."
+                )
+            elif profile.cn_workbench_failed_rescan_count:
+                profile.cn_workbench_rescan_state = "blocked"
+                profile.cn_workbench_rescan_next_action = _(
+                    "Review failed verification rescans, reopen remediation where needed, and rerun the exact-period scan."
+                )
+            elif profile.cn_workbench_pending_rescan_count:
+                profile.cn_workbench_rescan_state = "attention"
+                profile.cn_workbench_rescan_next_action = _(
+                    "Monitor pending verification rescans and attach the resulting assessment to the remediation evidence trail."
+                )
+            elif profile.cn_workbench_verified_remediation_count:
+                profile.cn_workbench_rescan_state = "ready"
+                profile.cn_workbench_rescan_next_action = _(
+                    "Verified remediation is available for report sign-off; keep evidence and rescan records sealed."
+                )
+            elif profile.cn_workbench_open_task_count:
+                profile.cn_workbench_rescan_state = "attention"
+                profile.cn_workbench_rescan_next_action = _(
+                    "Complete remediation tasks, request review, then queue verification rescans."
+                )
+            else:
+                profile.cn_workbench_rescan_state = "not_started"
+                profile.cn_workbench_rescan_next_action = _(
+                    "No remediation rescan has been required yet; run scans and close any confirmed risks through the remediation workflow."
+                )
 
             if latest_report and latest_report.state == "issued":
                 profile.cn_workbench_report_state = "ready"

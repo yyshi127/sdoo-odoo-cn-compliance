@@ -38,9 +38,58 @@ class TestChinaComplianceWorkbench(TransactionCase):
             }
         )
         cls.foreign_country = cls.env.ref("base.us")
-        cls.env.user.groups_id = [
+        cls.env.user.group_ids = [
             Command.link(cls.env.ref("sudo_global_finance.group_compliance_manager").id)
         ]
+        cls.rule = cls.env["sudo.compliance.rule"].create(
+            {
+                "name": "China Workbench Remediation Rescan Test Rule",
+                "code": "CN-WORKBENCH-RESCAN-TEST",
+                "country_id": cls.country_cn.id,
+                "domain_key": "CN.WORKBENCH.RESCAN.TEST",
+            }
+        )
+        cls.rule_version = cls.env["sudo.compliance.rule.version"].create(
+            {
+                "rule_id": cls.rule.id,
+                "version": "TEST-1",
+                "effective_from": "2026-01-01",
+                "next_review_date": "2027-01-01",
+                "evaluator_type": "manual",
+                "requires_human_review": True,
+            }
+        )
+
+    def _finding(self, suffix="default"):
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-01",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(self.rule_version.ids)],
+            }
+        )
+        finding = self.env["sudo.compliance.finding"]._create_engine(
+            {
+                "assessment_id": assessment.id,
+                "rule_id": self.rule.id,
+                "rule_version_id": self.rule_version.id,
+                "result": "fail",
+                "risk_level": "high",
+                "title": f"Workbench rescan finding {suffix}",
+                "summary": "A finding used to summarize remediation rescans.",
+                "recommendation": "Remediate and verify with an exact-period rescan.",
+                "evidence_required": "Keep formal remediation evidence.",
+                "requires_human_review": True,
+                "result_details_json": {"affected_count": 1},
+                "checksum": ("a" * 60) + suffix[:4].ljust(4, "0"),
+            }
+        )
+        assessment._engine_write({"state": "completed"})
+        return finding
 
     def _classification(self, **overrides):
         attachment = self.env["ir.attachment"].create(
@@ -171,6 +220,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_data_readiness_summary"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_remediation_rescan_summary"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -191,6 +245,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
             self.profile.cn_workbench_remediation_state,
             "not_started",
         )
+        self.assertEqual(self.profile.cn_workbench_rescan_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_pending_rescan_count, 0)
+        self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 0)
+        self.assertEqual(self.profile.cn_workbench_verified_remediation_count, 0)
+        self.assertTrue(self.profile.cn_workbench_rescan_next_action)
         self.assertEqual(self.profile.cn_workbench_report_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_evidence_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_evidence_count, 0)
@@ -246,6 +305,46 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_dataset_count, 1)
         self.assertEqual(self.profile.cn_workbench_ready_dataset_count, 0)
         self.assertIn("封存", self.profile.cn_workbench_data_next_action)
+
+    def test_workbench_summarizes_remediation_rescan_status(self):
+        pending = self.env["sudo.compliance.task"].create_from_finding(
+            self._finding("pend")
+        )
+        failed = self.env["sudo.compliance.task"].create_from_finding(
+            self._finding("fail")
+        )
+        verified = self.env["sudo.compliance.task"].create_from_finding(
+            self._finding("done")
+        )
+        pending._transition_write(
+            {
+                "state": "pending_review",
+                "verification_state": "pending_rescan",
+                "verification_assessment_id": pending.assessment_id.id,
+            }
+        )
+        failed._transition_write(
+            {
+                "state": "pending_review",
+                "verification_state": "failed",
+                "verification_assessment_id": failed.assessment_id.id,
+            }
+        )
+        verified._transition_write(
+            {
+                "state": "done",
+                "verification_state": "verified",
+                "verification_assessment_id": verified.assessment_id.id,
+            }
+        )
+
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_rescan_state, "blocked")
+        self.assertEqual(self.profile.cn_workbench_pending_rescan_count, 1)
+        self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 1)
+        self.assertEqual(self.profile.cn_workbench_verified_remediation_count, 1)
+        self.assertIn("failed", self.profile.cn_workbench_rescan_next_action)
 
     def test_workbench_surfaces_cross_border_identity_boundary(self):
         self.profile._write_import({"status": "active"})

@@ -79,6 +79,11 @@
                 <field name="cn_workbench_scan_state"/>
                 <field name="cn_workbench_risk_state"/>
                 <field name="cn_workbench_remediation_state"/>
+                <field name="cn_workbench_rescan_state"/>
+                <field name="cn_workbench_pending_rescan_count"/>
+                <field name="cn_workbench_failed_rescan_count"/>
+                <field name="cn_workbench_verified_remediation_count"/>
+                <field name="cn_workbench_rescan_next_action"/>
                 <field name="cn_workbench_report_state"/>
                 <field name="cn_workbench_evidence_state"/>
                 <field name="cn_workbench_evidence_count"/>
@@ -303,6 +308,21 @@
                                                decoration-danger="cn_workbench_remediation_state == 'blocked'"
                                                decoration-muted="cn_workbench_remediation_state == 'not_started'"/>
                                     </button>
+                                    <button type="object" name="action_cn_open_workbench_tasks"
+                                            class="btn btn-light border text-start flex-fill">
+                                        <div class="text-muted small">3.5 Verification Rescan</div>
+                                        <field name="cn_workbench_rescan_state" widget="badge"
+                                               decoration-success="cn_workbench_rescan_state == 'ready'"
+                                               decoration-warning="cn_workbench_rescan_state == 'attention'"
+                                               decoration-danger="cn_workbench_rescan_state == 'blocked'"
+                                               decoration-muted="cn_workbench_rescan_state == 'not_started'"/>
+                                        <div class="text-muted small mt-1">
+                                            <field name="cn_workbench_pending_rescan_count"/>
+                                            <span> pending / </span>
+                                            <field name="cn_workbench_failed_rescan_count"/>
+                                            <span> failed</span>
+                                        </div>
+                                    </button>
                                     <button type="object" name="action_cn_open_workbench_report_readiness"
                                             class="btn btn-light border text-start flex-fill">
                                         <div class="text-muted small">4 报告准备</div>
@@ -384,6 +404,32 @@
                                             <field name="cn_workbench_overdue_task_count"/>
                                             /
                                             <field name="cn_workbench_open_task_count"/>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="object" name="action_cn_open_workbench_tasks"
+                                            class="btn btn-light w-100 text-start">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="text-muted small">Verification Rescan</div>
+                                                <div class="fw-bold">
+                                                    <field name="cn_workbench_pending_rescan_count"/>
+                                                    <span> pending / </span>
+                                                    <field name="cn_workbench_failed_rescan_count"/>
+                                                    <span> failed / </span>
+                                                    <field name="cn_workbench_verified_remediation_count"/>
+                                                    <span> verified</span>
+                                                </div>
+                                            </div>
+                                            <field name="cn_workbench_rescan_state" widget="badge"
+                                                   decoration-success="cn_workbench_rescan_state == 'ready'"
+                                                   decoration-warning="cn_workbench_rescan_state == 'attention'"
+                                                   decoration-danger="cn_workbench_rescan_state == 'blocked'"
+                                                   decoration-muted="cn_workbench_rescan_state == 'not_started'"/>
+                                        </div>
+                                        <div class="text-muted small mt-2">
+                                            <field name="cn_workbench_rescan_next_action"/>
                                         </div>
                                     </button>
                                 </div>
@@ -530,6 +576,15 @@
                                    decoration-warning="cn_workbench_remediation_state == 'attention'"
                                    decoration-danger="cn_workbench_remediation_state == 'blocked'"
                                    decoration-muted="cn_workbench_remediation_state == 'not_started'"/>
+                            <field name="cn_workbench_rescan_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_rescan_state == 'ready'"
+                                   decoration-warning="cn_workbench_rescan_state == 'attention'"
+                                   decoration-danger="cn_workbench_rescan_state == 'blocked'"
+                                   decoration-muted="cn_workbench_rescan_state == 'not_started'"/>
+                            <field name="cn_workbench_rescan_next_action" readonly="1"/>
+                            <field name="cn_workbench_pending_rescan_count" readonly="1"/>
+                            <field name="cn_workbench_failed_rescan_count" readonly="1"/>
+                            <field name="cn_workbench_verified_remediation_count" readonly="1"/>
                             <field name="cn_workbench_report_state" readonly="1" widget="badge"
                                    decoration-success="cn_workbench_report_state == 'ready'"
                                    decoration-warning="cn_workbench_report_state == 'attention'"
