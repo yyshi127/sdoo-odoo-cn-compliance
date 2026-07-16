@@ -17,8 +17,6 @@
                         domain="[('state', '=', 'draft')]"/>
                 <filter name="sealed" string="已封存"
                         domain="[('state', '=', 'sealed')]"/>
-                <filter name="integrity_issue" string="完整性异常"
-                        domain="[('integrity_state', '=', 'checksum_mismatch')]"/>
                 <filter name="authenticity_issue" string="真实性异常"
                         domain="[('authenticity_state', '=', 'official_tool_failed')]"/>
                 <filter name="authenticity_unchecked" string="真实性待验证"
@@ -28,8 +26,6 @@
                         context="{'group_by': 'dataset_type'}"/>
                 <filter name="group_state" string="按封存状态"
                         context="{'group_by': 'state'}"/>
-                <filter name="group_integrity" string="按完整性"
-                        context="{'group_by': 'integrity_state'}"/>
                 <filter name="group_company" string="按公司"
                         context="{'group_by': 'company_id'}"/>
                 <filter name="group_period_end" string="按结束月份"

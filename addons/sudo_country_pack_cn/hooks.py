@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.61.0"
+PACK_VERSION = "19.0.1.63.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",

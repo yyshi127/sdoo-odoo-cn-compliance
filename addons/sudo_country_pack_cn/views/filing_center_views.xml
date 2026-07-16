@@ -13,14 +13,6 @@
                 <field name="payment_state"/>
                 <filter name="cn_controlled" string="中国受控档案"
                         domain="['|', '|', ('cn_vat_reconciliation_run_id', '!=', False), ('cn_cit_reconciliation_run_id', '!=', False), ('cn_iit_reconciliation_run_id', '!=', False)]"/>
-                <filter name="submission_unsealed" string="申报待封存"
-                        domain="[('cn_submission_integrity_state', '=', 'unsealed')]"/>
-                <filter name="payment_unsealed" string="缴退税待封存"
-                        domain="[('cn_payment_integrity_state', '=', 'unsealed')]"/>
-                <filter name="integrity_issue" string="完整性异常"
-                        domain="['|', ('cn_submission_integrity_state', 'in', ('changed', 'invalid')), ('cn_payment_integrity_state', 'in', ('changed', 'invalid'))]"/>
-                <filter name="evidence_gap" string="证据未完整验证"
-                        domain="[('cn_filing_center_evidence_state', '!=', 'verified')]"/>
                 <separator/>
                 <filter name="group_kind" string="按税种"
                         context="{'group_by': 'cn_filing_center_kind'}"/>

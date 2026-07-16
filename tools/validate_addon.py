@@ -807,6 +807,10 @@ def validate_upgrade_migration(
         (ADDON_ROOT / "migrations").glob("*/post-migration.py")
     ):
         content = migration_path.read_text(encoding="utf-8")
+        if "def migrate(env, version)" in content:
+            fail(f"migration must use Odoo runtime signature migrate(cr, version): {migration_path}")
+        if "api.Environment(cr, SUPERUSER_ID" not in content:
+            fail(f"migration must explicitly build an Odoo env from cr: {migration_path}")
         tree = ast.parse(content, filename=str(migration_path))
         assignments = literal_assignments(tree)
         links = assignments.get("RULE_SOURCE_LINKS")
@@ -3712,6 +3716,18 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if required not in filing_test_content:
             fail(f"China filing center runtime coverage is missing {required}")
 
+    filing_search_forbidden = (
+        "domain=\"[('cn_submission_integrity_state'",
+        "domain=\"[('cn_payment_integrity_state'",
+        "domain=\"[('cn_filing_center_evidence_state'",
+        "domain=\"['|', ('cn_submission_integrity_state'",
+    )
+    for forbidden in filing_search_forbidden:
+        if forbidden in filing_view_content:
+            fail(
+                "China filing center search view must not filter on non-searchable computed status fields"
+            )
+
     data_readiness_model_content = (
         ADDON_ROOT / "models" / "data_readiness_center.py"
     ).read_text(encoding="utf-8")
@@ -3749,6 +3765,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in data_readiness_view_content:
             fail(f"China data readiness center UI is missing {required}")
+
+    if "domain=\"[('integrity_state'" in data_readiness_view_content:
+        fail("China data readiness search view must not filter on non-searchable integrity_state")
+    if "group_by': 'integrity_state'" in data_readiness_view_content:
+        fail("China data readiness search view must not group by non-stored integrity_state")
 
     for required in (
         'decoration-success="cn_data_readiness_stage == \'ready\'"',
