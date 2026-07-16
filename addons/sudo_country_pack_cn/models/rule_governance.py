@@ -20,6 +20,8 @@ CN_RULE_NATURE_BY_CODE = {
     "CN-DATA-VAT-RECON-001": "data_readiness",
     "CN-DATA-CIT-RECON-001": "data_readiness",
     "CN-CIT-RECON-CTRL-001": "internal_control",
+    "CN-DATA-IIT-RECON-001": "data_readiness",
+    "CN-IIT-RECON-CTRL-001": "internal_control",
 }
 
 _CONTROL_NATURES = {"internal_control", "data_readiness"}

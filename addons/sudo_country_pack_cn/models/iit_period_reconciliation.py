@@ -1563,7 +1563,9 @@ class SudoChinaIitPeriodReconciliationRun(models.Model):
 
         def record_id(field_name):
             item = value(field_name)
-            return item.id if hasattr(item, "id") else item or None
+            if hasattr(item, "id"):
+                item = item.id
+            return item or None
 
         monetary_fields = (
             "ledger_payroll_expense_amount",

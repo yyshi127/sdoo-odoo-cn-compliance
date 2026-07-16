@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.25.0"
+PACK_VERSION = "19.0.1.26.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -131,6 +131,8 @@ def country_pack_capabilities():
             "iit_withholding_normalization": True,
             "payroll_summary_normalization": True,
             "iit_accounting_reconciliation": True,
+            "iit_governed_rule_candidates": True,
+            "iit_filing_settlement_archive": True,
             "multi_company": True,
         },
         "governance": {

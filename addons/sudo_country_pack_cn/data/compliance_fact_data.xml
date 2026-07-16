@@ -410,4 +410,84 @@
         <field name="evidence_required">True</field>
         <field name="sensitivity">restricted</field>
     </record>
+
+    <record id="fact_cn_iit_reconciliation_conclusion_state_v1" model="sudo.compliance.fact.definition">
+        <field name="label">个人所得税工资账表款勾稽结论状态</field>
+        <field name="key">cn.reconciliation.iit.conclusion_state</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">string</field>
+        <field name="provider_key">cn.reconciliation.iit.conclusion_state</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">严格读取同一档案和完全相同期间的唯一当前成功个税勾稽；一致仅表示受控工资、账务、扣缴申报和缴退税数据在当前口径下算术一致。</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_iit_reconciliation_blocking_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">个人所得税工资账表款勾稽阻断问题数</field>
+        <field name="key">cn.reconciliation.iit.blocking_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.iit.blocking_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">工资汇总、账务口径、扣缴申报或缴退税来源不完整、不可靠或版本不匹配而导致不能比较的问题数。</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_iit_reconciliation_difference_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">个人所得税工资账表款勾稽差异项目数</field>
+        <field name="key">cn.reconciliation.iit.difference_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.iit.difference_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">受控工资、账务、扣缴申报、缴退税金额或申报人数之间的非零差异项目数；不等于少缴税、违法或税务影响金额。</field>
+        <field name="required_for_pass">True</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_iit_reconciliation_warning_count_v1" model="sudo.compliance.fact.definition">
+        <field name="label">个人所得税工资账表款勾稽复核提示数</field>
+        <field name="key">cn.reconciliation.iit.warning_issue_count</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">integer</field>
+        <field name="provider_key">cn.reconciliation.iit.warning_issue_count</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">不阻断算术比较但必须由人工复核并在正式报告中披露的真实性、未过账、单人控制或其他限制提示数。</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
+    <record id="fact_cn_iit_reconciliation_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">个人所得税工资账表款勾稽审计详情</field>
+        <field name="key">cn.reconciliation.iit.detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.iit.detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">保存五层来源状态、聚合人数与金额、逐项差异、稳定问题代码和快照校验和；不包含人员姓名、证件号码、人员键或申报明细键。</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
 </odoo>

@@ -37,6 +37,7 @@ OFFICIAL_SOURCE_HOSTS = {
     "kjs.mof.gov.cn",
     "www.mof.gov.cn",
     "www.gov.cn",
+    "www.chinatax.gov.cn",
     "xzfg.moj.gov.cn",
 }
 EXPECTED_OFFICIAL_SOURCE_URLS = {
@@ -67,6 +68,17 @@ EXPECTED_OFFICIAL_SOURCE_URLS = {
     "source_cn_cit_regulation_2024_candidate": (
         "https://xzfg.moj.gov.cn/law/download?LawID=1741&type=pdf"
     ),
+    "source_cn_iit_law_2018_candidate": (
+        "https://fgk.chinatax.gov.cn/zcfgk/c100009/c5193028/content.html"
+    ),
+    "source_cn_iit_regulation_2018_candidate": (
+        "https://www.chinatax.gov.cn/chinatax/n810219/n810744/"
+        "n3752930/n3752974/c3963364/content.html"
+    ),
+    "source_cn_iit_withholding_measures_2018_candidate": (
+        "https://www.chinatax.gov.cn/chinatax/n810341/n810765/"
+        "n3359382/201812/c4182700/content.html"
+    ),
 }
 EXPECTED_SOURCE_URL_REPLACEMENTS = {
     "source_cn_accounting_law_2024_candidate": (
@@ -94,6 +106,7 @@ ALLOWED_CN_RULE_NATURES = {
 CONTROL_RULE_NATURES = {"internal_control", "data_readiness"}
 ALLOWED_CN_RULE_HANDLERS = {
     "cn.cit.reconciliation.review.v1": "1",
+    "cn.iit.reconciliation.review.v1": "1",
 }
 ALLOWED_CN_CITATION_TYPES = {
     "direct_requirement",
@@ -247,6 +260,10 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("controlled aggregate payroll normalization capability must be declared")
     if features.get("iit_accounting_reconciliation") is not True:
         fail("controlled IIT accounting reconciliation capability must be declared")
+    if features.get("iit_governed_rule_candidates") is not True:
+        fail("governed IIT rule candidate capability must be declared")
+    if features.get("iit_filing_settlement_archive") is not True:
+        fail("controlled IIT filing and settlement archive capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -600,8 +617,8 @@ def validate_rule_review_candidates(
     ]
     if len(packet_records) != len(version_source_refs):
         fail("every packaged China rule version requires one review packet")
-    if len(citation_records) != 20:
-        fail("packaged China review candidates require twenty citations")
+    if len(citation_records) != 26:
+        fail("packaged China review candidates require twenty-six citations")
 
     required_packet_fields = {
         "scope_summary",
@@ -1983,6 +2000,26 @@ def validate_iit_period_reconciliation() -> None:
     if "_cron_process_runs(limit=1)" not in cron_content:
         fail("IIT reconciliation must use a bounded native Odoo queue")
 
+    facts = (ADDON_ROOT / "data" / "compliance_fact_data.xml").read_text(
+        encoding="utf-8"
+    )
+    provider = (ADDON_ROOT / "models" / "compliance_engine.py").read_text(
+        encoding="utf-8"
+    )
+    for fact_key in (
+        "cn.reconciliation.iit.conclusion_state",
+        "cn.reconciliation.iit.blocking_issue_count",
+        "cn.reconciliation.iit.difference_issue_count",
+        "cn.reconciliation.iit.warning_issue_count",
+        "cn.reconciliation.iit.detail",
+    ):
+        if fact_key not in facts or fact_key not in provider:
+            fail(f"IIT reconciliation fact bridge is missing {fact_key}")
+    if "sdoo.cn.reconciliation.iit-period.fact.v1" not in provider:
+        fail("IIT reconciliation fact snapshot schema is missing")
+    if "IIT_RECONCILIATION_REVIEW_HANDLER" not in provider:
+        fail("IIT reconciliation governed review handler is missing")
+
     scope_view = (
         ADDON_ROOT / "views" / "iit_accounting_scope_views.xml"
     ).read_text(encoding="utf-8")
@@ -2033,21 +2070,111 @@ def validate_iit_period_reconciliation() -> None:
         and node.name.startswith("test_")
         for node in ast.walk(test_tree)
     )
-    if test_methods < 9:
-        fail("IIT reconciliation requires at least nine runtime tests")
+    if test_methods < 20:
+        fail("IIT reconciliation and archive require at least twenty runtime tests")
     for test_name in (
         "test_aligned_run_uses_payment_date_outside_tax_period",
         "test_missing_sources_is_insufficient_not_aligned",
+        "test_fact_provider_exposes_aggregate_exact_period_snapshot",
         "test_amount_differences_are_visible_review_items",
         "test_person_count_difference_is_not_rendered_as_money",
         "test_source_schema_mismatch_blocks_comparison",
         "test_verified_scope_and_results_are_immutable",
         "test_sensitive_sources_are_manager_only_but_run_is_readable",
+        "test_iit_reconciliation_drives_remediation_and_exact_period_rescan",
         "test_company_rule_hides_other_company_scope",
         "test_direct_creation_and_manual_changes_are_blocked",
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"IIT reconciliation runtime coverage is missing {test_name}")
+
+
+def validate_iit_filing_payment_archive() -> None:
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import iit_filing_archive" not in model_init:
+        fail("IIT filing and settlement archive model must be imported")
+    if model_init.index("from . import iit_filing_archive") < model_init.index(
+        "from . import iit_period_reconciliation"
+    ):
+        fail("IIT filing archive must load after IIT reconciliation")
+
+    model_path = ADDON_ROOT / "models" / "iit_filing_archive.py"
+    if not model_path.is_file():
+        fail("IIT filing and settlement archive implementation is missing")
+    model_content = model_path.read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.filing"',
+        '_inherit = "sudo.cn.iit.period.reconciliation.run"',
+        '"sdoo.cn.iit-withholding-filing-archive.v1"',
+        '"sdoo.cn.iit-withholding-settlement-archive.v1"',
+        "_CN_IIT_ARCHIVE_LINK_MARKER",
+        "cn_iit_reconciliation_run_id",
+        "_cn_iit_validate_obligation",
+        "_cn_iit_source_record",
+        "_cn_iit_validate_payable",
+        "_cn_iit_validate_refund",
+        "action_seal_cn_iit_refund",
+        "action_open_cn_iit_reconciliation",
+        "action_open_cn_filing_archive",
+        "cn.iit_filing_archive.sealed",
+        "cn.iit_payment_archive.sealed",
+        "cn.iit_refund_archive.sealed",
+        "source_superseded",
+        "filing_receipt",
+        "payment_proof",
+        "refund_receipt",
+    ):
+        if required not in model_content:
+            fail(f"IIT filing archive contract is missing {required}")
+    if "default_due_date" in model_content:
+        fail("IIT filing archive must not infer a legal filing deadline")
+    for sensitive_expression in (
+        "record.line_ids",
+        '"subject_key"',
+        '"source_line_key"',
+        '"taxpayer_name"',
+        '"taxpayer_id"',
+    ):
+        if sensitive_expression in model_content:
+            fail(
+                "IIT filing archive must not copy person-level source data: "
+                f"{sensitive_expression}"
+            )
+
+    view_content = (
+        ADDON_ROOT / "views" / "filing_archive_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="view_cn_iit_period_reconciliation_run_form_filing_archive"',
+        'name="cn_iit_reconciliation_run_id"',
+        'name="action_seal_cn_iit_refund"',
+        'name="action_open_cn_iit_reconciliation"',
+        'name="cn_iit_controlled"',
+        "中国个人所得税受控档案",
+        "不把姓名、证件号码或人员明细写入申报档案快照",
+        "两个结算方向不会被系统静默轧差",
+    ):
+        if required not in view_content:
+            fail(f"IIT filing archive UI is missing {required}")
+
+    test_content = (
+        ADDON_ROOT / "tests" / "test_iit_period_reconciliation.py"
+    ).read_text(encoding="utf-8")
+    for test_name in (
+        "test_filing_archive_action_does_not_infer_legal_deadline",
+        "test_iit_payable_archive_seals_private_submission_and_payment_chain",
+        "test_iit_refund_archive_keeps_refund_distinct_from_payment",
+        "test_iit_filing_archive_requires_verified_formal_receipt",
+        "test_iit_filing_archive_blocks_unknown_settlement_direction",
+        "test_iit_payable_archive_rejects_unreconciled_payment",
+        "test_iit_refund_archive_rejects_unreconciled_refund",
+        "test_iit_filing_archive_detects_reconciliation_tampering",
+        "test_iit_filing_archive_rejects_cross_company_reconciliation",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"IIT filing archive runtime coverage is missing {test_name}")
 
 
 def validate_filing_payment_archive() -> None:
@@ -2602,6 +2729,7 @@ def main() -> int:
     validate_vat_period_reconciliation()
     validate_cit_period_reconciliation()
     validate_iit_period_reconciliation()
+    validate_iit_filing_payment_archive()
     validate_filing_payment_archive()
     validate_tax_impact_review()
     validate_formal_compliance_report()

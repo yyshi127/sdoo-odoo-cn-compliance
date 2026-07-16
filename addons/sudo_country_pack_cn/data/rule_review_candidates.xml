@@ -261,4 +261,76 @@
         <field name="claim_summary">会计法提供实际经济业务、会计凭证和账簿记录的一般背景，为受控会计利润范围及证据链复核提供上下文。</field>
         <field name="applicability_note">Odoo 已过账记录和附件存在不自动证明会计处理或原始凭证真实、合法、完整，仍需专业复核。</field>
     </record>
+
+    <record id="review_packet_cn_iit_reconciliation_ready_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="scope_summary">适用于当前中国合规档案和完全相同的评估期间；仅检查唯一当前成功的工资汇总、已核验账务口径、个人所得税扣缴申报和缴退税勾稽结果是否完整、可追溯并具备比较条件。</field>
+        <field name="applicability_assumptions">工资汇总不含人员身份信息且已经正式审批，账务科目角色和来源结构版本已经独立核验，扣缴申报及缴退税来源覆盖同一扣缴义务人和期间，来源币种、修订状态、付款日期口径及应补应退符号约定明确。</field>
+        <field name="exclusions_limitations">不判断居民身份、所得项目、税收协定、免税收入、各类扣除、预扣率、累计预扣算法、优惠、年度汇算、申报期限、滞纳金、处罚或是否少缴税；人员和金额差异不阻止“数据可比较”通过。</field>
+        <field name="conclusion_boundary">通过只表示受控来源具备比较条件；失败只表示数据准备存在阻断。两者都不是个税计算、扣缴申报、缴税或违法结论，必须与差异复核规则和中国财税专业判断结合。</field>
+        <field name="reviewer_questions">请确认扣缴义务人和纳税期间映射、工资所属期与发放期、累计与本期口径、修订申报选择、缴退税跨期映射、人员数量口径、零记录声明、敏感数据最小化、结构版本锁定及哪些阻断必须在正式评估前解决。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_ready_001_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_iit_law_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第九条至第十一条、第十四条</field>
+        <field name="claim_summary">个人所得税法提供扣缴义务人、全员全额扣缴申报、按月或按次预扣预缴、税款缴库和申报的一般框架，为工资、申报和缴款来源可比较性控制提供背景。</field>
+        <field name="applicability_note">法律没有规定本系统的数据模型或自动勾稽方法；必须由专业人员核对主体、所得项目、适用期间、修订状态和现行政策后使用。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_ready_001_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_iit_regulation_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第二十四条、第二十六条、第三十条</field>
+        <field name="claim_summary">实施条例提供支付应税款项时预扣或代扣、按时缴库并专项记载、全员全额申报信息范围以及按纳税人提供信息申报的一般背景。</field>
+        <field name="applicability_note">来源字段可读和金额一致不能证明人员信息、扣除或申报内容真实正确，也不能替代主管税务机关数据和专业复核。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_ready_001_measures" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_iit_withholding_measures_2018_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第二条至第六条、第十三条至第十六条</field>
+        <field name="claim_summary">扣缴申报管理办法描述全员全额申报、税款缴库、工资薪金按月扣缴、向纳税人提供信息以及资料保存和保密的一般背景，支持来源范围、期间和敏感数据控制设计。</field>
+        <field name="applicability_note">本引用不把聚合工资台账、会计记录或系统校验和认定为法定申报资料，也不授权普通用户接触人员级敏感信息。</field>
+    </record>
+
+    <record id="review_packet_cn_iit_reconciliation_control_001_draft" model="sudo.cn.rule.review.packet">
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_control_001_draft"/>
+        <field name="scope_summary">适用于已经完成数据准备的同一扣缴义务人和完全相同期间；分别比较工资收入与账务计提、工资代扣与账务应交个税、工资与申报人数及金额、申报应补与缴款、申报应退与退库，并保留稳定问题代码和审计校验和。</field>
+        <field name="applicability_assumptions">唯一当前成功勾稽批次通过完整性校验，工资、账务、扣缴申报和缴退税来源口径及结构版本已核验；金额阈值仅用于算术比较，人员数量仅按聚合口径比较，人员级数据不进入风险事实。</field>
+        <field name="exclusions_limitations">不自动判断差异原因、人员身份、所得项目、扣除资格、累计预扣计算、税率、优惠、汇算义务、少缴税、滞纳金、处罚或违法；不同差异项目不得简单相加为税务影响额，阻断和警告只返回待确认。</field>
+        <field name="conclusion_boundary">失败只表示一个或多个受控金额或人数差异需要复核；待确认表示数据不可比较、状态矛盾或仍有提示；通过只表示当前范围没有差异和提示，均须人工复核且不构成税务结论。</field>
+        <field name="reviewer_questions">请确认八组金额及人数比较的专业边界、工资所属期和发放期、修订申报、跨期缴退税、累计与本期字段、正负号约定、差异重要性、敏感数据访问、专业复核证据以及何时允许关闭整改。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_control_001_law" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_control_001_draft"/>
+        <field name="sequence">10</field>
+        <field name="source_id" ref="source_cn_iit_law_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第九条至第十一条、第十四条</field>
+        <field name="claim_summary">法律中的扣缴义务人、全员全额申报、预扣预缴及税款缴库框架，为工资、账务、申报和缴退税分层复核提供内部控制推导背景。</field>
+        <field name="applicability_note">算术差异只是复核线索，不能仅凭方向、金额或人数推断应补税、少缴税、违法或处罚风险。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_control_001_regulation" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_control_001_draft"/>
+        <field name="sequence">20</field>
+        <field name="source_id" ref="source_cn_iit_regulation_2018_candidate"/>
+        <field name="citation_type">internal_control_rationale</field>
+        <field name="locator">第二十四条、第二十六条、第三十条</field>
+        <field name="claim_summary">实施条例对扣缴、缴库、专项记载、全员全额申报信息和按纳税人提供信息申报的背景，支持将账务、工资、申报与缴款来源分层而非混为单一税额结论。</field>
+        <field name="applicability_note">必须核对企业采用的工资制度、会计口径、申报结构版本和主管税务机关记录；系统比较不能替代人员级申报底稿及专业意见。</field>
+    </record>
+    <record id="review_citation_cn_iit_reconciliation_control_001_measures" model="sudo.cn.rule.review.citation">
+        <field name="packet_id" ref="review_packet_cn_iit_reconciliation_control_001_draft"/>
+        <field name="sequence">30</field>
+        <field name="source_id" ref="source_cn_iit_withholding_measures_2018_candidate"/>
+        <field name="citation_type">supporting_context</field>
+        <field name="locator">第二条至第六条、第十三条至第十六条</field>
+        <field name="claim_summary">办法中的全员全额申报、税款缴库、工资薪金累计预扣、信息提供、保存与保密要求，为聚合人数金额差异复核和敏感数据最小化提供上下文。</field>
+        <field name="applicability_note">具体计算、扣除和人员信息正确性仍需人员级受控底稿核对；聚合事实不得反向暴露姓名、证件号码或稳定人员键。</field>
+    </record>
 </odoo>

@@ -78,6 +78,11 @@
                             string="取消待处理批次" class="btn-secondary"
                             groups="sudo_global_finance.group_compliance_manager"
                             invisible="state != 'queued'"/>
+                    <button name="action_queue_compliance_assessment"
+                            type="object" string="发起规则扫描"
+                            class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'succeeded'"/>
                     <field name="state" widget="statusbar" readonly="1"
                            statusbar_visible="queued,processing,succeeded"/>
                 </header>

@@ -103,4 +103,37 @@
         <field name="published_date">2024-12-06</field>
         <field name="next_review_date">2026-10-15</field>
     </record>
+
+    <record id="source_cn_iit_law_2018_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国个人所得税法（2018年修正）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">全国人民代表大会常务委员会</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://fgk.chinatax.gov.cn/zcfgk/c100009/c5193028/content.html</field>
+        <field name="official_version">2018年8月31日第七次修正，全文有效</field>
+        <field name="published_date">2018-08-31</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_iit_regulation_2018_candidate" model="sudo.compliance.authority.source">
+        <field name="name">中华人民共和国个人所得税法实施条例（国务院令第707号）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">国务院</field>
+        <field name="source_type">legislation</field>
+        <field name="official_url">https://www.chinatax.gov.cn/chinatax/n810219/n810744/n3752930/n3752974/c3963364/content.html</field>
+        <field name="official_version">国务院令第707号，2019年1月1日起施行</field>
+        <field name="published_date">2018-12-18</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
+
+    <record id="source_cn_iit_withholding_measures_2018_candidate" model="sudo.compliance.authority.source">
+        <field name="name">个人所得税扣缴申报管理办法（试行）</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="authority">国家税务总局</field>
+        <field name="source_type">tax_guide</field>
+        <field name="official_url">https://www.chinatax.gov.cn/chinatax/n810341/n810765/n3359382/201812/c4182700/content.html</field>
+        <field name="official_version">国家税务总局公告2018年第61号，2019年1月1日起施行</field>
+        <field name="published_date">2018-12-21</field>
+        <field name="next_review_date">2026-10-15</field>
+    </record>
 </odoo>

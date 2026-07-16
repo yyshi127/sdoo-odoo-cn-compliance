@@ -23,6 +23,7 @@ INVOICE_MOVE_TYPES = (
     "in_receipt",
 )
 CIT_RECONCILIATION_REVIEW_HANDLER = "cn.cit.reconciliation.review.v1"
+IIT_RECONCILIATION_REVIEW_HANDLER = "cn.iit.reconciliation.review.v1"
 
 
 def _json_checksum(payload):
@@ -119,6 +120,21 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.reconciliation.cit.detail": (
                     self._provide_cn_cit_reconciliation_detail
                 ),
+                "cn.reconciliation.iit.conclusion_state": (
+                    self._provide_cn_iit_reconciliation_conclusion_state
+                ),
+                "cn.reconciliation.iit.blocking_issue_count": (
+                    self._provide_cn_iit_reconciliation_blocking_count
+                ),
+                "cn.reconciliation.iit.difference_issue_count": (
+                    self._provide_cn_iit_reconciliation_difference_count
+                ),
+                "cn.reconciliation.iit.warning_issue_count": (
+                    self._provide_cn_iit_reconciliation_warning_count
+                ),
+                "cn.reconciliation.iit.detail": (
+                    self._provide_cn_iit_reconciliation_detail
+                ),
             }
         )
         return providers
@@ -128,23 +144,34 @@ class SudoChinaComplianceEngine(models.AbstractModel):
         handlers[CIT_RECONCILIATION_REVIEW_HANDLER] = (
             self._evaluate_cn_cit_reconciliation_review
         )
+        handlers[IIT_RECONCILIATION_REVIEW_HANDLER] = (
+            self._evaluate_cn_iit_reconciliation_review
+        )
         return handlers
 
     @staticmethod
     def _evaluate_cn_cit_reconciliation_review(
         _assessment, _version, facts, _parameters
     ):
-        state = facts.get("cn.reconciliation.cit.conclusion_state")
+        return SudoChinaComplianceEngine._evaluate_cn_reconciliation_review(
+            facts, "cn.reconciliation.cit."
+        )
+
+    @staticmethod
+    def _evaluate_cn_iit_reconciliation_review(
+        _assessment, _version, facts, _parameters
+    ):
+        return SudoChinaComplianceEngine._evaluate_cn_reconciliation_review(
+            facts, "cn.reconciliation.iit."
+        )
+
+    @staticmethod
+    def _evaluate_cn_reconciliation_review(facts, prefix):
+        state = facts.get(f"{prefix}conclusion_state")
         counts = {
-            "blocking": facts.get(
-                "cn.reconciliation.cit.blocking_issue_count"
-            ),
-            "differences": facts.get(
-                "cn.reconciliation.cit.difference_issue_count"
-            ),
-            "warnings": facts.get(
-                "cn.reconciliation.cit.warning_issue_count"
-            ),
+            "blocking": facts.get(f"{prefix}blocking_issue_count"),
+            "differences": facts.get(f"{prefix}difference_issue_count"),
+            "warnings": facts.get(f"{prefix}warning_issue_count"),
         }
         details = {
             "conclusion_state": state,
@@ -989,6 +1016,328 @@ class SudoChinaComplianceEngine(models.AbstractModel):
 
     def _provide_cn_cit_reconciliation_detail(self, assessment, _definition):
         return self._provide_cn_cit_reconciliation_value(
+            assessment, lambda detail: detail
+        )
+
+    def _cn_iit_reconciliation_snapshot(self, assessment):
+        run, payload = self._current_reconciliation_run(
+            assessment,
+            "sudo.cn.iit.period.reconciliation.run",
+            _("个人所得税工资账表款勾稽"),
+            (
+                "accounting_scope_snapshot_checksum",
+                "accounting_snapshot_checksum",
+                "payroll_snapshot_checksum",
+                "filing_snapshot_checksum",
+                "payment_snapshot_checksum",
+            ),
+            "single_exact_period_current_success_snapshot",
+        )
+        if not run:
+            return payload, None
+
+        snapshots = (
+            (
+                "accounting_scope_snapshot_json",
+                "accounting_scope_snapshot_checksum",
+                "sdoo.cn.iit-accounting-scope.v1",
+            ),
+            (
+                "accounting_snapshot_json",
+                "accounting_snapshot_checksum",
+                "sdoo.cn.iit-accounting-ledger.v1",
+            ),
+            (
+                "payroll_snapshot_json",
+                "payroll_snapshot_checksum",
+                "sdoo.cn.payroll-summary-source.v1",
+            ),
+            (
+                "filing_snapshot_json",
+                "filing_snapshot_checksum",
+                "sdoo.cn.iit-withholding-source.v1",
+            ),
+            (
+                "payment_snapshot_json",
+                "payment_snapshot_checksum",
+                "sdoo.cn.iit-payment-source.v1",
+            ),
+        )
+        invalid_snapshots = []
+        for json_field, checksum_field, schema in snapshots:
+            snapshot = run[json_field]
+            if (
+                not isinstance(snapshot, dict)
+                or snapshot.get("schema") != schema
+                or _json_checksum(snapshot) != run[checksum_field]
+            ):
+                invalid_snapshots.append(json_field)
+        if invalid_snapshots:
+            raise UserError(
+                _(
+                    "个人所得税工资账表款勾稽快照完整性异常：%(fields)s。",
+                    fields=", ".join(invalid_snapshots),
+                )
+            )
+        if (
+            not run.result_checksum
+            or run._current_result_checksum() != run.result_checksum
+        ):
+            raise UserError(_("个人所得税工资账表款勾稽结果完整性异常。"))
+
+        issues = run.issue_ids.sudo()
+        blocking_count = len(
+            issues.filtered(lambda issue: issue.severity == "blocking")
+        )
+        difference_count = len(
+            issues.filtered(lambda issue: issue.issue_kind == "difference")
+        )
+        warning_count = len(
+            issues.filtered(
+                lambda issue: issue.severity == "review"
+                and issue.issue_kind != "difference"
+            )
+        )
+        expected_conclusion = (
+            "insufficient_data"
+            if blocking_count
+            else "differences"
+            if difference_count
+            else "aligned"
+        )
+        expected = {
+            "issue_count": len(issues),
+            "blocking_issue_count": blocking_count,
+            "difference_issue_count": difference_count,
+            "warning_issue_count": warning_count,
+            "conclusion_state": expected_conclusion,
+            "payment_record_count": len(run.payment_record_ids),
+        }
+        inconsistent = [
+            field_name
+            for field_name, expected_value in expected.items()
+            if run[field_name] != expected_value
+        ]
+        inconsistent.extend(
+            field_name
+            for field_name in (
+                "accounting_scope_state",
+                "accounting_source_state",
+                "payroll_source_state",
+                "filing_source_state",
+                "payment_source_state",
+            )
+            if run[field_name] == "not_evaluated"
+        )
+        for state_field, count_field in (
+            ("payroll_source_state", "payroll_record_count"),
+            ("filing_source_state", "filing_record_count"),
+            ("payment_source_state", "payment_record_count"),
+        ):
+            if run[count_field] < 0:
+                inconsistent.append(count_field)
+            if run[state_field] == "available" and run[count_field] < 1:
+                inconsistent.append(count_field)
+            if run[state_field] == "no_data" and run[count_field] != 0:
+                inconsistent.append(count_field)
+        if inconsistent:
+            raise UserError(
+                _(
+                    "个人所得税工资账表款勾稽当前结果计数或状态不一致：%(fields)s。",
+                    fields=", ".join(sorted(set(inconsistent))),
+                )
+            )
+
+        amount_fields = (
+            "ledger_payroll_expense_amount",
+            "ledger_employee_payable_accrual_amount",
+            "ledger_employee_payable_settlement_amount",
+            "ledger_iit_accrual_amount",
+            "ledger_iit_settlement_amount",
+            "payroll_gross_income_amount",
+            "payroll_withheld_iit_amount",
+            "filing_income_amount",
+            "filing_tax_calculated_amount",
+            "filing_payable_refundable_amount",
+            "filing_payable_amount",
+            "filing_refundable_amount",
+            "paid_principal_amount",
+            "reversed_principal_amount",
+            "effective_paid_principal_amount",
+            "refunded_principal_amount",
+            "interest_amount",
+            "penalty_amount",
+        )
+        provided_fields = {
+            field_name.removeprefix("has_"): field_name
+            for field_name in (
+                "has_ledger_payroll_expense_amount",
+                "has_ledger_employee_payable_accrual_amount",
+                "has_ledger_employee_payable_settlement_amount",
+                "has_ledger_iit_accrual_amount",
+                "has_ledger_iit_settlement_amount",
+                "has_payroll_gross_income_amount",
+                "has_payroll_withheld_iit_amount",
+                "has_filing_income_amount",
+                "has_filing_tax_calculated_amount",
+                "has_filing_payable_refundable_amount",
+                "has_filing_payable_amount",
+                "has_filing_refundable_amount",
+                "has_payment_amount",
+                "has_refund_amount",
+            )
+        }
+        payment_fields = {
+            "paid_principal_amount",
+            "reversed_principal_amount",
+            "effective_paid_principal_amount",
+            "interest_amount",
+            "penalty_amount",
+        }
+        for field_name in payment_fields:
+            provided_fields[field_name] = "has_payment_amount"
+        provided_fields["refunded_principal_amount"] = "has_refund_amount"
+        amounts = {
+            field_name: (
+                self._amount_snapshot(run.currency_id, run[field_name])
+                if run[provided_fields[field_name]]
+                else None
+            )
+            for field_name in amount_fields
+        }
+        difference_fields = (
+            "ledger_payroll_difference",
+            "employee_payable_payroll_difference",
+            "filing_payroll_income_difference",
+            "filing_payroll_iit_difference",
+            "ledger_payroll_iit_difference",
+            "ledger_payment_difference",
+            "payable_payment_difference",
+            "refundable_refund_difference",
+        )
+        detail = {
+            "schema": "sdoo.cn.reconciliation.iit-period.fact.v1",
+            "run_id": run.id,
+            "engine_version": run.engine_version,
+            "period_start": fields.Date.to_string(run.period_start),
+            "period_end": fields.Date.to_string(run.period_end),
+            "iit_tax_type_code": run.iit_tax_type_code,
+            "conclusion_state": run.conclusion_state,
+            "source_states": {
+                "accounting_scope": run.accounting_scope_state,
+                "accounting": run.accounting_source_state,
+                "payroll": run.payroll_source_state,
+                "filing": run.filing_source_state,
+                "payment": run.payment_source_state,
+            },
+            "counts": {
+                "accounting_scope_lines": len(
+                    run.accounting_scope_snapshot_json.get("lines", [])
+                ),
+                "posted_accounting_lines": run.posted_accounting_line_count,
+                "draft_accounting_lines": run.draft_accounting_line_count,
+                "payroll_records": run.payroll_record_count,
+                "filing_records": run.filing_record_count,
+                "payment_records": run.payment_record_count,
+                "payroll_persons": (
+                    run.payroll_person_count
+                    if run.has_payroll_person_count
+                    else None
+                ),
+                "filing_persons": (
+                    run.filing_person_count
+                    if run.has_filing_person_count
+                    else None
+                ),
+                "issues": run.issue_count,
+                "blocking": run.blocking_issue_count,
+                "differences": run.difference_issue_count,
+                "warnings": run.warning_issue_count,
+            },
+            "amounts": amounts,
+            "differences": {
+                field_name: (
+                    self._amount_snapshot(run.currency_id, run[field_name])
+                    if run[f"has_{field_name}"]
+                    else None
+                )
+                for field_name in difference_fields
+            },
+            "issues": [
+                {
+                    "id": issue.id,
+                    "code": issue.code,
+                    "severity": issue.severity,
+                    "kind": issue.issue_kind,
+                    "source_area": issue.source_area,
+                    "affected_record_count": issue.affected_record_count,
+                    "difference": (
+                        self._amount_snapshot(
+                            run.currency_id, issue.difference_amount
+                        )
+                        if issue.has_difference
+                        else None
+                    ),
+                    "count_comparison": (
+                        {
+                            "left": issue.left_count,
+                            "right": issue.right_count,
+                            "difference": issue.count_difference,
+                        }
+                        if issue.has_count_comparison
+                        else None
+                    ),
+                }
+                for issue in issues.sorted(
+                    lambda issue: (issue.sequence, issue.code, issue.id)
+                )
+            ],
+            "checksums": {
+                "accounting_scope": run.accounting_scope_snapshot_checksum,
+                "accounting": run.accounting_snapshot_checksum,
+                "payroll": run.payroll_snapshot_checksum,
+                "filing": run.filing_snapshot_checksum,
+                "payment": run.payment_snapshot_checksum,
+                "result": run.result_checksum,
+            },
+        }
+        return payload, detail
+
+    def _provide_cn_iit_reconciliation_value(self, assessment, value_getter):
+        payload, detail = self._cn_iit_reconciliation_snapshot(assessment)
+        payload["value"] = value_getter(detail) if detail else None
+        return payload
+
+    def _provide_cn_iit_reconciliation_conclusion_state(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_iit_reconciliation_value(
+            assessment, lambda detail: detail["conclusion_state"]
+        )
+
+    def _provide_cn_iit_reconciliation_blocking_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_iit_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["blocking"]
+        )
+
+    def _provide_cn_iit_reconciliation_difference_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_iit_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["differences"]
+        )
+
+    def _provide_cn_iit_reconciliation_warning_count(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_iit_reconciliation_value(
+            assessment, lambda detail: detail["counts"]["warnings"]
+        )
+
+    def _provide_cn_iit_reconciliation_detail(self, assessment, _definition):
+        return self._provide_cn_iit_reconciliation_value(
             assessment, lambda detail: detail
         )
 

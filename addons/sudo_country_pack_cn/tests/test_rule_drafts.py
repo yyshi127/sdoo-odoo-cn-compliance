@@ -40,6 +40,14 @@ class TestChinaRuleDrafts(TransactionCase):
                     "sudo_country_pack_cn."
                     "rule_version_cn_cit_reconciliation_control_001_draft"
                 ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "rule_version_cn_iit_reconciliation_ready_001_draft"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "rule_version_cn_iit_reconciliation_control_001_draft"
+                ).id,
             ]
         )
         cls.sources = cls.env["sudo.compliance.authority.source"].browse(
@@ -78,6 +86,17 @@ class TestChinaRuleDrafts(TransactionCase):
                     "sudo_country_pack_cn."
                     "source_cn_cit_regulation_2024_candidate"
                 ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn.source_cn_iit_law_2018_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_iit_regulation_2018_candidate"
+                ).id,
+                cls.env.ref(
+                    "sudo_country_pack_cn."
+                    "source_cn_iit_withholding_measures_2018_candidate"
+                ).id,
             ]
         )
 
@@ -114,6 +133,8 @@ class TestChinaRuleDrafts(TransactionCase):
             "CN-DATA-VAT-RECON-001": "data_readiness",
             "CN-DATA-CIT-RECON-001": "data_readiness",
             "CN-CIT-RECON-CTRL-001": "internal_control",
+            "CN-DATA-IIT-RECON-001": "data_readiness",
+            "CN-IIT-RECON-CTRL-001": "internal_control",
         }
         actual = {
             version.rule_id.code: version.cn_rule_nature
@@ -243,6 +264,18 @@ class TestChinaRuleDrafts(TransactionCase):
             "source_cn_cit_regulation_2024_candidate": (
                 "https://xzfg.moj.gov.cn/law/download?LawID=1741&type=pdf"
             ),
+            "source_cn_iit_law_2018_candidate": (
+                "https://fgk.chinatax.gov.cn/zcfgk/c100009/"
+                "c5193028/content.html"
+            ),
+            "source_cn_iit_regulation_2018_candidate": (
+                "https://www.chinatax.gov.cn/chinatax/n810219/n810744/"
+                "n3752930/n3752974/c3963364/content.html"
+            ),
+            "source_cn_iit_withholding_measures_2018_candidate": (
+                "https://www.chinatax.gov.cn/chinatax/n810341/n810765/"
+                "n3359382/201812/c4182700/content.html"
+            ),
         }
         self.assertEqual(set(self.sources.mapped("status")), {"draft"})
         self.assertEqual(set(self.sources.mapped("snapshot_kind")), {"other"})
@@ -272,7 +305,7 @@ class TestChinaRuleDrafts(TransactionCase):
 
     def test_all_packaged_draft_cases_evaluate_as_expected(self):
         cases = self.versions.mapped("test_case_ids")
-        self.assertEqual(len(cases), 21)
+        self.assertEqual(len(cases), 28)
         for case in cases:
             self.assertTrue(case._run_case(), case.display_name)
             self.assertEqual(case.last_result, case.expected_result)
@@ -336,6 +369,71 @@ class TestChinaRuleDrafts(TransactionCase):
                     "cn.reconciliation.cit.difference_issue_count": differences,
                     "cn.reconciliation.cit.warning_issue_count": warnings,
                     "cn.reconciliation.cit.detail": {},
+                },
+                {},
+            )
+            self.assertEqual(output["result"], result)
+            self.assertEqual(output["details"]["reason"], reason)
+            self.assertTrue(output["requires_human_review"])
+
+    def test_iit_control_handler_preserves_tri_state_reason_codes(self):
+        version = self.env.ref(
+            "sudo_country_pack_cn."
+            "rule_version_cn_iit_reconciliation_control_001_draft"
+        )
+        scenarios = (
+            ("aligned", 0, 0, 0, "pass", "controlled_amounts_aligned"),
+            (
+                "differences",
+                0,
+                2,
+                0,
+                "fail",
+                "differences_require_review",
+            ),
+            (
+                "insufficient_data",
+                2,
+                0,
+                0,
+                "unknown",
+                "data_not_comparable",
+            ),
+            (
+                "aligned",
+                0,
+                0,
+                1,
+                "unknown",
+                "warnings_require_review",
+            ),
+            (
+                "aligned",
+                0,
+                1,
+                0,
+                "unknown",
+                "inconsistent_reconciliation_state",
+            ),
+            (
+                "aligned",
+                -1,
+                0,
+                0,
+                "unknown",
+                "invalid_fact_payload",
+            ),
+        )
+        engine = self.env["sudo.compliance.engine"]
+        for state, blocking, differences, warnings, result, reason in scenarios:
+            output = engine.evaluate_rule_payload(
+                version,
+                {
+                    "cn.reconciliation.iit.conclusion_state": state,
+                    "cn.reconciliation.iit.blocking_issue_count": blocking,
+                    "cn.reconciliation.iit.difference_issue_count": differences,
+                    "cn.reconciliation.iit.warning_issue_count": warnings,
+                    "cn.reconciliation.iit.detail": {},
                 },
                 {},
             )

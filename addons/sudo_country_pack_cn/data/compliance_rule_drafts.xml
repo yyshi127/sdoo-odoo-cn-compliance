@@ -581,4 +581,177 @@
         <field name="expected_result">unknown</field>
         <field name="source_case_note">金额一致不能覆盖其他复核提示。</field>
     </record>
+
+    <record id="rule_cn_iit_reconciliation_ready_001" model="sudo.compliance.rule">
+        <field name="name">个人所得税工资账表款勾稽数据准备度</field>
+        <field name="code">CN-DATA-IIT-RECON-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.PAYROLL_IIT</field>
+        <field name="cn_rule_nature">data_readiness</field>
+        <field name="description">检查同一主体和完全相同期间的已核验工资汇总、账务口径、个人所得税扣缴申报及缴退税来源是否具备受控比较条件。存在差异时仍可通过准备度检查，但差异必须由独立内控规则和专业人员继续复核。</field>
+    </record>
+    <record id="rule_version_cn_iit_reconciliation_ready_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_iit_reconciliation_ready_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">declarative</field>
+        <field name="condition_json" eval="{
+            'all': [
+                {'fact': 'cn.reconciliation.iit.conclusion_state', 'operator': 'in', 'value': ['aligned', 'differences']},
+                {'fact': 'cn.reconciliation.iit.blocking_issue_count', 'operator': 'eq', 'value': 0}
+            ]
+        }"/>
+        <field name="match_result">pass</field>
+        <field name="no_match_result">fail</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_iit_law_2018_candidate'),
+            ref('source_cn_iit_regulation_2018_candidate'),
+            ref('source_cn_iit_withholding_measures_2018_candidate')
+        ])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_iit_reconciliation_conclusion_state_v1'),
+            ref('fact_cn_iit_reconciliation_blocking_count_v1'),
+            ref('fact_cn_iit_reconciliation_difference_count_v1'),
+            ref('fact_cn_iit_reconciliation_warning_count_v1'),
+            ref('fact_cn_iit_reconciliation_detail_v1')
+        ])]"/>
+        <field name="legal_basis_summary">内部个人所得税勾稽数据准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；通过仅表示当前受控工资、账务、扣缴申报和缴退税数据可以比较，不表示人员身份、所得项目、扣除、税额计算、申报或缴税正确。</field>
+        <field name="failure_message">当前期间个人所得税勾稽存在来源缺失、口径未核验、结构版本不一致或审计完整性阻断，数据尚不可用于正式差异判断。</field>
+        <field name="pass_message">当前期间工资汇总、账务、扣缴申报和缴退税来源已具备受控比较条件；金额、人数差异及复核提示仍须按后续内控规则处理。</field>
+        <field name="unknown_message">没有可用的唯一当前成功个税勾稽结果，或结果正在重算、审计指纹异常，不能形成通过判断。</field>
+        <field name="recommended_actions">打开事实快照关联的个税勾稽批次，按问题代码补齐工资汇总、账务口径、扣缴申报、缴款或退库来源并重新运行；不得把缺失值按零处理。</field>
+        <field name="evidence_required">经核验的工资汇总、个税账务口径和账簿快照、扣缴申报回执、缴退税回执、来源校验和、数据准备复核记录及必要的访问控制记录。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_ready_001_aligned" model="sudo.compliance.rule.test.case">
+        <field name="name">个税勾稽来源完整且金额人数一致</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'aligned',
+            'cn.reconciliation.iit.blocking_issue_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部数据准备度正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_ready_001_differences" model="sudo.compliance.rule.test.case">
+        <field name="name">来源完整但存在个税勾稽差异仍可进入专业复核</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'differences',
+            'cn.reconciliation.iit.blocking_issue_count': 0
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">证明数据准备度不等于金额和人数无差异，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_ready_001_blocked" model="sudo.compliance.rule.test.case">
+        <field name="name">个税勾稽来源不完整</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_ready_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'insufficient_data',
+            'cn.reconciliation.iit.blocking_issue_count': 2
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">内部数据准备度反例，不是官方法律案例。</field>
+    </record>
+
+    <record id="rule_cn_iit_reconciliation_control_001" model="sudo.compliance.rule">
+        <field name="name">个人所得税工资账表款差异复核控制</field>
+        <field name="code">CN-IIT-RECON-CTRL-001</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="domain_key">CN.PAYROLL_IIT</field>
+        <field name="cn_rule_nature">internal_control</field>
+        <field name="description">在数据可比较时识别工资汇总、账务计提与结算、扣缴申报人数与金额、应补税与缴款以及应退税与退库之间的差异；数据阻断或仍有复核提示时返回待确认，不自动形成少缴税、违法、人员身份、扣除或税额计算结论。</field>
+    </record>
+    <record id="rule_version_cn_iit_reconciliation_control_001_draft" model="sudo.compliance.rule.version">
+        <field name="rule_id" ref="rule_cn_iit_reconciliation_control_001"/>
+        <field name="version">DRAFT-0.1</field>
+        <field name="effective_from">2026-01-01</field>
+        <field name="next_review_date">2026-10-15</field>
+        <field name="evaluator_type">handler</field>
+        <field name="handler_key">cn.iit.reconciliation.review.v1</field>
+        <field name="handler_version">1</field>
+        <field name="risk_level">high</field>
+        <field name="stale_policy">block_all</field>
+        <field name="authority_source_ids" eval="[(6, 0, [
+            ref('source_cn_iit_law_2018_candidate'),
+            ref('source_cn_iit_regulation_2018_candidate'),
+            ref('source_cn_iit_withholding_measures_2018_candidate')
+        ])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_iit_reconciliation_conclusion_state_v1'),
+            ref('fact_cn_iit_reconciliation_blocking_count_v1'),
+            ref('fact_cn_iit_reconciliation_difference_count_v1'),
+            ref('fact_cn_iit_reconciliation_warning_count_v1'),
+            ref('fact_cn_iit_reconciliation_detail_v1')
+        ])]"/>
+        <field name="legal_basis_summary">内部个人所得税差异复核控制草稿。候选官方来源仅提供纳税义务、扣缴义务、扣缴申报和缴纳的一般背景，尚未形成受控原文快照、独立复核和中国财税专业签核；系统差异不是税务认定或税款计算结果。</field>
+        <field name="failure_message">受控工资、账务、个人所得税扣缴申报或缴退税来源存在一个或多个金额或人数差异项目，需要逐项专业复核。</field>
+        <field name="pass_message">当前受控范围内未发现金额、人数差异或复核提示；该结果不证明人员身份、所得项目、扣除、税率、优惠、申报或缴税义务正确。</field>
+        <field name="unknown_message">数据不可比较、状态与计数不一致或仍有复核提示，必须先由人工确认，不能作出通过判断。</field>
+        <field name="recommended_actions">在个税勾稽批次中按稳定问题代码核对工资汇总、费用和应付职工薪酬计提、应交个人所得税、扣缴申报人数与金额、应补缴款、实际缴款、应退税和退库；记录每项差异原因、税务影响判断、责任人及证据后重新扫描。</field>
+        <field name="evidence_required">个税勾稽批次及校验和、工资汇总审批依据、账务口径和账簿快照、扣缴申报与缴退税回执、人数及金额调节表、专业复核意见、整改证据和验证复扫结果。</field>
+        <field name="requires_human_review">True</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_control_001_aligned" model="sudo.compliance.rule.test.case">
+        <field name="name">个税勾稽金额人数一致且没有复核提示</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_control_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'aligned',
+            'cn.reconciliation.iit.blocking_issue_count': 0,
+            'cn.reconciliation.iit.difference_issue_count': 0,
+            'cn.reconciliation.iit.warning_issue_count': 0,
+            'cn.reconciliation.iit.detail': {}
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">pass</field>
+        <field name="source_case_note">内部控制正例，不是官方法律案例。</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_control_001_differences" model="sudo.compliance.rule.test.case">
+        <field name="name">个税数据可比较但存在金额或人数差异</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_control_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'differences',
+            'cn.reconciliation.iit.blocking_issue_count': 0,
+            'cn.reconciliation.iit.difference_issue_count': 2,
+            'cn.reconciliation.iit.warning_issue_count': 0,
+            'cn.reconciliation.iit.detail': {}
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">fail</field>
+        <field name="source_case_note">差异待专业复核，不是违法或少缴税结论。</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_control_001_insufficient" model="sudo.compliance.rule.test.case">
+        <field name="name">个税来源阻断时不能评价差异</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_control_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'insufficient_data',
+            'cn.reconciliation.iit.blocking_issue_count': 2,
+            'cn.reconciliation.iit.difference_issue_count': 0,
+            'cn.reconciliation.iit.warning_issue_count': 0,
+            'cn.reconciliation.iit.detail': {}
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">unknown</field>
+        <field name="source_case_note">数据不可比较时不得制造差异结论。</field>
+    </record>
+    <record id="test_cn_iit_reconciliation_control_001_warnings" model="sudo.compliance.rule.test.case">
+        <field name="name">个税金额人数一致但仍有复核提示</field>
+        <field name="rule_version_id" ref="rule_version_cn_iit_reconciliation_control_001_draft"/>
+        <field name="facts_json" eval="{
+            'cn.reconciliation.iit.conclusion_state': 'aligned',
+            'cn.reconciliation.iit.blocking_issue_count': 0,
+            'cn.reconciliation.iit.difference_issue_count': 0,
+            'cn.reconciliation.iit.warning_issue_count': 1,
+            'cn.reconciliation.iit.detail': {}
+        }"/>
+        <field name="evaluation_date">2026-07-16</field>
+        <field name="expected_result">unknown</field>
+        <field name="source_case_note">金额人数一致不能覆盖其他复核提示。</field>
+    </record>
 </odoo>
