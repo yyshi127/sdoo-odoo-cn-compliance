@@ -96,3 +96,29 @@ class TestChinaRiskCenterDisplay(TransactionCase):
                 "china_risk_action_guidance"
             ]
         )
+
+    def test_remediation_task_exposes_rescan_stage_and_navigation(self):
+        finding = self._finding()
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+
+        task._transition_write({"state": "pending_review"})
+        self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")
+
+        task._transition_write(
+            {
+                "verification_state": "pending_rescan",
+                "verification_assessment_id": finding.assessment_id.id,
+            }
+        )
+        self.assertEqual(task.cn_remediation_rescan_stage, "pending_rescan")
+
+        action = task.action_cn_open_remediation_verification_assessment()
+        self.assertEqual(action["res_model"], "sudo.compliance.assessment")
+        self.assertEqual(action["res_id"], finding.assessment_id.id)
+
+    def test_country_pack_advertises_remediation_rescan_visibility(self):
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_remediation_rescan_visibility"
+            ]
+        )

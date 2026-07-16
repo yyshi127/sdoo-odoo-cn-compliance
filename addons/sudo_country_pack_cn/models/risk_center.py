@@ -109,6 +109,22 @@ class SudoChinaRiskCenterTask(models.Model):
         compute="_compute_cn_remediation_display",
     )
 
+    cn_remediation_rescan_stage = fields.Selection(
+        [
+            ("in_progress", "整改中"),
+            ("overdue", "已逾期"),
+            ("blocked", "受阻"),
+            ("ready_for_rescan", "可发起复扫"),
+            ("pending_rescan", "复扫中"),
+            ("failed", "复扫未通过"),
+            ("evidence_gap", "证据待核验"),
+            ("verified", "已闭环"),
+            ("cancelled", "已取消"),
+        ],
+        string="复扫闭环",
+        compute="_compute_cn_remediation_display",
+    )
+
     def _compute_cn_remediation_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         for task in self:
@@ -128,7 +144,30 @@ class SudoChinaRiskCenterTask(models.Model):
                 evidence_count,
                 verified_evidence_count,
             )
+            task.cn_remediation_rescan_stage = (
+                task._cn_remediation_rescan_stage()
+            )
             task.cn_remediation_next_action = task._cn_remediation_next_action()
+
+    def _cn_remediation_rescan_stage(self):
+        self.ensure_one()
+        if self.state == "cancelled":
+            return "cancelled"
+        if self.is_overdue and self.state not in ("done", "cancelled"):
+            return "overdue"
+        if self.state == "blocked":
+            return "blocked"
+        if self.verification_state == "failed":
+            return "failed"
+        if self.verification_state == "pending_rescan":
+            return "pending_rescan"
+        if self.state == "pending_review":
+            return "ready_for_rescan"
+        if self.state == "done" and self.verification_state == "verified":
+            return "verified"
+        if self.state == "done" and self.cn_remediation_evidence_state != "verified":
+            return "evidence_gap"
+        return "in_progress"
 
     def _cn_remediation_next_action(self):
         self.ensure_one()
@@ -151,6 +190,19 @@ class SudoChinaRiskCenterTask(models.Model):
         if self.state == "done":
             return _("整改闭环完成，保留证据和复扫记录。")
         return _("按风险要求推进整改。")
+
+    def action_cn_open_remediation_verification_assessment(self):
+        self.ensure_one()
+        if not self.verification_assessment_id:
+            return False
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("整改验证复扫"),
+            "res_model": "sudo.compliance.assessment",
+            "view_mode": "form",
+            "res_id": self.verification_assessment_id.id,
+            "target": "current",
+        }
 
 
 def _period_label(period_start, period_end):

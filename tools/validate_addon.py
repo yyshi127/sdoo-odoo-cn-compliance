@@ -2878,6 +2878,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China data readiness center capability is missing from {label}")
         if "china_assessment_data_basis" not in content:
             fail(f"China assessment data basis capability is missing from {label}")
+        if "china_remediation_rescan_visibility" not in content:
+            fail(f"China remediation rescan capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3043,6 +3045,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",
+        "cn_remediation_rescan_stage",
+        "action_cn_open_remediation_verification_assessment",
         "sudo.compliance.evidence",
     ):
         if required not in risk_model_content:
@@ -3228,10 +3232,15 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for required in (
         "test_finding_exposes_period_next_action_and_evidence_status",
         "test_country_pack_advertises_risk_action_guidance",
+        "test_remediation_task_exposes_rescan_stage_and_navigation",
+        "test_country_pack_advertises_remediation_rescan_visibility",
         "china_risk_action_guidance",
+        "china_remediation_rescan_visibility",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
+        "cn_remediation_rescan_stage",
+        "action_cn_open_remediation_verification_assessment",
     ):
         if required not in risk_test_content:
             fail(f"China risk center display runtime coverage is missing {required}")
@@ -3331,6 +3340,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_remediation_period_label",
         "cn_remediation_next_action",
         "cn_remediation_evidence_state",
+        "cn_remediation_rescan_stage",
+        "action_queue_verification_scan",
+        "action_cn_open_remediation_verification_assessment",
+        "verification_assessment_id",
     ):
         if required not in risk_view_content:
             fail(f"China risk center UI is missing {required}")

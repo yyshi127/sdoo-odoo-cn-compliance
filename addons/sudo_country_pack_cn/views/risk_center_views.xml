@@ -258,12 +258,24 @@
                 <field name="verification_state" widget="badge"
                        decoration-success="verification_state in ('verified', 'not_required')"
                        decoration-warning="verification_state in ('pending_rescan', 'failed')"/>
+                <field name="cn_remediation_rescan_stage" widget="badge" optional="show"
+                       decoration-success="cn_remediation_rescan_stage == 'verified'"
+                       decoration-info="cn_remediation_rescan_stage in ('ready_for_rescan', 'pending_rescan')"
+                       decoration-warning="cn_remediation_rescan_stage in ('in_progress', 'overdue', 'evidence_gap')"
+                       decoration-danger="cn_remediation_rescan_stage in ('blocked', 'failed')"/>
                 <field name="cn_remediation_evidence_state" widget="badge" optional="show"
                        decoration-success="cn_remediation_evidence_state == 'verified'"
                        decoration-warning="cn_remediation_evidence_state == 'partial'"/>
+                <button name="action_queue_verification_scan" type="object"
+                        string="发起复扫" class="btn-link"
+                        invisible="cn_remediation_rescan_stage != 'ready_for_rescan'"/>
+                <button name="action_cn_open_remediation_verification_assessment" type="object"
+                        string="查看复扫" class="btn-link"
+                        invisible="not verification_assessment_id"/>
                 <field name="rule_id" optional="show"/>
                 <field name="finding_id" optional="hide"/>
                 <field name="assessment_id" optional="hide"/>
+                <field name="verification_assessment_id" optional="hide"/>
                 <field name="is_overdue" invisible="1"/>
             </list>
         </field>
@@ -283,6 +295,8 @@
                 <field name="due_date"/>
                 <field name="state"/>
                 <field name="verification_state"/>
+                <field name="verification_assessment_id"/>
+                <field name="cn_remediation_rescan_stage"/>
                 <field name="cn_remediation_period_label"/>
                 <field name="cn_remediation_next_action"/>
                 <field name="cn_remediation_evidence_state"/>
@@ -342,7 +356,19 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-3">
                                 <field name="state" widget="badge"/>
-                                <field name="verification_state" widget="badge"/>
+                                <field name="cn_remediation_rescan_stage" widget="badge"/>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button name="action_queue_verification_scan" type="object"
+                                        class="btn btn-primary btn-sm"
+                                        invisible="cn_remediation_rescan_stage != 'ready_for_rescan'">
+                                    发起复扫
+                                </button>
+                                <button name="action_cn_open_remediation_verification_assessment" type="object"
+                                        class="btn btn-outline-secondary btn-sm"
+                                        invisible="not verification_assessment_id">
+                                    查看复扫
+                                </button>
                             </div>
                         </div>
                     </t>
