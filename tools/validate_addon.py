@@ -3028,6 +3028,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China archive and evidence badge clarity capability is missing from {label}"
             )
+        if "china_data_readiness_badge_clarity" not in content:
+            fail(
+                f"China data readiness badge clarity capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3715,6 +3719,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_data_readiness_stage",
         "cn_data_readiness_next_action",
         "cn_data_readiness_record_count",
+        "review_control_state",
         "action_view_parse_runs",
         "action_view_tax_data_parse_runs",
         "action_view_normalized_tax_records",
@@ -3722,6 +3727,17 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in data_readiness_view_content:
             fail(f"China data readiness center UI is missing {required}")
+
+    for required in (
+        'decoration-success="cn_data_readiness_stage == \'ready\'"',
+        'decoration-success="state == \'sealed\'"',
+        'decoration-success="integrity_state == \'verified\'"',
+        "decoration-success=\"authenticity_state in ('official_tool_passed', 'not_applicable')\"",
+        'decoration-success="review_control_state == \'independent\'"',
+        'decoration-danger="review_control_state == \'exception\'"',
+    ):
+        if required not in data_readiness_view_content:
+            fail(f"China data readiness badge clarity UI is missing {required}")
 
     if "from . import test_data_readiness_center" not in tests_init:
         fail("China data readiness center runtime tests must be imported")
@@ -3733,6 +3749,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_workbench_opens_profile_scoped_data_readiness_center",
         "test_dataset_exposes_readiness_next_action",
         "china_data_readiness_center",
+        "china_data_readiness_badge_clarity",
         "action_cn_open_workbench_data_readiness",
         "cn_data_readiness_stage",
         "cn_data_readiness_next_action",

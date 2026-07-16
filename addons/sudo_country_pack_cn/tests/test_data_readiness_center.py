@@ -35,6 +35,11 @@ class TestChinaDataReadinessCenter(TransactionCase):
                 "china_data_readiness_center"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_data_readiness_badge_clarity"
+            ]
+        )
 
     def test_workbench_opens_profile_scoped_data_readiness_center(self):
         action = self.profile.action_cn_open_workbench_data_readiness()

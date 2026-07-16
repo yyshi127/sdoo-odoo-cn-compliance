@@ -56,15 +56,22 @@
                        decoration-muted="cn_data_readiness_stage == 'superseded'"/>
                 <field name="declared_record_count"/>
                 <field name="cn_data_readiness_record_count"/>
-                <field name="state" widget="badge"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sealed'"
+                       decoration-warning="state == 'draft'"
+                       decoration-muted="state == 'superseded'"/>
                 <field name="integrity_state" widget="badge"
                        decoration-success="integrity_state == 'verified'"
                        decoration-warning="integrity_state == 'unsealed'"
                        decoration-danger="integrity_state == 'checksum_mismatch'"/>
                 <field name="authenticity_state" widget="badge"
-                       decoration-success="authenticity_state == 'official_tool_passed'"
+                       decoration-success="authenticity_state in ('official_tool_passed', 'not_applicable')"
                        decoration-warning="authenticity_state in ('not_checked', 'unavailable')"
                        decoration-danger="authenticity_state == 'official_tool_failed'"/>
+                <field name="review_control_state" widget="badge"
+                       decoration-success="review_control_state == 'independent'"
+                       decoration-warning="review_control_state == 'pending'"
+                       decoration-danger="review_control_state == 'exception'"/>
                 <field name="parse_run_count" optional="show"/>
                 <field name="tax_data_parse_run_count" optional="show"/>
                 <field name="cn_data_readiness_next_action" optional="show"/>
@@ -101,6 +108,7 @@
                 <field name="state"/>
                 <field name="integrity_state"/>
                 <field name="authenticity_state"/>
+                <field name="review_control_state"/>
                 <field name="parse_run_count"/>
                 <field name="tax_data_parse_run_count"/>
                 <templates>
@@ -115,7 +123,11 @@
                                         <field name="cn_data_readiness_period_label"/>
                                     </div>
                                 </div>
-                                <field name="cn_data_readiness_stage" widget="badge"/>
+                                <field name="cn_data_readiness_stage" widget="badge"
+                                       decoration-success="cn_data_readiness_stage == 'ready'"
+                                       decoration-warning="cn_data_readiness_stage in ('draft', 'sealed', 'warning')"
+                                       decoration-danger="cn_data_readiness_stage == 'blocked'"
+                                       decoration-muted="cn_data_readiness_stage == 'superseded'"/>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
@@ -137,19 +149,37 @@
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">封存</div>
-                                        <field name="state" widget="badge"/>
+                                        <field name="state" widget="badge"
+                                               decoration-success="state == 'sealed'"
+                                               decoration-warning="state == 'draft'"
+                                               decoration-muted="state == 'superseded'"/>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">完整性</div>
-                                        <field name="integrity_state" widget="badge"/>
+                                        <field name="integrity_state" widget="badge"
+                                               decoration-success="integrity_state == 'verified'"
+                                               decoration-warning="integrity_state == 'unsealed'"
+                                               decoration-danger="integrity_state == 'checksum_mismatch'"/>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">真实性</div>
-                                        <field name="authenticity_state" widget="badge"/>
+                                        <field name="authenticity_state" widget="badge"
+                                               decoration-success="authenticity_state in ('official_tool_passed', 'not_applicable')"
+                                               decoration-warning="authenticity_state in ('not_checked', 'unavailable')"
+                                               decoration-danger="authenticity_state == 'official_tool_failed'"/>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">复核控制</div>
+                                        <field name="review_control_state" widget="badge"
+                                               decoration-success="review_control_state == 'independent'"
+                                               decoration-warning="review_control_state == 'pending'"
+                                               decoration-danger="review_control_state == 'exception'"/>
                                     </div>
                                 </div>
                             </div>
