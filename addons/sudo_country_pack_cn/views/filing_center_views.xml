@@ -14,8 +14,6 @@
                 <filter name="cn_controlled" string="中国受控档案"
                         domain="['|', '|', ('cn_vat_reconciliation_run_id', '!=', False), ('cn_cit_reconciliation_run_id', '!=', False), ('cn_iit_reconciliation_run_id', '!=', False)]"/>
                 <separator/>
-                <filter name="group_kind" string="按税种"
-                        context="{'group_by': 'cn_filing_center_kind'}"/>
                 <filter name="group_state" string="按申报状态"
                         context="{'group_by': 'state'}"/>
                 <filter name="group_payment_state" string="按缴退税状态"
@@ -72,7 +70,7 @@
         <field name="model">sudo.compliance.filing</field>
         <field name="arch" type="xml">
             <kanban string="中国申报缴款档案" class="o_kanban_dashboard"
-                    create="0" quick_create="0" sample="0" default_group_by="cn_filing_center_kind">
+                    create="0" quick_create="0" sample="0">
                 <field name="filing_name"/>
                 <field name="company_id"/>
                 <field name="filing_code"/>

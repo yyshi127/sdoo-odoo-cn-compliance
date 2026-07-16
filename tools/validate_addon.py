@@ -136,6 +136,132 @@ def literal_assignments(tree: ast.Module) -> dict[str, object]:
     return values
 
 
+def _literal_model_names(value: ast.AST) -> set[str]:
+    try:
+        literal = ast.literal_eval(value)
+    except (TypeError, ValueError):
+        return set()
+    if isinstance(literal, str):
+        return {literal}
+    if isinstance(literal, (list, tuple)):
+        return {item for item in literal if isinstance(item, str)}
+    return set()
+
+
+def _field_kwarg(call: ast.Call, name: str) -> ast.AST | None:
+    return next((keyword.value for keyword in call.keywords if keyword.arg == name), None)
+
+
+def _literal_true(value: ast.AST | None) -> bool:
+    if value is None:
+        return False
+    try:
+        return ast.literal_eval(value) is True
+    except (TypeError, ValueError):
+        return False
+
+
+def _model_names_for_class(node: ast.ClassDef) -> set[str]:
+    names: set[str] = set()
+    for item in node.body:
+        if not (
+            isinstance(item, ast.Assign)
+            and len(item.targets) == 1
+            and isinstance(item.targets[0], ast.Name)
+            and item.targets[0].id in {"_name", "_inherit"}
+        ):
+            continue
+        names.update(_literal_model_names(item.value))
+    return names
+
+
+def _nonstored_computed_fields_by_model() -> dict[str, set[str]]:
+    fields_by_model: dict[str, set[str]] = {}
+    for path in sorted((ADDON_ROOT / "models").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            model_names = _model_names_for_class(node)
+            if not model_names:
+                continue
+            for item in node.body:
+                if not (
+                    isinstance(item, ast.Assign)
+                    and len(item.targets) == 1
+                    and isinstance(item.targets[0], ast.Name)
+                    and isinstance(item.value, ast.Call)
+                    and isinstance(item.value.func, ast.Attribute)
+                    and isinstance(item.value.func.value, ast.Name)
+                    and item.value.func.value.id == "fields"
+                ):
+                    continue
+                call = item.value
+                if _field_kwarg(call, "compute") is None:
+                    continue
+                if _literal_true(_field_kwarg(call, "store")):
+                    continue
+                if _field_kwarg(call, "search") is not None:
+                    continue
+                field_name = item.targets[0].id
+                for model_name in model_names:
+                    fields_by_model.setdefault(model_name, set()).add(field_name)
+    return fields_by_model
+
+
+def _search_domain_field_names(domain: str) -> set[str]:
+    return set(re.findall(r"\(['\"]([^'\"]+)['\"]\s*,", domain or ""))
+
+
+def _search_group_by_field_names(context: str) -> set[str]:
+    fields: set[str] = set()
+    for group_by in re.findall(
+        r"['\"]group_by['\"]\s*:\s*['\"]([^'\"]+)['\"]",
+        context or "",
+    ):
+        fields.add(group_by.split(":", 1)[0])
+    return fields
+
+
+def validate_search_views_do_not_filter_nonstored_computed_fields() -> None:
+    computed_fields = _nonstored_computed_fields_by_model()
+    if not computed_fields:
+        return
+    for path in sorted((ADDON_ROOT / "views").glob("*.xml")):
+        root = ElementTree.parse(path).getroot()
+        for record in root.findall(".//record[@model='ir.ui.view']"):
+            fields = record_fields(record)
+            model_name = field_text(fields, "model", record.attrib.get("id", "view"))
+            if not model_name or model_name not in computed_fields:
+                continue
+            blocked = computed_fields[model_name]
+            arch = fields.get("arch")
+            if arch is None:
+                continue
+            for element in arch.findall(".//search//filter"):
+                filter_name = element.attrib.get("name", "<unnamed>")
+                domain_fields = _search_domain_field_names(element.attrib.get("domain", ""))
+                group_fields = _search_group_by_field_names(element.attrib.get("context", ""))
+                used = (domain_fields | group_fields) & blocked
+                if used:
+                    fail(
+                        "search view filters/group-by cannot use non-stored "
+                        f"computed fields {sorted(used)} in {path} "
+                        f"record {record.attrib.get('id')} filter {filter_name}"
+                    )
+            for element in arch.iter():
+                default_group_by = element.attrib.get("default_group_by")
+                if not default_group_by:
+                    continue
+                field_name = default_group_by.split(":", 1)[0]
+                if field_name in blocked:
+                    fail(
+                        "view default_group_by cannot use non-stored computed "
+                        f"field {field_name!r} in {path} "
+                        f"record {record.attrib.get('id')}"
+                    )
+
+
 def validate_text_and_syntax() -> None:
     for path in sorted(REPOSITORY_ROOT.rglob("*")):
         if not path.is_file() or ".git" in path.parts:
@@ -3632,7 +3758,6 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_filing_center_evidence_state",
         "cn_submission_integrity_state",
         "cn_payment_integrity_state",
-        "default_group_by=\"cn_filing_center_kind\"",
         'decoration-success="state in (\'accepted\', \'done\')"',
         'decoration-success="payment_state in (\'paid\', \'not_required\')"',
         'decoration-success="cn_submission_integrity_state == \'verified\'"',
@@ -3641,6 +3766,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in filing_view_content:
             fail(f"China filing center UI is missing {required}")
+    if 'default_group_by="cn_filing_center_kind"' in filing_view_content:
+        fail("China filing center must not default-group by computed filing kind")
 
     if "from . import test_ai_guidance" not in tests_init:
         fail("China controlled AI guidance runtime tests must be imported")
@@ -4046,6 +4173,7 @@ def main() -> int:
     )
     validate_rule_review_candidates(source_ids, version_source_refs)
     validate_upgrade_migration(manifest, source_ids, version_source_refs)
+    validate_search_views_do_not_filter_nonstored_computed_fields()
     validate_taxpayer_classification_security()
     validate_external_dataset_security()
     validate_invoice_normalization_security()
