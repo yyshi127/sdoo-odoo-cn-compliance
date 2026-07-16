@@ -176,6 +176,10 @@ class TestChinaFormalComplianceReport(TransactionCase):
                 "报告覆盖测试公司二零二六年六月期间、已冻结规则版本、"
                 "Odoo 事实快照及报告中列示的证据。"
             ),
+            "limitation_statement": (
+                "测试环境中的中国候选纳税义务仍需逐项确认适用性和官方来源；"
+                "本报告仅按当前受控配置披露限制，不替代真实申报判断。"
+            ),
             "management_response": (
                 "管理层已指定责任人核对高风险事项，并按整改任务期限补充证据后复扫。"
             ),
@@ -212,13 +216,46 @@ class TestChinaFormalComplianceReport(TransactionCase):
         report.invalidate_recordset()
 
         self.assertEqual(report.state, "submitted")
-        self.assertEqual(report.conclusion_state, "action_required")
+        self.assertEqual(report.conclusion_state, "limited_action_required")
         self.assertEqual(report.snapshot_json["schema"], "sdoo.cn.compliance-report.v1")
         self.assertEqual(report.snapshot_json["assessment"]["id"], self.assessment.id)
         self.assertEqual(report.snapshot_json["findings"][0]["checksum"], self.finding.checksum)
+        self.assertEqual(
+            report.snapshot_json["obligation_readiness"]["state"],
+            "attention",
+        )
+        self.assertEqual(
+            report.snapshot_json["obligation_readiness"]["candidate_count"],
+            len(self.profile.obligation_ids),
+        )
         self.assertEqual(report.finding_count, 1)
         self.assertEqual(report.high_count, 1)
         self.assertEqual(len(report.snapshot_checksum), 64)
+
+    def test_pending_obligations_require_report_limitation(self):
+        report = self._report(limitation_statement="")
+
+        with self.assertRaisesRegex(
+            UserError,
+            "Tax obligation applicability is not fully confirmed",
+        ):
+            report.with_user(self.manager).action_submit()
+
+        report.limitation_statement = (
+            "中国候选纳税义务仍处于测试确认阶段，报告结论仅用于受控演示环境。"
+        )
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        self.assertTrue(report.has_material_limitations)
+        self.assertEqual(
+            report.snapshot_json["obligation_readiness"]["pending_review_count"],
+            len(self.profile.obligation_ids),
+        )
+        self.assertIn(
+            "obligation_readiness",
+            report.snapshot_json,
+        )
 
     def test_report_center_exposes_stage_next_action_and_navigation(self):
         report = self._report()
@@ -267,6 +304,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_center_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_obligation_readiness"
             ]
         )
         self.assertTrue(
@@ -401,7 +443,7 @@ class TestChinaFormalComplianceReport(TransactionCase):
         report.invalidate_recordset()
 
         self.assertEqual(report.open_task_count, 1)
-        self.assertEqual(report.conclusion_state, "action_required")
+        self.assertEqual(report.conclusion_state, "limited_action_required")
 
     def test_same_person_approval_requires_recorded_exception(self):
         report = self._report(

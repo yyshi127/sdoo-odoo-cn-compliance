@@ -615,6 +615,45 @@ class SudoChinaComplianceReport(models.Model):
             )
         return rows
 
+    def _obligation_readiness_payload(self):
+        self.ensure_one()
+        profile = self.assessment_id.profile_id
+        obligation_rows = []
+        for obligation in profile.obligation_ids.sorted("code"):
+            obligation_rows.append(
+                {
+                    "id": obligation.id,
+                    "code": obligation.code,
+                    "name": obligation.name,
+                    "domain_key": obligation.domain_key,
+                    "applicability": obligation.applicability,
+                    "authority": obligation.authority,
+                    "authority_source_id": obligation.authority_source_id.id
+                    or None,
+                    "authority_source_name": obligation.authority_source_id.name
+                    or None,
+                    "filing_required": bool(obligation.filing_required),
+                    "filing_frequency": obligation.filing_frequency,
+                    "filing_type": obligation.filing_type or None,
+                    "effective_from": _date_value(obligation.effective_from),
+                }
+            )
+        return {
+            "state": profile.cn_workbench_obligation_state,
+            "next_action": profile.cn_workbench_obligation_next_action,
+            "candidate_count": profile.cn_workbench_obligation_count,
+            "applicable_count": (
+                profile.cn_workbench_applicable_obligation_count
+            ),
+            "pending_review_count": (
+                profile.cn_workbench_pending_obligation_count
+            ),
+            "filing_obligation_count": (
+                profile.cn_workbench_filing_obligation_count
+            ),
+            "obligations": obligation_rows,
+        }
+
     def _snapshot_payload(self):
         self.ensure_one()
         assessment = self.assessment_id
@@ -815,6 +854,7 @@ class SudoChinaComplianceReport(models.Model):
                 "note": assessment.note or None,
             },
             "rules": rules,
+            "obligation_readiness": self._obligation_readiness_payload(),
             "facts": facts,
             "findings": findings,
             "tasks": task_rows,
@@ -863,6 +903,8 @@ class SudoChinaComplianceReport(models.Model):
             or assessment["error_count"]
             or tax_impact["pending_count"]
             or tax_impact["unquantifiable_count"]
+            or payload["obligation_readiness"]["state"]
+            in ("not_started", "attention")
         )
         if has_actions and has_limits:
             return "limited_action_required", True
@@ -915,7 +957,15 @@ class SudoChinaComplianceReport(models.Model):
         payload = self._snapshot_payload()
         conclusion, has_limits = self._derive_conclusion(payload)
         if has_limits and not _text_is_complete(self.limitation_statement):
-            issues.append(_("存在报告限制时必须填写至少 20 个字符的限制说明。"))
+            obligation_state = payload["obligation_readiness"]["state"]
+            if obligation_state in ("not_started", "attention"):
+                issues.append(
+                    _(
+                        "Tax obligation applicability is not fully confirmed; disclose this limitation before submitting the report."
+                    )
+                )
+            else:
+                issues.append(_("存在报告限制时必须填写至少 20 个字符的限制说明。"))
         if conclusion in ("action_required", "limited_action_required") and not _text_is_complete(
             self.management_response
         ):
@@ -1045,6 +1095,8 @@ class SudoChinaComplianceReport(models.Model):
         "evidence_count",
         "verified_evidence_count",
         "tax_impact_pending_count",
+        "assessment_id.profile_id.obligation_ids.write_date",
+        "assessment_id.profile_id.obligation_ids.authority_source_id.write_date",
         "assessment_id.finding_ids.cn_traceability_gap_count",
         "assessment_id.finding_ids.task_ids.cn_remediation_traceability_gap_count",
     )
@@ -1067,6 +1119,11 @@ class SudoChinaComplianceReport(models.Model):
                 gaps.append("evidence")
             if report.tax_impact_pending_count:
                 gaps.append("tax_impact")
+            if report.assessment_id.profile_id.cn_workbench_obligation_state in (
+                "not_started",
+                "attention",
+            ):
+                gaps.append("obligation_readiness")
             if any(report.assessment_id.finding_ids.mapped("cn_traceability_gap_count")):
                 gaps.append("finding_traceability")
             if any(
@@ -1093,6 +1150,11 @@ class SudoChinaComplianceReport(models.Model):
                 report.cn_report_traceability_state = "blocked"
                 report.cn_report_traceability_next_action = _(
                     "Refresh the report snapshot and close source or finding traceability gaps."
+                )
+            elif "obligation_readiness" in gaps:
+                report.cn_report_traceability_state = "action_required"
+                report.cn_report_traceability_next_action = _(
+                    "Confirm tax obligation applicability or keep the report limitation visible before relying on distribution."
                 )
             else:
                 report.cn_report_traceability_state = "action_required"
@@ -1121,6 +1183,8 @@ class SudoChinaComplianceReport(models.Model):
         "assessment_id.verification_task_ids.evidence_ids.write_date",
         "assessment_id.finding_ids.ai_analysis_ids.write_date",
         "assessment_id.cn_tax_impact_case_ids.write_date",
+        "assessment_id.profile_id.obligation_ids.write_date",
+        "assessment_id.profile_id.obligation_ids.authority_source_id.write_date",
     )
     def _compute_snapshot_integrity_state(self):
         for report in self:

@@ -98,6 +98,30 @@
                             <span t-esc="payload.get('report', {}).get('limitation_statement')"/>
                         </p>
                         <p t-else="" class="text-muted">未另行声明重大范围限制；报告边界仍以本报告首页和结论边界为准。</p>
+                        <h3 style="font-size: 14px;">纳税义务适用性边界</h3>
+                        <table class="table table-sm table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>状态</th>
+                                    <th>候选义务</th>
+                                    <th>适用义务</th>
+                                    <th>待确认义务</th>
+                                    <th>申报义务</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span t-esc="payload.get('obligation_readiness', {}).get('state') or '-'"/></td>
+                                    <td><span t-esc="payload.get('obligation_readiness', {}).get('candidate_count', 0)"/></td>
+                                    <td><span t-esc="payload.get('obligation_readiness', {}).get('applicable_count', 0)"/></td>
+                                    <td><span t-esc="payload.get('obligation_readiness', {}).get('pending_review_count', 0)"/></td>
+                                    <td><span t-esc="payload.get('obligation_readiness', {}).get('filing_obligation_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-muted" t-if="payload.get('obligation_readiness', {}).get('next_action')">
+                            <span t-esc="payload.get('obligation_readiness', {}).get('next_action')"/>
+                        </p>
 
                         <h2 style="font-size: 17px; color: #17313b;">三、评估与数据充分性</h2>
                         <table class="table table-sm table-bordered text-center">

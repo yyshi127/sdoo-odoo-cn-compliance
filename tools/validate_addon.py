@@ -246,6 +246,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("formal compliance report capability must be declared")
     if features.get("china_report_center_visibility") is not True:
         fail("China report center visibility capability must be declared")
+    if features.get("china_report_obligation_readiness") is not True:
+        fail("China report obligation readiness capability must be declared")
     if features.get("china_traceability_matrix_visibility") is not True:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
@@ -2452,6 +2454,8 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "cn_report_traceability_next_action",
+        "obligation_readiness",
+        "_obligation_readiness_payload",
         "action_cn_open_report_findings",
         "action_cn_open_report_tasks",
         "action_cn_open_report_evidence",
@@ -2550,6 +2554,7 @@ def validate_formal_compliance_report() -> None:
         "潜在少缴、潜在多缴和期间错配影响分别列示",
         "不计算净额",
         "AI 分析仅为辅助材料",
+        "纳税义务适用性边界",
         "内容快照 SHA-256",
         "批准 SHA-256",
     ):
@@ -2576,11 +2581,14 @@ def validate_formal_compliance_report() -> None:
         "test_report_html_preserves_boundary_and_non_net_tax_impact",
         "test_report_center_exposes_stage_next_action_and_navigation",
         "test_country_pack_advertises_report_center_visibility",
+        "test_pending_obligations_require_report_limitation",
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"formal report runtime coverage is missing {test_name}")
     for required in (
         "china_traceability_matrix_visibility",
+        "china_report_obligation_readiness",
+        "obligation_readiness",
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "action_cn_open_report_evidence",
@@ -2916,6 +2924,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
                 fail(f"China risk UX capability is missing from {label}: {required}")
         if "china_report_readiness" not in content:
             fail(f"China report readiness capability is missing from {label}")
+        if "china_report_obligation_readiness" not in content:
+            fail(f"China report obligation readiness capability is missing from {label}")
         if "china_controlled_ai_guidance" not in content:
             fail(f"China controlled AI guidance capability is missing from {label}")
         if "china_ai_guidance_visibility" not in content:
