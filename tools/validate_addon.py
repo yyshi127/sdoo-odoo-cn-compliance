@@ -2866,6 +2866,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China evidence center capability is missing from {label}")
         if "china_process_visibility" not in content:
             fail(f"China process visibility capability is missing from {label}")
+        if "china_risk_action_guidance" not in content:
+            fail(f"China risk action guidance capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -2963,6 +2965,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China AI guidance model must be imported")
     if "from . import evidence_center" not in model_init:
         fail("China evidence center model must be imported")
+    if "from . import risk_center" not in model_init:
+        fail("China risk center display model must be imported")
     report_model_content = (
         ADDON_ROOT / "models" / "report_readiness.py"
     ).read_text(encoding="utf-8")
@@ -3004,6 +3008,22 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     risk_view_content = (
         ADDON_ROOT / "views" / "risk_center_views.xml"
     ).read_text(encoding="utf-8")
+    risk_model_content = (
+        ADDON_ROOT / "models" / "risk_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '_inherit = "sudo.compliance.finding"',
+        '_inherit = "sudo.compliance.task"',
+        "cn_risk_period_label",
+        "cn_risk_next_action",
+        "cn_risk_evidence_state",
+        "cn_remediation_period_label",
+        "cn_remediation_next_action",
+        "cn_remediation_evidence_state",
+        "sudo.compliance.evidence",
+    ):
+        if required not in risk_model_content:
+            fail(f"China risk action guidance model is missing {required}")
 
     report_test_content = (
         ADDON_ROOT / "tests" / "test_report_readiness.py"
@@ -3093,6 +3113,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
     if "from . import test_ai_guidance" not in tests_init:
         fail("China controlled AI guidance runtime tests must be imported")
+    if "from . import test_risk_center" not in tests_init:
+        fail("China risk center display runtime tests must be imported")
     ai_test_content = (
         ADDON_ROOT / "tests" / "test_ai_guidance.py"
     ).read_text(encoding="utf-8")
@@ -3102,6 +3124,20 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if f"def {test_name}(" not in ai_test_content:
             fail(f"China controlled AI guidance runtime coverage is missing {test_name}")
+
+    risk_test_content = (
+        ADDON_ROOT / "tests" / "test_risk_center.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_finding_exposes_period_next_action_and_evidence_status",
+        "test_country_pack_advertises_risk_action_guidance",
+        "china_risk_action_guidance",
+        "cn_risk_period_label",
+        "cn_risk_next_action",
+        "cn_risk_evidence_state",
+    ):
+        if required not in risk_test_content:
+            fail(f"China risk center display runtime coverage is missing {required}")
 
     for required in (
         'id="action_cn_risk_center"',
@@ -3123,6 +3159,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_tax_impact_case_count",
         "verification_state",
         "default_group_by=\"state\"",
+        "cn_risk_period_label",
+        "cn_risk_next_action",
+        "cn_risk_evidence_state",
+        "cn_remediation_period_label",
+        "cn_remediation_next_action",
+        "cn_remediation_evidence_state",
     ):
         if required not in risk_view_content:
             fail(f"China risk center UI is missing {required}")

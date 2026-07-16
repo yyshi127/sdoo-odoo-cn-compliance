@@ -61,6 +61,8 @@
                        decoration-success="review_state == 'confirmed'"
                        decoration-warning="review_state in ('pending', 'correction_required')"/>
                 <field name="title"/>
+                <field name="cn_risk_period_label"/>
+                <field name="cn_risk_next_action" optional="show"/>
                 <field name="rule_id"/>
                 <field name="assessment_id" optional="hide"/>
                 <field name="task_assignee_id" widget="many2one_avatar_user"/>
@@ -72,6 +74,9 @@
                 <field name="task_verification_state" widget="badge"
                        decoration-success="task_verification_state in ('verified', 'not_required')"
                        decoration-warning="task_verification_state in ('pending_rescan', 'failed')"/>
+                <field name="cn_risk_evidence_state" widget="badge" optional="show"
+                       decoration-success="cn_risk_evidence_state == 'verified'"
+                       decoration-warning="cn_risk_evidence_state == 'partial'"/>
                 <field name="cn_tax_impact_case_count" optional="show"/>
                 <field name="task_is_overdue" invisible="1"/>
             </list>
@@ -90,6 +95,11 @@
                 <field name="result"/>
                 <field name="risk_level"/>
                 <field name="review_state"/>
+                <field name="cn_risk_period_label"/>
+                <field name="cn_risk_next_action"/>
+                <field name="cn_risk_evidence_state"/>
+                <field name="cn_risk_evidence_count"/>
+                <field name="cn_risk_verified_evidence_count"/>
                 <field name="summary"/>
                 <field name="recommendation"/>
                 <field name="task_assignee_id"/>
@@ -111,6 +121,8 @@
                                         <field name="company_id"/>
                                         <span> · </span>
                                         <field name="rule_id"/>
+                                        <span> · </span>
+                                        <field name="cn_risk_period_label"/>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column align-items-end gap-1">
@@ -121,6 +133,10 @@
                             <div class="mt-3 small text-muted">
                                 <field name="summary"/>
                             </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">下一步</div>
+                                <div class="fw-semibold"><field name="cn_risk_next_action"/></div>
+                            </div>
                             <div class="row g-2 mt-3">
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
@@ -130,8 +146,14 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">税务影响事项</div>
-                                        <div class="fw-semibold"><field name="cn_tax_impact_case_count"/></div>
+                                        <div class="text-muted small">证据链</div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_risk_evidence_state" widget="badge"/>
+                                            <span> </span>
+                                            <field name="cn_risk_verified_evidence_count"/>
+                                            <span>/</span>
+                                            <field name="cn_risk_evidence_count"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
@@ -227,6 +249,8 @@
                        decoration-danger="priority in ('critical', 'high')"/>
                 <field name="assignee_id" widget="many2one_avatar_user"/>
                 <field name="due_date"/>
+                <field name="cn_remediation_period_label"/>
+                <field name="cn_remediation_next_action" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'done'"
                        decoration-warning="state in ('waiting', 'blocked')"
@@ -234,6 +258,9 @@
                 <field name="verification_state" widget="badge"
                        decoration-success="verification_state in ('verified', 'not_required')"
                        decoration-warning="verification_state in ('pending_rescan', 'failed')"/>
+                <field name="cn_remediation_evidence_state" widget="badge" optional="show"
+                       decoration-success="cn_remediation_evidence_state == 'verified'"
+                       decoration-warning="cn_remediation_evidence_state == 'partial'"/>
                 <field name="rule_id" optional="show"/>
                 <field name="finding_id" optional="hide"/>
                 <field name="assessment_id" optional="hide"/>
@@ -256,6 +283,11 @@
                 <field name="due_date"/>
                 <field name="state"/>
                 <field name="verification_state"/>
+                <field name="cn_remediation_period_label"/>
+                <field name="cn_remediation_next_action"/>
+                <field name="cn_remediation_evidence_state"/>
+                <field name="cn_remediation_evidence_count"/>
+                <field name="cn_remediation_verified_evidence_count"/>
                 <field name="recommendation_snapshot"/>
                 <field name="is_overdue"/>
                 <templates>
@@ -264,7 +296,11 @@
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
                                     <div class="fw-bold"><field name="name"/></div>
-                                    <div class="text-muted small"><field name="company_id"/></div>
+                                    <div class="text-muted small">
+                                        <field name="company_id"/>
+                                        <span> · </span>
+                                        <field name="cn_remediation_period_label"/>
+                                    </div>
                                 </div>
                                 <div class="d-flex flex-column align-items-end gap-1">
                                     <field name="risk_level" widget="badge"/>
@@ -273,6 +309,10 @@
                             </div>
                             <div class="mt-3 small text-muted">
                                 <field name="recommendation_snapshot"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">下一步</div>
+                                <div class="fw-semibold"><field name="cn_remediation_next_action"/></div>
                             </div>
                             <div class="row g-2 mt-3">
                                 <div class="col-6">
@@ -285,6 +325,18 @@
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">截止日期</div>
                                         <div class="fw-semibold"><field name="due_date"/></div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="border rounded p-2 h-100">
+                                        <div class="text-muted small">整改证据</div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_remediation_evidence_state" widget="badge"/>
+                                            <span> </span>
+                                            <field name="cn_remediation_verified_evidence_count"/>
+                                            <span>/</span>
+                                            <field name="cn_remediation_evidence_count"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
