@@ -80,6 +80,75 @@ class TestChinaReportReadiness(TransactionCase):
             }
         )
 
+    def _vat_run(self, suffix):
+        run = self.env["sudo.cn.vat.period.reconciliation.run"].with_company(
+            self.company
+        ).enqueue(
+            self.profile,
+            "2026-06-01",
+            "2026-06-30",
+            "VAT",
+        )
+        run.with_company(self.company)._process()
+        run.invalidate_recordset()
+        return run
+
+    def _authority_source(self, suffix):
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": f"report-readiness-filing-source-{suffix}.pdf",
+                "raw": f"official filing deadline source {suffix}".encode(),
+                "mimetype": "application/pdf",
+            }
+        )
+        source = self.env["sudo.compliance.authority.source"].create(
+            {
+                "name": f"VAT filing authority source {suffix}",
+                "country_id": self.country_cn.id,
+                "authority": "State Taxation Administration",
+                "source_type": "form_instruction",
+                "official_url": "https://www.chinatax.gov.cn/",
+                "official_version": f"TEST-{suffix}",
+                "published_date": "2026-01-01",
+                "next_review_date": "2027-12-31",
+                "snapshot_kind": "official_document",
+                "snapshot_attachment_id": attachment.id,
+            }
+        )
+        source.action_compute_hash()
+        return source
+
+    def _filing_archive(self, suffix):
+        run = self._vat_run(suffix)
+        action = run.action_open_cn_filing_archive()
+        defaults = {
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }
+        source = self._authority_source(suffix)
+        obligation = self.env["sudo.compliance.obligation"].browse(
+            defaults["obligation_id"]
+        )
+        obligation.write(
+            {
+                "applicability": "applicable",
+                "effective_from": "2026-01-01",
+                "authority_source_id": source.id,
+                "justification": "Controlled test authority basis for filing archive.",
+            }
+        )
+        defaults.update(
+            {
+                "due_date": "2026-07-15",
+                "authority_source_id": source.id,
+                "due_date_basis": "Controlled test due date basis.",
+            }
+        )
+        return self.env["sudo.compliance.filing"].with_company(self.company).create(
+            defaults
+        )
+
     def test_completed_clean_assessment_discloses_limitations(self):
         assessment = self._assessment()
         assessment.invalidate_recordset()
@@ -106,6 +175,11 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_rescan_gate"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_filing_archive_gate"
             ]
         )
 
@@ -156,6 +230,22 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertEqual(assessment.cn_report_failed_rescan_count, 1)
         self.assertEqual(assessment.cn_report_verified_remediation_count, 1)
         self.assertIn("failed", assessment.cn_report_rescan_next_action)
+
+    def test_report_readiness_surfaces_filing_archive_gate(self):
+        assessment = self._assessment()
+        filing = self._filing_archive("gate")
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_report_filing_archive_count, 1)
+        self.assertEqual(assessment.cn_report_sealed_filing_archive_count, 0)
+        self.assertEqual(assessment.cn_report_filing_archive_issue_count, 1)
+        self.assertEqual(assessment.cn_report_filing_archive_state, "blocked")
+        self.assertEqual(assessment.cn_report_readiness_state, "limited")
+        self.assertIn(
+            "Seal filing/payment archives",
+            assessment.cn_report_filing_archive_next_action,
+        )
+        self.assertIn(filing, self.env["sudo.compliance.filing"].search([]))
 
     def test_readiness_navigation_actions_are_scoped_to_assessment(self):
         assessment = self._assessment()

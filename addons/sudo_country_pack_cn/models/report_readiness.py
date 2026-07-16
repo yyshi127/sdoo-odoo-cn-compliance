@@ -4,6 +4,25 @@ from odoo import _, fields, models
 OPEN_TASK_STATES = ("open", "in_progress", "waiting", "pending_review", "blocked")
 
 
+def _controlled_filing_domain(assessment):
+    if (
+        not assessment.profile_id
+        or not assessment.period_start
+        or not assessment.period_end
+    ):
+        return [("id", "=", 0)]
+    return [
+        ("profile_id", "=", assessment.profile_id.id),
+        ("period_start", "<=", assessment.period_end),
+        ("period_end", ">=", assessment.period_start),
+        "|",
+        "|",
+        ("cn_vat_reconciliation_run_id", "!=", False),
+        ("cn_cit_reconciliation_run_id", "!=", False),
+        ("cn_iit_reconciliation_run_id", "!=", False),
+    ]
+
+
 class SudoChinaReportReadinessAssessment(models.Model):
     _inherit = "sudo.compliance.assessment"
 
@@ -69,6 +88,32 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="Verified Remediations",
         compute="_compute_cn_report_readiness",
     )
+    cn_report_filing_archive_state = fields.Selection(
+        [
+            ("not_started", "No controlled archive"),
+            ("ready", "Archive sealed"),
+            ("attention", "Archive needs attention"),
+            ("blocked", "Archive blocked"),
+        ],
+        string="Filing Archive Gate",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_filing_archive_next_action = fields.Char(
+        string="Filing Archive Next Action",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_filing_archive_count = fields.Integer(
+        string="Controlled Filing Archives",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_filing_archive_issue_count = fields.Integer(
+        string="Filing Archive Issues",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_sealed_filing_archive_count = fields.Integer(
+        string="Sealed Filing Archives",
+        compute="_compute_cn_report_readiness",
+    )
     cn_report_latest_report_id = fields.Many2one(
         "sudo.cn.compliance.report",
         string="最新正式报告",
@@ -81,6 +126,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
 
     def _compute_cn_report_readiness(self):
         Report = self.env["sudo.cn.compliance.report"].sudo()
+        Filing = self.env["sudo.compliance.filing"].sudo()
         for assessment in self:
             reports = getattr(assessment, "cn_formal_report_ids", Report.browse())
             active_reports = reports.filtered(
@@ -145,6 +191,21 @@ class SudoChinaReportReadinessAssessment(models.Model):
             integrity_tax_impact = getattr(
                 assessment, "cn_tax_impact_integrity_issue_count", 0
             ) or 0
+            filing_archives = Filing.search(_controlled_filing_domain(assessment))
+            sealed_filing_archives = filing_archives.filtered(
+                lambda filing: filing.cn_submission_integrity_state
+                in ("verified", "source_superseded")
+                and filing.cn_payment_integrity_state
+                in ("verified", "not_required", "source_superseded")
+                and filing.cn_filing_center_evidence_state == "verified"
+            )
+            filing_archive_issues = filing_archives.filtered(
+                lambda filing: filing.cn_submission_integrity_state
+                in ("changed", "invalid", "unsealed")
+                or filing.cn_payment_integrity_state
+                in ("changed", "invalid", "unsealed")
+                or filing.cn_filing_center_evidence_state != "verified"
+            )
             limitation_count = 0
             if assessment.data_sufficiency_state == "insufficient":
                 limitation_count += 1
@@ -158,6 +219,8 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 and assessment.cn_jurisdiction_coverage_state
                 not in (False, "complete")
             ):
+                limitation_count += 1
+            if filing_archive_issues:
                 limitation_count += 1
 
             issue_count = (
@@ -179,7 +242,34 @@ class SudoChinaReportReadinessAssessment(models.Model):
             assessment.cn_report_verified_remediation_count = (
                 verified_remediation_count
             )
+            assessment.cn_report_filing_archive_count = len(filing_archives)
+            assessment.cn_report_filing_archive_issue_count = len(
+                filing_archive_issues
+            )
+            assessment.cn_report_sealed_filing_archive_count = len(
+                sealed_filing_archives
+            )
             assessment.cn_report_issue_count = issue_count
+            if not filing_archives:
+                assessment.cn_report_filing_archive_state = "not_started"
+                assessment.cn_report_filing_archive_next_action = _(
+                    "No controlled filing/payment archive exists for this assessment period."
+                )
+            elif filing_archive_issues:
+                assessment.cn_report_filing_archive_state = "blocked"
+                assessment.cn_report_filing_archive_next_action = _(
+                    "Seal filing/payment archives and verify receipt/payment evidence before relying on report conclusions."
+                )
+            elif len(sealed_filing_archives) == len(filing_archives):
+                assessment.cn_report_filing_archive_state = "ready"
+                assessment.cn_report_filing_archive_next_action = _(
+                    "Controlled filing/payment archives are sealed for the report period."
+                )
+            else:
+                assessment.cn_report_filing_archive_state = "attention"
+                assessment.cn_report_filing_archive_next_action = _(
+                    "Review filing/payment archive evidence before report sign-off."
+                )
             if not remediation_tasks:
                 assessment.cn_report_rescan_state = "not_applicable"
                 assessment.cn_report_rescan_next_action = _(

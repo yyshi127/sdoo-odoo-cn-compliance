@@ -52,6 +52,14 @@
                 <field name="cn_report_failed_rescan_count" optional="show"/>
                 <field name="cn_report_verified_remediation_count" optional="show"/>
                 <field name="cn_report_rescan_next_action" optional="show"/>
+                <field name="cn_report_filing_archive_state" widget="badge"
+                       decoration-success="cn_report_filing_archive_state == 'ready'"
+                       decoration-warning="cn_report_filing_archive_state in ('attention', 'not_started')"
+                       decoration-danger="cn_report_filing_archive_state == 'blocked'"/>
+                <field name="cn_report_filing_archive_count" optional="show"/>
+                <field name="cn_report_sealed_filing_archive_count" optional="show"/>
+                <field name="cn_report_filing_archive_issue_count" optional="show"/>
+                <field name="cn_report_filing_archive_next_action" optional="show"/>
                 <field name="cn_data_basis_state" widget="badge"
                        decoration-success="cn_data_basis_state == 'ready'"
                        decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
@@ -94,6 +102,11 @@
                 <field name="cn_report_pending_rescan_count"/>
                 <field name="cn_report_failed_rescan_count"/>
                 <field name="cn_report_verified_remediation_count"/>
+                <field name="cn_report_filing_archive_state"/>
+                <field name="cn_report_filing_archive_next_action"/>
+                <field name="cn_report_filing_archive_count"/>
+                <field name="cn_report_sealed_filing_archive_count"/>
+                <field name="cn_report_filing_archive_issue_count"/>
                 <field name="cn_data_basis_state"/>
                 <field name="cn_data_basis_dataset_count"/>
                 <field name="cn_data_basis_ready_count"/>
@@ -145,6 +158,23 @@
                                     <span><field name="cn_report_pending_rescan_count"/> pending</span>
                                     <span><field name="cn_report_failed_rescan_count"/> failed</span>
                                     <span><field name="cn_report_verified_remediation_count"/> verified</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Filing/payment archive gate</div>
+                                        <div class="fw-semibold"><field name="cn_report_filing_archive_next_action"/></div>
+                                    </div>
+                                    <field name="cn_report_filing_archive_state" widget="badge"
+                                           decoration-success="cn_report_filing_archive_state == 'ready'"
+                                           decoration-warning="cn_report_filing_archive_state in ('attention', 'not_started')"
+                                           decoration-danger="cn_report_filing_archive_state == 'blocked'"/>
+                                </div>
+                                <div class="d-flex gap-3 text-muted small mt-2">
+                                    <span><field name="cn_report_sealed_filing_archive_count"/> sealed</span>
+                                    <span><field name="cn_report_filing_archive_count"/> total</span>
+                                    <span><field name="cn_report_filing_archive_issue_count"/> issues</span>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
@@ -293,6 +323,14 @@
                         <field name="cn_report_pending_rescan_count"/>
                         <field name="cn_report_failed_rescan_count"/>
                         <field name="cn_report_verified_remediation_count"/>
+                        <field name="cn_report_filing_archive_state" widget="badge"
+                               decoration-success="cn_report_filing_archive_state == 'ready'"
+                               decoration-warning="cn_report_filing_archive_state in ('attention', 'not_started')"
+                               decoration-danger="cn_report_filing_archive_state == 'blocked'"/>
+                        <field name="cn_report_filing_archive_next_action"/>
+                        <field name="cn_report_filing_archive_count"/>
+                        <field name="cn_report_sealed_filing_archive_count"/>
+                        <field name="cn_report_filing_archive_issue_count"/>
                         <field name="cn_data_basis_state" widget="badge"
                                decoration-success="cn_data_basis_state == 'ready'"
                                decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
