@@ -1,3 +1,4 @@
+from odoo import Command
 from odoo.tests import TransactionCase, tagged
 
 
@@ -28,6 +29,45 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "country_pack_id": cls.country_pack.id,
             }
         )
+        cls.province = cls.env["res.country.state"].create(
+            {
+                "name": "China Workbench Test Province",
+                "code": "CN-WB",
+                "country_id": cls.country_cn.id,
+            }
+        )
+
+    def _classification(self, **overrides):
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "workbench-cross-border.txt",
+                "raw": b"controlled cross border classification evidence",
+            }
+        )
+        values = {
+            "profile_id": self.profile.id,
+            "valid_from": "2026-01-01",
+            "province_id": self.province.id,
+            "local_jurisdiction_name": "Workbench Test Local Tax Office",
+            "local_jurisdiction_code": "CN-WB-LOCAL",
+            "tax_authority_name": "Workbench Test Tax Authority",
+            "tax_authority_code": "CN-WB-TAX",
+            "vat_taxpayer_status": "general",
+            "vat_filing_frequency": "monthly",
+            "cit_taxpayer_status": "nonresident_no_establishment",
+            "cit_collection_method": "withholding",
+            "pit_withholding_status": "yes",
+            "accounting_regime": "asbe",
+            "source_type": "electronic_tax_bureau",
+            "source_date": "2026-01-01",
+            "source_reference": "WORKBENCH-CROSS-BORDER",
+            "scope_note": "Controlled identity snapshot used to surface cross-border and withholding boundaries.",
+            "evidence_attachment_ids": [Command.set(attachment.ids)],
+        }
+        values.update(overrides)
+        classification = self.env["sudo.cn.taxpayer.classification"].create(values)
+        classification.action_verify()
+        return classification
 
     def test_country_pack_advertises_china_workbench_feature(self):
         self.assertTrue(
@@ -63,6 +103,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_tax_domain_overview"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_cross_border_overview"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -93,6 +138,25 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(self.profile.cn_workbench_vat_next_action)
         self.assertTrue(self.profile.cn_workbench_cit_next_action)
         self.assertTrue(self.profile.cn_workbench_iit_next_action)
+        self.assertEqual(self.profile.cn_workbench_cross_border_state, "not_started")
+        self.assertTrue(self.profile.cn_workbench_cross_border_basis)
+        self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
+
+    def test_workbench_surfaces_cross_border_identity_boundary(self):
+        self.profile._write_import({"status": "active"})
+        classification = self._classification()
+
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_cross_border_state, "attention")
+        self.assertIn(
+            classification.cit_collection_method,
+            self.profile.cn_workbench_cross_border_basis,
+        )
+        self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
+        action = self.profile.action_cn_open_workbench_taxpayer_classifications()
+        self.assertEqual(action["res_model"], "sudo.cn.taxpayer.classification")
+        self.assertIn(("profile_id", "=", self.profile.id), action["domain"])
 
     def test_workbench_navigation_actions_are_scoped_to_profile(self):
         action = self.profile.action_cn_open_workbench_assessments()

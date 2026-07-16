@@ -81,6 +81,9 @@
                 <field name="cn_workbench_vat_next_action"/>
                 <field name="cn_workbench_cit_next_action"/>
                 <field name="cn_workbench_iit_next_action"/>
+                <field name="cn_workbench_cross_border_state"/>
+                <field name="cn_workbench_cross_border_basis"/>
+                <field name="cn_workbench_cross_border_next_action"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_workbench_status.raw_value == 'action_required' ? 'border-danger' : record.cn_workbench_status.raw_value == 'healthy' ? 'border-success' : 'border-warning'}">
@@ -109,7 +112,7 @@
                             </div>
 
                             <div class="row g-2 mt-3">
-                                <div class="col-4">
+                                <div class="col-3">
                                     <button type="object" name="action_cn_open_workbench_vat_issues"
                                             class="btn btn-light w-100 text-start h-100 border">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -125,7 +128,7 @@
                                         </div>
                                     </button>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <button type="object" name="action_cn_open_workbench_cit_issues"
                                             class="btn btn-light w-100 text-start h-100 border">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -141,7 +144,7 @@
                                         </div>
                                     </button>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <button type="object" name="action_cn_open_workbench_iit_issues"
                                             class="btn btn-light w-100 text-start h-100 border">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -154,6 +157,21 @@
                                         <div class="fw-bold mt-2">
                                             <field name="cn_workbench_iit_issue_count"/>
                                             <span> 个勾稽问题</span>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-3">
+                                    <button type="object" name="action_cn_open_workbench_taxpayer_classifications"
+                                            class="btn btn-light w-100 text-start h-100 border">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <div class="fw-semibold">跨境/扣缴</div>
+                                                <div class="text-muted small"><field name="cn_workbench_cross_border_next_action"/></div>
+                                            </div>
+                                            <field name="cn_workbench_cross_border_state" widget="badge"/>
+                                        </div>
+                                        <div class="text-muted small mt-2">
+                                            <field name="cn_workbench_cross_border_basis"/>
                                         </div>
                                     </button>
                                 </div>

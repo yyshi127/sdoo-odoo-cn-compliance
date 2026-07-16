@@ -22,6 +22,23 @@ def _tax_domain_state(latest_assessment, issue_count, limitation_count):
     return "not_started"
 
 
+def _cross_border_state(classification, limitation_count):
+    if limitation_count:
+        return "blocked"
+    if not classification:
+        return "not_started"
+    if classification._current_integrity_state() != "verified":
+        return "blocked"
+    if (
+        classification.cit_taxpayer_status
+        in ("nonresident_establishment", "nonresident_no_establishment")
+        or classification.cit_collection_method == "withholding"
+        or classification.pit_withholding_status == "yes"
+    ):
+        return "attention"
+    return "ready"
+
+
 class SudoChinaComplianceWorkbenchProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
@@ -143,6 +160,19 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="个人所得税下一步",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_cross_border_state = fields.Selection(
+        FLOW_STATES,
+        string="跨境与源泉扣缴域",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_cross_border_basis = fields.Char(
+        string="跨境判断依据",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_cross_border_next_action = fields.Char(
+        string="跨境下一步",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_limitation_count = fields.Integer(
         string="范围/证据限制",
         compute="_compute_cn_workbench",
@@ -189,6 +219,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         ImpactCase = self.env["sudo.cn.tax.impact.case"].sudo()
         Report = self.env["sudo.cn.compliance.report"].sudo()
         Evidence = self.env["sudo.compliance.evidence"].sudo()
+        Classification = self.env["sudo.cn.taxpayer.classification"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -207,6 +238,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 order="issued_at desc, create_date desc, id desc",
                 limit=1,
             )
+            current_classification = Classification._for_profile_date(
+                profile, today
+            )[:1]
             finding_domain = [("assessment_id.profile_id", "=", profile.id)]
             review_finding_domain = finding_domain + [
                 "|",
@@ -333,6 +367,21 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_iit_issue_count,
                 limitation_count,
             )
+            profile.cn_workbench_cross_border_state = _cross_border_state(
+                current_classification,
+                limitation_count,
+            )
+            if not current_classification:
+                profile.cn_workbench_cross_border_basis = _("尚无当前有效纳税人身份快照")
+            elif current_classification._current_integrity_state() != "verified":
+                profile.cn_workbench_cross_border_basis = _("当前身份快照未核验或完整性异常")
+            else:
+                profile.cn_workbench_cross_border_basis = _(
+                    "企业所得税身份：%(cit)s；征收方式：%(method)s；个税扣缴：%(pit)s",
+                    cit=current_classification.cit_taxpayer_status,
+                    method=current_classification.cit_collection_method,
+                    pit=current_classification.pit_withholding_status,
+                )
             if profile.status != "active":
                 profile.cn_workbench_vat_next_action = _("先启用中国合规档案。")
                 profile.cn_workbench_cit_next_action = _("先启用中国合规档案。")
@@ -360,6 +409,30 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                     _("复核个人所得税工资账表款差异并推进整改。")
                     if profile.cn_workbench_iit_issue_count
                     else _("保持个人所得税扣缴数据定期扫描。")
+                )
+            if profile.status != "active":
+                profile.cn_workbench_cross_border_next_action = _(
+                    "先启用中国合规档案，再维护纳税人身份和跨境交易资料。"
+                )
+            elif not latest_assessment:
+                profile.cn_workbench_cross_border_next_action = _(
+                    "先完成身份快照核验；如存在非居民、源泉扣缴或跨境交易，补充受控资料。"
+                )
+            elif limitation_count:
+                profile.cn_workbench_cross_border_next_action = _(
+                    "先解除适用地区、证据或报告范围限制，再判断跨境事项。"
+                )
+            elif profile.cn_workbench_cross_border_state == "attention":
+                profile.cn_workbench_cross_border_next_action = _(
+                    "复核非居民、源泉扣缴、个税扣缴和跨境交易合同/付款/备案资料。"
+                )
+            elif profile.cn_workbench_cross_border_state == "blocked":
+                profile.cn_workbench_cross_border_next_action = _(
+                    "先修复纳税人身份快照或证据完整性。"
+                )
+            else:
+                profile.cn_workbench_cross_border_next_action = _(
+                    "当前身份快照未提示非居民或源泉扣缴特征；跨境交易仍需按实际发生单独留痕。"
                 )
             profile.cn_workbench_limitation_count = limitation_count
             profile.cn_workbench_evidence_count = evidence_count
@@ -445,6 +518,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         return self._cn_action(
             _("规则扫描"),
             "sudo.compliance.assessment",
+            [("profile_id", "=", self.id)],
+            {"default_profile_id": self.id},
+        )
+
+    def action_cn_open_workbench_taxpayer_classifications(self):
+        self.ensure_one()
+        return self._cn_action(
+            _("中国纳税人身份快照"),
+            "sudo.cn.taxpayer.classification",
             [("profile_id", "=", self.id)],
             {"default_profile_id": self.id},
         )
