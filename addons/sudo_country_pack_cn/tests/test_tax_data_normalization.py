@@ -326,6 +326,7 @@ class TestChinaTaxDataNormalization(TransactionCase):
             "sudo.cn.cit.filing.line",
             "sudo.cn.iit.withholding.record",
             "sudo.cn.iit.withholding.line",
+            "sudo.cn.payroll.summary.record",
             "sudo.cn.tax.payment.record",
         ):
             with self.assertRaises(AccessError):

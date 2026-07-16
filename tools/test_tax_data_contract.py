@@ -118,6 +118,37 @@ def iit_withholding_payload():
     }
 
 
+def payroll_summary_payload():
+    return {
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": "payroll_summary",
+        "source_schema": "controlled-test-payroll-summary",
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [
+            {
+                "source_record_key": "PAYROLL-2026-06",
+                "taxpayer_id": "91440101MA5D123451",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "currency_code": "CNY",
+                "payroll_frequency": "monthly",
+                "payroll_status": "confirmed",
+                "payroll_run_reference": "PAYROLL-RUN-2026-06",
+                "approved_at": "2026-06-30T18:00:00+08:00",
+                "declared_person_count": 1,
+                "gross_income_amount": "10000.00",
+                "tax_exempt_income_amount": "0.00",
+                "employee_social_insurance_amount": "0.00",
+                "employee_housing_fund_amount": "0.00",
+                "other_pre_tax_deduction_amount": "0.00",
+                "net_pay_amount": "9910.00",
+                "withheld_iit_amount": "90.00",
+            }
+        ],
+    }
+
+
 class TestTaxDataContract(unittest.TestCase):
     def test_valid_filing_contract_preserves_zero_text(self):
         result = CONTRACT.load_tax_data_contract(encoded(filing_payload()))
@@ -255,6 +286,39 @@ class TestTaxDataContract(unittest.TestCase):
                 "hmac-sha256:"
             )
         )
+
+    def test_payroll_summary_contract_is_aggregate_and_preserves_zero(self):
+        result = CONTRACT.load_tax_data_contract(
+            encoded(payroll_summary_payload())
+        )
+
+        self.assertEqual(result.dataset_type, "payroll_summary")
+        self.assertEqual(
+            result.records[0]["employee_social_insurance_amount"], "0.00"
+        )
+        self.assertNotIn("employee_name", result.records[0])
+
+    def test_payroll_summary_identity_fields_are_rejected(self):
+        payload = payroll_summary_payload()
+        payload["records"][0]["employee_name"] = "不应进入汇总契约"
+
+        with self.assertRaisesRegex(
+            CONTRACT.TaxDataContractError,
+            "unknown fields: employee_name",
+        ):
+            CONTRACT.load_tax_data_contract(encoded(payload))
+
+    def test_payroll_summary_example_document_is_contract_valid(self):
+        example_path = (
+            ROOT
+            / "docs"
+            / "samples"
+            / "cn_payroll_summary_contract_v1.example.json"
+        )
+
+        result = CONTRACT.load_tax_data_contract(example_path.read_bytes())
+
+        self.assertEqual(result.dataset_type, "payroll_summary")
 
     def test_iit_example_document_is_contract_valid(self):
         example_path = (

@@ -8,5 +8,6 @@ from . import test_invoice_normalization
 from . import test_invoice_reconciliation
 from . import test_tax_data_normalization
 from . import test_cit_period_reconciliation
+from . import test_iit_period_reconciliation
 from . import test_vat_period_reconciliation
 from . import test_compliance_report

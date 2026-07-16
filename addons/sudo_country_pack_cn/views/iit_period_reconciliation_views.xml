@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_iit_period_reconciliation_run_search" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.run.search</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <search string="个人所得税工资账表款勾稽">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="iit_tax_type_code"/>
+                <filter name="current" string="当前结果"
+                        domain="[('state', '=', 'succeeded')]"/>
+                <filter name="insufficient" string="数据不足"
+                        domain="[('state', '=', 'succeeded'), ('conclusion_state', '=', 'insufficient_data')]"/>
+                <filter name="differences" string="存在差异"
+                        domain="[('state', '=', 'succeeded'), ('conclusion_state', '=', 'differences')]"/>
+                <filter name="aligned" string="算术一致"
+                        domain="[('state', '=', 'succeeded'), ('conclusion_state', '=', 'aligned')]"/>
+                <separator/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_conclusion" string="结论"
+                        context="{'group_by': 'conclusion_state'}"/>
+                <filter name="group_period" string="期间结束"
+                        context="{'group_by': 'period_end'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_run_list" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.run.list</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <list string="个人所得税工资账表款勾稽" create="0" edit="0" delete="0"
+                  decoration-danger="conclusion_state == 'insufficient_data' or state == 'failed'"
+                  decoration-warning="conclusion_state == 'differences'"
+                  decoration-success="conclusion_state == 'aligned'"
+                  decoration-muted="state in ('superseded', 'cancelled')">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="iit_tax_type_code"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'succeeded'"
+                       decoration-danger="state == 'failed'"
+                       decoration-warning="state in ('queued', 'processing')"
+                       decoration-muted="state in ('superseded', 'cancelled')"/>
+                <field name="conclusion_state" widget="badge"
+                       decoration-success="conclusion_state == 'aligned'"
+                       decoration-warning="conclusion_state == 'differences'"
+                       decoration-danger="conclusion_state == 'insufficient_data'"/>
+                <field name="blocking_issue_count" sum="阻断数"/>
+                <field name="difference_issue_count" sum="差异数"/>
+                <field name="warning_issue_count" sum="复核提示"/>
+                <field name="payroll_person_count" optional="show"/>
+                <field name="filing_person_count" optional="show"/>
+                <field name="filing_income_amount" sum="申报收入" optional="show"/>
+                <field name="filing_tax_calculated_amount" sum="申报税额" optional="show"/>
+                <field name="effective_paid_principal_amount" sum="有效缴款" optional="show"/>
+                <field name="requested_at" optional="hide"/>
+                <field name="requested_by_id" optional="hide"/>
+                <field name="result_integrity_state" widget="badge"
+                       decoration-success="result_integrity_state == 'verified'"
+                       decoration-danger="result_integrity_state == 'checksum_mismatch'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_run_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.run.form</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="arch" type="xml">
+            <form string="个人所得税工资账表款勾稽" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_cancel" type="object"
+                            string="取消待处理批次" class="btn-secondary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'queued'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="queued,processing,succeeded"/>
+                </header>
+                <sheet>
+                    <field name="has_ledger_payroll_expense_amount" invisible="1"/>
+                    <field name="has_ledger_employee_payable_accrual_amount" invisible="1"/>
+                    <field name="has_ledger_employee_payable_settlement_amount" invisible="1"/>
+                    <field name="has_ledger_iit_accrual_amount" invisible="1"/>
+                    <field name="has_ledger_iit_settlement_amount" invisible="1"/>
+                    <field name="has_payroll_person_count" invisible="1"/>
+                    <field name="has_payroll_gross_income_amount" invisible="1"/>
+                    <field name="has_payroll_withheld_iit_amount" invisible="1"/>
+                    <field name="has_filing_person_count" invisible="1"/>
+                    <field name="has_filing_income_amount" invisible="1"/>
+                    <field name="has_filing_tax_calculated_amount" invisible="1"/>
+                    <field name="has_filing_payable_refundable_amount" invisible="1"/>
+                    <field name="has_filing_payable_amount" invisible="1"/>
+                    <field name="has_filing_refundable_amount" invisible="1"/>
+                    <field name="has_payment_amount" invisible="1"/>
+                    <field name="has_refund_amount" invisible="1"/>
+                    <field name="has_ledger_payroll_difference" invisible="1"/>
+                    <field name="has_employee_payable_payroll_difference" invisible="1"/>
+                    <field name="has_filing_payroll_income_difference" invisible="1"/>
+                    <field name="has_filing_payroll_iit_difference" invisible="1"/>
+                    <field name="has_ledger_payroll_iit_difference" invisible="1"/>
+                    <field name="has_ledger_payment_difference" invisible="1"/>
+                    <field name="has_payable_payment_difference" invisible="1"/>
+                    <field name="has_refundable_refund_difference" invisible="1"/>
+                    <widget name="web_ribbon" title="已被新结果替代"
+                            bg_color="text-bg-secondary"
+                            invisible="state != 'superseded'"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'insufficient_data'">
+                        数据不足：当前结果存在阻断项，不能形成金额一致或不一致结论。请先查看问题清单和下一步建议。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'differences'">
+                        发现待复核差异：差异不自动等同于少缴、多缴或违法，必须结合来源、时点、口径和正式证据复核。
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'succeeded' or conclusion_state != 'aligned'">
+                        当前受控口径下算术一致。该结果仍不证明人员身份、所得项目、扣除、税率、优惠或申报处理合法。
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="result_integrity_state != 'checksum_mismatch'">
+                        勾稽快照或问题清单已变化，当前结果完整性校验失败。
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_issues" type="object"
+                                class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="issue_count" widget="statinfo" string="问题"/>
+                        </button>
+                        <button name="action_open_accounting_scope" type="object"
+                                class="oe_stat_button" icon="fa-book"
+                                invisible="not accounting_scope_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">账务口径</span>
+                            </div>
+                        </button>
+                        <button name="action_open_payroll_summary" type="object"
+                                class="oe_stat_button" icon="fa-money"
+                                groups="sudo_global_finance.group_compliance_manager"
+                                invisible="not payroll_summary_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">工资汇总</span>
+                            </div>
+                        </button>
+                        <button name="action_open_withholding_record" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                groups="sudo_global_finance.group_compliance_manager"
+                                invisible="not withholding_record_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">个税申报</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="评估范围">
+                            <field name="profile_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="iit_tax_type_code"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group string="结果概览">
+                            <field name="conclusion_state" widget="badge"
+                                   decoration-success="conclusion_state == 'aligned'"
+                                   decoration-warning="conclusion_state == 'differences'"
+                                   decoration-danger="conclusion_state == 'insufficient_data'"/>
+                            <field name="blocking_issue_count"/>
+                            <field name="difference_issue_count"/>
+                            <field name="warning_issue_count"/>
+                            <field name="result_integrity_state" widget="badge"/>
+                            <field name="engine_version"/>
+                        </group>
+                    </group>
+                    <group string="五层数据充分性" col="5">
+                        <field name="accounting_scope_state" widget="badge"
+                               decoration-success="accounting_scope_state == 'available'"
+                               decoration-danger="accounting_scope_state in ('no_data', 'blocked')"/>
+                        <field name="accounting_source_state" widget="badge"
+                               decoration-success="accounting_source_state == 'available'"
+                               decoration-danger="accounting_source_state in ('no_data', 'blocked')"/>
+                        <field name="payroll_source_state" widget="badge"
+                               decoration-success="payroll_source_state == 'available'"
+                               decoration-danger="payroll_source_state in ('no_data', 'blocked')"/>
+                        <field name="filing_source_state" widget="badge"
+                               decoration-success="filing_source_state == 'available'"
+                               decoration-danger="filing_source_state in ('no_data', 'blocked')"/>
+                        <field name="payment_source_state" widget="badge"
+                               decoration-success="payment_source_state == 'available'"
+                               decoration-danger="payment_source_state in ('no_data', 'blocked')"/>
+                    </group>
+                    <field name="result_summary" nolabel="1"/>
+                    <notebook>
+                        <page string="关键勾稽金额">
+                            <group string="人数与收入" col="4">
+                                <field name="payroll_person_count"
+                                       invisible="not has_payroll_person_count"/>
+                                <field name="filing_person_count"
+                                       invisible="not has_filing_person_count"/>
+                                <field name="ledger_payroll_expense_amount"
+                                       invisible="not has_ledger_payroll_expense_amount"/>
+                                <field name="ledger_employee_payable_accrual_amount"
+                                       invisible="not has_ledger_employee_payable_accrual_amount"/>
+                                <field name="ledger_employee_payable_settlement_amount"
+                                       invisible="not has_ledger_employee_payable_settlement_amount"/>
+                                <field name="payroll_gross_income_amount"
+                                       invisible="not has_payroll_gross_income_amount"/>
+                                <field name="filing_income_amount"
+                                       invisible="not has_filing_income_amount"/>
+                            </group>
+                            <group string="代扣、申报与缴退税" col="4">
+                                <field name="ledger_iit_accrual_amount"
+                                       invisible="not has_ledger_iit_accrual_amount"/>
+                                <field name="payroll_withheld_iit_amount"
+                                       invisible="not has_payroll_withheld_iit_amount"/>
+                                <field name="filing_tax_calculated_amount"
+                                       invisible="not has_filing_tax_calculated_amount"/>
+                                <field name="filing_payable_refundable_amount"
+                                       invisible="not has_filing_payable_refundable_amount"/>
+                                <field name="filing_payable_amount"
+                                       invisible="not has_filing_payable_amount"/>
+                                <field name="filing_refundable_amount"
+                                       invisible="not has_filing_refundable_amount"/>
+                                <field name="ledger_iit_settlement_amount"
+                                       invisible="not has_ledger_iit_settlement_amount"/>
+                                <field name="paid_principal_amount"
+                                       invisible="not has_payment_amount"/>
+                                <field name="reversed_principal_amount"
+                                       invisible="not has_payment_amount"/>
+                                <field name="effective_paid_principal_amount"
+                                       invisible="not has_payment_amount"/>
+                                <field name="refunded_principal_amount"
+                                       invisible="not has_refund_amount"/>
+                                <field name="interest_amount"
+                                       invisible="not has_payment_amount"/>
+                                <field name="penalty_amount"
+                                       invisible="not has_payment_amount"/>
+                            </group>
+                        </page>
+                        <page string="差异矩阵">
+                            <div class="alert alert-info" role="alert">
+                                仅显示已经具备可比数据的差异；未显示不代表相等，可能是数据不足或来源被阻断。
+                            </div>
+                            <group col="4">
+                                <field name="ledger_payroll_difference"
+                                       invisible="not has_ledger_payroll_difference"/>
+                                <field name="employee_payable_payroll_difference"
+                                       invisible="not has_employee_payable_payroll_difference"/>
+                                <field name="filing_payroll_income_difference"
+                                       invisible="not has_filing_payroll_income_difference"/>
+                                <field name="filing_payroll_iit_difference"
+                                       invisible="not has_filing_payroll_iit_difference"/>
+                                <field name="ledger_payroll_iit_difference"
+                                       invisible="not has_ledger_payroll_iit_difference"/>
+                                <field name="ledger_payment_difference"
+                                       invisible="not has_ledger_payment_difference"/>
+                                <field name="payable_payment_difference"
+                                       invisible="not has_payable_payment_difference"/>
+                                <field name="refundable_refund_difference"
+                                       invisible="not has_refundable_refund_difference"/>
+                            </group>
+                        </page>
+                        <page string="问题与下一步">
+                            <field name="issue_ids" readonly="1">
+                                <list create="0" edit="0" delete="0"
+                                      decoration-danger="severity == 'blocking'"
+                                      decoration-warning="severity == 'review'"
+                                      decoration-info="severity == 'info'">
+                                    <field name="severity" widget="badge"
+                                           decoration-danger="severity == 'blocking'"
+                                           decoration-warning="severity == 'review'"/>
+                                    <field name="issue_kind" widget="badge"/>
+                                    <field name="source_area" widget="badge"/>
+                                    <field name="name"/>
+                                    <field name="left_amount"
+                                           invisible="not has_difference"/>
+                                    <field name="right_amount"
+                                           invisible="not has_difference"/>
+                                    <field name="difference_amount"
+                                           invisible="not has_difference"/>
+                                    <field name="left_count"
+                                           invisible="not has_count_comparison"/>
+                                    <field name="right_count"
+                                           invisible="not has_count_comparison"/>
+                                    <field name="count_difference"
+                                           invisible="not has_count_comparison"/>
+                                    <field name="action_hint" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="来源与审计">
+                            <group>
+                                <group string="关联来源">
+                                    <field name="accounting_scope_id"/>
+                                    <field name="payroll_summary_id"
+                                           groups="sudo_global_finance.group_compliance_manager"/>
+                                    <field name="withholding_record_id"
+                                           groups="sudo_global_finance.group_compliance_manager"/>
+                                    <field name="payment_dataset_id"/>
+                                    <field name="payment_record_ids" widget="many2many_tags"/>
+                                </group>
+                                <group string="记录数量">
+                                    <field name="posted_accounting_line_count"/>
+                                    <field name="draft_accounting_line_count"/>
+                                    <field name="payroll_record_count"/>
+                                    <field name="filing_record_count"/>
+                                    <field name="payment_record_count"/>
+                                </group>
+                            </group>
+                            <group string="执行审计">
+                                <field name="requested_at"/>
+                                <field name="requested_by_id"/>
+                                <field name="started_at"/>
+                                <field name="finished_at"/>
+                                <field name="error_code"/>
+                                <field name="result_checksum" widget="CopyClipboardChar"/>
+                            </group>
+                            <group string="来源快照 SHA-256" col="4">
+                                <field name="accounting_scope_snapshot_checksum" widget="CopyClipboardChar"/>
+                                <field name="accounting_snapshot_checksum" widget="CopyClipboardChar"/>
+                                <field name="payroll_snapshot_checksum" widget="CopyClipboardChar"/>
+                                <field name="filing_snapshot_checksum" widget="CopyClipboardChar"/>
+                                <field name="payment_snapshot_checksum" widget="CopyClipboardChar"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_issue_search" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.issue.search</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <search string="个人所得税勾稽问题">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="run_id"/>
+                <field name="company_id"/>
+                <filter name="current" string="当前结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="blocking" string="阻断"
+                        domain="[('severity', '=', 'blocking')]"/>
+                <filter name="differences" string="差异"
+                        domain="[('issue_kind', '=', 'difference')]"/>
+                <separator/>
+                <filter name="group_source" string="问题来源"
+                        context="{'group_by': 'source_area'}"/>
+                <filter name="group_severity" string="严重级别"
+                        context="{'group_by': 'severity'}"/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_issue_list" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.issue.list</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <list string="个人所得税勾稽问题" create="0" edit="0" delete="0"
+                  decoration-danger="severity == 'blocking'"
+                  decoration-warning="severity == 'review'"
+                  decoration-muted="not is_current_result">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="run_id"/>
+                <field name="severity" widget="badge"
+                       decoration-danger="severity == 'blocking'"
+                       decoration-warning="severity == 'review'"/>
+                <field name="issue_kind" widget="badge"/>
+                <field name="source_area" widget="badge"/>
+                <field name="name"/>
+                <field name="left_label" optional="show"/>
+                <field name="left_amount" invisible="not has_difference"/>
+                <field name="right_label" optional="show"/>
+                <field name="right_amount" invisible="not has_difference"/>
+                <field name="difference_amount" invisible="not has_difference"/>
+                <field name="left_count" invisible="not has_count_comparison"/>
+                <field name="right_count" invisible="not has_count_comparison"/>
+                <field name="count_difference" invisible="not has_count_comparison"/>
+                <field name="action_hint" optional="show"/>
+                <field name="is_current_result" widget="boolean" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_issue_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.issue.form</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.issue</field>
+        <field name="arch" type="xml">
+            <form string="个人所得税勾稽问题" create="0" edit="0" delete="0">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="run_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="code"/>
+                            <field name="source_area" widget="badge"/>
+                        </group>
+                        <group>
+                            <field name="severity" widget="badge"/>
+                            <field name="issue_kind" widget="badge"/>
+                            <field name="affected_record_count"/>
+                            <field name="is_current_result"/>
+                        </group>
+                    </group>
+                    <group string="金额比较" invisible="not has_difference" col="4">
+                        <field name="left_label"/>
+                        <field name="left_amount"/>
+                        <field name="right_label"/>
+                        <field name="right_amount"/>
+                        <field name="difference_amount"/>
+                    </group>
+                    <group string="数量比较" invisible="not has_count_comparison" col="4">
+                        <field name="left_count"/>
+                        <field name="right_count"/>
+                        <field name="count_difference"/>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                        <field name="action_hint"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_period_reconciliation_wizard_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.period.reconciliation.wizard.form</field>
+        <field name="model">sudo.cn.iit.period.reconciliation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="发起个人所得税工资账表款勾稽">
+                <div class="alert alert-info" role="alert">
+                    系统将比较已核验账务口径、受控工资汇总、唯一当前个税申报及完整缴退税数据。请输入来源实际使用的税种代码；系统不会猜测代码、科目或工资金额。
+                </div>
+                <group>
+                    <field name="profile_id" options="{'no_create': True}"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="period_start"/>
+                    <field name="period_end"/>
+                    <field name="iit_tax_type_code"/>
+                </group>
+                <footer>
+                    <button name="action_queue" type="object"
+                            string="提交后台勾稽" class="btn-primary"/>
+                    <button string="取消" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_iit_period_reconciliation_runs" model="ir.actions.act_window">
+        <field name="name">个人所得税工资账表款勾稽</field>
+        <field name="res_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_iit_period_reconciliation_run_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <record id="action_cn_iit_period_reconciliation_issues" model="ir.actions.act_window">
+        <field name="name">个人所得税勾稽问题</field>
+        <field name="res_model">sudo.cn.iit.period.reconciliation.issue</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_iit_period_reconciliation_issue_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+    </record>
+
+    <record id="action_cn_iit_period_reconciliation_start" model="ir.actions.act_window">
+        <field name="name">发起个人所得税工资账表款勾稽</field>
+        <field name="res_model">sudo.cn.iit.period.reconciliation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_cn_iit_period_reconciliation_runs"
+              name="个人所得税工资账表款勾稽"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_iit_period_reconciliation_runs"
+              sequence="63"
+              groups="sudo_global_finance.group_compliance_user"/>
+    <menuitem id="menu_cn_iit_period_reconciliation_start"
+              name="发起个人所得税勾稽"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_iit_period_reconciliation_start"
+              sequence="64"
+              groups="sudo_global_finance.group_compliance_manager"/>
+    <menuitem id="menu_cn_iit_period_reconciliation_issues"
+              name="个人所得税勾稽问题"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_iit_period_reconciliation_issues"
+              sequence="65"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

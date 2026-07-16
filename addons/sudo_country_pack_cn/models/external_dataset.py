@@ -13,6 +13,7 @@ DATASET_TYPES = (
     ("cit_filing", "企业所得税申报数据"),
     ("tax_payment", "税款缴纳数据"),
     ("iit_withholding", "个人所得税扣缴数据"),
+    ("payroll_summary", "工资薪酬汇总数据"),
     ("bank_evidence", "银行与支付证据"),
     ("other_regulatory", "其他监管数据"),
 )

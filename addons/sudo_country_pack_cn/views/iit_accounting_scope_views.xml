@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_iit_accounting_scope_search" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.accounting.scope.search</field>
+        <field name="model">sudo.cn.iit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <search string="个人所得税账务取数口径">
+                <field name="profile_id"/>
+                <field name="company_id"/>
+                <field name="source_reference"/>
+                <field name="iit_source_schema"/>
+                <field name="payroll_source_schema"/>
+                <filter name="verified" string="已核验"
+                        domain="[('state', '=', 'verified')]"/>
+                <filter name="draft" string="待核验"
+                        domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+                <filter name="group_state" string="状态"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_accounting_scope_list" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.accounting.scope.list</field>
+        <field name="model">sudo.cn.iit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <list string="个人所得税账务取数口径"
+                  decoration-success="state == 'verified' and integrity_state == 'verified'"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="integrity_state == 'checksum_mismatch'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="source_reference"/>
+                <field name="iit_source_schema" optional="show"/>
+                <field name="payroll_source_schema" optional="show"/>
+                <field name="line_count" sum="科目数"/>
+                <field name="verified_by_id" optional="show"/>
+                <field name="integrity_state" widget="badge"
+                       decoration-success="integrity_state == 'verified'"
+                       decoration-warning="integrity_state == 'unverified'"
+                       decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'verified'"
+                       decoration-warning="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_iit_accounting_scope_form" model="ir.ui.view">
+        <field name="name">sudo.cn.iit.accounting.scope.form</field>
+        <field name="model">sudo.cn.iit.accounting.scope</field>
+        <field name="arch" type="xml">
+            <form string="个人所得税账务取数口径">
+                <header>
+                    <button name="action_verify" type="object"
+                            string="核验口径" class="btn-primary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="撤销核验" class="btn-secondary"
+                            groups="sudo_global_finance.group_compliance_manager"
+                            invisible="state != 'verified'"/>
+                    <field name="state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,verified"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="integrity_state != 'checksum_mismatch'">
+                        已核验口径、工作底稿或关联科目信息发生变化，不能用于新的个人所得税勾稽。
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        本配置只定义工资成本、应付职工薪酬和应交个人所得税的受控取数范围，不根据科目名称猜测，不计算工资、扣除或税额。
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        来源结构及版本必须与实际导入完全一致；应补退税额符号约定只解释来源字段，不判断退税资格或税法处理。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="适用范围">
+                            <field name="profile_id" options="{'no_create': True}"
+                                   readonly="state == 'verified'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="valid_from" readonly="state == 'verified'"/>
+                            <field name="valid_to" readonly="state == 'verified'"/>
+                            <field name="line_count"/>
+                        </group>
+                        <group string="核验控制">
+                            <field name="source_reference" readonly="state == 'verified'"/>
+                            <field name="verified_by_id"/>
+                            <field name="verified_at"/>
+                            <field name="integrity_state" widget="badge"
+                                   decoration-success="integrity_state == 'verified'"
+                                   decoration-warning="integrity_state == 'unverified'"
+                                   decoration-danger="integrity_state == 'checksum_mismatch'"/>
+                            <field name="verification_checksum" widget="CopyClipboardChar"/>
+                        </group>
+                    </group>
+                    <group string="受控来源语义">
+                        <group>
+                            <field name="payroll_source_schema"
+                                   readonly="state == 'verified'"/>
+                            <field name="payroll_source_schema_version"
+                                   readonly="state == 'verified'"/>
+                        </group>
+                        <group>
+                            <field name="iit_source_schema"
+                                   readonly="state == 'verified'"/>
+                            <field name="iit_source_schema_version"
+                                   readonly="state == 'verified'"/>
+                            <field name="payable_refundable_sign_convention"
+                                   readonly="state == 'verified'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="scope_note" readonly="state == 'verified'"
+                               placeholder="说明计提、结算、冲销重分类、非工资项目、跨期事项和当前限制..."/>
+                        <field name="separation_exception_reason"
+                               readonly="state == 'verified'"
+                               placeholder="仅在编制人与核验人为同一人时填写..."/>
+                    </group>
+                    <notebook>
+                        <page string="取数科目">
+                            <div class="alert alert-info" role="alert">
+                                每个角色至少配置一个独立科目；无法从合并科目可靠拆分时应保持数据不足，不得重复映射制造一致。
+                            </div>
+                            <field name="line_ids" readonly="state == 'verified'">
+                                <list editable="bottom"
+                                      decoration-warning="exception_reason">
+                                    <field name="account_code" readonly="1"/>
+                                    <field name="account_id" options="{'no_create': True}"/>
+                                    <field name="account_type"/>
+                                    <field name="role"/>
+                                    <field name="exception_reason" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="工作底稿与证据">
+                            <field name="evidence_attachment_ids" widget="many2many_binary"
+                                   readonly="state == 'verified'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_iit_accounting_scopes" model="ir.actions.act_window">
+        <field name="name">个人所得税账务取数口径</field>
+        <field name="res_model">sudo.cn.iit.accounting.scope</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_iit_accounting_scope_search"/>
+        <field name="context">{'search_default_verified': 1}</field>
+    </record>
+
+    <menuitem id="menu_cn_iit_accounting_scopes"
+              name="个人所得税账务取数口径"
+              parent="sudo_global_finance.menu_compliance_configuration"
+              action="action_cn_iit_accounting_scopes"
+              sequence="72"
+              groups="sudo_global_finance.group_compliance_user"/>
+</odoo>

@@ -1,0 +1,29 @@
+{
+  "schema": "sdoo.cn.tax-data.v1",
+  "dataset_type": "payroll_summary",
+  "source_schema": "example-controlled-payroll-summary",
+  "source_schema_version": "2026.1",
+  "record_count": 1,
+  "records": [
+    {
+      "source_record_key": "EXAMPLE-PAYROLL-2026-06",
+      "taxpayer_name": "示例公司",
+      "taxpayer_id": "91440101MA5D123451",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "currency_code": "CNY",
+      "payroll_frequency": "monthly",
+      "payroll_status": "confirmed",
+      "payroll_run_reference": "EXAMPLE-PAYROLL-RUN-2026-06",
+      "approved_at": "2026-06-30T18:00:00+08:00",
+      "declared_person_count": 1,
+      "gross_income_amount": "10000.00",
+      "tax_exempt_income_amount": "0.00",
+      "employee_social_insurance_amount": "0.00",
+      "employee_housing_fund_amount": "0.00",
+      "other_pre_tax_deduction_amount": "0.00",
+      "net_pay_amount": "9910.00",
+      "withheld_iit_amount": "90.00"
+    }
+  ]
+}

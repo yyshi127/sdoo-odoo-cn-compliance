@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_tax_data_parse_run_form_payroll" model="ir.ui.view">
+        <field name="name">sudo.cn.tax.data.parse.run.form.payroll</field>
+        <field name="model">sudo.cn.tax.data.parse.run</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_tax_data_parse_run_form_iit"/>
+        <field name="arch" type="xml">
+            <field name="iit_withholding_count" position="after">
+                <field name="payroll_summary_count"/>
+            </field>
+            <xpath expr="//page[field[@name='iit_withholding_record_ids']]"
+                   position="after">
+                <page string="工资薪酬汇总"
+                      invisible="dataset_type != 'payroll_summary'">
+                    <field name="payroll_summary_record_ids">
+                        <list create="0" edit="0" delete="0"
+                              decoration-danger="quality_state == 'error'"
+                              decoration-warning="quality_state == 'warning'">
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="payroll_frequency" widget="badge"/>
+                            <field name="payroll_status" widget="badge"/>
+                            <field name="payroll_run_reference"/>
+                            <field name="declared_person_count"/>
+                            <field name="currency_id"/>
+                            <field name="gross_income_amount"/>
+                            <field name="withheld_iit_amount"/>
+                            <field name="quality_state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_cn_payroll_summary_record_search" model="ir.ui.view">
+        <field name="name">sudo.cn.payroll.summary.record.search</field>
+        <field name="model">sudo.cn.payroll.summary.record</field>
+        <field name="arch" type="xml">
+            <search string="工资薪酬汇总台账">
+                <field name="payroll_run_reference"/>
+                <field name="taxpayer_name"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <filter name="current" string="当前结果"
+                        domain="[('is_current_result', '=', True)]"/>
+                <filter name="confirmed" string="已确认或发放"
+                        domain="[('payroll_status', 'in', ('confirmed', 'paid'))]"/>
+                <filter name="quality_error" string="数据异常"
+                        domain="[('quality_state', '=', 'error')]"/>
+                <separator/>
+                <filter name="group_period" string="期间结束"
+                        context="{'group_by': 'period_end'}"/>
+                <filter name="group_status" string="薪资状态"
+                        context="{'group_by': 'payroll_status'}"/>
+                <filter name="group_company" string="公司"
+                        context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cn_payroll_summary_record_list" model="ir.ui.view">
+        <field name="name">sudo.cn.payroll.summary.record.list</field>
+        <field name="model">sudo.cn.payroll.summary.record</field>
+        <field name="arch" type="xml">
+            <list string="工资薪酬汇总台账" create="0" edit="0" delete="0"
+                  decoration-success="payroll_status in ('confirmed', 'paid') and quality_state != 'error'"
+                  decoration-danger="quality_state == 'error'"
+                  decoration-warning="quality_state == 'warning' or payroll_status in ('draft', 'unknown')"
+                  decoration-muted="not is_current_result or payroll_status == 'cancelled'">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="payroll_run_reference"/>
+                <field name="payroll_frequency" widget="badge"/>
+                <field name="payroll_status" widget="badge"
+                       decoration-success="payroll_status in ('confirmed', 'paid')"
+                       decoration-warning="payroll_status in ('draft', 'unknown')"
+                       decoration-muted="payroll_status == 'cancelled'"/>
+                <field name="approved_at" optional="show"/>
+                <field name="has_declared_person_count" string="人数已提供"/>
+                <field name="declared_person_count"/>
+                <field name="currency_id"/>
+                <field name="has_gross_income_amount" string="收入已提供"/>
+                <field name="gross_income_amount" sum="收入总额"/>
+                <field name="has_withheld_iit_amount" string="代扣税已提供"/>
+                <field name="withheld_iit_amount" sum="代扣个税"/>
+                <field name="quality_state" widget="badge"
+                       decoration-success="quality_state == 'valid'"
+                       decoration-warning="quality_state == 'warning'"
+                       decoration-danger="quality_state == 'error'"/>
+                <field name="is_current_result" widget="boolean"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cn_payroll_summary_record_form" model="ir.ui.view">
+        <field name="name">sudo.cn.payroll.summary.record.form</field>
+        <field name="model">sudo.cn.payroll.summary.record</field>
+        <field name="arch" type="xml">
+            <form string="规范化工资薪酬汇总" create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="has_declared_person_count" invisible="1"/>
+                    <field name="has_gross_income_amount" invisible="1"/>
+                    <field name="has_tax_exempt_income_amount" invisible="1"/>
+                    <field name="has_employee_social_insurance_amount" invisible="1"/>
+                    <field name="has_employee_housing_fund_amount" invisible="1"/>
+                    <field name="has_other_pre_tax_deduction_amount" invisible="1"/>
+                    <field name="has_net_pay_amount" invisible="1"/>
+                    <field name="has_withheld_iit_amount" invisible="1"/>
+                    <widget name="web_ribbon" title="非当前导入结果"
+                            bg_color="text-bg-secondary"
+                            invisible="is_current_result"/>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="quality_state != 'error'">
+                        该汇总存在主体、期间、人数或必要金额错误，不能用于个人所得税勾稽。
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="quality_state != 'warning'">
+                        该汇总可读取，但来源状态或字段存在必须复核和披露的限制。
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        本台账只保存受控工资系统的期间汇总，不保存姓名、证件、手机、地址或银行账户，也不计算工资或个人所得税。
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="汇总范围">
+                            <field name="taxpayer_name"/>
+                            <field name="taxpayer_id"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="payroll_frequency" widget="badge"/>
+                            <field name="declared_person_count"
+                                   invisible="not has_declared_person_count"/>
+                        </group>
+                        <group string="薪资批次状态">
+                            <field name="payroll_status" widget="badge"/>
+                            <field name="payroll_run_reference"/>
+                            <field name="approved_at"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <group string="来源汇总金额" col="4">
+                        <field name="gross_income_amount"
+                               invisible="not has_gross_income_amount"/>
+                        <field name="tax_exempt_income_amount"
+                               invisible="not has_tax_exempt_income_amount"/>
+                        <field name="employee_social_insurance_amount"
+                               invisible="not has_employee_social_insurance_amount"/>
+                        <field name="employee_housing_fund_amount"
+                               invisible="not has_employee_housing_fund_amount"/>
+                        <field name="other_pre_tax_deduction_amount"
+                               invisible="not has_other_pre_tax_deduction_amount"/>
+                        <field name="net_pay_amount"
+                               invisible="not has_net_pay_amount"/>
+                        <field name="withheld_iit_amount"
+                               invisible="not has_withheld_iit_amount"/>
+                    </group>
+                    <notebook>
+                        <page string="数据质量与溯源">
+                            <group>
+                                <group>
+                                    <field name="quality_state" widget="badge"/>
+                                    <field name="is_current_result"/>
+                                    <field name="source_coverage_scope" widget="badge"/>
+                                    <field name="source_authenticity_state" widget="badge"/>
+                                    <field name="source_review_control_state" widget="badge"/>
+                                    <field name="source_integrity_state" widget="badge"/>
+                                </group>
+                                <group>
+                                    <field name="source_record_key"/>
+                                    <field name="dataset_id"/>
+                                    <field name="parse_run_id"/>
+                                    <field name="record_checksum" widget="CopyClipboardChar"/>
+                                </group>
+                            </group>
+                            <field name="issue_json"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cn_payroll_summary_records" model="ir.actions.act_window">
+        <field name="name">工资薪酬汇总台账</field>
+        <field name="res_model">sudo.cn.payroll.summary.record</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cn_payroll_summary_record_search"/>
+        <field name="context">{'search_default_current': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">尚无工资薪酬汇总标准化记录</p>
+            <p>先以合规管理员身份封存不含人员身份字段的受控 JSON，再执行导入。</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_cn_payroll_summary_records"
+              name="工资薪酬汇总台账"
+              parent="sudo_global_finance.menu_compliance_management"
+              action="action_cn_payroll_summary_records" sequence="52"
+              groups="sudo_global_finance.group_compliance_manager"/>
+
+    <record id="view_cn_external_dataset_form_payroll_results" model="ir.ui.view">
+        <field name="name">sudo.cn.external.dataset.form.payroll.results</field>
+        <field name="model">sudo.cn.external.dataset</field>
+        <field name="inherit_id"
+               ref="sudo_country_pack_cn.view_cn_external_dataset_form_iit_results"/>
+        <field name="arch" type="xml">
+            <button name="action_import_tax_data" position="attributes">
+                <attribute name="invisible">state != 'sealed' or integrity_state != 'verified' or dataset_type not in ('vat_filing', 'cit_filing', 'iit_withholding', 'payroll_summary', 'tax_payment')</attribute>
+            </button>
+            <xpath expr="//button[field[@name='normalized_tax_payment_count']]"
+                   position="before">
+                <button name="action_view_normalized_tax_records" type="object"
+                        class="oe_stat_button" icon="fa-money"
+                        groups="sudo_global_finance.group_compliance_manager"
+                        invisible="normalized_payroll_summary_count == 0">
+                    <field name="normalized_payroll_summary_count"
+                           widget="statinfo" string="工资汇总"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

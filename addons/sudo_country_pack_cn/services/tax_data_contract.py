@@ -6,7 +6,13 @@ import re
 
 CONTRACT_SCHEMA = "sdoo.cn.tax-data.v1"
 SUPPORTED_DATASET_TYPES = frozenset(
-    {"vat_filing", "cit_filing", "tax_payment", "iit_withholding"}
+    {
+        "vat_filing",
+        "cit_filing",
+        "tax_payment",
+        "iit_withholding",
+        "payroll_summary",
+    }
 )
 MAX_CONTRACT_BYTES = 20 * 1024 * 1024
 MAX_RECORDS = 10000
@@ -123,6 +129,22 @@ _IIT_WITHHOLDING_FIELDS = _COMMON_RECORD_FIELDS | frozenset(
         "total_tax_paid_amount",
         "total_payable_refundable_amount",
         "lines",
+    }
+)
+_PAYROLL_SUMMARY_FIELDS = _COMMON_RECORD_FIELDS | frozenset(
+    {
+        "payroll_frequency",
+        "payroll_status",
+        "payroll_run_reference",
+        "approved_at",
+        "declared_person_count",
+        "gross_income_amount",
+        "tax_exempt_income_amount",
+        "employee_social_insurance_amount",
+        "employee_housing_fund_amount",
+        "other_pre_tax_deduction_amount",
+        "net_pay_amount",
+        "withheld_iit_amount",
     }
 )
 _VAT_LINE_FIELDS = frozenset(
@@ -411,6 +433,7 @@ def load_tax_data_contract(
         "cit_filing": _CIT_FILING_FIELDS,
         "tax_payment": _TAX_PAYMENT_FIELDS,
         "iit_withholding": _IIT_WITHHOLDING_FIELDS,
+        "payroll_summary": _PAYROLL_SUMMARY_FIELDS,
     }[dataset_type]
     source_keys = set()
     normalized_records = []

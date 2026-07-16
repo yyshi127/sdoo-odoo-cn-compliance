@@ -243,6 +243,10 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("controlled CIT filing and settlement archive capability must be declared")
     if features.get("iit_withholding_normalization") is not True:
         fail("controlled IIT withholding normalization capability must be declared")
+    if features.get("payroll_summary_normalization") is not True:
+        fail("controlled aggregate payroll normalization capability must be declared")
+    if features.get("iit_accounting_reconciliation") is not True:
+        fail("controlled IIT accounting reconciliation capability must be declared")
 
 
 def validate_fact_definitions() -> tuple[set[str], dict[str, str]]:
@@ -1159,6 +1163,8 @@ def validate_tax_data_normalization() -> None:
         fail("CIT filing normalization views must be loaded by the manifest")
     if "views/iit_withholding_views.xml" not in manifest.get("data", []):
         fail("IIT withholding normalization views must be loaded by the manifest")
+    if "views/payroll_summary_views.xml" not in manifest.get("data", []):
+        fail("payroll summary normalization views must be loaded by the manifest")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1169,6 +1175,8 @@ def validate_tax_data_normalization() -> None:
         fail("CIT filing normalization models must be imported")
     if "from . import iit_withholding_normalization" not in model_init:
         fail("IIT withholding normalization models must be imported")
+    if "from . import payroll_summary_normalization" not in model_init:
+        fail("payroll summary normalization models must be imported")
 
     service_init = (ADDON_ROOT / "services" / "__init__.py").read_text(
         encoding="utf-8"
@@ -1180,17 +1188,22 @@ def validate_tax_data_normalization() -> None:
     model_path = ADDON_ROOT / "models" / "tax_data_normalization.py"
     cit_model_path = ADDON_ROOT / "models" / "cit_filing_normalization.py"
     iit_model_path = ADDON_ROOT / "models" / "iit_withholding_normalization.py"
+    payroll_model_path = (
+        ADDON_ROOT / "models" / "payroll_summary_normalization.py"
+    )
     if (
         not contract_path.is_file()
         or not model_path.is_file()
         or not cit_model_path.is_file()
         or not iit_model_path.is_file()
+        or not payroll_model_path.is_file()
     ):
         fail("tax data normalization implementation is incomplete")
     contract_content = contract_path.read_text(encoding="utf-8")
     model_content = model_path.read_text(encoding="utf-8")
     cit_model_content = cit_model_path.read_text(encoding="utf-8")
     iit_model_content = iit_model_path.read_text(encoding="utf-8")
+    payroll_model_content = payroll_model_path.read_text(encoding="utf-8")
     for required in (
         "sdoo.cn.tax-data.v1",
         "duplicate JSON key",
@@ -1268,6 +1281,21 @@ def validate_tax_data_normalization() -> None:
     ):
         if required not in iit_model_content:
             fail(f"IIT withholding normalization contract is missing {required}")
+    for required in (
+        '"payroll_summary"',
+        "_PAYROLL_SUMMARY_FIELDS",
+    ):
+        if required not in contract_content:
+            fail(f"payroll summary data contract is missing {required}")
+    for required in (
+        '_name = "sudo.cn.payroll.summary.record"',
+        "has_gross_income_amount",
+        "has_withheld_iit_amount",
+        "MISSING_PAYROLL_PERSON_COUNT",
+        "record_checksum",
+    ):
+        if required not in payroll_model_content:
+            fail(f"payroll summary normalization contract is missing {required}")
 
     access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
     with access_path.open(encoding="utf-8", newline="") as handle:
@@ -1283,6 +1311,7 @@ def validate_tax_data_normalization() -> None:
     manager_only_models = {
         "model_sudo_cn_iit_withholding_record",
         "model_sudo_cn_iit_withholding_line",
+        "model_sudo_cn_payroll_summary_record",
     }
     expected_groups = {
         "sudo_global_finance.group_compliance_user",
@@ -1341,7 +1370,7 @@ def validate_tax_data_normalization() -> None:
     for required in (
         "cn_external_dataset_manager_company_rule",
         "cn_tax_data_parse_run_manager_company_rule",
-        "('dataset_type', '!=', 'iit_withholding')",
+        "('dataset_type', 'not in', ('iit_withholding', 'payroll_summary'))",
     ):
         if required not in security_content:
             fail(f"sensitive IIT source access control is missing {required}")
@@ -1349,10 +1378,12 @@ def validate_tax_data_normalization() -> None:
     view_path = ADDON_ROOT / view_relative_path
     cit_view_path = ADDON_ROOT / "views" / "cit_filing_views.xml"
     iit_view_path = ADDON_ROOT / "views" / "iit_withholding_views.xml"
+    payroll_view_path = ADDON_ROOT / "views" / "payroll_summary_views.xml"
     if (
         not view_path.is_file()
         or not cit_view_path.is_file()
         or not iit_view_path.is_file()
+        or not payroll_view_path.is_file()
     ):
         fail("tax data normalization UI is missing")
     view_content = view_path.read_text(encoding="utf-8")
@@ -1411,6 +1442,18 @@ def validate_tax_data_normalization() -> None:
     ):
         if boundary_text not in iit_view_content:
             fail(f"IIT withholding UI privacy boundary is missing: {boundary_text}")
+    payroll_view_content = payroll_view_path.read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_tax_data_parse_run_form_payroll",
+        "view_cn_payroll_summary_record_search",
+        "view_cn_payroll_summary_record_list",
+        "view_cn_payroll_summary_record_form",
+        "action_cn_payroll_summary_records",
+        "menu_cn_payroll_summary_records",
+        "view_cn_external_dataset_form_payroll_results",
+    ):
+        if f'id="{required_id}"' not in payroll_view_content:
+            fail(f"payroll summary normalization UI is missing {required_id}")
 
     pure_test_path = REPOSITORY_ROOT / "tools" / "test_tax_data_contract.py"
     runtime_test_path = ADDON_ROOT / "tests" / "test_tax_data_normalization.py"
@@ -1791,6 +1834,220 @@ def validate_cit_period_reconciliation() -> None:
     ):
         if f"def {test_name}(" not in test_content:
             fail(f"CIT reconciliation runtime coverage is missing {test_name}")
+
+
+def validate_iit_period_reconciliation() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    required_data_files = {
+        "data/iit_period_reconciliation_cron.xml",
+        "views/iit_accounting_scope_views.xml",
+        "views/iit_period_reconciliation_views.xml",
+    }
+    if not required_data_files.issubset(manifest.get("data", [])):
+        fail("IIT accounting scope and reconciliation files must be loaded")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    for module_name in ("iit_accounting_scope", "iit_period_reconciliation"):
+        if f"from . import {module_name}" not in model_init:
+            fail(f"IIT model must be imported: {module_name}")
+
+    scope_path = ADDON_ROOT / "models" / "iit_accounting_scope.py"
+    run_path = ADDON_ROOT / "models" / "iit_period_reconciliation.py"
+    if not scope_path.is_file() or not run_path.is_file():
+        fail("IIT accounting reconciliation implementation is incomplete")
+    scope_content = scope_path.read_text(encoding="utf-8")
+    run_content = run_path.read_text(encoding="utf-8")
+    for required in (
+        '_name = "sudo.cn.iit.accounting.scope"',
+        '_name = "sudo.cn.iit.accounting.scope.line"',
+        "_IIT_SCOPE_TRANSITION_MARKER",
+        "payroll_source_schema",
+        "payroll_source_schema_version",
+        "iit_source_schema",
+        "iit_source_schema_version",
+        "payable_refundable_sign_convention",
+        "evidence_attachment_ids",
+        "separation_exception_reason",
+        "_overlapping_verified",
+        "action_verify",
+        "verification_checksum",
+        "checksum_mismatch",
+        '"unique(scope_id, account_id)"',
+    ):
+        if required not in scope_content:
+            fail(f"IIT accounting scope contract is missing {required}")
+
+    for required in (
+        "IIT_PERIOD_ENGINE_VERSION",
+        "FOR UPDATE SKIP LOCKED",
+        "MAX_ACCOUNTING_LINES",
+        "MAX_SOURCE_RECORDS",
+        "MAX_PAYMENT_RECORDS",
+        "models.UniqueIndex",
+        "_IIT_PERIOD_TRANSITION_MARKER",
+        "accounting_scope_snapshot_checksum",
+        "accounting_snapshot_checksum",
+        "payroll_snapshot_checksum",
+        "filing_snapshot_checksum",
+        "payment_snapshot_checksum",
+        "result_checksum",
+        "result_integrity_state",
+        "_current_result_checksum",
+        "NO_VERIFIED_IIT_ACCOUNTING_SCOPE",
+        "NO_CURRENT_PAYROLL_SUMMARY",
+        "NO_CURRENT_IIT_WITHHOLDING_RETURN",
+        "NO_CURRENT_IIT_PAYMENT_DATA",
+        "PAYROLL_SOURCE_SCHEMA_MISMATCH",
+        "IIT_SOURCE_SCHEMA_MISMATCH",
+        "IIT_PAYROLL_FILING_PERSON_COUNT_DIFFERENCE",
+        "IIT_LEDGER_PAYROLL_EXPENSE_DIFFERENCE",
+        "IIT_EMPLOYEE_PAYABLE_PAYROLL_DIFFERENCE",
+        "IIT_LEDGER_PAYROLL_WITHHOLDING_DIFFERENCE",
+        "IIT_FILING_PAYROLL_INCOME_DIFFERENCE",
+        "IIT_FILING_PAYROLL_TAX_DIFFERENCE",
+        "IIT_LEDGER_PAYMENT_DIFFERENCE",
+        "IIT_PAYABLE_PAYMENT_DIFFERENCE",
+        "IIT_REFUNDABLE_REFUND_DIFFERENCE",
+        'payments["payment_dates"]',
+        '("date", "in", payment_dates)',
+        "has_count_comparison",
+        'issue_kind == "difference" and not has_count_comparison',
+        "insufficient_data",
+        "cn_iit_period_reconciliation.queued",
+        "cn_iit_period_reconciliation.succeeded",
+        'groups="sudo_global_finance.group_compliance_manager"',
+    ):
+        if required not in run_content:
+            fail(f"IIT period reconciliation contract is missing {required}")
+
+    access_path = ADDON_ROOT / "security" / "ir.model.access.csv"
+    with access_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    governed_models = {
+        "model_sudo_cn_iit_accounting_scope",
+        "model_sudo_cn_iit_accounting_scope_line",
+        "model_sudo_cn_iit_period_reconciliation_run",
+        "model_sudo_cn_iit_period_reconciliation_issue",
+    }
+    expected_groups = {
+        "sudo_global_finance.group_compliance_user",
+        "sudo_global_finance.group_compliance_manager",
+    }
+    for model_name in governed_models:
+        model_rows = [row for row in rows if row["model_id:id"] == model_name]
+        if {row["group_id:id"] for row in model_rows} != expected_groups:
+            fail(f"IIT reconciliation ACL groups are incomplete: {model_name}")
+        user_row = next(
+            row
+            for row in model_rows
+            if row["group_id:id"].endswith("group_compliance_user")
+        )
+        if [
+            user_row[key]
+            for key in ("perm_read", "perm_write", "perm_create", "perm_unlink")
+        ] != ["1", "0", "0", "0"]:
+            fail(f"IIT reconciliation users must be read-only: {model_name}")
+        if model_name.endswith(("reconciliation_run", "reconciliation_issue")):
+            manager_row = next(
+                row
+                for row in model_rows
+                if row["group_id:id"].endswith("group_compliance_manager")
+            )
+            if manager_row["perm_unlink"] != "0":
+                fail(f"IIT reconciliation snapshots must not be deleted: {model_name}")
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = record_fields(record)
+        model_field = fields.get("model_id")
+        model_ref = model_field.attrib.get("ref") if model_field is not None else ""
+        if model_ref not in governed_models:
+            continue
+        domain = field_text(fields, "domain_force", record.attrib["id"])
+        if "company_ids" not in domain or "company_id" not in domain:
+            fail(f"IIT reconciliation rule lacks company isolation: {model_ref}")
+        ruled_models.add(model_ref)
+    if ruled_models != governed_models:
+        fail("every governed IIT reconciliation model requires a company rule")
+
+    cron_content = (
+        ADDON_ROOT / "data" / "iit_period_reconciliation_cron.xml"
+    ).read_text(encoding="utf-8")
+    if "_cron_process_runs(limit=1)" not in cron_content:
+        fail("IIT reconciliation must use a bounded native Odoo queue")
+
+    scope_view = (
+        ADDON_ROOT / "views" / "iit_accounting_scope_views.xml"
+    ).read_text(encoding="utf-8")
+    run_view = (
+        ADDON_ROOT / "views" / "iit_period_reconciliation_views.xml"
+    ).read_text(encoding="utf-8")
+    for required_id in (
+        "view_cn_iit_accounting_scope_list",
+        "view_cn_iit_accounting_scope_form",
+        "action_cn_iit_accounting_scopes",
+        "menu_cn_iit_accounting_scopes",
+    ):
+        if f'id="{required_id}"' not in scope_view:
+            fail(f"IIT accounting scope UI is missing {required_id}")
+    for required_id in (
+        "view_cn_iit_period_reconciliation_run_list",
+        "view_cn_iit_period_reconciliation_run_form",
+        "view_cn_iit_period_reconciliation_issue_list",
+        "view_cn_iit_period_reconciliation_issue_form",
+        "view_cn_iit_period_reconciliation_wizard_form",
+        "action_cn_iit_period_reconciliation_runs",
+        "action_cn_iit_period_reconciliation_issues",
+        "action_cn_iit_period_reconciliation_start",
+        "menu_cn_iit_period_reconciliation_runs",
+        "menu_cn_iit_period_reconciliation_start",
+        "menu_cn_iit_period_reconciliation_issues",
+    ):
+        if f'id="{required_id}"' not in run_view:
+            fail(f"IIT period reconciliation UI is missing {required_id}")
+    for required in (
+        'groups="sudo_global_finance.group_compliance_manager"',
+        "has_count_comparison",
+        "五层数据充分性",
+        "差异不自动等同于少缴、多缴或违法",
+        "当前受控口径下算术一致",
+        "系统不会猜测代码、科目或工资金额",
+    ):
+        if required not in run_view:
+            fail(f"IIT reconciliation UI boundary is missing {required}")
+
+    test_path = ADDON_ROOT / "tests" / "test_iit_period_reconciliation.py"
+    if not test_path.is_file():
+        fail("IIT reconciliation runtime tests are missing")
+    test_content = test_path.read_text(encoding="utf-8")
+    test_tree = ast.parse(test_content)
+    test_methods = sum(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+        for node in ast.walk(test_tree)
+    )
+    if test_methods < 9:
+        fail("IIT reconciliation requires at least nine runtime tests")
+    for test_name in (
+        "test_aligned_run_uses_payment_date_outside_tax_period",
+        "test_missing_sources_is_insufficient_not_aligned",
+        "test_amount_differences_are_visible_review_items",
+        "test_person_count_difference_is_not_rendered_as_money",
+        "test_source_schema_mismatch_blocks_comparison",
+        "test_verified_scope_and_results_are_immutable",
+        "test_sensitive_sources_are_manager_only_but_run_is_readable",
+        "test_company_rule_hides_other_company_scope",
+        "test_direct_creation_and_manual_changes_are_blocked",
+    ):
+        if f"def {test_name}(" not in test_content:
+            fail(f"IIT reconciliation runtime coverage is missing {test_name}")
 
 
 def validate_filing_payment_archive() -> None:
@@ -2344,6 +2601,7 @@ def main() -> int:
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
     validate_cit_period_reconciliation()
+    validate_iit_period_reconciliation()
     validate_filing_payment_archive()
     validate_tax_impact_review()
     validate_formal_compliance_report()
