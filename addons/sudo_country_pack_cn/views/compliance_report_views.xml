@@ -72,11 +72,21 @@
                                     <div class="text-muted small"><field name="title"/></div>
                                     <div class="text-muted small"><field name="cn_report_center_period_label"/></div>
                                 </div>
-                                <field name="cn_report_center_stage" widget="badge"/>
+                                <field name="cn_report_center_stage" widget="badge"
+                                       decoration-success="cn_report_center_stage == 'issued'"
+                                       decoration-info="cn_report_center_stage in ('draft', 'approval')"
+                                       decoration-muted="cn_report_center_stage in ('withdrawn', 'superseded')"/>
                             </div>
                             <div class="mt-3 d-flex flex-wrap gap-2">
-                                <field name="conclusion_state" widget="badge"/>
-                                <field name="cn_report_center_integrity_state" widget="badge"/>
+                                <field name="conclusion_state" widget="badge"
+                                       decoration-success="conclusion_state == 'clear'"
+                                       decoration-danger="conclusion_state in ('action_required', 'limited_action_required')"
+                                       decoration-warning="conclusion_state in ('limited', 'limited_action_required')"/>
+                                <field name="cn_report_center_integrity_state" widget="badge"
+                                       decoration-success="cn_report_center_integrity_state == 'verified'"
+                                       decoration-warning="cn_report_center_integrity_state == 'warning'"
+                                       decoration-danger="cn_report_center_integrity_state == 'blocked'"
+                                       decoration-muted="cn_report_center_integrity_state == 'unsealed'"/>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
@@ -91,7 +101,10 @@
                                             Gaps <field name="cn_report_traceability_gap_count"/>
                                         </div>
                                     </div>
-                                    <field name="cn_report_traceability_state" widget="badge"/>
+                                    <field name="cn_report_traceability_state" widget="badge"
+                                           decoration-success="cn_report_traceability_state == 'complete'"
+                                           decoration-warning="cn_report_traceability_state == 'action_required'"
+                                           decoration-danger="cn_report_traceability_state == 'blocked'"/>
                                 </div>
                             </div>
                             <div class="row g-2 mt-3">
@@ -164,7 +177,10 @@
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="period_start"/>
                 <field name="period_end"/>
-                <field name="cn_report_center_stage" widget="badge"/>
+                <field name="cn_report_center_stage" widget="badge"
+                       decoration-success="cn_report_center_stage == 'issued'"
+                       decoration-info="cn_report_center_stage in ('draft', 'approval')"
+                       decoration-muted="cn_report_center_stage in ('withdrawn', 'superseded')"/>
                 <field name="cn_report_center_next_action" optional="show"/>
                 <field name="cn_report_traceability_state" widget="badge" optional="show"
                        decoration-success="cn_report_traceability_state == 'complete'"
@@ -190,7 +206,11 @@
                        decoration-muted="state == 'superseded'"/>
                 <field name="reviewer_id" widget="many2one_avatar_user"/>
                 <field name="issued_at"/>
-                <field name="cn_report_center_integrity_state" widget="badge" optional="show"/>
+                <field name="cn_report_center_integrity_state" widget="badge" optional="show"
+                       decoration-success="cn_report_center_integrity_state == 'verified'"
+                       decoration-warning="cn_report_center_integrity_state == 'warning'"
+                       decoration-danger="cn_report_center_integrity_state == 'blocked'"
+                       decoration-muted="cn_report_center_integrity_state == 'unsealed'"/>
                 <field name="approval_integrity_state" widget="badge" optional="hide"
                        decoration-success="approval_integrity_state == 'verified'"
                        decoration-danger="approval_integrity_state in ('missing', 'checksum_mismatch')"/>
@@ -299,7 +319,10 @@
                                    widget="many2one_avatar_user"
                                    readonly="state != 'draft'"/>
                             <field name="conclusion_state" widget="badge"
-                                   readonly="1"/>
+                                   readonly="1"
+                                   decoration-success="conclusion_state == 'clear'"
+                                   decoration-danger="conclusion_state in ('action_required', 'limited_action_required')"
+                                   decoration-warning="conclusion_state in ('limited', 'limited_action_required')"/>
                         </group>
                     </group>
 
@@ -324,7 +347,10 @@
                                    decoration-warning="remediation_pending_verification_count &gt; 0"/>
                             <field name="evidence_count"/>
                             <field name="verified_evidence_count"/>
-                            <field name="cn_report_traceability_state" widget="badge"/>
+                            <field name="cn_report_traceability_state" widget="badge"
+                                   decoration-success="cn_report_traceability_state == 'complete'"
+                                   decoration-warning="cn_report_traceability_state == 'action_required'"
+                                   decoration-danger="cn_report_traceability_state == 'blocked'"/>
                             <field name="cn_report_traceability_gap_count"/>
                         </group>
                     </group>
@@ -365,11 +391,18 @@
                                 </group>
                                 <group>
                                     <field name="snapshot_integrity_state"
-                                           widget="badge"/>
+                                           widget="badge"
+                                           decoration-success="snapshot_integrity_state == 'verified'"
+                                           decoration-warning="snapshot_integrity_state == 'unsealed'"
+                                           decoration-danger="snapshot_integrity_state == 'source_changed'"/>
                                     <field name="approval_integrity_state"
-                                           widget="badge"/>
+                                           widget="badge"
+                                           decoration-success="approval_integrity_state == 'verified'"
+                                           decoration-danger="approval_integrity_state in ('missing', 'checksum_mismatch')"/>
                                     <field name="pdf_integrity_state"
-                                           widget="badge"/>
+                                           widget="badge"
+                                           decoration-success="pdf_integrity_state == 'verified'"
+                                           decoration-danger="pdf_integrity_state in ('missing', 'checksum_mismatch')"/>
                                     <field name="issued_pdf_filename" readonly="1"/>
                                 </group>
                             </group>

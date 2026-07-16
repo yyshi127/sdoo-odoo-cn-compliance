@@ -269,6 +269,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
 
         self.assertEqual(report.cn_report_center_stage, "approval")
         self.assertEqual(report.cn_report_center_integrity_state, "verified")
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_formal_report_badge_clarity"
+            ]
+        )
         self.assertTrue(report.cn_report_center_next_action)
         self.assertEqual(
             report.action_cn_open_report_findings()["res_model"],

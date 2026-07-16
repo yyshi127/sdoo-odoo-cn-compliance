@@ -278,6 +278,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report readiness badge clarity capability must be declared")
     if features.get("china_archive_evidence_badge_clarity") is not True:
         fail("China archive and evidence badge clarity capability must be declared")
+    if features.get("china_formal_report_badge_clarity") is not True:
+        fail("China formal report badge clarity capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -2566,6 +2568,14 @@ def validate_formal_compliance_report() -> None:
     ):
         if required not in view_content:
             fail(f"formal compliance report UI is missing {required}")
+    for required in (
+        'decoration-success="cn_report_center_stage == \'issued\'"',
+        'decoration-success="cn_report_center_integrity_state == \'verified\'"',
+        'decoration-success="cn_report_traceability_state == \'complete\'"',
+        'decoration-success="snapshot_integrity_state == \'verified\'"',
+    ):
+        if required not in view_content:
+            fail(f"formal compliance report badge clarity UI is missing {required}")
 
     report_content = (
         ADDON_ROOT / "reports" / "compliance_report.xml"
@@ -2614,6 +2624,7 @@ def validate_formal_compliance_report() -> None:
         "china_traceability_matrix_visibility",
         "china_report_obligation_readiness",
         "china_report_remediation_verification",
+        "china_formal_report_badge_clarity",
         "remediation_pending_verification_count",
         "obligation_readiness",
         "cn_report_traceability_state",
