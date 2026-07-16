@@ -76,6 +76,9 @@
                 <field name="cn_workbench_data_next_action"/>
                 <field name="cn_workbench_dataset_count"/>
                 <field name="cn_workbench_ready_dataset_count"/>
+                <field name="cn_workbench_posted_move_count"/>
+                <field name="cn_workbench_draft_move_count"/>
+                <field name="cn_workbench_posted_invoice_count"/>
                 <field name="cn_workbench_scan_state"/>
                 <field name="cn_workbench_risk_state"/>
                 <field name="cn_workbench_remediation_state"/>
@@ -193,6 +196,14 @@
                                         <div class="fw-bold mt-2">
                                             <field name="cn_workbench_vat_issue_count"/>
                                             <span> 个勾稽问题</span>
+                                        </div>
+                                        <div class="text-muted small mt-1">
+                                            <span>Posted moves </span>
+                                            <field name="cn_workbench_posted_move_count"/>
+                                            <span> · Draft </span>
+                                            <field name="cn_workbench_draft_move_count"/>
+                                            <span> · Invoices </span>
+                                            <field name="cn_workbench_posted_invoice_count"/>
                                         </div>
                                     </button>
                                 </div>

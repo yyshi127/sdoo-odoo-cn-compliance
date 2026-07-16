@@ -107,6 +107,18 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="可扫描数据集",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_posted_move_count = fields.Integer(
+        string="Posted Accounting Entries",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_draft_move_count = fields.Integer(
+        string="Draft Accounting Entries",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_posted_invoice_count = fields.Integer(
+        string="Posted Accounting Invoices",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_currency_id = fields.Many2one(
         related="company_id.currency_id",
         string="工作台币种",
@@ -328,6 +340,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Obligation = self.env["sudo.compliance.obligation"].sudo()
         Filing = self.env["sudo.compliance.filing"].sudo()
         Dataset = self.env["sudo.cn.external.dataset"].sudo()
+        Move = self.env["account.move"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -449,6 +462,36 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             blocked_datasets = current_datasets.filtered(
                 lambda dataset: dataset.cn_data_readiness_stage == "blocked"
             )
+            move_domain = [("company_id", "=", profile.company_id.id)]
+            invoice_domain = move_domain + [
+                (
+                    "move_type",
+                    "in",
+                    (
+                        "out_invoice",
+                        "out_refund",
+                        "in_invoice",
+                        "in_refund",
+                        "out_receipt",
+                        "in_receipt",
+                    ),
+                )
+            ]
+            if latest_assessment and latest_assessment.period_start:
+                move_domain.append(("date", ">=", latest_assessment.period_start))
+                invoice_domain.append(("date", ">=", latest_assessment.period_start))
+            if latest_assessment and latest_assessment.period_end:
+                move_domain.append(("date", "<=", latest_assessment.period_end))
+                invoice_domain.append(("date", "<=", latest_assessment.period_end))
+            posted_move_count = Move.with_company(profile.company_id).search_count(
+                move_domain + [("state", "=", "posted")]
+            )
+            draft_move_count = Move.with_company(profile.company_id).search_count(
+                move_domain + [("state", "=", "draft")]
+            )
+            posted_invoice_count = Move.with_company(profile.company_id).search_count(
+                invoice_domain + [("state", "=", "posted")]
+            )
 
             profile.cn_workbench_last_assessment_id = latest_assessment
             profile.cn_workbench_latest_report_id = latest_report
@@ -512,7 +555,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_reconciliation_issue_count = reconciliation_issue_count
             profile.cn_workbench_dataset_count = len(current_datasets)
             profile.cn_workbench_ready_dataset_count = len(ready_datasets)
-            if not current_datasets:
+            profile.cn_workbench_posted_move_count = posted_move_count
+            profile.cn_workbench_draft_move_count = draft_move_count
+            profile.cn_workbench_posted_invoice_count = posted_invoice_count
+            if latest_assessment and not posted_move_count:
+                profile.cn_workbench_data_state = "blocked"
+                profile.cn_workbench_data_next_action = _(
+                    "Post Odoo accounting entries for the scanned period before relying on compliance risk results."
+                )
+            elif not current_datasets:
                 profile.cn_workbench_data_state = "not_started"
                 profile.cn_workbench_data_next_action = _(
                     "登记电子发票、纳税申报、缴款、工资和银行等受控数据来源后再扫描。"

@@ -151,6 +151,60 @@ class TestChinaComplianceWorkbench(TransactionCase):
         values.update(overrides)
         return self.env["sudo.cn.cross.border.transaction"].create(values)
 
+    def _ledger_move(self, suffix, *, posted=True):
+        journal = self.env["account.journal"].with_company(self.company).create(
+            {
+                "name": f"Workbench Ledger Journal {suffix}",
+                "code": f"WB{suffix[:3].upper()}",
+                "type": "general",
+                "company_id": self.company.id,
+            }
+        )
+        account_model = self.env["account.account"].with_company(self.company)
+        debit_account = account_model.create(
+            {
+                "name": f"Workbench Ledger Debit {suffix}",
+                "code": f"6602{suffix[:4].upper()}",
+                "account_type": "expense",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        credit_account = account_model.create(
+            {
+                "name": f"Workbench Ledger Credit {suffix}",
+                "code": f"6001{suffix[:4].upper()}",
+                "account_type": "income",
+                "company_ids": [Command.set(self.company.ids)],
+            }
+        )
+        move = self.env["account.move"].with_company(self.company).create(
+            {
+                "move_type": "entry",
+                "journal_id": journal.id,
+                "date": "2026-06-15",
+                "ref": f"WORKBENCH-LEDGER-{suffix}",
+                "line_ids": [
+                    Command.create(
+                        {
+                            "name": f"Workbench debit {suffix}",
+                            "account_id": debit_account.id,
+                            "debit": 100.0,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": f"Workbench credit {suffix}",
+                            "account_id": credit_account.id,
+                            "credit": 100.0,
+                        }
+                    ),
+                ],
+            }
+        )
+        if posted:
+            move.action_post()
+        return move
+
     def test_country_pack_advertises_china_workbench_feature(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][
@@ -222,6 +276,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_workbench_accounting_ledger_basis"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_workbench_remediation_rescan_summary"
             ]
         )
@@ -238,6 +297,9 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_dataset_count, 0)
         self.assertEqual(self.profile.cn_workbench_ready_dataset_count, 0)
+        self.assertEqual(self.profile.cn_workbench_posted_move_count, 0)
+        self.assertEqual(self.profile.cn_workbench_draft_move_count, 0)
+        self.assertEqual(self.profile.cn_workbench_posted_invoice_count, 0)
         self.assertTrue(self.profile.cn_workbench_data_next_action)
         self.assertEqual(self.profile.cn_workbench_scan_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_risk_state, "not_started")
@@ -305,6 +367,29 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_dataset_count, 1)
         self.assertEqual(self.profile.cn_workbench_ready_dataset_count, 0)
         self.assertIn("封存", self.profile.cn_workbench_data_next_action)
+
+    def test_workbench_blocks_scanned_period_without_posted_ledger(self):
+        self._finding("no-ledger")
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_data_state, "blocked")
+        self.assertEqual(self.profile.cn_workbench_posted_move_count, 0)
+        self.assertEqual(self.profile.cn_workbench_draft_move_count, 0)
+        self.assertIn(
+            "Post Odoo accounting entries",
+            self.profile.cn_workbench_data_next_action,
+        )
+
+    def test_workbench_surfaces_odoo_ledger_basis_counts(self):
+        self._finding("ledger")
+        self._ledger_move("post", posted=True)
+        self._ledger_move("draft", posted=False)
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_posted_move_count, 1)
+        self.assertEqual(self.profile.cn_workbench_draft_move_count, 1)
+        self.assertEqual(self.profile.cn_workbench_posted_invoice_count, 0)
+        self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
 
     def test_workbench_summarizes_remediation_rescan_status(self):
         pending = self.env["sudo.compliance.task"].create_from_finding(
