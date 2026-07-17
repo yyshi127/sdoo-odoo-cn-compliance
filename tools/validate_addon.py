@@ -4605,6 +4605,8 @@ def validate_delivery_objective_coverage() -> None:
         "signoff_validation",
         "sign-off validation result schema is invalid",
         "sign-off validation version does not match delivery version",
+        "sign-off validation source commit does not match delivery source commit",
+        "sign-off validation preview URL does not match delivery preview URL",
         "sign-off validation did not pass",
         "real-data closed-loop result was not provided",
         "real-data closed-loop result schema is invalid",
@@ -4658,6 +4660,18 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in verify_tool:
             fail(f"China delivery artifact source control verification is missing {required}")
+
+    signoff_validation_tool_content = (
+        REPOSITORY_ROOT / "tools" / "validate_cn_signoff_evidence.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '"preview_url": packet.get("preview_url")',
+        "sign-off evidence decisions must be a list",
+        "sign-off evidence decision keys must be unique",
+        "sign-off evidence contains unknown decision keys",
+    ):
+        if required not in signoff_validation_tool_content:
+            fail(f"China sign-off validation binding is missing {required}")
 
 
 def validate_xbrl_parser_addon() -> None:

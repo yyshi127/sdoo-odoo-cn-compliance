@@ -486,6 +486,34 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["production_signoff_blockers"],
         )
 
+    def test_delivery_status_rejects_mismatched_signoff_validation_source_commit(self):
+        packet = PACKET._build_packet(status_payload())
+        validation = VALIDATION._validate(packet, complete_evidence(packet))
+        validation["source_commit"] = "different-commit"
+
+        status = delivery_status(validation)
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "sign-off validation source commit does not match delivery source commit",
+            readiness["production_signoff_blockers"],
+        )
+
+    def test_delivery_status_rejects_mismatched_signoff_validation_preview_url(self):
+        packet = PACKET._build_packet(status_payload())
+        validation = VALIDATION._validate(packet, complete_evidence(packet))
+        validation["preview_url"] = "http://127.0.0.1:18070/web/login?db=other"
+
+        status = delivery_status(validation)
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "sign-off validation preview URL does not match delivery preview URL",
+            readiness["production_signoff_blockers"],
+        )
+
     def test_delivery_status_requires_signoff_validator_in_manifest(self):
         status = delivery_status_with_manifest(
             manifest_without("tools/validate_cn_signoff_evidence.py")

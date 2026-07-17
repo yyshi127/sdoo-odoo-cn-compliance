@@ -162,6 +162,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "version": packet.get("version"),
         "source_commit": packet.get("source_commit"),
+        "preview_url": packet.get("preview_url"),
         "ok": not blockers,
         "production_signoff_ready": not blockers,
         "deployment_decision": deployment_decision,

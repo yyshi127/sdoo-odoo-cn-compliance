@@ -211,6 +211,7 @@ def _status(
             "schema": signoff_validation.get("schema"),
             "version": signoff_validation.get("version"),
             "source_commit": signoff_validation.get("source_commit"),
+            "preview_url": signoff_validation.get("preview_url"),
             "ok": signoff_validation.get("ok") is True,
             "production_signoff_ready": signoff_validation.get("production_signoff_ready") is True,
             "deployment_decision": signoff_validation.get("deployment_decision"),
@@ -287,6 +288,16 @@ def _status(
         production_signoff_blockers.append("sign-off validation result schema is invalid")
     elif signoff_validation_summary["version"] != version:
         production_signoff_blockers.append("sign-off validation version does not match delivery version")
+    elif signoff_validation_summary["source_commit"] != (
+        source_control.get("commit") if isinstance(source_control, dict) else None
+    ):
+        production_signoff_blockers.append(
+            "sign-off validation source commit does not match delivery source commit"
+        )
+    elif signoff_validation_summary["preview_url"] != preview_url:
+        production_signoff_blockers.append(
+            "sign-off validation preview URL does not match delivery preview URL"
+        )
     elif signoff_validation_summary["production_signoff_ready"] is not True:
         blockers = signoff_validation_summary.get("blockers") or []
         production_signoff_blockers.extend(
