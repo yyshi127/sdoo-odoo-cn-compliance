@@ -4669,6 +4669,11 @@ def validate_delivery_objective_coverage() -> None:
         "sign-off evidence decisions must be a list",
         "sign-off evidence decision keys must be unique",
         "sign-off evidence contains unknown decision keys",
+        "reviewer is missing or still a template placeholder",
+        "date must be YYYY-MM-DD",
+        "evidence_reference is missing or still a template placeholder",
+        "PLACEHOLDER_TEXTS",
+        "_valid_iso_date",
     ):
         if required not in signoff_validation_tool_content:
             fail(f"China sign-off validation binding is missing {required}")

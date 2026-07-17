@@ -128,6 +128,9 @@ Use `docs/samples/cn_signoff_evidence_template.json` as the starting point for
 the machine-readable evidence file; replace the version, source commit,
 reviewers, dates, decisions and evidence references with the actual signed
 review records.
+Template placeholders cannot pass validation. Reviewers and evidence references
+must be real audit records, and dates must use ISO `YYYY-MM-DD` format such as
+`2026-07-17`.
 
 Check a preview URL before business UAT:
 

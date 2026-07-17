@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +12,24 @@ from typing import Any
 VALIDATION_SCHEMA = "sdoo.cn.signoff-validation.v1"
 EVIDENCE_SCHEMA = "sdoo.cn.signoff-evidence.v1"
 PACKET_SCHEMA = "sdoo.cn.signoff-packet.v1"
+PLACEHOLDER_TEXTS = {
+    "YYYY-MM-DD",
+    "Reviewer",
+    "Business reviewer name",
+    "China tax professional name",
+    "Rule governance owner name",
+    "Implementation owner name",
+    "Release owner name",
+    "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md",
+    "Rule/source review packet reference",
+    "Official-source freshness monitoring result reference",
+    "Customer data, evidence gap and open risk review reference",
+    "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
+    "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
+    "replace-with-signoff-packet-source-commit",
+    "controlled evidence reference",
+    "uncontrolled evidence reference",
+}
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -20,6 +38,23 @@ def _load(path: Path) -> dict[str, Any]:
 
 def _decision_has_limitations(decision: Any) -> bool:
     return isinstance(decision, str) and "limitation" in decision
+
+
+def _is_substantive_text(value: Any, *, min_length: int = 3) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    return len(text) >= min_length and text not in PLACEHOLDER_TEXTS
+
+
+def _valid_iso_date(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return False
+    return parsed.isoformat() == value
 
 
 def _valid_limitations(value: Any) -> list[str]:
@@ -106,12 +141,19 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 item_blockers.append(
                     "decision must be one of: %s" % ", ".join(sorted(acceptable))
                 )
-            if not item.get("reviewer"):
-                item_blockers.append("reviewer is missing")
-            if not item.get("date"):
-                item_blockers.append("date is missing")
-            if not item.get("evidence_reference"):
-                item_blockers.append("evidence_reference is missing")
+            if not _is_substantive_text(item.get("reviewer")):
+                item_blockers.append(
+                    "reviewer is missing or still a template placeholder"
+                )
+            if not _valid_iso_date(item.get("date")):
+                item_blockers.append("date must be YYYY-MM-DD")
+            if not _is_substantive_text(
+                item.get("evidence_reference"),
+                min_length=10,
+            ):
+                item_blockers.append(
+                    "evidence_reference is missing or still a template placeholder"
+                )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))
             if key == "production_deployment_decision":

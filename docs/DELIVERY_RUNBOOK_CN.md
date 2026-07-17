@@ -234,7 +234,8 @@ python tools/validate_cn_signoff_evidence.py \
 - schema 版本正确。
 - evidence 引用的 delivery version、source commit 和 signoff packet 与当前交付一致。
 - `decisions` 必须是列表，且每个签核动作 key 必须唯一、必须来自 signoff packet，不得重复或自造额外签核项。
-- 必填签核动作全部有真人决策、签核人、签核时间和证据引用。
+- 必填签核动作全部有真人决策、签核人、签核时间和证据引用；签核人和证据引用必须替换为真实记录，不允许保留模板占位值。
+- 签核日期必须使用 ISO 格式 `YYYY-MM-DD`，例如 `2026-07-17`；`YYYY-MM-DD` 这个模板文本本身不能通过校验。
 - 自动验收证据未被标记为失败或阻断。
 - 如果任何签核动作选择 `accepted_with_limitations`、`approved_with_limitations`、`current_with_documented_limitations`、`limitations_documented`、`passed_with_limitations` 或 `deploy_with_limitations`，必须在 `limitations` 中写明限制条件和客户可见说明；`limitations` 必须是列表，且至少包含一条 20 个字符以上的实质性限制说明。
 

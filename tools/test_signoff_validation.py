@@ -191,9 +191,9 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
                     if action["key"] == "production_deployment_decision"
                     else action["acceptable_decisions"][0]
                 ),
-                "reviewer": "Reviewer",
+                "reviewer": "Alice Zhang",
                 "date": "2026-07-17",
-                "evidence_reference": "controlled evidence reference",
+                "evidence_reference": "SGN-2026-07-17-UAT-001",
             }
         )
     return {
@@ -309,9 +309,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             {
                 "key": "uncontrolled_extra_approval",
                 "decision": "approved",
-                "reviewer": "Reviewer",
+                "reviewer": "Alice Zhang",
                 "date": "2026-07-17",
-                "evidence_reference": "uncontrolled evidence reference",
+                "evidence_reference": "SGN-2026-07-17-EXTRA-001",
             }
         )
 
@@ -347,6 +347,44 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "sign-off evidence source commit does not match the packet",
+            result["blockers"],
+        )
+
+    def test_decision_rejects_invalid_date_format(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"][0]["date"] = "17/07/2026"
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: date must be YYYY-MM-DD",
+            result["blockers"],
+        )
+
+    def test_decision_rejects_template_placeholders(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"][0]["reviewer"] = "Business reviewer name"
+        evidence["decisions"][0]["date"] = "YYYY-MM-DD"
+        evidence["decisions"][0]["evidence_reference"] = (
+            "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md"
+        )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: reviewer is missing or still a template placeholder",
+            result["blockers"],
+        )
+        self.assertIn(
+            "business_uat_decision: date must be YYYY-MM-DD",
+            result["blockers"],
+        )
+        self.assertIn(
+            "business_uat_decision: evidence_reference is missing or still a template placeholder",
             result["blockers"],
         )
 
