@@ -760,6 +760,36 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(filing_action["res_model"], "sudo.compliance.filing")
         self.assertIn(("profile_id", "=", self.profile.id), filing_action["domain"])
 
+    def test_evidence_center_exposes_source_and_blockers(self):
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-01",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(self.rule_version.ids)],
+            }
+        )
+        evidence = self.env["sudo.compliance.evidence"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "Workbench evidence center pending evidence",
+                "company_id": self.company.id,
+                "assessment_id": assessment.id,
+                "evidence_type": "external_reference",
+                "external_reference": "DMS/CN/EVIDENCE-CENTER-PENDING",
+            }
+        )
+
+        self.assertIn("Assessment:", evidence.cn_evidence_source_summary)
+        self.assertIn(assessment.display_name, evidence.cn_evidence_source_summary)
+        self.assertIn("Blocked by:", evidence.cn_evidence_blocker_summary)
+        self.assertIn("evidence not submitted", evidence.cn_evidence_blocker_summary)
+        self.assertIn("checksum not frozen", evidence.cn_evidence_blocker_summary)
+
     def test_workbench_marks_obligation_readiness_after_review(self):
         source = self.env.ref(
             "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate"
