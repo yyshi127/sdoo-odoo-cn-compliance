@@ -736,6 +736,15 @@ class SudoChinaRiskCenterTask(models.Model):
         compute="_compute_cn_remediation_display",
     )
 
+    cn_remediation_progress = fields.Integer(
+        string="Remediation Progress",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_summary = fields.Char(
+        string="Remediation Summary",
+        compute="_compute_cn_remediation_display",
+    )
+
     def _compute_cn_remediation_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         for task in self:
@@ -772,6 +781,10 @@ class SudoChinaRiskCenterTask(models.Model):
                 task.cn_remediation_traceability_gap_count,
                 task.cn_remediation_traceability_next_action,
             ) = task._cn_remediation_traceability_summary()
+            (
+                task.cn_remediation_progress,
+                task.cn_remediation_summary,
+            ) = task._cn_remediation_progress_summary()
 
     def _cn_remediation_rescan_stage(self):
         self.ensure_one()
@@ -861,6 +874,29 @@ class SudoChinaRiskCenterTask(models.Model):
             len(gaps),
             _("Close the task and verify remediation evidence."),
         )
+
+    def _cn_remediation_progress_summary(self):
+        self.ensure_one()
+        checkpoints = 0
+        if self.state in ("done", "cancelled"):
+            checkpoints += 1
+        if self.cn_remediation_evidence_state == "verified":
+            checkpoints += 1
+        if self.verification_state in ("verified", "not_required"):
+            checkpoints += 1
+        progress = int(round(checkpoints * 100 / 3.0))
+        summary = (
+            "stage %(stage)s; task %(task)s; verification %(verification)s; "
+            "evidence %(verified)s/%(total)s; gaps %(gaps)s"
+        ) % {
+            "stage": self.cn_remediation_rescan_stage or "unknown",
+            "task": self.state or "unknown",
+            "verification": self.verification_state or "unknown",
+            "verified": self.cn_remediation_verified_evidence_count,
+            "total": self.cn_remediation_evidence_count,
+            "gaps": self.cn_remediation_traceability_gap_count,
+        }
+        return (progress, summary)
 
 
 def _period_label(period_start, period_end):

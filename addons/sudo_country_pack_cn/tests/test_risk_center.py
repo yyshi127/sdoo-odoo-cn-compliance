@@ -375,9 +375,12 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             task.cn_remediation_data_basis_missing_type_summary,
         )
         self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")
+        self.assertEqual(task.cn_remediation_progress, 0)
+        self.assertIn("ready_for_rescan", task.cn_remediation_summary)
 
         self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_rescan_stage, "pending_rescan")
+        self.assertIn("pending_rescan", task.cn_remediation_summary)
 
         action = task.action_cn_open_remediation_verification_assessment()
         self.assertEqual(action["res_model"], "sudo.compliance.assessment")
@@ -387,6 +390,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_remediation_rescan_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_remediation_progress_visibility"
             ]
         )
 
