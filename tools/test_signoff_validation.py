@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -272,6 +273,34 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
             actions["blocker_summary_walkthrough"]["required_evidence"],
         )
+
+    def test_signoff_packet_lists_missing_human_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        action_keys = {action["key"] for action in packet["production_actions"]}
+        missing = {item["key"]: item for item in packet["missing_human_evidence"]}
+
+        self.assertEqual(set(missing), action_keys)
+        self.assertIn("blocker_summary_walkthrough", missing)
+        self.assertIn(
+            "required_evidence",
+            missing["blocker_summary_walkthrough"],
+        )
+
+    def test_signoff_packet_markdown_lists_missing_human_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "packet.md"
+
+            PACKET._write_markdown(packet, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Missing Human Evidence", content)
+        self.assertIn(
+            "These items must be completed before `production_signoff_ready` can become `true`.",
+            content,
+        )
+        self.assertIn("blocker_summary_walkthrough", content)
 
     def test_missing_representative_ux_walkthrough_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())

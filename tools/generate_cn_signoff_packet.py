@@ -25,6 +25,18 @@ def _readiness_item(key: str, label: str, ready: bool, evidence: str) -> dict[st
     }
 
 
+def _missing_human_evidence(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": action["key"],
+            "owner": action["owner"],
+            "required_evidence": action["required_evidence"],
+            "acceptable_decisions": action["acceptable_decisions"],
+        }
+        for action in actions
+    ]
+
+
 def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     readiness = status.get("readiness_gates") or {}
     source_control = status.get("source_control") or {}
@@ -134,6 +146,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         "production_signoff_ready": False,
         "automated_items": automated_items,
         "production_actions": production_actions,
+        "missing_human_evidence": _missing_human_evidence(production_actions),
         "business_uat_blockers": readiness.get("business_uat_blockers") or [],
         "production_signoff_blockers": readiness.get("production_signoff_blockers") or [],
     }
@@ -160,6 +173,25 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 "",
                 f"- Status: `{status}`",
                 f"- Evidence: `{item['evidence']}`",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Missing Human Evidence",
+            "",
+            "These items must be completed before `production_signoff_ready` can become `true`.",
+            "",
+        ]
+    )
+    for item in packet["missing_human_evidence"]:
+        lines.extend(
+            [
+                f"### {item['key']}",
+                "",
+                f"- Owner: `{item['owner']}`",
+                f"- Required evidence: {item['required_evidence']}",
+                f"- Acceptable decisions: `{', '.join(item['acceptable_decisions'])}`",
                 "",
             ]
         )
