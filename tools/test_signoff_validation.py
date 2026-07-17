@@ -72,6 +72,7 @@ def manifest_payload() -> dict:
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
         "tools/generate_cn_signoff_packet.py",
+        "tools/validate_cn_signoff_evidence.py",
     ]
     return {
         "schema": "sdoo.cn.delivery-manifest.v1",
@@ -79,6 +80,14 @@ def manifest_payload() -> dict:
         "aggregate_sha256": "aggregate",
         "files": [{"path": path} for path in paths],
     }
+
+
+def manifest_without(path_to_remove: str) -> dict:
+    manifest = manifest_payload()
+    manifest["files"] = [
+        item for item in manifest["files"] if item["path"] != path_to_remove
+    ]
+    return manifest
 
 
 def bundle_metadata_payload() -> dict:
@@ -150,6 +159,19 @@ def delivery_status(signoff_validation: dict | None = None) -> dict:
         preview_module=preview_module_payload(),
         real_data_closed_loop=real_data_closed_loop_payload(),
         signoff_validation=signoff_validation,
+        preview_url="http://127.0.0.1:18070/web/login?db=test",
+    )
+
+
+def delivery_status_with_manifest(manifest: dict) -> dict:
+    return SUMMARY._status(
+        bundle_metadata=bundle_metadata_payload(),
+        manifest=manifest,
+        summary=summary_payload(),
+        preview_health=preview_health_payload(),
+        preview_module=preview_module_payload(),
+        real_data_closed_loop=real_data_closed_loop_payload(),
+        signoff_validation=None,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
     )
 
@@ -290,6 +312,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "sign-off validation version does not match delivery version",
             readiness["production_signoff_blockers"],
+        )
+
+    def test_delivery_status_requires_signoff_validator_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/validate_cn_signoff_evidence.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off evidence validator is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["signoff_validation_tool"]["included_in_manifest"],
         )
 
 
