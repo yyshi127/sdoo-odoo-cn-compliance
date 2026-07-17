@@ -266,6 +266,16 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
+    parser.add_argument(
+        "--require-business-uat-ready",
+        action="store_true",
+        help="Exit with status 2 unless the delivery evidence is ready for business UAT.",
+    )
+    parser.add_argument(
+        "--require-production-signoff-ready",
+        action="store_true",
+        help="Exit with status 3 unless production sign-off readiness is explicitly satisfied.",
+    )
     return parser
 
 
@@ -295,6 +305,21 @@ def main() -> int:
             f"acceptance_passed={status['acceptance_passed']} "
             f"runtime_passed={status['runtime_passed']}"
         )
+    readiness = status.get("readiness_gates") or {}
+    if (
+        args.require_business_uat_ready
+        and readiness.get("business_uat_ready") is not True
+    ):
+        blockers = readiness.get("business_uat_blockers") or []
+        print(f"business UAT readiness gate failed: {blockers}")
+        return 2
+    if (
+        args.require_production_signoff_ready
+        and readiness.get("production_signoff_ready") is not True
+    ):
+        blockers = readiness.get("production_signoff_blockers") or []
+        print(f"production sign-off readiness gate failed: {blockers}")
+        return 3
     return 0
 
 

@@ -64,6 +64,7 @@ python tools/summarize_cn_delivery_status.py \
   --summary dist/cn_delivery_acceptance_summary.json \
   --preview-health dist/cn_preview_health.json \
   --preview-url http://127.0.0.1:18069/web/login?db=target_database \
+  --require-business-uat-ready \
   --json-output dist/cn_delivery_status.json \
   --markdown-output dist/cn_delivery_status.md
 ```
@@ -74,6 +75,8 @@ check for the intended URL, and the preview health result URL must match the
 status summary preview URL. Production sign-off remains blocked until the
 business UAT decision, current-source review, professional rule sign-off and
 customer-specific limitations are recorded outside the automated status.
+Use `--require-business-uat-ready` or `--require-production-signoff-ready` in
+automation when a non-zero exit code should stop handoff.
 
 Check a preview URL before business UAT:
 

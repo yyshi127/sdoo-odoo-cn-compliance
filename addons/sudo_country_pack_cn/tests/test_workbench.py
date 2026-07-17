@@ -342,6 +342,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_delivery_preview_url_match_gate"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_delivery_strict_readiness_exit"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
