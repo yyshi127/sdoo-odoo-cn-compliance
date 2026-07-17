@@ -598,6 +598,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China delivery source control traceability capability must be declared")
     if features.get("china_delivery_source_control_clean_gate") is not True:
         fail("China delivery source control clean gate capability must be declared")
+    if features.get("china_delivery_commit_consistency_gate") is not True:
+        fail("China delivery commit consistency gate capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3417,6 +3419,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China delivery source control clean gate capability is missing from {label}"
             )
+        if "china_delivery_commit_consistency_gate" not in content:
+            fail(
+                f"China delivery commit consistency gate capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4468,8 +4474,11 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "source_control",
+        "git_commit",
         "bundle/manifest source control",
         "summary/manifest source control",
+        "git commit/source control commit",
+        "summary git commit",
     ):
         if required not in verify_tool:
             fail(f"China delivery artifact source control verification is missing {required}")

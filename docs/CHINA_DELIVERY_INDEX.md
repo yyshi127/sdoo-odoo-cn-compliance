@@ -81,6 +81,9 @@ automation when a non-zero exit code should stop handoff.
 Bundle metadata, delivery manifest, acceptance summary and status summary also
 carry source-control evidence so reviewers can see the branch, commit and dirty
 worktree state that produced the delivery artifact.
+Artifact verification checks that the top-level `git_commit` matches the
+structured source-control commit across bundle metadata, manifest and
+acceptance summary.
 Use `--require-source-control-clean` for formal release packaging when the
 handoff must fail unless branch, commit and a clean worktree are recorded.
 

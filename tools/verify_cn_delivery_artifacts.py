@@ -49,6 +49,17 @@ def _assert_equal(left: object, right: object, label: str) -> None:
         _fail(f"{label}: {left!r} != {right!r}")
 
 
+def _verify_source_control(payload: dict[str, object], label: str) -> None:
+    source_control = payload.get("source_control")
+    if not isinstance(source_control, dict):
+        _fail(f"{label} does not contain source control evidence")
+    _assert_equal(
+        payload.get("git_commit"),
+        source_control.get("commit"),
+        f"{label} git commit/source control commit",
+    )
+
+
 def _verify_bundle_file(bundle: Path | None, bundle_metadata: dict[str, object]) -> None:
     if bundle is None:
         metadata_path = bundle_metadata.get("bundle_path")
@@ -80,8 +91,10 @@ def verify(
 
     for field in ("addon", "version", "file_count", "aggregate_sha256"):
         _assert_equal(bundle_metadata.get(field), manifest.get(field), field)
+    _assert_equal(bundle_metadata.get("git_commit"), manifest.get("git_commit"), "git commit")
     _assert_equal(summary.get("addon"), manifest.get("addon"), "summary addon")
     _assert_equal(summary.get("version"), manifest.get("version"), "summary version")
+    _assert_equal(summary.get("git_commit"), manifest.get("git_commit"), "summary git commit")
     _assert_equal(
         bundle_metadata.get("source_control"),
         manifest.get("source_control"),
@@ -92,6 +105,9 @@ def verify(
         manifest.get("source_control"),
         "summary/manifest source control",
     )
+    _verify_source_control(bundle_metadata, "bundle metadata")
+    _verify_source_control(manifest, "manifest")
+    _verify_source_control(summary, "summary")
     _assert_equal(summary.get("result"), "passed", "summary result")
 
     summary_manifest = summary.get("manifest")
