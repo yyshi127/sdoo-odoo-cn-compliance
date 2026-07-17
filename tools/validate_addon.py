@@ -2963,6 +2963,12 @@ def validate_formal_compliance_report() -> None:
         "archive.get('evidence_state')",
         "archive.get('submission_checksum')",
         "archive.get('payment_checksum')",
+        "Evidence link context",
+        "evidence.get('links')",
+        "links.get('assessment')",
+        "links.get('finding')",
+        "links.get('task')",
+        "links.get('filing')",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")
@@ -2995,6 +3001,7 @@ def validate_formal_compliance_report() -> None:
         "test_closed_task_without_verification_still_requires_action",
         "test_same_person_approval_requires_recorded_exception",
         "test_new_issue_supersedes_previous_report_without_rewriting_pdf",
+        "test_submission_freezes_evidence_link_context",
         "test_withdrawal_preserves_artifact_and_audit_history",
         "test_read_only_user_cannot_prepare_or_mutate_report",
         "test_report_is_company_isolated_and_reviewer_must_have_company",

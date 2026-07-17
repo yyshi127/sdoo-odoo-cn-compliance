@@ -368,11 +368,12 @@
                                     <th>状态</th>
                                     <th>完整性</th>
                                     <th>SHA-256</th>
+                                    <th>Evidence link context</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-if="not payload.get('evidence')">
-                                    <td colspan="5">本次快照没有证据记录。</td>
+                                    <td colspan="6">本次快照没有证据记录。</td>
                                 </tr>
                                 <tr t-foreach="payload.get('evidence', [])" t-as="evidence">
                                     <td><span t-esc="evidence.get('name')"/></td>
@@ -381,6 +382,43 @@
                                     <td><span t-esc="evidence.get('integrity_state')"/></td>
                                     <td style="word-break: break-all; font-family: monospace; font-size: 8px;">
                                         <span t-esc="evidence.get('stored_checksum') or evidence.get('current_checksum') or '-'"/>
+                                    </td>
+                                    <td style="font-size: 9px;">
+                                        <t t-set="links" t-value="evidence.get('links') or {}"/>
+                                        <div t-if="links.get('assessment')">
+                                            <strong>Assessment:</strong>
+                                            <span t-esc="links.get('assessment').get('name') or links.get('assessment').get('id')"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('assessment').get('state') or '-'"/>
+                                        </div>
+                                        <div t-if="links.get('finding')">
+                                            <strong>Finding:</strong>
+                                            <span t-esc="links.get('finding').get('title') or links.get('finding').get('id')"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('finding').get('risk_level') or '-'"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('finding').get('review_state') or '-'"/>
+                                            <div style="word-break: break-all; font-family: monospace; font-size: 8px;">
+                                                <span t-esc="links.get('finding').get('checksum') or '-'"/>
+                                            </div>
+                                        </div>
+                                        <div t-if="links.get('task')">
+                                            <strong>Task:</strong>
+                                            <span t-esc="links.get('task').get('name') or links.get('task').get('id')"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('task').get('state') or '-'"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('task').get('verification_state') or '-'"/>
+                                        </div>
+                                        <div t-if="links.get('filing')">
+                                            <strong>Filing:</strong>
+                                            <span t-esc="links.get('filing').get('name') or links.get('filing').get('code') or links.get('filing').get('id')"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('filing').get('state') or '-'"/>
+                                            <span> / </span>
+                                            <span t-esc="links.get('filing').get('payment_state') or '-'"/>
+                                        </div>
+                                        <span t-if="not links.get('assessment') and not links.get('finding') and not links.get('task') and not links.get('filing')">-</span>
                                     </td>
                                 </tr>
                             </tbody>

@@ -506,6 +506,21 @@ class TestChinaFormalComplianceReport(TransactionCase):
             evidence_row["links"]["assessment"]["id"],
             self.assessment.id,
         )
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_report_cn_formal_compliance"
+        )
+        html, _report_type = action._render_qweb_html(
+            action.report_name,
+            report.ids,
+        )
+        self.assertIn("Evidence link context".encode(), html)
+        self.assertIn("Assessment:".encode(), html)
+        self.assertIn("Finding:".encode(), html)
+        self.assertIn("Task:".encode(), html)
+        self.assertIn(self.assessment.display_name.encode(), html)
+        self.assertIn(self.finding.title.encode(), html)
+        self.assertIn(self.finding.checksum.encode(), html)
+        self.assertIn(task.name.encode(), html)
 
     def test_submission_summarizes_report_fact_basis(self):
         snapshot = self._fact_snapshot(self.finding, "complete")
