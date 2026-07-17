@@ -590,9 +590,49 @@ class TestChinaRiskCenterDisplay(TransactionCase):
 
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")
         self.assertGreater(task.cn_remediation_traceability_gap_count, 0)
+        self.assertIn("Blocked by:", task.cn_remediation_blocker_summary)
+        self.assertIn("missing data basis", task.cn_remediation_blocker_summary)
+        self.assertIn("no verified evidence", task.cn_remediation_blocker_summary)
 
         self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")
+        self.assertIn(
+            "verification rescan pending",
+            task.cn_remediation_blocker_summary,
+        )
+
+    def test_remediation_task_blocker_summary_keeps_remaining_gaps_visible(self):
+        finding = self._finding()
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+        self._fact_snapshot(finding, "complete")
+        self.env["sudo.compliance.evidence"].create(
+            {
+                "name": "Verified remediation evidence",
+                "company_id": self.company.id,
+                "task_id": task.id,
+                "state": "verified",
+                "document_checksum": "e" * 64,
+            }
+        )
+        self.env.cr.execute(
+            """
+            UPDATE sudo_compliance_task
+               SET state = %s,
+                   verification_state = %s,
+                   verification_assessment_id = %s
+             WHERE id = %s
+            """,
+            ("done", "verified", finding.assessment_id.id, task.id),
+        )
+        task.invalidate_recordset()
+
+        self.assertEqual(task.cn_remediation_rescan_stage, "verified")
+        self.assertIn("Blocked by:", task.cn_remediation_blocker_summary)
+        self.assertIn("missing data basis", task.cn_remediation_blocker_summary)
+        self.assertIn(
+            "evidence pending verification",
+            task.cn_remediation_blocker_summary,
+        )
 
     def test_country_pack_advertises_risk_rule_basis_visibility(self):
         self.assertTrue(

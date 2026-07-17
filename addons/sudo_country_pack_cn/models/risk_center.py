@@ -848,6 +848,10 @@ class SudoChinaRiskCenterTask(models.Model):
         string="Remediation Summary",
         compute="_compute_cn_remediation_display",
     )
+    cn_remediation_blocker_summary = fields.Char(
+        string="Remediation Blockers",
+        compute="_compute_cn_remediation_display",
+    )
 
     def _compute_cn_remediation_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
@@ -911,6 +915,9 @@ class SudoChinaRiskCenterTask(models.Model):
                 task.cn_remediation_progress,
                 task.cn_remediation_summary,
             ) = task._cn_remediation_progress_summary()
+            task.cn_remediation_blocker_summary = (
+                task._cn_remediation_blocker_summary()
+            )
             (
                 task.cn_remediation_urgency,
                 task.cn_remediation_responsibility_summary,
@@ -1027,6 +1034,33 @@ class SudoChinaRiskCenterTask(models.Model):
             "gaps": self.cn_remediation_traceability_gap_count,
         }
         return (progress, summary)
+
+    def _cn_remediation_blocker_summary(self):
+        self.ensure_one()
+        blockers = []
+        if self.is_overdue and self.state not in ("done", "cancelled"):
+            blockers.append(_("overdue"))
+        if self.cn_remediation_data_basis_state in ("no_period", "missing", "blocked"):
+            blockers.append(_("missing data basis"))
+        elif self.cn_remediation_data_basis_state == "warning":
+            blockers.append(_("incomplete data basis"))
+        if self.state == "blocked":
+            blockers.append(_("task blocked"))
+        elif self.state not in ("done", "cancelled"):
+            blockers.append(_("task not closed"))
+        if self.cn_remediation_evidence_state == "none":
+            blockers.append(_("no verified evidence"))
+        elif self.cn_remediation_evidence_state == "partial":
+            blockers.append(_("evidence pending verification"))
+        if self.verification_state == "pending_rescan":
+            blockers.append(_("verification rescan pending"))
+        elif self.verification_state == "failed":
+            blockers.append(_("verification rescan failed"))
+        elif self.verification_state not in ("verified", "not_required"):
+            blockers.append(_("verification not completed"))
+        if not blockers:
+            return _("No blocker: remediation is ready for report sign-off.")
+        return _("Blocked by: %(blockers)s") % {"blockers": "; ".join(blockers)}
 
 
 def _period_label(period_start, period_end):
