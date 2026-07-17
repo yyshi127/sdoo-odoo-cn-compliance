@@ -18,6 +18,10 @@ def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _decision_has_limitations(decision: Any) -> bool:
+    return isinstance(decision, str) and "limitation" in decision
+
+
 def _decision_map(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
     decisions = evidence.get("decisions") or []
     if not isinstance(decisions, list):
@@ -42,8 +46,10 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence source commit does not match the packet")
 
     decisions = _decision_map(evidence)
+    limitations = evidence.get("limitations") or []
     action_results: list[dict[str, Any]] = []
     deployment_decision = None
+    limitation_decision_keys: list[str] = []
     for action in packet.get("production_actions") or []:
         key = action.get("key")
         item = decisions.get(str(key))
@@ -63,6 +69,8 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 item_blockers.append("date is missing")
             if not item.get("evidence_reference"):
                 item_blockers.append("evidence_reference is missing")
+            if _decision_has_limitations(decision):
+                limitation_decision_keys.append(str(key))
             if key == "production_deployment_decision":
                 deployment_decision = decision
         if item_blockers:
@@ -81,11 +89,17 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
             "production deployment decision is %s, so production sign-off is not ready"
             % deployment_decision
         )
-    if deployment_decision == "deploy_with_limitations":
-        if not evidence.get("limitations"):
-            blockers.append("deploy_with_limitations requires limitations to be recorded")
+    if limitation_decision_keys:
+        if not limitations:
+            blockers.append(
+                "limitation decisions require limitations to be recorded: %s"
+                % ", ".join(limitation_decision_keys)
+            )
         else:
-            warnings.append("production deployment is approved with documented limitations")
+            warnings.append(
+                "production sign-off includes documented limitations: %s"
+                % ", ".join(limitation_decision_keys)
+            )
 
     automated_items = packet.get("automated_items") or []
     blocked_automated = [

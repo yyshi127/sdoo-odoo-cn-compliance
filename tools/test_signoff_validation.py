@@ -309,7 +309,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
         self.assertFalse(result["ok"])
         self.assertIn(
-            "deploy_with_limitations requires limitations to be recorded",
+            "limitation decisions require limitations to be recorded: production_deployment_decision",
             result["blockers"],
         )
 
@@ -320,7 +320,51 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(
             result["warnings"],
-            ["production deployment is approved with documented limitations"],
+            [
+                "production sign-off includes documented limitations: production_deployment_decision"
+            ],
+        )
+
+    def test_any_limitation_decision_requires_recorded_limitations(self):
+        packet = PACKET._build_packet(status_payload())
+        limitation_cases = {
+            "business_uat_decision": "accepted_with_limitations",
+            "china_tax_professional_rule_signoff": "approved_with_limitations",
+            "official_source_freshness_review": "current_with_documented_limitations",
+            "customer_scope_and_data_gap_review": "limitations_documented",
+            "representative_ux_walkthrough": "passed_with_limitations",
+        }
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] in limitation_cases:
+                item["decision"] = limitation_cases[item["key"]]
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "limitation decisions require limitations to be recorded: "
+            "business_uat_decision, china_tax_professional_rule_signoff, "
+            "official_source_freshness_review, customer_scope_and_data_gap_review, "
+            "representative_ux_walkthrough",
+            result["blockers"],
+        )
+
+        evidence_with_limitations = deepcopy(evidence)
+        evidence_with_limitations["limitations"] = [
+            "Business, professional, source, data and UX limitations are documented."
+        ]
+        result = VALIDATION._validate(packet, evidence_with_limitations)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(
+            result["warnings"],
+            [
+                "production sign-off includes documented limitations: "
+                "business_uat_decision, china_tax_professional_rule_signoff, "
+                "official_source_freshness_review, customer_scope_and_data_gap_review, "
+                "representative_ux_walkthrough"
+            ],
         )
 
     def test_blocked_automated_packet_evidence_blocks_production_gate(self):
