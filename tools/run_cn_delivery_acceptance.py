@@ -103,6 +103,47 @@ def _git_commit() -> str | None:
     return result.stdout.strip()
 
 
+def _git_branch() -> str | None:
+    if not _inside_git_worktree():
+        return None
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _git_dirty() -> bool | None:
+    if not _inside_git_worktree():
+        return None
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return bool(result.stdout.strip())
+
+
+def _source_control_summary() -> dict[str, object]:
+    return {
+        "inside_worktree": _inside_git_worktree(),
+        "commit": _git_commit(),
+        "branch": _git_branch(),
+        "dirty": _git_dirty(),
+    }
+
+
 def _addon_version() -> str:
     manifest = ast.literal_eval((ADDON / "__manifest__.py").read_text(encoding="utf-8"))
     return str(manifest["version"])
@@ -187,6 +228,7 @@ def _write_manifest(path: Path) -> None:
         "addon": "sudo_country_pack_cn",
         "version": _addon_version(),
         "git_commit": _git_commit(),
+        "source_control": _source_control_summary(),
         "root": str(ROOT),
         "file_count": len(entries),
         "aggregate_sha256": _aggregate_sha256(entries),
@@ -212,6 +254,7 @@ def _load_manifest_summary(path: Path | None) -> dict[str, object] | None:
         "path": str(path),
         "version": payload.get("version"),
         "git_commit": payload.get("git_commit"),
+        "source_control": payload.get("source_control"),
         "file_count": payload.get("file_count"),
         "aggregate_sha256": payload.get("aggregate_sha256"),
     }
@@ -260,6 +303,7 @@ def _write_summary(args: argparse.Namespace, path: Path) -> None:
         "addon": "sudo_country_pack_cn",
         "version": _addon_version(),
         "git_commit": _git_commit(),
+        "source_control": _source_control_summary(),
         "root": str(ROOT),
         "profile": args.profile,
         "selected_runtime_tags": args.test_tags or RUNTIME_PROFILES[args.profile],

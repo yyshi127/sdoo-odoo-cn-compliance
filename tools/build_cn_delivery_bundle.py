@@ -74,6 +74,7 @@ def _write_metadata(path: Path, bundle_path: Path, entries: list[dict[str, objec
         "addon": "sudo_country_pack_cn",
         "version": acceptance._addon_version(),
         "git_commit": acceptance._git_commit(),
+        "source_control": acceptance._source_control_summary(),
         "bundle_path": str(bundle_path),
         "bundle_size": bundle_path.stat().st_size,
         "bundle_sha256": _sha256(bundle_path),

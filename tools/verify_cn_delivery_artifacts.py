@@ -82,6 +82,16 @@ def verify(
         _assert_equal(bundle_metadata.get(field), manifest.get(field), field)
     _assert_equal(summary.get("addon"), manifest.get("addon"), "summary addon")
     _assert_equal(summary.get("version"), manifest.get("version"), "summary version")
+    _assert_equal(
+        bundle_metadata.get("source_control"),
+        manifest.get("source_control"),
+        "bundle/manifest source control",
+    )
+    _assert_equal(
+        summary.get("source_control"),
+        manifest.get("source_control"),
+        "summary/manifest source control",
+    )
     _assert_equal(summary.get("result"), "passed", "summary result")
 
     summary_manifest = summary.get("manifest")

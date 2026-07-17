@@ -47,6 +47,7 @@ def _artifact_summary(payload: dict[str, object] | None) -> dict[str, object] | 
         "aggregate_sha256": payload.get("aggregate_sha256"),
         "bundle_sha256": payload.get("bundle_sha256"),
         "result": payload.get("result"),
+        "source_control": payload.get("source_control"),
     }
 
 
@@ -91,6 +92,7 @@ def _status(
         and runtime_log.get("errors") == 0
     )
     artifact_result = summary.get("result") if summary else None
+    source_control = bundle_metadata.get("source_control") if bundle_metadata else None
     delivery_index = {
         "path": DELIVERY_INDEX_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, DELIVERY_INDEX_PATH),
@@ -128,6 +130,8 @@ def _status(
         business_uat_blockers.append("bundle and manifest aggregate checksums differ")
     if artifact_result != "passed":
         business_uat_blockers.append("automated acceptance did not pass")
+    if isinstance(source_control, dict) and source_control.get("dirty") is True:
+        business_uat_blockers.append("source worktree was dirty when delivery was built")
     if not runtime_passed:
         business_uat_blockers.append("Odoo runtime tests did not pass")
     for label, evidence in (
@@ -166,6 +170,7 @@ def _status(
         "acceptance_passed": artifact_result == "passed",
         "runtime_passed": runtime_passed,
         "preview_url": preview_url,
+        "source_control": source_control,
         "business_uat": business_uat,
         "delivery_index": delivery_index,
         "objective_coverage": objective_coverage,
@@ -191,6 +196,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     acceptance = status.get("acceptance_summary") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else None
+    source_control = status.get("source_control") or {}
     business_uat = status.get("business_uat") or {}
     delivery_index = status.get("delivery_index") or {}
     objective_coverage = status.get("objective_coverage") or {}
@@ -206,6 +212,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Acceptance passed: `{status['acceptance_passed']}`",
         f"- Runtime passed: `{status['runtime_passed']}`",
         f"- Preview URL: `{status.get('preview_url') or ''}`",
+        f"- Source branch: `{source_control.get('branch', '')}`",
+        f"- Source commit: `{source_control.get('commit', '')}`",
+        f"- Source worktree dirty: `{source_control.get('dirty', '')}`",
         f"- Delivery index: `{delivery_index.get('path', '')}`",
         f"- Delivery index in manifest: `{delivery_index.get('included_in_manifest', False)}`",
         f"- Business UAT checklist: `{business_uat.get('path', '')}`",

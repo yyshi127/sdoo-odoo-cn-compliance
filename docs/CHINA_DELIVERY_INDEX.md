@@ -77,6 +77,9 @@ business UAT decision, current-source review, professional rule sign-off and
 customer-specific limitations are recorded outside the automated status.
 Use `--require-business-uat-ready` or `--require-production-signoff-ready` in
 automation when a non-zero exit code should stop handoff.
+Bundle metadata, delivery manifest, acceptance summary and status summary also
+carry source-control evidence so reviewers can see the branch, commit and dirty
+worktree state that produced the delivery artifact.
 
 Check a preview URL before business UAT:
 

@@ -594,6 +594,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China delivery preview URL match gate capability must be declared")
     if features.get("china_delivery_strict_readiness_exit") is not True:
         fail("China delivery strict readiness exit capability must be declared")
+    if features.get("china_delivery_source_control_traceability") is not True:
+        fail("China delivery source control traceability capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3405,6 +3407,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China delivery strict readiness exit capability is missing from {label}"
             )
+        if "china_delivery_source_control_traceability" not in content:
+            fail(
+                f"China delivery source control traceability capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4427,12 +4433,34 @@ def validate_delivery_objective_coverage() -> None:
         "--require-production-signoff-ready",
         "business UAT readiness gate failed",
         "production sign-off readiness gate failed",
+        "source_control",
+        "source worktree was dirty when delivery was built",
+        "Source branch",
+        "Source commit",
+        "Source worktree dirty",
         "Business UAT ready",
         "Production sign-off ready",
         "## Readiness Gates",
     ):
         if required not in status_tool:
             fail(f"China delivery status objective coverage is missing {required}")
+
+    build_tool = (
+        REPOSITORY_ROOT / "tools" / "build_cn_delivery_bundle.py"
+    ).read_text(encoding="utf-8")
+    if "source_control" not in build_tool:
+        fail("China delivery bundle metadata must include source control evidence")
+
+    verify_tool = (
+        REPOSITORY_ROOT / "tools" / "verify_cn_delivery_artifacts.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "source_control",
+        "bundle/manifest source control",
+        "summary/manifest source control",
+    ):
+        if required not in verify_tool:
+            fail(f"China delivery artifact source control verification is missing {required}")
 
 
 def validate_xbrl_parser_addon() -> None:
