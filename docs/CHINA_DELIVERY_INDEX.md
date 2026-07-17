@@ -107,7 +107,7 @@ python tools/check_cn_real_data_closed_loop.py \
   --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
   --config /path/to/odoo.conf \
   --database copied_real_data_db \
-  --expected-version 19.0.1.123.0 \
+  --expected-version 19.0.1.124.0 \
   --json-output dist/cn_real_data_closed_loop.json \
   --require-demo-ready
 ```
@@ -118,6 +118,25 @@ profiles, external tax or invoice data, reconciliation runs, risk/remediation
 activity and formal report records. Use `--require-closed-loop-evidence` only
 after the database is expected to contain reconciliation, risk/remediation and
 report evidence.
+
+For development walkthroughs only, a copied demo database can be prepared with
+an explicitly marked demo profile setup:
+
+```bash
+python tools/prepare_cn_demo_profile.py \
+  --python-bin /opt/odoo/odoo19/odoo19-venv/bin/python \
+  --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
+  --config /path/to/odoo.conf \
+  --database copied_demo_db \
+  --company "鸿优嘉" \
+  --allow-demo-data \
+  --json-output dist/cn_demo_profile_preparation.json
+```
+
+The preparer refuses to write unless `--allow-demo-data` is passed. It creates
+`CODEX-DEMO` registration and taxpayer identity evidence only for a development
+walkthrough. These records must never be treated as real taxpayer evidence or
+used for production sign-off.
 
 ## Release Candidate Is Ready For Business UAT When
 
@@ -132,6 +151,7 @@ report evidence.
   - preview health checker;
   - preview module checker;
   - real-data closed-loop checker;
+  - controlled demo profile preparer;
 - preview health check returns `ok=true` for the intended preview URL.
 - preview module check returns `ok=true` for the intended preview database.
 

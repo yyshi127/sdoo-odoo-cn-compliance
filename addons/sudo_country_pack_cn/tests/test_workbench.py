@@ -372,6 +372,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_real_data_closed_loop_checker"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_controlled_demo_profile_preparer"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
