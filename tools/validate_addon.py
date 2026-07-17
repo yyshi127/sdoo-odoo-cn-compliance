@@ -602,6 +602,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China delivery commit consistency gate capability must be declared")
     if features.get("china_delivery_preview_module_gate") is not True:
         fail("China delivery preview module gate capability must be declared")
+    if features.get("china_real_data_closed_loop_checker") is not True:
+        fail("China real-data closed-loop checker capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3429,6 +3431,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China delivery preview module gate capability is missing from {label}"
             )
+        if "china_real_data_closed_loop_checker" not in content:
+            fail(
+                f"China real-data closed-loop checker capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4397,6 +4403,29 @@ def validate_delivery_objective_coverage() -> None:
         if required not in preview_module_content:
             fail(f"China preview module checker is missing {required}")
 
+    real_data_path = REPOSITORY_ROOT / "tools" / "check_cn_real_data_closed_loop.py"
+    if not real_data_path.is_file():
+        fail("China real-data closed-loop checker must be packaged")
+    real_data_content = real_data_path.read_text(encoding="utf-8")
+    for required in (
+        "sdoo.cn.real-data-closed-loop.v1",
+        "account.move",
+        "sudo.compliance.profile",
+        "sudo.compliance.assessment",
+        "sudo.compliance.finding",
+        "sudo.compliance.task",
+        "sudo.cn.compliance.report",
+        "sudo.cn.external.dataset",
+        "sudo.cn.vat.period.reconciliation.run",
+        "has_real_accounting_ledger",
+        "has_reconciliation_activity",
+        "closed_loop_evidence_ready",
+        "--require-demo-ready",
+        "--require-closed-loop-evidence",
+    ):
+        if required not in real_data_content:
+            fail(f"China real-data closed-loop checker is missing {required}")
+
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():
         fail("China delivery objective coverage matrix must be documented")
@@ -4427,6 +4456,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"',
         'ROOT / "tools" / "check_cn_preview_health.py"',
         'ROOT / "tools" / "check_cn_preview_module.py"',
+        'ROOT / "tools" / "check_cn_real_data_closed_loop.py"',
         '"summarize_cn_delivery_status.py"',
     ):
         if required not in acceptance_tool:
@@ -4448,11 +4478,14 @@ def validate_delivery_objective_coverage() -> None:
         "preview_health_checker",
         "PREVIEW_MODULE_TOOL_PATH",
         "preview_module_checker",
+        "REAL_DATA_CLOSED_LOOP_TOOL_PATH",
+        "real_data_closed_loop_checker",
         "included_in_manifest",
         "Business UAT checklist in manifest",
         "Objective coverage in manifest",
         "Production sign-off template in manifest",
         "Preview health checker in manifest",
+        "Real-data closed-loop checker in manifest",
         "Delivery index in manifest",
         "readiness_gates",
         "business_uat_ready",
@@ -4471,6 +4504,14 @@ def validate_delivery_objective_coverage() -> None:
         "preview module result schema is invalid",
         "preview module expected version does not match delivery version",
         "preview module check did not pass",
+        "--real-data-closed-loop",
+        "real_data_closed_loop",
+        "real-data closed-loop result was not provided",
+        "real-data closed-loop result schema is invalid",
+        "real-data closed-loop expected version does not match delivery version",
+        "real-data demo readiness check did not pass",
+        "Real-data demo ready",
+        "Real-data closed-loop evidence ready",
         "Preview module ok",
         "Preview module version",
         "Preview health ok",

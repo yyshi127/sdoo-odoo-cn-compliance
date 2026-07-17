@@ -64,6 +64,7 @@ python tools/summarize_cn_delivery_status.py \
   --summary dist/cn_delivery_acceptance_summary.json \
   --preview-health dist/cn_preview_health.json \
   --preview-module dist/cn_preview_module.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop.json \
   --preview-url http://127.0.0.1:18069/web/login?db=target_database \
   --require-business-uat-ready \
   --require-source-control-clean \
@@ -98,6 +99,26 @@ python tools/check_cn_preview_health.py \
   --json-output dist/cn_preview_health.json
 ```
 
+Check a copied real-data database before walkthroughs:
+
+```bash
+python tools/check_cn_real_data_closed_loop.py \
+  --python-bin /opt/odoo/odoo19/odoo19-venv/bin/python \
+  --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
+  --config /path/to/odoo.conf \
+  --database copied_real_data_db \
+  --expected-version 19.0.1.122.0 \
+  --json-output dist/cn_real_data_closed_loop.json \
+  --require-demo-ready
+```
+
+The real-data checker is read-only. It reports whether the current database has
+installed China pack metadata, posted Odoo accounting data, China compliance
+profiles, external tax or invoice data, reconciliation runs, risk/remediation
+activity and formal report records. Use `--require-closed-loop-evidence` only
+after the database is expected to contain reconciliation, risk/remediation and
+report evidence.
+
 ## Release Candidate Is Ready For Business UAT When
 
 - bundle, manifest and acceptance summary versions are consistent;
@@ -109,7 +130,10 @@ python tools/check_cn_preview_health.py \
   - business UAT checklist;
   - production sign-off template;
   - preview health checker;
+  - preview module checker;
+  - real-data closed-loop checker;
 - preview health check returns `ok=true` for the intended preview URL.
+- preview module check returns `ok=true` for the intended preview database.
 
 ## Release Candidate Is Ready For Production Sign-off When
 

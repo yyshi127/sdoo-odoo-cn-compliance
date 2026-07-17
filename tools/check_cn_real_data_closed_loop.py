@@ -1,0 +1,341 @@
+"""Inspect whether a China compliance database has real-data loop evidence."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+SCHEMA = "sdoo.cn.real-data-closed-loop.v1"
+MARKER = "SDOO_CN_REAL_DATA_CLOSED_LOOP_JSON="
+
+
+def _shell_code(expected_version: str | None) -> str:
+    return f"""
+import json
+from collections import Counter
+
+
+def has_model(model_name):
+    return model_name in env.registry
+
+
+def count(model_name, domain=None):
+    if not has_model(model_name):
+        return None
+    return env[model_name].sudo().search_count(domain or [])
+
+
+def selection_count(model_name, field_name, domain=None):
+    if not has_model(model_name):
+        return {{}}
+    model = env[model_name].sudo()
+    if field_name not in model._fields:
+        return {{}}
+    values = model.search(domain or []).mapped(field_name)
+    return dict(sorted(Counter(value or False for value in values).items()))
+
+
+def first_last_dates(model_name, date_field, domain=None):
+    if not has_model(model_name):
+        return {{"first": None, "last": None}}
+    model = env[model_name].sudo()
+    if date_field not in model._fields:
+        return {{"first": None, "last": None}}
+    first = model.search(domain or [], order=date_field + " asc, id asc", limit=1)
+    last = model.search(domain or [], order=date_field + " desc, id desc", limit=1)
+    return {{
+        "first": str(first[date_field]) if first and first[date_field] else None,
+        "last": str(last[date_field]) if last and last[date_field] else None,
+    }}
+
+
+def country_id(code):
+    country = env["res.country"].sudo().search([("code", "=", code)], limit=1)
+    return country.id if country else False
+
+
+def profile_domain():
+    domain = []
+    if has_model("sudo.compliance.profile"):
+        Profile = env["sudo.compliance.profile"].sudo()
+        if "country_id" in Profile._fields:
+            cn_id = country_id("CN")
+            if cn_id:
+                domain.append(("country_id", "=", cn_id))
+    return domain
+
+
+def safe_field(record, field_name):
+    if not record or field_name not in record._fields:
+        return None
+    value = record[field_name]
+    if hasattr(value, "display_name"):
+        return value.display_name
+    return value
+
+
+module = env["ir.module.module"].sudo().search(
+    [("name", "=", "sudo_country_pack_cn")], limit=1
+)
+pack = env.ref("sudo_country_pack_cn.compliance_country_pack_cn", raise_if_not_found=False)
+profile_dom = profile_domain()
+profile_ids = (
+    env["sudo.compliance.profile"].sudo().search(profile_dom).ids
+    if has_model("sudo.compliance.profile")
+    else []
+)
+profile_status_domain = profile_dom
+if has_model("sudo.compliance.profile") and "status" in env["sudo.compliance.profile"]._fields:
+    profile_status_domain = profile_dom + [("status", "=", "active")]
+assessment_domain = [("profile_id", "in", profile_ids)] if profile_ids else []
+finding_domain = [("assessment_id.profile_id", "in", profile_ids)] if profile_ids else []
+posted_move_domain = [("state", "=", "posted")]
+invoice_domain = posted_move_domain + [("move_type", "!=", "entry")]
+
+profiles = []
+if has_model("sudo.compliance.profile"):
+    for profile in env["sudo.compliance.profile"].sudo().search(
+        profile_dom, order="id asc", limit=8
+    ):
+        profiles.append(
+            {{
+                "id": profile.id,
+                "name": profile.display_name,
+                "company": safe_field(profile, "company_id"),
+                "status": safe_field(profile, "status"),
+                "period_label": safe_field(profile, "cn_workbench_period_label"),
+                "data_state": safe_field(profile, "cn_workbench_data_state"),
+                "scan_state": safe_field(profile, "cn_workbench_scan_state"),
+                "risk_state": safe_field(profile, "cn_workbench_risk_state"),
+                "remediation_state": safe_field(profile, "cn_workbench_remediation_state"),
+                "report_state": safe_field(profile, "cn_workbench_report_state"),
+                "closed_loop_state": safe_field(profile, "cn_workbench_closed_loop_state"),
+                "next_action_key": safe_field(profile, "cn_workbench_next_best_action_key"),
+                "next_action": safe_field(profile, "cn_workbench_next_action"),
+            }}
+        )
+
+objects = {{
+    "cn_profiles": count("sudo.compliance.profile", profile_dom),
+    "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
+    "assessments": count("sudo.compliance.assessment", assessment_domain),
+    "findings": count("sudo.compliance.finding", finding_domain),
+    "remediation_tasks": count("sudo.compliance.task", [("task_type", "=", "remediation")]) if has_model("sudo.compliance.task") else None,
+    "formal_reports": count("sudo.cn.compliance.report"),
+    "evidence": count("sudo.compliance.evidence"),
+    "filing_archives": count("sudo.compliance.filing"),
+    "external_datasets": count("sudo.cn.external.dataset"),
+    "einvoice_documents": count("sudo.cn.einvoice.document"),
+    "vat_filing_records": count("sudo.cn.vat.filing.record"),
+    "cit_filing_records": count("sudo.cn.cit.filing.record"),
+    "iit_withholding_records": count("sudo.cn.iit.withholding.record"),
+    "tax_payment_records": count("sudo.cn.tax.payment.record"),
+    "vat_reconciliation_runs": count("sudo.cn.vat.period.reconciliation.run"),
+    "cit_reconciliation_runs": count("sudo.cn.cit.period.reconciliation.run"),
+    "iit_reconciliation_runs": count("sudo.cn.iit.period.reconciliation.run"),
+    "einvoice_reconciliation_runs": count("sudo.cn.einvoice.reconciliation.run"),
+    "vat_reconciliation_issues": count("sudo.cn.vat.period.reconciliation.issue"),
+    "cit_reconciliation_issues": count("sudo.cn.cit.period.reconciliation.issue"),
+    "iit_reconciliation_issues": count("sudo.cn.iit.period.reconciliation.issue"),
+}}
+objects["total_reconciliation_runs"] = sum(
+    value or 0
+    for key, value in objects.items()
+    if key.endswith("_reconciliation_runs")
+)
+objects["total_reconciliation_issues"] = sum(
+    value or 0
+    for key, value in objects.items()
+    if key.endswith("_reconciliation_issues")
+)
+
+accounting = {{
+    "companies": count("res.company"),
+    "partners": count("res.partner"),
+    "posted_moves": count("account.move", posted_move_domain),
+    "posted_invoices": count("account.move", invoice_domain),
+    "posted_move_lines": count("account.move.line", [("move_id.state", "=", "posted")]),
+    "posted_move_date_range": first_last_dates("account.move", "date", posted_move_domain),
+}}
+
+readiness = {{
+    "module_installed": bool(module and module.state == "installed"),
+    "module_version_matches": bool(
+        not {expected_version!r}
+        or (module and module.installed_version == {expected_version!r})
+    ),
+    "country_pack_version_matches": bool(
+        not {expected_version!r}
+        or (pack and pack.version == {expected_version!r})
+    ),
+    "has_real_accounting_ledger": bool(
+        (accounting.get("posted_moves") or 0) > 0
+        and (accounting.get("posted_move_lines") or 0) > 0
+    ),
+    "has_china_profile": bool((objects.get("cn_profiles") or 0) > 0),
+    "has_active_china_profile": bool((objects.get("active_cn_profiles") or 0) > 0),
+    "has_external_tax_or_invoice_data": bool(
+        sum(
+            objects.get(key) or 0
+            for key in (
+                "external_datasets",
+                "einvoice_documents",
+                "vat_filing_records",
+                "cit_filing_records",
+                "iit_withholding_records",
+                "tax_payment_records",
+            )
+        )
+        > 0
+    ),
+    "has_reconciliation_activity": bool((objects.get("total_reconciliation_runs") or 0) > 0),
+    "has_risk_or_remediation_activity": bool(
+        (objects.get("findings") or 0) > 0 or (objects.get("remediation_tasks") or 0) > 0
+    ),
+    "has_report_activity": bool((objects.get("formal_reports") or 0) > 0),
+}}
+readiness["demo_ready"] = all(
+    readiness[key]
+    for key in (
+        "module_installed",
+        "module_version_matches",
+        "country_pack_version_matches",
+        "has_real_accounting_ledger",
+        "has_china_profile",
+    )
+)
+readiness["closed_loop_evidence_ready"] = all(
+    readiness[key]
+    for key in (
+        "demo_ready",
+        "has_reconciliation_activity",
+        "has_risk_or_remediation_activity",
+        "has_report_activity",
+    )
+)
+
+payload = {{
+    "schema": "{SCHEMA}",
+    "expected_version": {expected_version!r},
+    "module": {{
+        "found": bool(module),
+        "state": module.state if module else None,
+        "installed_version": module.installed_version if module else None,
+    }},
+    "country_pack": {{
+        "found": bool(pack),
+        "code": pack.code if pack else None,
+        "version": pack.version if pack else None,
+    }},
+    "accounting": accounting,
+    "objects": objects,
+    "states": {{
+        "profile_status": selection_count("sudo.compliance.profile", "status", profile_dom),
+        "assessment_state": selection_count("sudo.compliance.assessment", "state", assessment_domain),
+        "finding_result": selection_count("sudo.compliance.finding", "result", finding_domain),
+        "task_state": selection_count("sudo.compliance.task", "state"),
+        "report_state": selection_count("sudo.cn.compliance.report", "state"),
+        "external_dataset_state": selection_count("sudo.cn.external.dataset", "state"),
+    }},
+    "sample_profiles": profiles,
+    "readiness": readiness,
+    "ok": readiness["demo_ready"],
+}}
+print("{MARKER}" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
+"""
+
+
+def _run_shell(args: argparse.Namespace) -> dict[str, object]:
+    command = [
+        str(args.python_bin),
+        str(args.odoo_bin),
+        "shell",
+        "-c",
+        str(args.config),
+        "-d",
+        args.database,
+        "--no-http",
+    ]
+    result = subprocess.run(
+        command,
+        input=_shell_code(args.expected_version),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+        timeout=args.timeout,
+    )
+    for line in result.stdout.splitlines():
+        if line.startswith(MARKER):
+            payload = json.loads(line.removeprefix(MARKER))
+            payload["checked_at_utc"] = (
+                datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            )
+            payload["database"] = args.database
+            payload["shell_returncode"] = result.returncode
+            return payload
+    return {
+        "schema": SCHEMA,
+        "checked_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "database": args.database,
+        "expected_version": args.expected_version,
+        "ok": False,
+        "shell_returncode": result.returncode,
+        "error": "real-data closed-loop marker was not found in Odoo shell output",
+        "output_tail": result.stdout[-4000:],
+    }
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Check China compliance real-data closed-loop evidence in an Odoo database."
+    )
+    parser.add_argument("--python-bin", type=Path, required=True)
+    parser.add_argument("--odoo-bin", type=Path, required=True)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--database", required=True)
+    parser.add_argument("--expected-version")
+    parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--require-demo-ready", action="store_true")
+    parser.add_argument("--require-closed-loop-evidence", action="store_true")
+    return parser
+
+
+def main() -> int:
+    args = _parser().parse_args()
+    payload = _run_shell(args)
+    rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(rendered, encoding="utf-8")
+    else:
+        print(rendered, end="")
+
+    readiness = payload.get("readiness") or {}
+    if args.require_closed_loop_evidence and readiness.get("closed_loop_evidence_ready") is not True:
+        print(
+            "real-data closed-loop evidence check failed: "
+            f"{args.database} lacks full closed-loop evidence"
+        )
+        return 1
+    if args.require_demo_ready and readiness.get("demo_ready") is not True:
+        print(
+            "real-data demo readiness check failed: "
+            f"{args.database} lacks minimum demo evidence"
+        )
+        return 1
+    if payload.get("ok") is True:
+        print(f"real-data demo readiness check passed: {args.database}")
+        return 0
+    print(f"real-data demo readiness check completed with gaps: {args.database}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

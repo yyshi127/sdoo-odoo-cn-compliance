@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.121.0</field>
+        <field name="version">19.0.1.122.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -119,6 +119,7 @@
                 'china_delivery_source_control_clean_gate': True,
                 'china_delivery_commit_consistency_gate': True,
                 'china_delivery_preview_module_gate': True,
+                'china_real_data_closed_loop_checker': True,
                 'vat_filing_payment_archive': True,
                 'cit_filing_normalization': True,
                 'cit_accounting_reconciliation': True,

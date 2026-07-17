@@ -11,12 +11,14 @@ from pathlib import Path
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 PREVIEW_HEALTH_SCHEMA = "sdoo.cn.preview-health.v1"
 PREVIEW_MODULE_SCHEMA = "sdoo.cn.preview-module.v1"
+REAL_DATA_CLOSED_LOOP_SCHEMA = "sdoo.cn.real-data-closed-loop.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
 PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
+REAL_DATA_CLOSED_LOOP_TOOL_PATH = Path("tools/check_cn_real_data_closed_loop.py")
 
 
 def _manifest_includes(
@@ -90,6 +92,7 @@ def _status(
     summary: dict[str, object] | None,
     preview_health: dict[str, object] | None,
     preview_module: dict[str, object] | None,
+    real_data_closed_loop: dict[str, object] | None,
     preview_url: str | None,
 ) -> dict[str, object]:
     versions = {
@@ -136,6 +139,12 @@ def _status(
         "path": PREVIEW_MODULE_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, PREVIEW_MODULE_TOOL_PATH),
     }
+    real_data_closed_loop_checker = {
+        "path": REAL_DATA_CLOSED_LOOP_TOOL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(
+            manifest, REAL_DATA_CLOSED_LOOP_TOOL_PATH
+        ),
+    }
     preview_health_summary = None
     if preview_health:
         preview_health_summary = {
@@ -159,6 +168,29 @@ def _status(
             "required_capabilities": preview_module.get("required_capabilities"),
             "error": preview_module.get("error"),
         }
+    real_data_closed_loop_summary = None
+    if real_data_closed_loop:
+        readiness = real_data_closed_loop.get("readiness")
+        real_data_closed_loop_summary = {
+            "schema": real_data_closed_loop.get("schema"),
+            "database": real_data_closed_loop.get("database"),
+            "expected_version": real_data_closed_loop.get("expected_version"),
+            "ok": real_data_closed_loop.get("ok") is True,
+            "module_installed_version": (
+                (real_data_closed_loop.get("module") or {}).get("installed_version")
+                if isinstance(real_data_closed_loop.get("module"), dict)
+                else None
+            ),
+            "country_pack_version": (
+                (real_data_closed_loop.get("country_pack") or {}).get("version")
+                if isinstance(real_data_closed_loop.get("country_pack"), dict)
+                else None
+            ),
+            "accounting": real_data_closed_loop.get("accounting"),
+            "objects": real_data_closed_loop.get("objects"),
+            "readiness": readiness if isinstance(readiness, dict) else None,
+            "error": real_data_closed_loop.get("error"),
+        }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
         business_uat_blockers.append("bundle, manifest and summary versions differ")
@@ -177,6 +209,7 @@ def _status(
         ("production sign-off template", production_signoff),
         ("preview health checker", preview_health_checker),
         ("preview module checker", preview_module_checker),
+        ("real-data closed-loop checker", real_data_closed_loop_checker),
     ):
         if not evidence["included_in_manifest"]:
             business_uat_blockers.append(f"{label} is not included in the manifest")
@@ -200,6 +233,18 @@ def _status(
             business_uat_blockers.append("preview module expected version does not match delivery version")
         if preview_module_summary["ok"] is not True:
             business_uat_blockers.append("preview module check did not pass")
+    if not real_data_closed_loop_summary:
+        business_uat_blockers.append("real-data closed-loop result was not provided")
+    else:
+        if real_data_closed_loop_summary["schema"] != REAL_DATA_CLOSED_LOOP_SCHEMA:
+            business_uat_blockers.append("real-data closed-loop result schema is invalid")
+        if real_data_closed_loop_summary["expected_version"] != version:
+            business_uat_blockers.append(
+                "real-data closed-loop expected version does not match delivery version"
+            )
+        readiness = real_data_closed_loop_summary.get("readiness") or {}
+        if not isinstance(readiness, dict) or readiness.get("demo_ready") is not True:
+            business_uat_blockers.append("real-data demo readiness check did not pass")
     production_signoff_blockers = list(business_uat_blockers)
     production_signoff_blockers.extend(
         [
@@ -224,8 +269,10 @@ def _status(
         "production_signoff": production_signoff,
         "preview_health_checker": preview_health_checker,
         "preview_module_checker": preview_module_checker,
+        "real_data_closed_loop_checker": real_data_closed_loop_checker,
         "preview_health": preview_health_summary,
         "preview_module": preview_module_summary,
+        "real_data_closed_loop": real_data_closed_loop_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
@@ -256,6 +303,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     preview_health = status.get("preview_health") or {}
     preview_module_checker = status.get("preview_module_checker") or {}
     preview_module = status.get("preview_module") or {}
+    real_data_closed_loop_checker = status.get("real_data_closed_loop_checker") or {}
+    real_data_closed_loop = status.get("real_data_closed_loop") or {}
+    real_data_readiness = real_data_closed_loop.get("readiness") or {}
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -287,6 +337,10 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Preview module ok: `{preview_module.get('ok', False)}`",
         f"- Preview module version: `{preview_module.get('module_installed_version', '')}`",
         f"- Preview country pack version: `{preview_module.get('country_pack_version', '')}`",
+        f"- Real-data closed-loop checker: `{real_data_closed_loop_checker.get('path', '')}`",
+        f"- Real-data closed-loop checker in manifest: `{real_data_closed_loop_checker.get('included_in_manifest', False)}`",
+        f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
+        f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
@@ -331,6 +385,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary", type=Path)
     parser.add_argument("--preview-health", type=Path)
     parser.add_argument("--preview-module", type=Path)
+    parser.add_argument("--real-data-closed-loop", type=Path)
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
@@ -360,6 +415,7 @@ def main() -> int:
         summary=_load(args.summary),
         preview_health=_load(args.preview_health),
         preview_module=_load(args.preview_module),
+        real_data_closed_loop=_load(args.real_data_closed_loop),
         preview_url=args.preview_url,
     )
     if args.json_output:
