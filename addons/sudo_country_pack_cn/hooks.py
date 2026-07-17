@@ -133,6 +133,7 @@ def country_pack_capabilities():
             "china_ai_risk_resolution_context": True,
             "china_report_ai_guidance_snapshot": True,
             "china_report_evidence_link_snapshot": True,
+            "china_report_risk_closure_snapshot": True,
             "source_governance": True,
             "rule_nature_governance": True,
             "tax_impact_review": True,

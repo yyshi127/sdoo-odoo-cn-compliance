@@ -540,6 +540,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report filing archive gate capability must be declared")
     if features.get("china_report_filing_archive_snapshot") is not True:
         fail("China report filing archive snapshot capability must be declared")
+    if features.get("china_report_risk_closure_snapshot") is not True:
+        fail("China report risk closure snapshot capability must be declared")
     if features.get("china_traceability_matrix_visibility") is not True:
         fail("China traceability matrix visibility capability must be declared")
     if features.get("china_ai_guidance_visibility") is not True:
@@ -2812,6 +2814,11 @@ def validate_formal_compliance_report() -> None:
         "remediation_task_count",
         "remediation_verified_count",
         "remediation_pending_verification_count",
+        "finding_closure_blocked_count",
+        "finding_closure_action_required_count",
+        "finding_closure_ready_count",
+        '"closure_state"',
+        '"closure_summary"',
         "verification_assessment_id",
         "verification_assessment_name",
         "remediation_verification",
@@ -2962,8 +2969,12 @@ def validate_formal_compliance_report() -> None:
         "china_report_obligation_readiness",
         "china_report_remediation_verification",
         "china_report_filing_archive_snapshot",
+        "china_report_risk_closure_snapshot",
         "china_formal_report_badge_clarity",
         "remediation_pending_verification_count",
+        "finding_closure_blocked_count",
+        "closure_state",
+        "closure_summary",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",

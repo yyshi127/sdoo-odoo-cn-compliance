@@ -585,6 +585,15 @@ class SudoChinaComplianceReport(models.Model):
     high_count = fields.Integer(string="高风险", readonly=True, copy=False)
     open_task_count = fields.Integer(string="未关闭整改", readonly=True, copy=False)
     overdue_task_count = fields.Integer(string="逾期整改", readonly=True, copy=False)
+    finding_closure_blocked_count = fields.Integer(
+        string="Blocked Risk Closures", readonly=True, copy=False
+    )
+    finding_closure_action_required_count = fields.Integer(
+        string="Risk Closures Needing Action", readonly=True, copy=False
+    )
+    finding_closure_ready_count = fields.Integer(
+        string="Report-Ready Risk Closures", readonly=True, copy=False
+    )
     remediation_task_count = fields.Integer(
         string="Remediation Tasks", readonly=True, copy=False
     )
@@ -816,6 +825,9 @@ class SudoChinaComplianceReport(models.Model):
                     "finding_count": 0,
                     "critical_count": 0,
                     "high_count": 0,
+                    "finding_closure_blocked_count": 0,
+                    "finding_closure_action_required_count": 0,
+                    "finding_closure_ready_count": 0,
                     "open_task_count": 0,
                     "overdue_task_count": 0,
                     "remediation_task_count": 0,
@@ -1140,6 +1152,8 @@ class SudoChinaComplianceReport(models.Model):
                     "recommendation": finding.recommendation or None,
                     "evidence_required": finding.evidence_required or None,
                     "review_state": finding.review_state,
+                    "closure_state": finding.cn_closure_state or None,
+                    "closure_summary": finding.cn_closure_summary or None,
                     "reviewer_id": finding.reviewer_id.id or None,
                     "reviewed_at": _datetime_value(finding.reviewed_at),
                     "review_notes": finding.review_notes or None,
@@ -1521,12 +1535,20 @@ class SudoChinaComplianceReport(models.Model):
             for task in remediation_tasks
             if task["verification_state"] not in ("verified", "not_required")
         ]
+        closure_counts = {"blocked": 0, "action_required": 0, "ready": 0}
+        for finding in payload.get("findings") or []:
+            state = finding.get("closure_state")
+            if state in closure_counts:
+                closure_counts[state] += 1
         return {
             "conclusion_state": conclusion,
             "has_material_limitations": has_limits,
             "finding_count": assessment["finding_count"],
             "critical_count": assessment["critical_count"],
             "high_count": assessment["high_count"],
+            "finding_closure_blocked_count": closure_counts["blocked"],
+            "finding_closure_action_required_count": closure_counts["action_required"],
+            "finding_closure_ready_count": closure_counts["ready"],
             "open_task_count": len(open_tasks),
             "overdue_task_count": len(
                 [task for task in open_tasks if task["is_overdue"]]
@@ -1666,6 +1688,8 @@ class SudoChinaComplianceReport(models.Model):
         "finding_count",
         "open_task_count",
         "overdue_task_count",
+        "finding_closure_blocked_count",
+        "finding_closure_action_required_count",
         "remediation_pending_verification_count",
         "evidence_count",
         "verified_evidence_count",
@@ -1692,6 +1716,10 @@ class SudoChinaComplianceReport(models.Model):
                 gaps.append("open_tasks")
             if report.overdue_task_count:
                 gaps.append("overdue_tasks")
+            if report.finding_closure_blocked_count:
+                gaps.append("finding_closure")
+            if report.finding_closure_action_required_count:
+                gaps.append("finding_closure_action")
             if report.remediation_pending_verification_count:
                 gaps.append("remediation_verification")
             if report.evidence_count != report.verified_evidence_count:
@@ -1729,10 +1757,11 @@ class SudoChinaComplianceReport(models.Model):
                 "pdf_integrity",
                 "fact_basis",
                 "finding_traceability",
+                "finding_closure",
             }:
                 report.cn_report_traceability_state = "blocked"
                 report.cn_report_traceability_next_action = _(
-                    "Refresh the report snapshot and close source or finding traceability gaps."
+                    "Refresh the report snapshot and close source, finding traceability or risk closure gaps."
                 )
             elif "obligation_readiness" in gaps:
                 report.cn_report_traceability_state = "action_required"
@@ -1919,6 +1948,9 @@ class SudoChinaComplianceReport(models.Model):
                     "finding_count": 0,
                     "critical_count": 0,
                     "high_count": 0,
+                    "finding_closure_blocked_count": 0,
+                    "finding_closure_action_required_count": 0,
+                    "finding_closure_ready_count": 0,
                     "open_task_count": 0,
                     "overdue_task_count": 0,
                     "remediation_task_count": 0,

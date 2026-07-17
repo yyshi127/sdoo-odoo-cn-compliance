@@ -435,6 +435,17 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(report.snapshot_json["assessment"]["id"], self.assessment.id)
         self.assertEqual(report.snapshot_json["findings"][0]["checksum"], self.finding.checksum)
         self.assertEqual(
+            report.snapshot_json["findings"][0]["closure_state"],
+            self.finding.cn_closure_state,
+        )
+        self.assertEqual(
+            report.snapshot_json["findings"][0]["closure_summary"],
+            self.finding.cn_closure_summary,
+        )
+        self.assertEqual(report.finding_closure_blocked_count, 1)
+        self.assertEqual(report.finding_closure_action_required_count, 0)
+        self.assertEqual(report.finding_closure_ready_count, 0)
+        self.assertEqual(
             report.snapshot_json["obligation_readiness"]["state"],
             "attention",
         )
@@ -750,6 +761,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_evidence_link_snapshot"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_risk_closure_snapshot"
             ]
         )
         self.assertTrue(
