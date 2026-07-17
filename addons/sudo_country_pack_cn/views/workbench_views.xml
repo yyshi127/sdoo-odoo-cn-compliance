@@ -56,6 +56,8 @@
                 <field name="cn_workbench_open_task_count"/>
                 <field name="cn_workbench_overdue_task_count"/>
                 <field name="cn_workbench_pending_review_count"/>
+                <field name="cn_workbench_historical_unresolved_finding_count"/>
+                <field name="cn_workbench_historical_blocked_task_count"/>
                 <field name="cn_workbench_ai_guidance_state" widget="badge"
                        decoration-success="cn_workbench_ai_guidance_state == 'ready'"
                        decoration-warning="cn_workbench_ai_guidance_state == 'attention'"
@@ -88,6 +90,8 @@
                 <field name="cn_workbench_open_task_count"/>
                 <field name="cn_workbench_overdue_task_count"/>
                 <field name="cn_workbench_pending_review_count"/>
+                <field name="cn_workbench_historical_unresolved_finding_count"/>
+                <field name="cn_workbench_historical_blocked_task_count"/>
                 <field name="cn_workbench_tax_impact_case_count"/>
                 <field name="cn_workbench_pending_tax_impact_count"/>
                 <field name="cn_workbench_underpayment_amount"/>
@@ -657,8 +661,10 @@
                             <field name="cn_workbench_finding_count" readonly="1"/>
                             <field name="cn_workbench_high_risk_count" readonly="1"/>
                             <field name="cn_workbench_pending_review_count" readonly="1"/>
+                            <field name="cn_workbench_historical_unresolved_finding_count" readonly="1"/>
                             <field name="cn_workbench_open_task_count" readonly="1"/>
                             <field name="cn_workbench_overdue_task_count" readonly="1"/>
+                            <field name="cn_workbench_historical_blocked_task_count" readonly="1"/>
                         </group>
                     </group>
                     <group>

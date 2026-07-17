@@ -313,12 +313,20 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="待复核事项",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_historical_unresolved_finding_count = fields.Integer(
+        string="Historical Unresolved Findings",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_open_task_count = fields.Integer(
         string="未完成整改",
         compute="_compute_cn_workbench",
     )
     cn_workbench_overdue_task_count = fields.Integer(
         string="逾期整改",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_historical_blocked_task_count = fields.Integer(
+        string="Historical Blocked Tasks",
         compute="_compute_cn_workbench",
     )
     cn_workbench_tax_impact_case_count = fields.Integer(
@@ -604,18 +612,35 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile, today
             )[:1]
             finding_domain = [("assessment_id.profile_id", "=", profile.id)]
-            review_finding_domain = finding_domain + [
+            current_finding_domain = list(finding_domain)
+            historical_finding_domain = list(finding_domain)
+            if latest_assessment:
+                current_finding_domain.append(("assessment_id", "=", latest_assessment.id))
+                historical_finding_domain.append(("assessment_id", "!=", latest_assessment.id))
+            review_finding_domain = current_finding_domain + [
                 "|",
                 ("review_state", "in", REVIEW_FINDING_STATES),
                 ("result", "in", ("fail", "unknown", "error")),
             ]
-            ai_guidance_domain = finding_domain + [
+            historical_review_finding_domain = historical_finding_domain + [
+                "|",
+                ("review_state", "in", REVIEW_FINDING_STATES),
+                ("result", "in", ("fail", "unknown", "error")),
+            ]
+            ai_guidance_domain = current_finding_domain + [
                 ("result", "in", ("fail", "unknown", "error")),
             ]
             task_domain = [
                 ("assessment_id.profile_id", "=", profile.id),
                 ("state", "in", OPEN_TASK_STATES),
             ]
+            historical_task_domain = [
+                ("assessment_id.profile_id", "=", profile.id),
+                ("state", "in", OPEN_TASK_STATES),
+            ]
+            if latest_assessment:
+                task_domain.append(("assessment_id", "=", latest_assessment.id))
+                historical_task_domain.append(("assessment_id", "!=", latest_assessment.id))
             impact_domain = [
                 ("profile_id", "=", profile.id),
                 ("state", "!=", "cancelled"),
@@ -759,7 +784,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 review_finding_domain + [("risk_level", "in", HIGH_RISK_LEVELS)]
             )
             profile.cn_workbench_pending_review_count = Finding.search_count(
-                finding_domain + [("review_state", "in", REVIEW_FINDING_STATES)]
+                current_finding_domain + [("review_state", "in", REVIEW_FINDING_STATES)]
+            )
+            profile.cn_workbench_historical_unresolved_finding_count = Finding.search_count(
+                historical_review_finding_domain
             )
             ai_guidance_findings = Finding.search(ai_guidance_domain)
             ai_guidance_generated = self.env["sudo.compliance.finding"]
@@ -803,6 +831,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_open_task_count = Task.search_count(task_domain)
             profile.cn_workbench_overdue_task_count = Task.search_count(
                 task_domain + [("due_date", "<", today)]
+            )
+            profile.cn_workbench_historical_blocked_task_count = Task.search_count(
+                historical_task_domain + [("state", "=", "blocked")]
             )
             profile.cn_workbench_pending_rescan_count = Task.search_count(
                 task_domain + [("verification_state", "=", "pending_rescan")]
@@ -1150,6 +1181,18 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_closed_loop_gap_count,
                 profile.cn_workbench_closed_loop_summary,
             ) = _closed_loop_values(profile)
+            if (
+                profile.cn_workbench_closed_loop_state == "ready"
+                and (
+                    profile.cn_workbench_historical_unresolved_finding_count
+                    or profile.cn_workbench_historical_blocked_task_count
+                )
+            ):
+                profile.cn_workbench_closed_loop_summary = _(
+                    "Current closed loop is ready. Historical unresolved findings: %(findings)s; historical blocked tasks: %(tasks)s.",
+                    findings=profile.cn_workbench_historical_unresolved_finding_count,
+                    tasks=profile.cn_workbench_historical_blocked_task_count,
+                )
             (
                 profile.cn_workbench_conclusion_boundary_state,
                 profile.cn_workbench_conclusion_boundary_summary,
@@ -1201,21 +1244,26 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
     def action_cn_open_workbench_findings(self):
         self.ensure_one()
+        domain = [
+            ("assessment_id.profile_id", "=", self.id),
+            ("result", "in", ("fail", "unknown", "error")),
+        ]
+        if self.cn_workbench_last_assessment_id:
+            domain.append(
+                ("assessment_id", "=", self.cn_workbench_last_assessment_id.id)
+            )
         action = self.env.ref(
             "sudo_country_pack_cn.action_cn_risk_center",
             raise_if_not_found=False,
         )
         if action:
             result = action.sudo().read()[0]
-            result["domain"] = [
-                ("assessment_id.profile_id", "=", self.id),
-                ("result", "in", ("fail", "unknown", "error")),
-            ]
+            result["domain"] = domain
             return result
         return self._cn_action(
             _("风险事项"),
             "sudo.compliance.finding",
-            [("assessment_id.profile_id", "=", self.id)],
+            domain,
         )
 
     def action_cn_open_workbench_ai_guidance_findings(self):
@@ -1226,25 +1274,34 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             ("assessment_id.profile_id", "=", self.id),
             ("result", "in", ("fail", "unknown", "error")),
         ]
+        if self.cn_workbench_last_assessment_id:
+            action["domain"].append(
+                ("assessment_id", "=", self.cn_workbench_last_assessment_id.id)
+            )
         return action
 
     def action_cn_open_workbench_tasks(self):
         self.ensure_one()
+        domain = [
+            ("assessment_id.profile_id", "=", self.id),
+            ("task_type", "=", "remediation"),
+        ]
+        if self.cn_workbench_last_assessment_id:
+            domain.append(
+                ("assessment_id", "=", self.cn_workbench_last_assessment_id.id)
+            )
         action = self.env.ref(
             "sudo_country_pack_cn.action_cn_remediation_tracker",
             raise_if_not_found=False,
         )
         if action:
             result = action.sudo().read()[0]
-            result["domain"] = [
-                ("assessment_id.profile_id", "=", self.id),
-                ("task_type", "=", "remediation"),
-            ]
+            result["domain"] = domain
             return result
         return self._cn_action(
             _("整改任务"),
             "sudo.compliance.task",
-            [("assessment_id.profile_id", "=", self.id)],
+            domain,
         )
 
     def action_cn_open_workbench_tax_impacts(self):
