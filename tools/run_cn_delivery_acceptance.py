@@ -163,6 +163,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "tools" / "run_cn_delivery_acceptance.py",
         ROOT / "tools" / "build_cn_delivery_bundle.py",
         ROOT / "tools" / "check_cn_preview_health.py",
+        ROOT / "tools" / "check_cn_preview_module.py",
         ROOT / "tools" / "summarize_cn_delivery_status.py",
         ROOT / "tools" / "verify_cn_delivery_artifacts.py",
         ROOT / "tools" / "validate_addon.py",

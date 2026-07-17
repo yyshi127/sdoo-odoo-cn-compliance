@@ -63,6 +63,7 @@ python tools/summarize_cn_delivery_status.py \
   --manifest dist/cn_delivery_manifest.json \
   --summary dist/cn_delivery_acceptance_summary.json \
   --preview-health dist/cn_preview_health.json \
+  --preview-module dist/cn_preview_module.json \
   --preview-url http://127.0.0.1:18069/web/login?db=target_database \
   --require-business-uat-ready \
   --require-source-control-clean \
@@ -73,7 +74,9 @@ python tools/summarize_cn_delivery_status.py \
 The status summary includes machine-readable readiness gates for business UAT
 and production sign-off. Business UAT readiness requires a passed preview health
 check for the intended URL, and the preview health result URL must match the
-status summary preview URL. Production sign-off remains blocked until the
+status summary preview URL. It also requires the preview database to report the
+expected installed `sudo_country_pack_cn` module version and synchronized
+country-pack metadata. Production sign-off remains blocked until the
 business UAT decision, current-source review, professional rule sign-off and
 customer-specific limitations are recorded outside the automated status.
 Use `--require-business-uat-ready` or `--require-production-signoff-ready` in

@@ -10,11 +10,13 @@ from pathlib import Path
 
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 PREVIEW_HEALTH_SCHEMA = "sdoo.cn.preview-health.v1"
+PREVIEW_MODULE_SCHEMA = "sdoo.cn.preview-module.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
+PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
 
 
 def _manifest_includes(
@@ -87,6 +89,7 @@ def _status(
     manifest: dict[str, object] | None,
     summary: dict[str, object] | None,
     preview_health: dict[str, object] | None,
+    preview_module: dict[str, object] | None,
     preview_url: str | None,
 ) -> dict[str, object]:
     versions = {
@@ -94,6 +97,7 @@ def _status(
         for item in (bundle_metadata, manifest, summary)
         if item and item.get("version")
     }
+    version = sorted(versions)[0] if len(versions) == 1 else None
     aggregate_values = {
         str(item.get("aggregate_sha256"))
         for item in (bundle_metadata, manifest)
@@ -128,6 +132,10 @@ def _status(
         "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, PREVIEW_HEALTH_TOOL_PATH),
     }
+    preview_module_checker = {
+        "path": PREVIEW_MODULE_TOOL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, PREVIEW_MODULE_TOOL_PATH),
+    }
     preview_health_summary = None
     if preview_health:
         preview_health_summary = {
@@ -137,6 +145,19 @@ def _status(
             "status_code": preview_health.get("status_code"),
             "blocking_marker": preview_health.get("blocking_marker"),
             "error": preview_health.get("error"),
+        }
+    preview_module_summary = None
+    if preview_module:
+        preview_module_summary = {
+            "schema": preview_module.get("schema"),
+            "database": preview_module.get("database"),
+            "expected_version": preview_module.get("expected_version"),
+            "ok": preview_module.get("ok") is True,
+            "module_state": preview_module.get("module_state"),
+            "module_installed_version": preview_module.get("module_installed_version"),
+            "country_pack_version": preview_module.get("country_pack_version"),
+            "required_capabilities": preview_module.get("required_capabilities"),
+            "error": preview_module.get("error"),
         }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
@@ -155,6 +176,7 @@ def _status(
         ("business UAT checklist", business_uat),
         ("production sign-off template", production_signoff),
         ("preview health checker", preview_health_checker),
+        ("preview module checker", preview_module_checker),
     ):
         if not evidence["included_in_manifest"]:
             business_uat_blockers.append(f"{label} is not included in the manifest")
@@ -169,6 +191,15 @@ def _status(
             business_uat_blockers.append("preview health URL does not match preview URL")
         if preview_health_summary["ok"] is not True:
             business_uat_blockers.append("preview health check did not pass")
+    if not preview_module_summary:
+        business_uat_blockers.append("preview module result was not provided")
+    else:
+        if preview_module_summary["schema"] != PREVIEW_MODULE_SCHEMA:
+            business_uat_blockers.append("preview module result schema is invalid")
+        if preview_module_summary["expected_version"] != version:
+            business_uat_blockers.append("preview module expected version does not match delivery version")
+        if preview_module_summary["ok"] is not True:
+            business_uat_blockers.append("preview module check did not pass")
     production_signoff_blockers = list(business_uat_blockers)
     production_signoff_blockers.extend(
         [
@@ -184,6 +215,7 @@ def _status(
         "aggregate_consistent": len(aggregate_values) <= 1,
         "acceptance_passed": artifact_result == "passed",
         "runtime_passed": runtime_passed,
+        "version": version,
         "preview_url": preview_url,
         "source_control": source_control,
         "business_uat": business_uat,
@@ -191,7 +223,9 @@ def _status(
         "objective_coverage": objective_coverage,
         "production_signoff": production_signoff,
         "preview_health_checker": preview_health_checker,
+        "preview_module_checker": preview_module_checker,
         "preview_health": preview_health_summary,
+        "preview_module": preview_module_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
@@ -220,6 +254,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     production_signoff = status.get("production_signoff") or {}
     preview_health_checker = status.get("preview_health_checker") or {}
     preview_health = status.get("preview_health") or {}
+    preview_module_checker = status.get("preview_module_checker") or {}
+    preview_module = status.get("preview_module") or {}
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -246,6 +282,11 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Preview health status code: `{preview_health.get('status_code', '')}`",
         f"- Preview health blocking marker: `{preview_health.get('blocking_marker', '')}`",
         f"- Preview health error: `{preview_health.get('error', '')}`",
+        f"- Preview module checker: `{preview_module_checker.get('path', '')}`",
+        f"- Preview module checker in manifest: `{preview_module_checker.get('included_in_manifest', False)}`",
+        f"- Preview module ok: `{preview_module.get('ok', False)}`",
+        f"- Preview module version: `{preview_module.get('module_installed_version', '')}`",
+        f"- Preview country pack version: `{preview_module.get('country_pack_version', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
@@ -289,6 +330,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--summary", type=Path)
     parser.add_argument("--preview-health", type=Path)
+    parser.add_argument("--preview-module", type=Path)
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
@@ -317,6 +359,7 @@ def main() -> int:
         manifest=_load(args.manifest),
         summary=_load(args.summary),
         preview_health=_load(args.preview_health),
+        preview_module=_load(args.preview_module),
         preview_url=args.preview_url,
     )
     if args.json_output:
