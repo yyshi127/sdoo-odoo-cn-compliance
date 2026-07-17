@@ -62,14 +62,16 @@ python tools/summarize_cn_delivery_status.py \
   --bundle-metadata dist/sdoo-cn-compliance-delivery.bundle.json \
   --manifest dist/cn_delivery_manifest.json \
   --summary dist/cn_delivery_acceptance_summary.json \
+  --preview-health dist/cn_preview_health.json \
   --preview-url http://127.0.0.1:18069/web/login?db=target_database \
   --json-output dist/cn_delivery_status.json \
   --markdown-output dist/cn_delivery_status.md
 ```
 
 The status summary includes machine-readable readiness gates for business UAT
-and production sign-off. Production sign-off remains blocked until the business
-UAT decision, current-source review, professional rule sign-off and
+and production sign-off. Business UAT readiness requires a passed preview health
+check for the intended URL. Production sign-off remains blocked until the
+business UAT decision, current-source review, professional rule sign-off and
 customer-specific limitations are recorded outside the automated status.
 
 Check a preview URL before business UAT:

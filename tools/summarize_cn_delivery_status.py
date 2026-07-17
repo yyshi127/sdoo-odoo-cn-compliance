@@ -69,6 +69,7 @@ def _status(
     bundle_metadata: dict[str, object] | None,
     manifest: dict[str, object] | None,
     summary: dict[str, object] | None,
+    preview_health: dict[str, object] | None,
     preview_url: str | None,
 ) -> dict[str, object]:
     versions = {
@@ -109,6 +110,16 @@ def _status(
         "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, PREVIEW_HEALTH_TOOL_PATH),
     }
+    preview_health_summary = None
+    if preview_health:
+        preview_health_summary = {
+            "schema": preview_health.get("schema"),
+            "url": preview_health.get("url"),
+            "ok": preview_health.get("ok") is True,
+            "status_code": preview_health.get("status_code"),
+            "blocking_marker": preview_health.get("blocking_marker"),
+            "error": preview_health.get("error"),
+        }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
         business_uat_blockers.append("bundle, manifest and summary versions differ")
@@ -129,6 +140,10 @@ def _status(
             business_uat_blockers.append(f"{label} is not included in the manifest")
     if not preview_url:
         business_uat_blockers.append("preview URL was not recorded")
+    if not preview_health_summary:
+        business_uat_blockers.append("preview health result was not provided")
+    elif preview_health_summary["ok"] is not True:
+        business_uat_blockers.append("preview health check did not pass")
     production_signoff_blockers = list(business_uat_blockers)
     production_signoff_blockers.extend(
         [
@@ -150,6 +165,7 @@ def _status(
         "objective_coverage": objective_coverage,
         "production_signoff": production_signoff,
         "preview_health_checker": preview_health_checker,
+        "preview_health": preview_health_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
@@ -174,6 +190,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
     preview_health_checker = status.get("preview_health_checker") or {}
+    preview_health = status.get("preview_health") or {}
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -193,6 +210,10 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Production sign-off template in manifest: `{production_signoff.get('included_in_manifest', False)}`",
         f"- Preview health checker: `{preview_health_checker.get('path', '')}`",
         f"- Preview health checker in manifest: `{preview_health_checker.get('included_in_manifest', False)}`",
+        f"- Preview health ok: `{preview_health.get('ok', False)}`",
+        f"- Preview health status code: `{preview_health.get('status_code', '')}`",
+        f"- Preview health blocking marker: `{preview_health.get('blocking_marker', '')}`",
+        f"- Preview health error: `{preview_health.get('error', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
@@ -235,6 +256,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--bundle-metadata", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--summary", type=Path)
+    parser.add_argument("--preview-health", type=Path)
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
@@ -247,6 +269,7 @@ def main() -> int:
         bundle_metadata=_load(args.bundle_metadata),
         manifest=_load(args.manifest),
         summary=_load(args.summary),
+        preview_health=_load(args.preview_health),
         preview_url=args.preview_url,
     )
     if args.json_output:

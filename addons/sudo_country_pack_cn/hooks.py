@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.113.0"
+PACK_VERSION = "19.0.1.114.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -207,6 +207,7 @@ def country_pack_capabilities():
             "china_delivery_preview_health_checker": True,
             "china_delivery_index": True,
             "china_delivery_readiness_gates": True,
+            "china_delivery_preview_health_gate": True,
             "vat_filing_payment_archive": True,
             "cit_filing_normalization": True,
             "cit_accounting_reconciliation": True,
