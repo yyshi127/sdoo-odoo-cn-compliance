@@ -379,7 +379,8 @@
             ref('fact_cn_vat_reconciliation_blocking_count_v1'),
             ref('fact_cn_vat_reconciliation_difference_count_v1'),
             ref('fact_cn_vat_reconciliation_warning_count_v1'),
-            ref('fact_cn_vat_reconciliation_detail_v1')
+            ref('fact_cn_vat_reconciliation_detail_v1'),
+            ref('fact_cn_vat_reconciliation_risk_summary_v1')
         ])]"/>
         <field name="legal_basis_summary">内部四方数据勾稽准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；金额一致不证明税法口径、申报调整、抵扣资格或缴税义务正确。</field>
         <field name="failure_message">期间四方勾稽存在数据阻断或金额差异，需要先完成来源补充和逐项专业复核。</field>

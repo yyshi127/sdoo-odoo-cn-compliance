@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.81.0"
+PACK_VERSION = "19.0.1.82.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -81,6 +81,7 @@ CN_OBLIGATION_TEMPLATES = (
 def post_init_hook(env):
     update_country_pack_metadata(env)
     ensure_cn_accounting_rule_fact_links(env)
+    ensure_cn_vat_reconciliation_rule_fact_links(env)
     profiles = ensure_cn_profiles(env)
     seed_cn_obligations(env, profiles)
 
@@ -141,6 +142,7 @@ def country_pack_capabilities():
             "china_assessment_data_basis": True,
             "china_assessment_accounting_basis": True,
             "china_accounting_ledger_basis_fact": True,
+            "china_vat_reconciliation_risk_summary_fact": True,
             "china_assessment_required_dataset_type_coverage": True,
             "china_assessment_obligation_basis": True,
             "china_remediation_rescan_visibility": True,
@@ -224,6 +226,30 @@ def ensure_cn_accounting_rule_fact_links(env):
         "sudo_country_pack_cn.fact_cn_posted_move_count_v1",
         "sudo_country_pack_cn.fact_cn_posted_invoice_count_v1",
         "sudo_country_pack_cn.fact_cn_account_ledger_basis_detail_v1",
+    ):
+        fact = env.ref(xmlid, raise_if_not_found=False)
+        if fact:
+            facts |= fact
+    if facts:
+        version.write({"required_fact_ids": [(6, 0, facts.ids)]})
+    return True
+
+
+def ensure_cn_vat_reconciliation_rule_fact_links(env):
+    version = env.ref(
+        "sudo_country_pack_cn.rule_version_cn_vat_reconciliation_ready_001_draft",
+        raise_if_not_found=False,
+    )
+    if not version:
+        return False
+    facts = env["sudo.compliance.fact.definition"].browse()
+    for xmlid in (
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_conclusion_state_v1",
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_blocking_count_v1",
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_difference_count_v1",
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_warning_count_v1",
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_detail_v1",
+        "sudo_country_pack_cn.fact_cn_vat_reconciliation_risk_summary_v1",
     ):
         fact = env.ref(xmlid, raise_if_not_found=False)
         if fact:

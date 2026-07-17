@@ -346,6 +346,22 @@
         <field name="sensitivity">restricted</field>
     </record>
 
+    <record id="fact_cn_vat_reconciliation_risk_summary_v1" model="sudo.compliance.fact.definition">
+        <field name="label">China VAT reconciliation risk summary</field>
+        <field name="key">cn.reconciliation.vat.risk_summary</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.vat.risk_summary</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.vat.period.reconciliation.run</field>
+        <field name="source_description">Human-readable VAT period risk summary derived from the controlled four-way reconciliation snapshot: conclusion, source states, issue counts, key amounts, material differences, top issue codes, next action and evidence checksums.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
     <record id="fact_cn_cit_reconciliation_conclusion_state_v1" model="sudo.compliance.fact.definition">
         <field name="label">企业所得税账税勾稽结论状态</field>
         <field name="key">cn.reconciliation.cit.conclusion_state</field>

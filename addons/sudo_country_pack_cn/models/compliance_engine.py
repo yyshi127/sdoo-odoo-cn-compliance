@@ -108,6 +108,9 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.reconciliation.vat.detail": (
                     self._provide_cn_vat_reconciliation_detail
                 ),
+                "cn.reconciliation.vat.risk_summary": (
+                    self._provide_cn_vat_reconciliation_risk_summary
+                ),
                 "cn.reconciliation.cit.conclusion_state": (
                     self._provide_cn_cit_reconciliation_conclusion_state
                 ),
@@ -715,6 +718,86 @@ class SudoChinaComplianceEngine(models.AbstractModel):
         }
         return payload, detail
 
+    def _cn_vat_reconciliation_risk_summary(self, detail):
+        if not detail:
+            return None
+
+        counts = detail["counts"]
+        source_states = detail["source_states"]
+        differences = {
+            key: value
+            for key, value in detail["differences"].items()
+            if value not in (None, "0", "0.0", "0.00")
+        }
+        blocked_sources = [
+            key for key, value in source_states.items() if value == "blocked"
+        ]
+        missing_sources = [
+            key for key, value in source_states.items() if value == "no_data"
+        ]
+        if counts["blocking"]:
+            risk_status = "blocked"
+            next_action = "resolve_blocking_source_or_control_issues"
+        elif counts["differences"]:
+            risk_status = "difference_review_required"
+            next_action = "review_each_difference_before_report_or_filing"
+        elif counts["warnings"]:
+            risk_status = "aligned_with_disclosure_required"
+            next_action = "review_warnings_and_disclose_scope_limits"
+        else:
+            risk_status = "aligned"
+            next_action = "retain_snapshots_and_continue_monitoring"
+
+        return {
+            "schema": "sdoo.cn.reconciliation.vat-risk-summary.v1",
+            "run_id": detail["run_id"],
+            "period_start": detail["period_start"],
+            "period_end": detail["period_end"],
+            "currency": detail["currency"],
+            "conclusion_state": detail["conclusion_state"],
+            "risk_status": risk_status,
+            "next_action": next_action,
+            "source_states": source_states,
+            "blocked_sources": blocked_sources,
+            "missing_sources": missing_sources,
+            "counts": {
+                "blocking": counts["blocking"],
+                "differences": counts["differences"],
+                "warnings": counts["warnings"],
+                "issues": counts["issues"],
+            },
+            "amounts": {
+                "ledger_output_tax_amount": detail["amounts"][
+                    "ledger_output_tax_amount"
+                ],
+                "ledger_input_tax_amount": detail["amounts"][
+                    "ledger_input_tax_amount"
+                ],
+                "filing_payable_amount": detail["amounts"][
+                    "filing_payable_amount"
+                ],
+                "payment_amount": detail["amounts"]["payment_amount"],
+            },
+            "material_differences": differences,
+            "top_issues": [
+                {
+                    "code": issue["code"],
+                    "severity": issue["severity"],
+                    "kind": issue["kind"],
+                    "source_area": issue["source_area"],
+                    "difference": issue["difference"],
+                }
+                for issue in detail["issues"][:10]
+            ],
+            "checksums": {
+                "result": detail["checksums"]["result"],
+                "accounting": detail["checksums"]["accounting"],
+                "einvoice": detail["checksums"]["einvoice"],
+                "filing": detail["checksums"]["filing"],
+                "payment": detail["checksums"]["payment"],
+            },
+        }
+
     def _provide_cn_vat_reconciliation_value(
         self, assessment, value_getter
     ):
@@ -753,6 +836,13 @@ class SudoChinaComplianceEngine(models.AbstractModel):
     def _provide_cn_vat_reconciliation_detail(self, assessment, _definition):
         return self._provide_cn_vat_reconciliation_value(
             assessment, lambda detail: detail
+        )
+
+    def _provide_cn_vat_reconciliation_risk_summary(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_vat_reconciliation_value(
+            assessment, self._cn_vat_reconciliation_risk_summary
         )
 
     def _cn_cit_reconciliation_snapshot(self, assessment):

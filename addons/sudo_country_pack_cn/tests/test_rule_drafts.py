@@ -166,6 +166,16 @@ class TestChinaRuleDrafts(TransactionCase):
             )
         )
 
+    def test_vat_reconciliation_rule_carries_risk_summary_fact(self):
+        version = self.env.ref(
+            "sudo_country_pack_cn."
+            "rule_version_cn_vat_reconciliation_ready_001_draft"
+        )
+        fact_keys = set(version.required_fact_ids.mapped("key"))
+
+        self.assertIn("cn.reconciliation.vat.detail", fact_keys)
+        self.assertIn("cn.reconciliation.vat.risk_summary", fact_keys)
+
     def test_release_readiness_exposes_all_current_blockers(self):
         self.assertEqual(
             set(self.versions.mapped("cn_release_state")),

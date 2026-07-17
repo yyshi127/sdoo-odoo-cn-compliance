@@ -1061,6 +1061,9 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
             "cn.reconciliation.vat.warning_issue_count", assessment
         )
         detail = self._fact("cn.reconciliation.vat.detail", assessment)
+        summary = self._fact(
+            "cn.reconciliation.vat.risk_summary", assessment
+        )
 
         self.assertEqual(conclusion["value"], "aligned")
         self.assertEqual(conclusion["quality_state"], "complete")
@@ -1079,6 +1082,26 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )
         self.assertIsNotNone(
             detail["value"]["amounts"]["filing_payable_amount"]
+        )
+        self.assertEqual(
+            summary["value"]["schema"],
+            "sdoo.cn.reconciliation.vat-risk-summary.v1",
+        )
+        self.assertEqual(
+            summary["value"]["risk_status"],
+            "aligned_with_disclosure_required",
+        )
+        self.assertEqual(
+            summary["value"]["next_action"],
+            "review_warnings_and_disclose_scope_limits",
+        )
+        self.assertEqual(
+            summary["value"]["checksums"]["result"],
+            run.result_checksum,
+        )
+        self.assertIn(
+            "ACCOUNTING_SCOPE_INVOICE_TAX_TOTALS_ONLY",
+            {issue["code"] for issue in summary["value"]["top_issues"]},
         )
 
         wrong_period = self._fact(

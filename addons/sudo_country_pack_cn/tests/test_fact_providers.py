@@ -65,6 +65,7 @@ class TestChinaFactProviders(TransactionCase):
             "cn.reconciliation.vat.difference_issue_count",
             "cn.reconciliation.vat.warning_issue_count",
             "cn.reconciliation.vat.detail",
+            "cn.reconciliation.vat.risk_summary",
             "cn.reconciliation.cit.conclusion_state",
             "cn.reconciliation.cit.blocking_issue_count",
             "cn.reconciliation.cit.difference_issue_count",
@@ -207,6 +208,14 @@ class TestChinaFactProviders(TransactionCase):
                 "company_id": self.company.id,
             }
         )
+        sale_journal = self.env["account.journal"].create(
+            {
+                "name": "China Fact Ledger Basis Sales",
+                "code": "ZCN3",
+                "type": "sale",
+                "company_id": self.company.id,
+            }
+        )
         posted = self.env["account.move"].with_company(self.company).create(
             {
                 "date": "2099-06-01",
@@ -218,7 +227,7 @@ class TestChinaFactProviders(TransactionCase):
         draft_invoice = self.env["account.move"].with_company(self.company).create(
             {
                 "date": "2099-06-05",
-                "journal_id": journal.id,
+                "journal_id": sale_journal.id,
                 "company_id": self.company.id,
                 "move_type": "out_invoice",
             }
