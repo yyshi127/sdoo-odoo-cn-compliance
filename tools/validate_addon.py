@@ -4324,6 +4324,38 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China risk center has unsafe UI expression: {forbidden}")
 
 
+def _coverage_referenced_paths(content: str) -> list[str]:
+    path_prefixes = (
+        "addons/",
+        "data/",
+        "docs/",
+        "models/",
+        "reports/",
+        "security/",
+        "tests/",
+        "tools/",
+        "views/",
+    )
+    references: list[str] = []
+    for token in re.findall(r"`([^`]+)`", content):
+        item = token.strip()
+        if item.startswith(path_prefixes):
+            references.append(item)
+    return references
+
+
+def _coverage_path_exists(reference: str) -> bool:
+    if reference.startswith(("addons/", "docs/", "tools/")):
+        base = REPOSITORY_ROOT
+        relative = reference
+    else:
+        base = ADDON_ROOT
+        relative = reference
+    if any(char in relative for char in "*?["):
+        return any(base.glob(relative))
+    return (base / relative).exists()
+
+
 def validate_delivery_objective_coverage() -> None:
     delivery_index_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_INDEX.md"
     if not delivery_index_path.is_file():
@@ -4491,6 +4523,12 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in coverage_content:
             fail(f"China delivery objective coverage is missing {required}")
+    for referenced_path in _coverage_referenced_paths(coverage_content):
+        if not _coverage_path_exists(referenced_path):
+            fail(
+                "China delivery objective coverage references a missing path: "
+                f"{referenced_path}"
+            )
 
     acceptance_tool = (
         REPOSITORY_ROOT / "tools" / "run_cn_delivery_acceptance.py"

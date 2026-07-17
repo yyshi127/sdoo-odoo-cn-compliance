@@ -29,6 +29,10 @@ SUMMARY = load_tool(
     "cn_delivery_status",
     REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py",
 )
+ADDON_VALIDATION = load_tool(
+    "cn_addon_validation",
+    REPOSITORY_ROOT / "tools" / "validate_addon.py",
+)
 
 
 def status_payload() -> dict:
@@ -202,6 +206,28 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
 
 
 class TestChinaSignoffValidation(unittest.TestCase):
+    def test_objective_coverage_path_guard_accepts_real_paths_and_rejects_missing_paths(self):
+        content = (
+            "`models/risk_center.py` `views/*.xml` "
+            "`tools/generate_cn_signoff_packet.py` `models/not_a_real_file.py`"
+        )
+
+        references = ADDON_VALIDATION._coverage_referenced_paths(content)
+
+        self.assertIn("models/risk_center.py", references)
+        self.assertIn("views/*.xml", references)
+        self.assertIn("tools/generate_cn_signoff_packet.py", references)
+        self.assertTrue(ADDON_VALIDATION._coverage_path_exists("models/risk_center.py"))
+        self.assertTrue(ADDON_VALIDATION._coverage_path_exists("views/*.xml"))
+        self.assertTrue(
+            ADDON_VALIDATION._coverage_path_exists(
+                "tools/generate_cn_signoff_packet.py"
+            )
+        )
+        self.assertFalse(
+            ADDON_VALIDATION._coverage_path_exists("models/not_a_real_file.py")
+        )
+
     def test_complete_signoff_evidence_allows_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
