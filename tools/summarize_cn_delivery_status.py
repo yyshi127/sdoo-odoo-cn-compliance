@@ -12,6 +12,7 @@ STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 PREVIEW_HEALTH_SCHEMA = "sdoo.cn.preview-health.v1"
 PREVIEW_MODULE_SCHEMA = "sdoo.cn.preview-module.v1"
 REAL_DATA_CLOSED_LOOP_SCHEMA = "sdoo.cn.real-data-closed-loop.v1"
+SIGNOFF_VALIDATION_SCHEMA = "sdoo.cn.signoff-validation.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
@@ -94,6 +95,7 @@ def _status(
     preview_health: dict[str, object] | None,
     preview_module: dict[str, object] | None,
     real_data_closed_loop: dict[str, object] | None,
+    signoff_validation: dict[str, object] | None,
     preview_url: str | None,
 ) -> dict[str, object]:
     versions = {
@@ -196,6 +198,18 @@ def _status(
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
+    signoff_validation_summary = None
+    if signoff_validation:
+        signoff_validation_summary = {
+            "schema": signoff_validation.get("schema"),
+            "version": signoff_validation.get("version"),
+            "source_commit": signoff_validation.get("source_commit"),
+            "ok": signoff_validation.get("ok") is True,
+            "production_signoff_ready": signoff_validation.get("production_signoff_ready") is True,
+            "deployment_decision": signoff_validation.get("deployment_decision"),
+            "blockers": signoff_validation.get("blockers"),
+            "warnings": signoff_validation.get("warnings"),
+        }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
         business_uat_blockers.append("bundle, manifest and summary versions differ")
@@ -252,13 +266,26 @@ def _status(
         if not isinstance(readiness, dict) or readiness.get("demo_ready") is not True:
             business_uat_blockers.append("real-data demo readiness check did not pass")
     production_signoff_blockers = list(business_uat_blockers)
-    production_signoff_blockers.extend(
-        [
-            "business UAT decision must be recorded outside this automated status",
-            "current official sources and released rules require professional sign-off evidence",
-            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
-        ]
-    )
+    production_signoff_ready = False
+    if not signoff_validation_summary:
+        production_signoff_blockers.extend(
+            [
+                "business UAT decision must be recorded outside this automated status",
+                "current official sources and released rules require professional sign-off evidence",
+                "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            ]
+        )
+    elif signoff_validation_summary["schema"] != SIGNOFF_VALIDATION_SCHEMA:
+        production_signoff_blockers.append("sign-off validation result schema is invalid")
+    elif signoff_validation_summary["version"] != version:
+        production_signoff_blockers.append("sign-off validation version does not match delivery version")
+    elif signoff_validation_summary["production_signoff_ready"] is not True:
+        blockers = signoff_validation_summary.get("blockers") or []
+        production_signoff_blockers.extend(
+            blockers if isinstance(blockers, list) else ["sign-off validation did not pass"]
+        )
+    else:
+        production_signoff_ready = not production_signoff_blockers
     return {
         "schema": STATUS_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -280,10 +307,11 @@ def _status(
         "preview_health": preview_health_summary,
         "preview_module": preview_module_summary,
         "real_data_closed_loop": real_data_closed_loop_summary,
+        "signoff_validation": signoff_validation_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
-            "production_signoff_ready": False,
+            "production_signoff_ready": production_signoff_ready,
             "production_signoff_blockers": production_signoff_blockers,
             "source_control_clean": not _source_control_blockers(source_control),
             "source_control_blockers": _source_control_blockers(source_control),
@@ -313,6 +341,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     real_data_closed_loop_checker = status.get("real_data_closed_loop_checker") or {}
     signoff_packet_tool = status.get("signoff_packet_tool") or {}
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
+    signoff_validation = status.get("signoff_validation") or {}
     real_data_readiness = real_data_closed_loop.get("readiness") or {}
     readiness = status.get("readiness_gates") or {}
     lines = [
@@ -352,6 +381,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Real-data setup demo ready: `{real_data_readiness.get('setup_demo_ready', False)}`",
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
+        f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
+        f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
@@ -397,6 +428,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-health", type=Path)
     parser.add_argument("--preview-module", type=Path)
     parser.add_argument("--real-data-closed-loop", type=Path)
+    parser.add_argument("--signoff-validation", type=Path)
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
@@ -427,6 +459,7 @@ def main() -> int:
         preview_health=_load(args.preview_health),
         preview_module=_load(args.preview_module),
         real_data_closed_loop=_load(args.real_data_closed_loop),
+        signoff_validation=_load(args.signoff_validation),
         preview_url=args.preview_url,
     )
     if args.json_output:

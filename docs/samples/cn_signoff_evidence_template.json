@@ -1,0 +1,50 @@
+{
+  "schema": "sdoo.cn.signoff-evidence.v1",
+  "version": "19.0.1.130.0",
+  "source_commit": "replace-with-signoff-packet-source-commit",
+  "limitations": [
+    "Record any production limitations here when deployment decision is deploy_with_limitations."
+  ],
+  "decisions": [
+    {
+      "key": "business_uat_decision",
+      "decision": "accepted",
+      "reviewer": "Business reviewer name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md",
+      "notes": "Company, period, datasets and screens reviewed."
+    },
+    {
+      "key": "china_tax_professional_rule_signoff",
+      "decision": "approved",
+      "reviewer": "China tax professional name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Rule/source review packet reference",
+      "notes": "Released rules and official sources reviewed for the target period."
+    },
+    {
+      "key": "official_source_freshness_review",
+      "decision": "current",
+      "reviewer": "Rule governance owner name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Official-source freshness monitoring result reference",
+      "notes": "National and local source changes reviewed."
+    },
+    {
+      "key": "customer_scope_and_data_gap_review",
+      "decision": "no_blocking_gap",
+      "reviewer": "Implementation owner name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Customer data, evidence gap and open risk review reference",
+      "notes": "Customer-specific data gaps, evidence gaps and open risks reviewed."
+    },
+    {
+      "key": "production_deployment_decision",
+      "decision": "deploy",
+      "reviewer": "Release owner name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
+      "notes": "Deploy, deploy_with_limitations, defer or reject."
+    }
+  ]
+}

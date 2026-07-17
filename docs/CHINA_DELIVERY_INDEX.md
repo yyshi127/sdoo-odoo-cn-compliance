@@ -107,6 +107,24 @@ official-source freshness review, customer data/scope gap review and final
 deploy/defer/reject decision. It intentionally keeps production sign-off blocked
 until those human decisions and evidence references are recorded.
 
+Validate completed production sign-off evidence:
+
+```bash
+python tools/validate_cn_signoff_evidence.py \
+  --packet dist/cn_signoff_packet.json \
+  --evidence docs/samples/cn_signoff_evidence_template.json \
+  --json-output dist/cn_signoff_validation.json \
+  --require-production-signoff-ready
+```
+
+After validation passes, include `--signoff-validation
+dist/cn_signoff_validation.json` when running `tools/summarize_cn_delivery_status.py`.
+Only then can the automated status report `production_signoff_ready=true`.
+Use `docs/samples/cn_signoff_evidence_template.json` as the starting point for
+the machine-readable evidence file; replace the version, source commit,
+reviewers, dates, decisions and evidence references with the actual signed
+review records.
+
 Check a preview URL before business UAT:
 
 ```bash
