@@ -38,6 +38,10 @@ class SudoChinaFilingCenterFiling(models.Model):
         string="证据记录",
         compute="_compute_cn_filing_center_display",
     )
+    cn_filing_center_blocker_summary = fields.Char(
+        string="Filing Blockers",
+        compute="_compute_cn_filing_center_display",
+    )
     cn_filing_center_verified_evidence_count = fields.Integer(
         string="已验证证据",
         compute="_compute_cn_filing_center_display",
@@ -62,6 +66,9 @@ class SudoChinaFilingCenterFiling(models.Model):
             )
             filing.cn_filing_center_next_action = (
                 filing._cn_filing_center_next_action()
+            )
+            filing.cn_filing_center_blocker_summary = (
+                filing._cn_filing_center_blocker_summary()
             )
 
     def _cn_filing_center_kind(self):
@@ -96,6 +103,36 @@ class SudoChinaFilingCenterFiling(models.Model):
         if self.cn_payment_integrity_state == "source_superseded":
             return _("缴退税来源已被新批次替代，历史档案仅作追溯引用。")
         return _("档案已形成受控链路，持续保留回执、缴退税证据和校验指纹。")
+
+
+    def _cn_filing_center_blocker_summary(self):
+        self.ensure_one()
+        blockers = []
+        if self.cn_submission_integrity_state in ("changed", "invalid"):
+            blockers.append(_("submission archive integrity failed"))
+        elif self.cn_submission_integrity_state == "unsealed":
+            blockers.append(_("submission archive not sealed"))
+        if self.cn_payment_integrity_state in ("changed", "invalid"):
+            blockers.append(_("payment archive integrity failed"))
+        elif self.cn_payment_integrity_state == "unsealed":
+            blockers.append(_("payment archive not sealed"))
+        if self.state in ("draft", "ready"):
+            blockers.append(_("filing not submitted"))
+        elif self.state in ("rejected", "cancelled"):
+            blockers.append(_("filing not accepted"))
+        if self.payment_state in ("not_paid", "partial"):
+            blockers.append(_("payment proof incomplete"))
+        elif self.payment_state in ("failed", "cancelled"):
+            blockers.append(_("payment not accepted"))
+        if self.cn_filing_center_evidence_state == "none":
+            blockers.append(_("no formal evidence linked"))
+        elif self.cn_filing_center_evidence_state == "partial":
+            blockers.append(_("some evidence is not verified"))
+        if not blockers:
+            return _("No blocker: filing, payment and evidence archive are traceable.")
+        return _("Blocked by: %(blockers)s") % {
+            "blockers": "; ".join(dict.fromkeys(blockers))
+        }
 
 
 class SudoChinaFilingCenterProfile(models.Model):

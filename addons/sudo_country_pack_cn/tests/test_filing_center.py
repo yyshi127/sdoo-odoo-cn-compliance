@@ -57,3 +57,28 @@ class TestChinaFilingCenter(TransactionCase):
             action["domain"],
         )
         self.assertEqual(action["context"]["search_default_cn_controlled"], 1)
+
+    def test_filing_center_exposes_blocker_summary(self):
+        filing = self.env["sudo.compliance.filing"].with_company(self.company).new(
+            {
+                "filing_name": "Filing center blocker summary test",
+                "company_id": self.company.id,
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "state": "draft",
+                "payment_state": "not_paid",
+                "cn_submission_integrity_state": "unsealed",
+                "cn_payment_integrity_state": "unsealed",
+            }
+        )
+        filing._compute_cn_filing_center_display()
+
+        self.assertIn("Blocked by:", filing.cn_filing_center_blocker_summary)
+        self.assertIn(
+            "submission archive not sealed",
+            filing.cn_filing_center_blocker_summary,
+        )
+        self.assertIn("filing not submitted", filing.cn_filing_center_blocker_summary)
+        self.assertIn("payment proof incomplete", filing.cn_filing_center_blocker_summary)
+        self.assertIn("no formal evidence linked", filing.cn_filing_center_blocker_summary)
