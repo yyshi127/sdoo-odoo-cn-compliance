@@ -16,6 +16,20 @@ PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
 
 
+def _manifest_includes(
+    manifest: dict[str, object] | None,
+    path: Path,
+) -> bool:
+    return bool(
+        manifest
+        and any(
+            entry.get("path") == path.as_posix()
+            for entry in manifest.get("files", [])
+            if isinstance(entry, dict)
+        )
+    )
+
+
 def _load(path: Path | None) -> dict[str, object] | None:
     if not path:
         return None
@@ -75,6 +89,54 @@ def _status(
         and runtime_log.get("errors") == 0
     )
     artifact_result = summary.get("result") if summary else None
+    delivery_index = {
+        "path": DELIVERY_INDEX_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, DELIVERY_INDEX_PATH),
+    }
+    business_uat = {
+        "path": BUSINESS_UAT_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, BUSINESS_UAT_PATH),
+    }
+    objective_coverage = {
+        "path": OBJECTIVE_COVERAGE_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, OBJECTIVE_COVERAGE_PATH),
+    }
+    production_signoff = {
+        "path": PRODUCTION_SIGNOFF_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, PRODUCTION_SIGNOFF_PATH),
+    }
+    preview_health_checker = {
+        "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, PREVIEW_HEALTH_TOOL_PATH),
+    }
+    business_uat_blockers: list[str] = []
+    if len(versions) > 1:
+        business_uat_blockers.append("bundle, manifest and summary versions differ")
+    if len(aggregate_values) > 1:
+        business_uat_blockers.append("bundle and manifest aggregate checksums differ")
+    if artifact_result != "passed":
+        business_uat_blockers.append("automated acceptance did not pass")
+    if not runtime_passed:
+        business_uat_blockers.append("Odoo runtime tests did not pass")
+    for label, evidence in (
+        ("delivery index", delivery_index),
+        ("objective coverage", objective_coverage),
+        ("business UAT checklist", business_uat),
+        ("production sign-off template", production_signoff),
+        ("preview health checker", preview_health_checker),
+    ):
+        if not evidence["included_in_manifest"]:
+            business_uat_blockers.append(f"{label} is not included in the manifest")
+    if not preview_url:
+        business_uat_blockers.append("preview URL was not recorded")
+    production_signoff_blockers = list(business_uat_blockers)
+    production_signoff_blockers.extend(
+        [
+            "business UAT decision must be recorded outside this automated status",
+            "current official sources and released rules require professional sign-off evidence",
+            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+        ]
+    )
     return {
         "schema": STATUS_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -83,60 +145,16 @@ def _status(
         "acceptance_passed": artifact_result == "passed",
         "runtime_passed": runtime_passed,
         "preview_url": preview_url,
-        "business_uat": {
-            "path": BUSINESS_UAT_PATH.as_posix(),
-            "included_in_manifest": bool(
-                manifest
-                and any(
-                    entry.get("path") == BUSINESS_UAT_PATH.as_posix()
-                    for entry in manifest.get("files", [])
-                    if isinstance(entry, dict)
-                )
-            ),
-        },
-        "delivery_index": {
-            "path": DELIVERY_INDEX_PATH.as_posix(),
-            "included_in_manifest": bool(
-                manifest
-                and any(
-                    entry.get("path") == DELIVERY_INDEX_PATH.as_posix()
-                    for entry in manifest.get("files", [])
-                    if isinstance(entry, dict)
-                )
-            ),
-        },
-        "objective_coverage": {
-            "path": OBJECTIVE_COVERAGE_PATH.as_posix(),
-            "included_in_manifest": bool(
-                manifest
-                and any(
-                    entry.get("path") == OBJECTIVE_COVERAGE_PATH.as_posix()
-                    for entry in manifest.get("files", [])
-                    if isinstance(entry, dict)
-                )
-            ),
-        },
-        "production_signoff": {
-            "path": PRODUCTION_SIGNOFF_PATH.as_posix(),
-            "included_in_manifest": bool(
-                manifest
-                and any(
-                    entry.get("path") == PRODUCTION_SIGNOFF_PATH.as_posix()
-                    for entry in manifest.get("files", [])
-                    if isinstance(entry, dict)
-                )
-            ),
-        },
-        "preview_health_checker": {
-            "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
-            "included_in_manifest": bool(
-                manifest
-                and any(
-                    entry.get("path") == PREVIEW_HEALTH_TOOL_PATH.as_posix()
-                    for entry in manifest.get("files", [])
-                    if isinstance(entry, dict)
-                )
-            ),
+        "business_uat": business_uat,
+        "delivery_index": delivery_index,
+        "objective_coverage": objective_coverage,
+        "production_signoff": production_signoff,
+        "preview_health_checker": preview_health_checker,
+        "readiness_gates": {
+            "business_uat_ready": not business_uat_blockers,
+            "business_uat_blockers": business_uat_blockers,
+            "production_signoff_ready": False,
+            "production_signoff_blockers": production_signoff_blockers,
         },
         "bundle_metadata": _artifact_summary(bundle_metadata),
         "manifest": _artifact_summary(manifest),
@@ -156,6 +174,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
     preview_health_checker = status.get("preview_health_checker") or {}
+    readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
         "",
@@ -174,6 +193,24 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Production sign-off template in manifest: `{production_signoff.get('included_in_manifest', False)}`",
         f"- Preview health checker: `{preview_health_checker.get('path', '')}`",
         f"- Preview health checker in manifest: `{preview_health_checker.get('included_in_manifest', False)}`",
+        f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
+        f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
+        "",
+        "## Readiness Gates",
+        "",
+        "### Business UAT Blockers",
+        "",
+        *[
+            f"- {blocker}"
+            for blocker in readiness.get("business_uat_blockers", [])
+        ],
+        "",
+        "### Production Sign-off Blockers",
+        "",
+        *[
+            f"- {blocker}"
+            for blocker in readiness.get("production_signoff_blockers", [])
+        ],
         "",
         "## Artifacts",
         "",

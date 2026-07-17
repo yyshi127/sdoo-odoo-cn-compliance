@@ -586,6 +586,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China delivery preview health checker capability must be declared")
     if features.get("china_delivery_index") is not True:
         fail("China delivery index capability must be declared")
+    if features.get("china_delivery_readiness_gates") is not True:
+        fail("China delivery readiness gates capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3385,6 +3387,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             )
         if "china_delivery_index" not in content:
             fail(f"China delivery index capability is missing from {label}")
+        if "china_delivery_readiness_gates" not in content:
+            fail(f"China delivery readiness gates capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4390,6 +4394,14 @@ def validate_delivery_objective_coverage() -> None:
         "Production sign-off template in manifest",
         "Preview health checker in manifest",
         "Delivery index in manifest",
+        "readiness_gates",
+        "business_uat_ready",
+        "business_uat_blockers",
+        "production_signoff_ready",
+        "production_signoff_blockers",
+        "Business UAT ready",
+        "Production sign-off ready",
+        "## Readiness Gates",
     ):
         if required not in status_tool:
             fail(f"China delivery status objective coverage is missing {required}")

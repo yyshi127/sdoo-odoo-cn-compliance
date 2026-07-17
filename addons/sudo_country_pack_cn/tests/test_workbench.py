@@ -327,6 +327,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"]["china_delivery_index"]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_delivery_readiness_gates"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()

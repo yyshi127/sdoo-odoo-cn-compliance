@@ -67,6 +67,11 @@ python tools/summarize_cn_delivery_status.py \
   --markdown-output dist/cn_delivery_status.md
 ```
 
+The status summary includes machine-readable readiness gates for business UAT
+and production sign-off. Production sign-off remains blocked until the business
+UAT decision, current-source review, professional rule sign-off and
+customer-specific limitations are recorded outside the automated status.
+
 Check a preview URL before business UAT:
 
 ```bash
