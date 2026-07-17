@@ -71,6 +71,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             payload = finding._cn_ai_guidance_input()
             finding.cn_ai_guidance_input_checksum = _checksum(payload)
             obligation_state = payload.get("obligation_readiness", {}).get("state")
+            data_basis_state = payload.get("data_basis", {}).get("state")
             filing_archive_state = payload.get("filing_archive", {}).get("state")
             fact_basis_state = payload.get("fact_basis", {}).get("state")
             evidence_state = payload.get("remediation_evidence", {}).get("state")
@@ -80,6 +81,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 or bool(finding.missing_fact_keys)
                 or bool(finding.missing_parameter_keys)
                 or obligation_state in ("not_started", "attention")
+                or data_basis_state in ("no_period", "missing", "warning", "blocked")
                 or filing_archive_state in ("not_started", "attention", "blocked")
                 or fact_basis_state in ("not_started", "blocked")
                 or evidence_state in ("none", "partial")
@@ -189,6 +191,28 @@ class SudoChinaAiGuidanceFinding(models.Model):
                     profile.cn_workbench_filing_obligation_count
                 ),
             },
+            "data_basis": {
+                "state": self.assessment_id.cn_data_basis_state,
+                "next_action": self.assessment_id.cn_data_basis_next_action,
+                "dataset_count": self.assessment_id.cn_data_basis_dataset_count,
+                "ready_dataset_count": self.assessment_id.cn_data_basis_ready_count,
+                "warning_dataset_count": self.assessment_id.cn_data_basis_warning_count,
+                "blocked_dataset_count": self.assessment_id.cn_data_basis_blocked_count,
+                "normalized_record_count": (
+                    self.assessment_id.cn_data_basis_normalized_record_count
+                ),
+                "required_type_count": (
+                    self.assessment_id.cn_data_basis_required_type_count
+                ),
+                "ready_type_count": self.assessment_id.cn_data_basis_ready_type_count,
+                "missing_type_count": (
+                    self.assessment_id.cn_data_basis_missing_type_count
+                ),
+                "missing_type_summary": (
+                    self.assessment_id.cn_data_basis_missing_type_summary
+                    or None
+                ),
+            },
             "filing_archive": {
                 "state": profile.cn_workbench_filing_archive_state,
                 "next_action": profile.cn_workbench_filing_archive_next_action,
@@ -239,6 +263,11 @@ class SudoChinaAiGuidanceFinding(models.Model):
             warning_lines.append(
                 "- 纳税义务适用性尚未完全确认；AI 引导只能作为处理线索，不能替代义务适用判断或申报结论。"
             )
+        data_basis = payload.get("data_basis", {})
+        if data_basis.get("state") in ("no_period", "missing", "warning", "blocked"):
+            warning_lines.append(
+                "- Assessment data basis is incomplete; disclose missing data types and keep report limitations visible."
+            )
         if not warning_lines:
             warning_lines.append("- 当前未发现来源、签核或事实缺口警示。")
 
@@ -265,6 +294,18 @@ class SudoChinaAiGuidanceFinding(models.Model):
             )
         )
         due_line = task["due_date"] or "尚未设置"
+        data_basis_line = (
+            "Data basis: state=%s; datasets=%s; ready_types=%s/%s; missing=%s; missing_types=%s; next=%s"
+            % (
+                data_basis.get("state") or "-",
+                data_basis.get("dataset_count") or 0,
+                data_basis.get("ready_type_count") or 0,
+                data_basis.get("required_type_count") or 0,
+                data_basis.get("missing_type_count") or 0,
+                data_basis.get("missing_type_summary") or "-",
+                data_basis.get("next_action") or "-",
+            )
+        )
         fact_basis = payload.get("fact_basis", {})
         fact_basis_line = (
             "Fact basis: state=%s; snapshots=%s; issues=%s; missing=%s"
@@ -302,6 +343,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "三、纳税义务适用性边界\n"
             "%(obligation_line)s\n\n"
             "%(filing_archive_line)s\n\n"
+            "%(data_basis_line)s\n\n"
             "%(fact_basis_line)s\n\n"
             "%(remediation_evidence_line)s\n\n"
             "四、处理建议\n"
@@ -327,6 +369,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
             basis=payload["legal_basis"] or "暂无可展示依据摘要。",
             obligation_line=obligation_line,
             filing_archive_line=filing_archive_line,
+            data_basis_line=data_basis_line,
             fact_basis_line=fact_basis_line,
             remediation_evidence_line=remediation_evidence_line,
             recommendation=payload["recommendation"] or "暂无整改建议。",

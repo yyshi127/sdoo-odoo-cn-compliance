@@ -179,6 +179,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertIn("AI 分析仅为辅助材料", analysis.analysis)
         self.assertEqual(analysis.input_snapshot_json["rule_code"], self.rule.code)
         self.assertIn("obligation_readiness", analysis.input_snapshot_json)
+        self.assertIn("data_basis", analysis.input_snapshot_json)
         self.assertIn("filing_archive", analysis.input_snapshot_json)
         self.assertEqual(
             analysis.input_snapshot_json["obligation_readiness"]["state"],
@@ -188,6 +189,16 @@ class TestChinaControlledAiGuidance(TransactionCase):
             analysis.input_snapshot_json["filing_archive"]["state"],
             "not_started",
         )
+        self.assertEqual(
+            analysis.input_snapshot_json["data_basis"]["state"],
+            "missing",
+        )
+        self.assertGreater(
+            analysis.input_snapshot_json["data_basis"]["missing_type_count"],
+            0,
+        )
+        self.assertIn("Data basis: state=missing", analysis.analysis)
+        self.assertIn("Electronic invoices", analysis.analysis)
         self.assertEqual(
             analysis.input_snapshot_json["obligation_readiness"][
                 "pending_review_count"
@@ -283,6 +294,11 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_ai_fact_and_evidence_context"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_data_basis_context"
             ]
         )
 

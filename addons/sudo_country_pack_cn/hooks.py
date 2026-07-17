@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.76.0"
+PACK_VERSION = "19.0.1.77.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -125,6 +125,7 @@ def country_pack_capabilities():
             "china_ai_obligation_context": True,
             "china_ai_filing_archive_context": True,
             "china_ai_fact_and_evidence_context": True,
+            "china_ai_data_basis_context": True,
             "source_governance": True,
             "rule_nature_governance": True,
             "tax_impact_review": True,
