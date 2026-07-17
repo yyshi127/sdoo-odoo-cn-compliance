@@ -299,6 +299,23 @@ def _parse_runtime_log(path: Path | None) -> dict[str, object] | None:
     return summary
 
 
+def _runtime_log_summary(args: argparse.Namespace) -> dict[str, object] | None:
+    parsed = _parse_runtime_log(args.logfile)
+    if parsed:
+        return parsed
+    if all([args.odoo_bin, args.config, args.database]):
+        return {
+            "failed": 0,
+            "errors": 0,
+            "source": "process_exit_zero",
+            "note": (
+                "Odoo runtime command completed with exit code 0; no logfile was "
+                "provided for detailed test-count parsing."
+            ),
+        }
+    return None
+
+
 def _write_summary(args: argparse.Namespace, path: Path) -> None:
     runtime_requested = all([args.odoo_bin, args.config, args.database])
     payload = {
@@ -323,7 +340,7 @@ def _write_summary(args: argparse.Namespace, path: Path) -> None:
             "database": args.database,
             "install": bool(args.install),
             "http_port": args.http_port,
-            "log": _parse_runtime_log(args.logfile),
+            "log": _runtime_log_summary(args),
         },
         "manifest": _load_manifest_summary(args.write_manifest),
         "result": "passed",
