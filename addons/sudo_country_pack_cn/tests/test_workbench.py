@@ -284,6 +284,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_remediation_rescan_summary"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_ai_guidance_summary"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -324,6 +329,13 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_sealed_filing_archive_count, 0)
         self.assertEqual(self.profile.cn_workbench_filing_archive_issue_count, 0)
         self.assertTrue(self.profile.cn_workbench_filing_archive_next_action)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_finding_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_generated_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_current_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_stale_count, 0)
+        self.assertTrue(self.profile.cn_workbench_ai_guidance_next_action)
         self.assertEqual(self.profile.cn_workbench_package_label, "中国财税合规包")
         self.assertIn("增值税", self.profile.cn_workbench_scope_label)
         self.assertIn("企业所得税", self.profile.cn_workbench_scope_label)
@@ -430,6 +442,29 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 1)
         self.assertEqual(self.profile.cn_workbench_verified_remediation_count, 1)
         self.assertIn("failed", self.profile.cn_workbench_rescan_next_action)
+
+    def test_workbench_summarizes_controlled_ai_guidance_coverage(self):
+        generated = self._finding("ai1")
+        self._finding("ai2")
+
+        generated.action_generate_cn_ai_guidance()
+        self.profile.invalidate_recordset()
+
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_state, "attention")
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_finding_count, 2)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_generated_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_current_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_stale_count, 0)
+        self.assertIn("Generate", self.profile.cn_workbench_ai_guidance_next_action)
+
+        action = self.profile.action_cn_open_workbench_ai_guidance_findings()
+        self.assertEqual(action["res_model"], "sudo.compliance.finding")
+        self.assertIn(
+            ("assessment_id.profile_id", "=", self.profile.id),
+            action["domain"],
+        )
+        self.assertIn(("result", "in", ("fail", "unknown", "error")), action["domain"])
 
     def test_workbench_surfaces_cross_border_identity_boundary(self):
         self.profile._write_import({"status": "active"})

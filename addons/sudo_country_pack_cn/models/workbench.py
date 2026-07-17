@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import _, fields, models
 
 
@@ -326,6 +328,35 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="Filing Archive Issues",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_ai_guidance_state = fields.Selection(
+        FLOW_STATES,
+        string="AI Guidance State",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_next_action = fields.Char(
+        string="AI Guidance Next Action",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_finding_count = fields.Integer(
+        string="AI Guidance Findings",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_generated_count = fields.Integer(
+        string="Generated AI Guidance",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_current_count = fields.Integer(
+        string="Current AI Guidance",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_limited_count = fields.Integer(
+        string="Limited AI Guidance Inputs",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_ai_guidance_stale_count = fields.Integer(
+        string="Stale AI Guidance Inputs",
+        compute="_compute_cn_workbench",
+    )
 
     def _compute_cn_workbench(self):
         today = fields.Date.context_today(self)
@@ -366,6 +397,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             review_finding_domain = finding_domain + [
                 "|",
                 ("review_state", "in", REVIEW_FINDING_STATES),
+                ("result", "in", ("fail", "unknown", "error")),
+            ]
+            ai_guidance_domain = finding_domain + [
                 ("result", "in", ("fail", "unknown", "error")),
             ]
             task_domain = [
@@ -516,6 +550,41 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             )
             profile.cn_workbench_pending_review_count = Finding.search_count(
                 finding_domain + [("review_state", "in", REVIEW_FINDING_STATES)]
+            )
+            ai_guidance_findings = Finding.search(ai_guidance_domain)
+            ai_guidance_generated = self.env["sudo.compliance.finding"]
+            ai_guidance_current = self.env["sudo.compliance.finding"]
+            for finding in ai_guidance_findings:
+                analyses = finding.ai_analysis_ids.filtered(
+                    lambda analysis: analysis.provider_key
+                    == "sdoo_cn_controlled_guidance"
+                ).sorted("id")
+                if not analyses:
+                    continue
+                ai_guidance_generated |= finding
+                latest = analyses[-1:]
+                if latest.generated_at and (
+                    not finding.write_date
+                    or latest.generated_at + timedelta(seconds=5) >= finding.write_date
+                ):
+                    ai_guidance_current |= finding
+            ai_guidance_limited = ai_guidance_findings.filtered(
+                lambda finding: finding.cn_ai_guidance_state == "limited"
+            )
+            profile.cn_workbench_ai_guidance_finding_count = len(
+                ai_guidance_findings
+            )
+            profile.cn_workbench_ai_guidance_generated_count = len(
+                ai_guidance_generated
+            )
+            profile.cn_workbench_ai_guidance_current_count = len(
+                ai_guidance_current
+            )
+            profile.cn_workbench_ai_guidance_limited_count = len(
+                ai_guidance_limited
+            )
+            profile.cn_workbench_ai_guidance_stale_count = (
+                len(ai_guidance_generated) - len(ai_guidance_current)
             )
             profile.cn_workbench_open_task_count = Task.search_count(task_domain)
             profile.cn_workbench_overdue_task_count = Task.search_count(
@@ -722,6 +791,32 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             else:
                 profile.cn_workbench_scan_state = "attention"
 
+            if not ai_guidance_findings:
+                profile.cn_workbench_ai_guidance_state = "not_started"
+                profile.cn_workbench_ai_guidance_next_action = _(
+                    "No unresolved China risk currently requires controlled AI guidance."
+                )
+            elif profile.cn_workbench_ai_guidance_stale_count:
+                profile.cn_workbench_ai_guidance_state = "blocked"
+                profile.cn_workbench_ai_guidance_next_action = _(
+                    "Regenerate controlled AI guidance for risks whose input facts or remediation state changed."
+                )
+            elif len(ai_guidance_current) == len(ai_guidance_findings):
+                profile.cn_workbench_ai_guidance_state = "ready"
+                profile.cn_workbench_ai_guidance_next_action = _(
+                    "Controlled AI guidance is current for all unresolved China risks."
+                )
+            elif ai_guidance_generated:
+                profile.cn_workbench_ai_guidance_state = "attention"
+                profile.cn_workbench_ai_guidance_next_action = _(
+                    "Generate controlled AI guidance for remaining unresolved risks and disclose limited inputs."
+                )
+            else:
+                profile.cn_workbench_ai_guidance_state = "attention"
+                profile.cn_workbench_ai_guidance_next_action = _(
+                    "Generate controlled AI guidance before using the report as a step-by-step remediation playbook."
+                )
+
             if limitation_count:
                 profile.cn_workbench_risk_state = "blocked"
             elif profile.cn_workbench_high_risk_count or profile.cn_workbench_finding_count:
@@ -893,6 +988,16 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             "sudo.compliance.finding",
             [("assessment_id.profile_id", "=", self.id)],
         )
+
+    def action_cn_open_workbench_ai_guidance_findings(self):
+        self.ensure_one()
+        action = self.action_cn_open_workbench_findings()
+        action["name"] = _("Controlled AI Guidance")
+        action["domain"] = [
+            ("assessment_id.profile_id", "=", self.id),
+            ("result", "in", ("fail", "unknown", "error")),
+        ]
+        return action
 
     def action_cn_open_workbench_tasks(self):
         self.ensure_one()

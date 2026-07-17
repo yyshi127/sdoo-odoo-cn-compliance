@@ -42,6 +42,13 @@
                 <field name="cn_workbench_open_task_count"/>
                 <field name="cn_workbench_overdue_task_count"/>
                 <field name="cn_workbench_pending_review_count"/>
+                <field name="cn_workbench_ai_guidance_state" widget="badge"
+                       decoration-success="cn_workbench_ai_guidance_state == 'ready'"
+                       decoration-warning="cn_workbench_ai_guidance_state == 'attention'"
+                       decoration-danger="cn_workbench_ai_guidance_state == 'blocked'"
+                       decoration-muted="cn_workbench_ai_guidance_state == 'not_started'"/>
+                <field name="cn_workbench_ai_guidance_generated_count"/>
+                <field name="cn_workbench_ai_guidance_current_count"/>
                 <field name="cn_workbench_pending_tax_impact_count"/>
                 <field name="cn_workbench_underpayment_amount"/>
                 <field name="cn_workbench_reconciliation_issue_count"/>
@@ -96,6 +103,13 @@
                 <field name="cn_workbench_filing_archive_count"/>
                 <field name="cn_workbench_sealed_filing_archive_count"/>
                 <field name="cn_workbench_filing_archive_issue_count"/>
+                <field name="cn_workbench_ai_guidance_state"/>
+                <field name="cn_workbench_ai_guidance_next_action"/>
+                <field name="cn_workbench_ai_guidance_finding_count"/>
+                <field name="cn_workbench_ai_guidance_generated_count"/>
+                <field name="cn_workbench_ai_guidance_current_count"/>
+                <field name="cn_workbench_ai_guidance_limited_count"/>
+                <field name="cn_workbench_ai_guidance_stale_count"/>
                 <field name="cn_workbench_latest_report_id"/>
                 <field name="cn_workbench_package_label"/>
                 <field name="cn_workbench_scope_label"/>
@@ -309,6 +323,21 @@
                                                decoration-warning="cn_workbench_risk_state == 'attention'"
                                                decoration-danger="cn_workbench_risk_state == 'blocked'"
                                                decoration-muted="cn_workbench_risk_state == 'not_started'"/>
+                                    </button>
+                                    <button type="object" name="action_cn_open_workbench_ai_guidance_findings"
+                                            class="btn btn-light border text-start flex-fill">
+                                        <div class="text-muted small">2.5 AI guidance</div>
+                                        <field name="cn_workbench_ai_guidance_state" widget="badge"
+                                               decoration-success="cn_workbench_ai_guidance_state == 'ready'"
+                                               decoration-warning="cn_workbench_ai_guidance_state == 'attention'"
+                                               decoration-danger="cn_workbench_ai_guidance_state == 'blocked'"
+                                               decoration-muted="cn_workbench_ai_guidance_state == 'not_started'"/>
+                                        <div class="text-muted small mt-1">
+                                            <field name="cn_workbench_ai_guidance_current_count"/>
+                                            <span> current / </span>
+                                            <field name="cn_workbench_ai_guidance_generated_count"/>
+                                            <span> generated</span>
+                                        </div>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_tasks"
                                             class="btn btn-light border text-start flex-fill">
