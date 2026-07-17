@@ -580,6 +580,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China delivery objective coverage capability must be declared")
     if features.get("china_business_uat_checklist") is not True:
         fail("China business UAT checklist capability must be declared")
+    if features.get("china_production_signoff_template") is not True:
+        fail("China production sign-off template capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3369,6 +3371,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             )
         if "china_business_uat_checklist" not in content:
             fail(f"China business UAT checklist capability is missing from {label}")
+        if "china_production_signoff_template" not in content:
+            fail(
+                f"China production sign-off template capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4271,6 +4277,24 @@ def validate_delivery_objective_coverage() -> None:
         if required not in uat_content:
             fail(f"China business UAT checklist is missing {required}")
 
+    signoff_path = REPOSITORY_ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"
+    if not signoff_path.is_file():
+        fail("China production sign-off template must be documented")
+    signoff_content = signoff_path.read_text(encoding="utf-8")
+    for required in (
+        "# China Fiscal Compliance Pack Production Sign-off Template",
+        "## Release Candidate",
+        "## Automated Evidence",
+        "## Business UAT Result",
+        "## Rule And Source Governance",
+        "## Data And Scope Limitations",
+        "## Risk And Remediation Status",
+        "## Deployment Decision",
+        "## Boundary Statement",
+    ):
+        if required not in signoff_content:
+            fail(f"China production sign-off template is missing {required}")
+
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():
         fail("China delivery objective coverage matrix must be documented")
@@ -4297,6 +4321,7 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         'ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
+        'ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"',
         '"summarize_cn_delivery_status.py"',
     ):
         if required not in acceptance_tool:
@@ -4310,9 +4335,12 @@ def validate_delivery_objective_coverage() -> None:
         "business_uat",
         "OBJECTIVE_COVERAGE_PATH",
         "objective_coverage",
+        "PRODUCTION_SIGNOFF_PATH",
+        "production_signoff",
         "included_in_manifest",
         "Business UAT checklist in manifest",
         "Objective coverage in manifest",
+        "Production sign-off template in manifest",
     ):
         if required not in status_tool:
             fail(f"China delivery status objective coverage is missing {required}")

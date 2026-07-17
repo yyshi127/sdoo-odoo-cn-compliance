@@ -114,6 +114,7 @@ def _manifest_paths() -> list[Path]:
         XBRL_ADDON,
         ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md",
         ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
+        ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",
         ROOT / "docs" / "DEVELOPMENT_PREVIEW_ACCESS_CN.md",
         ROOT / "docs" / "DELIVERY_RUNBOOK_CN.md",
         ROOT / "docs" / "samples",
