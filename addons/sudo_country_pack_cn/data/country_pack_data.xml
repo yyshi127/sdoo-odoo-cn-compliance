@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.84.0</field>
+        <field name="version">19.0.1.85.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -74,6 +74,7 @@
                 'china_cross_border_risk_visibility': True,
                 'china_risk_fact_basis_visibility': True,
                 'china_risk_data_basis_visibility': True,
+                'china_risk_tax_impact_visibility': True,
                 'china_workbench_accounting_ledger_basis': True,
                 'china_workbench_filing_archive_summary': True,
                 'china_workbench_state_badge_clarity': True,

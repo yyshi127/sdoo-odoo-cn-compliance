@@ -261,6 +261,65 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         finding.invalidate_recordset()
         return snapshot
 
+    def _reviewed_tax_impact_case(
+        self,
+        finding,
+        *,
+        direction="potential_underpayment",
+        amount=120.0,
+    ):
+        finding.write(
+            {
+                "review_notes": (
+                    "Controlled test review confirms the risk needs tax impact follow-up."
+                )
+            }
+        )
+        finding.action_require_correction()
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "risk-center-tax-impact.txt",
+                "raw": b"risk center tax impact evidence",
+            }
+        )
+        case = self.env["sudo.cn.tax.impact.case"].with_company(
+            self.company
+        ).create(
+            {
+                "title": "Risk center tax impact case",
+                "profile_id": self.profile.id,
+                "period_start": finding.assessment_id.period_start,
+                "period_end": finding.assessment_id.period_end,
+                "assessment_id": finding.assessment_id.id,
+                "finding_ids": [Command.set(finding.ids)],
+                "impact_direction": direction,
+                "quantification_state": "preliminary",
+                "impact_amount": amount,
+                "analysis": (
+                    "Controlled test analysis explains the tax impact calculation."
+                ),
+                "assumptions_limitations": (
+                    "Controlled assumptions and limitations are documented."
+                ),
+                "source_reference": "RC-TAX-IMPACT-TEST",
+                "evidence_attachment_ids": [Command.set(attachment.ids)],
+            }
+        )
+        case.action_submit()
+        case.write(
+            {
+                "review_notes": (
+                    "Independent controlled review confirms the quantified tax impact."
+                ),
+                "separation_exception_reason": (
+                    "Controlled automated test allows same-user review exception."
+                ),
+            }
+        )
+        case.action_review()
+        finding.invalidate_recordset()
+        return case
+
     def _set_task_verification_state(self, task, state):
         self.env.cr.execute(
             """
@@ -400,6 +459,19 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             "Review VAT reconciliation differences.",
         )
 
+    def test_finding_exposes_reviewed_tax_impact_summary(self):
+        finding = self._finding()
+        case = self._reviewed_tax_impact_case(finding, amount=120.0)
+
+        self.assertEqual(case.integrity_state, "verified")
+        self.assertEqual(finding.cn_tax_impact_state, "reviewed")
+        self.assertEqual(finding.cn_tax_impact_pending_review_count, 0)
+        self.assertAlmostEqual(
+            finding.cn_tax_impact_reviewed_underpayment_amount,
+            120.0,
+        )
+        self.assertIn("underpayment 120", finding.cn_tax_impact_summary)
+
     def test_cross_border_rule_finding_exposes_fact_review_status(self):
         transaction = self._cross_border_transaction()
         _assessment, finding = self._cross_border_assessment()
@@ -470,5 +542,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_reconciliation_risk_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_tax_impact_visibility"
             ]
         )

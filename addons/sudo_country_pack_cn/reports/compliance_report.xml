@@ -205,6 +205,18 @@
                                                 Next action: <span t-esc="reconciliation.get('next_action')"/>
                                             </div>
                                         </div>
+                                        <t t-set="finding_tax" t-value="finding.get('tax_impact_summary') or {}"/>
+                                        <div t-if="finding_tax" style="margin-top: 6px; padding: 6px; border-left: 3px solid #b45309; background: #fffbeb;">
+                                            <strong>Tax impact:</strong>
+                                            <span t-esc="finding_tax.get('state')"/>
+                                            <span> · cases </span><span t-esc="finding_tax.get('case_count', 0)"/>
+                                            <span> · pending </span><span t-esc="finding_tax.get('pending_count', 0)"/>
+                                            <div class="text-muted">
+                                                Underpayment <span t-esc="finding_tax.get('reviewed_underpayment_amount')"/>
+                                                · Overpayment <span t-esc="finding_tax.get('reviewed_overpayment_amount')"/>
+                                                · Timing <span t-esc="finding_tax.get('reviewed_timing_amount')"/>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td><span t-esc="report.report_label('result', finding.get('result'))"/></td>
                                     <td><span t-esc="report.report_label('review', finding.get('review_state'))"/></td>

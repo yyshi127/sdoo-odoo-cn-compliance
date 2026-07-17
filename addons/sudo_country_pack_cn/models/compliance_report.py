@@ -215,6 +215,62 @@ def _reconciliation_risk_summary_from_snapshots(snapshots):
     }
 
 
+def _tax_impact_summary_from_cases(cases, currency):
+    active = cases.filtered(lambda record: record.state != "cancelled")
+    if not active:
+        return None
+
+    pending_count = len(active.filtered(lambda record: record.state != "reviewed"))
+    reviewed = active.filtered(lambda record: record.state == "reviewed")
+    integrity_issue_count = len(
+        reviewed.filtered(lambda record: record.integrity_state != "verified")
+    )
+    verified = reviewed.filtered(lambda record: record.integrity_state == "verified")
+    unquantifiable_count = len(
+        verified.filtered(
+            lambda record: record.quantification_state == "not_quantifiable"
+        )
+    )
+    quantified = verified.filtered(
+        lambda record: record.quantification_state == "reviewed"
+    )
+    underpayment = sum(
+        quantified.filtered(
+            lambda record: record.impact_direction == "potential_underpayment"
+        ).mapped("impact_amount")
+    )
+    overpayment = sum(
+        quantified.filtered(
+            lambda record: record.impact_direction == "potential_overpayment"
+        ).mapped("impact_amount")
+    )
+    timing = sum(
+        quantified.filtered(
+            lambda record: record.impact_direction == "timing_difference"
+        ).mapped("impact_amount")
+    )
+    if pending_count:
+        state = "pending"
+    elif integrity_issue_count:
+        state = "integrity_issue"
+    elif unquantifiable_count:
+        state = "unquantifiable"
+    else:
+        state = "reviewed"
+    return {
+        "state": state,
+        "case_count": len(active),
+        "pending_count": pending_count,
+        "reviewed_count": len(reviewed),
+        "integrity_issue_count": integrity_issue_count,
+        "unquantifiable_count": unquantifiable_count,
+        "reviewed_underpayment_amount": _amount_value(underpayment, currency),
+        "reviewed_overpayment_amount": _amount_value(overpayment, currency),
+        "reviewed_timing_amount": _amount_value(timing, currency),
+        "case_ids": active.ids,
+    }
+
+
 class SudoChinaComplianceReport(models.Model):
     _name = "sudo.cn.compliance.report"
     _description = "China Governed Compliance Report"
@@ -972,6 +1028,10 @@ class SudoChinaComplianceReport(models.Model):
                         _reconciliation_risk_summary_from_snapshots(
                             finding.fact_snapshot_ids
                         )
+                    ),
+                    "tax_impact_summary": _tax_impact_summary_from_cases(
+                        finding.cn_tax_impact_case_ids,
+                        currency,
                     ),
                     "result_details": finding.result_details_json or {},
                     "source_snapshot": finding.source_snapshot_json or [],

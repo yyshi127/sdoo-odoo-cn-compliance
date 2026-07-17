@@ -37,6 +37,14 @@ RECONCILIATION_RISK_STATES = [
     ("aligned", "Aligned"),
 ]
 
+TAX_IMPACT_STATES = [
+    ("none", "None"),
+    ("pending", "Pending Review"),
+    ("integrity_issue", "Integrity Issue"),
+    ("unquantifiable", "Unquantifiable"),
+    ("reviewed", "Reviewed"),
+]
+
 
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
@@ -182,6 +190,48 @@ class SudoChinaRiskCenterFinding(models.Model):
         readonly=True,
     )
 
+    cn_risk_currency_id = fields.Many2one(
+        related="company_id.currency_id",
+        string="Currency",
+        readonly=True,
+    )
+    cn_tax_impact_state = fields.Selection(
+        TAX_IMPACT_STATES,
+        string="Tax Impact",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_pending_review_count = fields.Integer(
+        string="Pending Tax Impact",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_unquantifiable_review_count = fields.Integer(
+        string="Unquantifiable Tax Impact",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_integrity_issue_count = fields.Integer(
+        string="Tax Impact Integrity Issues",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_reviewed_underpayment_amount = fields.Monetary(
+        string="Reviewed Underpayment",
+        currency_field="cn_risk_currency_id",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_reviewed_overpayment_amount = fields.Monetary(
+        string="Reviewed Overpayment",
+        currency_field="cn_risk_currency_id",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_reviewed_timing_amount = fields.Monetary(
+        string="Reviewed Timing Difference",
+        currency_field="cn_risk_currency_id",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_tax_impact_summary = fields.Char(
+        string="Tax Impact Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+
     def _compute_cn_risk_center_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
         for finding in self:
@@ -242,6 +292,16 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_cross_border_transaction_count,
                 finding.cn_cross_border_next_action,
             ) = finding._cn_cross_border_fact_summary()
+            (
+                finding.cn_tax_impact_state,
+                finding.cn_tax_impact_pending_review_count,
+                finding.cn_tax_impact_unquantifiable_review_count,
+                finding.cn_tax_impact_integrity_issue_count,
+                finding.cn_tax_impact_reviewed_underpayment_amount,
+                finding.cn_tax_impact_reviewed_overpayment_amount,
+                finding.cn_tax_impact_reviewed_timing_amount,
+                finding.cn_tax_impact_summary,
+            ) = finding._cn_tax_impact_summary()
 
     def _cn_risk_rule_basis_state(self):
         self.ensure_one()
@@ -395,6 +455,84 @@ class SudoChinaRiskCenterFinding(models.Model):
             state,
             "; ".join(summary_parts),
             value.get("next_action") or False,
+        )
+
+    def _cn_tax_impact_summary(self):
+        self.ensure_one()
+        cases = self.cn_tax_impact_case_ids.filtered(
+            lambda record: record.state != "cancelled"
+        )
+        if not cases:
+            return (
+                "none",
+                0,
+                0,
+                0,
+                0.0,
+                0.0,
+                0.0,
+                _("No tax impact review case is linked."),
+            )
+
+        pending_count = len(cases.filtered(lambda record: record.state != "reviewed"))
+        reviewed = cases.filtered(lambda record: record.state == "reviewed")
+        integrity_issue_count = len(
+            reviewed.filtered(lambda record: record.integrity_state != "verified")
+        )
+        verified = reviewed.filtered(
+            lambda record: record.integrity_state == "verified"
+        )
+        unquantifiable_count = len(
+            verified.filtered(
+                lambda record: record.quantification_state == "not_quantifiable"
+            )
+        )
+        quantified = verified.filtered(
+            lambda record: record.quantification_state == "reviewed"
+        )
+        underpayment = sum(
+            quantified.filtered(
+                lambda record: record.impact_direction == "potential_underpayment"
+            ).mapped("impact_amount")
+        )
+        overpayment = sum(
+            quantified.filtered(
+                lambda record: record.impact_direction == "potential_overpayment"
+            ).mapped("impact_amount")
+        )
+        timing = sum(
+            quantified.filtered(
+                lambda record: record.impact_direction == "timing_difference"
+            ).mapped("impact_amount")
+        )
+        if pending_count:
+            state = "pending"
+        elif integrity_issue_count:
+            state = "integrity_issue"
+        elif unquantifiable_count:
+            state = "unquantifiable"
+        else:
+            state = "reviewed"
+        summary = (
+            "cases %(cases)s; pending %(pending)s; underpayment %(under)s; "
+            "overpayment %(over)s; timing %(timing)s; unquantifiable %(unq)s"
+        ) % {
+            "cases": len(cases),
+            "pending": pending_count,
+            "under": underpayment,
+            "over": overpayment,
+            "timing": timing,
+            "unq": unquantifiable_count,
+        }
+        return (
+            state,
+            pending_count,
+            unquantifiable_count,
+            integrity_issue_count,
+            underpayment,
+            overpayment,
+            timing,
+            summary,
         )
 
     def _cn_traceability_summary(self):

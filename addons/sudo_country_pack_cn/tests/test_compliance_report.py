@@ -220,6 +220,53 @@ class TestChinaFormalComplianceReport(TransactionCase):
         finding.invalidate_recordset()
         return snapshot
 
+    def _reviewed_tax_impact_case(
+        self,
+        finding,
+        *,
+        direction="potential_underpayment",
+        amount=240.0,
+    ):
+        attachment = self.env["ir.attachment"].with_user(self.manager).create(
+            {
+                "name": "formal-report-tax-impact.txt",
+                "raw": b"formal report tax impact evidence",
+            }
+        )
+        case = self.env["sudo.cn.tax.impact.case"].with_user(
+            self.manager
+        ).with_company(self.company).create(
+            {
+                "title": "Formal report tax impact case",
+                "profile_id": self.profile.id,
+                "period_start": finding.assessment_id.period_start,
+                "period_end": finding.assessment_id.period_end,
+                "assessment_id": finding.assessment_id.id,
+                "finding_ids": [Command.set(finding.ids)],
+                "impact_direction": direction,
+                "quantification_state": "preliminary",
+                "impact_amount": amount,
+                "analysis": (
+                    "Controlled report test analysis explains the tax impact calculation."
+                ),
+                "assumptions_limitations": (
+                    "Controlled report assumptions and limitations are documented."
+                ),
+                "source_reference": "REPORT-TAX-IMPACT-TEST",
+                "evidence_attachment_ids": [Command.set(attachment.ids)],
+            }
+        )
+        case.with_user(self.manager).action_submit()
+        case.with_user(self.same_person).write(
+            {
+                "review_notes": (
+                    "Independent controlled review confirms report tax impact amount."
+                )
+            }
+        )
+        case.with_user(self.same_person).action_review()
+        return case
+
     def _report(self, assessment=None, preparer=None, reviewer=None, **values):
         assessment = assessment or self.assessment
         preparer = preparer or self.manager
@@ -455,6 +502,21 @@ class TestChinaFormalComplianceReport(TransactionCase):
             "Review CIT accounting and filing differences.",
         )
         self.assertEqual(summary["checksum"], snapshot.checksum)
+
+    def test_submission_includes_finding_tax_impact_summary(self):
+        case = self._reviewed_tax_impact_case(self.finding, amount=240.0)
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        summary = report.snapshot_json["findings"][0]["tax_impact_summary"]
+        self.assertEqual(case.integrity_state, "verified")
+        self.assertEqual(summary["state"], "reviewed")
+        self.assertEqual(summary["case_count"], 1)
+        self.assertEqual(summary["pending_count"], 0)
+        self.assertEqual(summary["reviewed_underpayment_amount"], "240.00")
+        self.assertEqual(summary["case_ids"], case.ids)
 
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")
