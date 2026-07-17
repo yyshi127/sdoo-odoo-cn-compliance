@@ -125,6 +125,21 @@
         <field name="sensitivity">confidential</field>
     </record>
 
+    <record id="fact_cn_account_ledger_basis_detail_v1" model="sudo.compliance.fact.definition">
+        <field name="label">Odoo accounting ledger basis detail</field>
+        <field name="key">cn.account.ledger_basis_detail</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.account.ledger_basis_detail</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">account.move</field>
+        <field name="source_description">Period-scoped Odoo accounting move coverage summary, including posted/draft counts, posted invoice count, date coverage and move type counts.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">full_period_ledger_basis_summary</field>
+        <field name="sensitivity">confidential</field>
+    </record>
+
     <record id="fact_cn_invoice_missing_attachment_count_v1" model="sudo.compliance.fact.definition">
         <field name="label">已过账业务发票缺少附件线索数</field>
         <field name="key">cn.evidence.invoice_missing_attachment_count</field>

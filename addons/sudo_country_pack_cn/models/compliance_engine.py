@@ -66,6 +66,9 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.account.posted_invoice_count": (
                     self._provide_cn_posted_invoice_count
                 ),
+                "cn.account.ledger_basis_detail": (
+                    self._provide_cn_ledger_basis_detail
+                ),
                 "cn.evidence.invoice_missing_attachment_count": (
                     self._provide_cn_invoice_missing_attachment_count
                 ),
@@ -1747,6 +1750,58 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             states=["posted"],
             move_types=INVOICE_MOVE_TYPES,
         )
+
+    def _provide_cn_ledger_basis_detail(self, assessment, _definition):
+        domain = self._move_domain(assessment)
+        moves = (
+            self.env["account.move"]
+            .with_company(assessment.company_id)
+            .search(domain, order="date, id")
+        )
+        posted = moves.filtered(lambda move: move.state == "posted")
+        draft = moves.filtered(lambda move: move.state == "draft")
+        posted_invoices = posted.filtered(
+            lambda move: move.move_type in INVOICE_MOVE_TYPES
+        )
+        move_types = Counter(moves.mapped("move_type"))
+        dates = [move.date for move in moves if move.date]
+        detail = {
+            "schema": "sdoo.cn.accounting-ledger-basis.v1",
+            "company_id": assessment.company_id.id,
+            "period_start": fields.Date.to_string(assessment.period_start)
+            if assessment.period_start
+            else None,
+            "period_end": fields.Date.to_string(assessment.period_end)
+            if assessment.period_end
+            else None,
+            "counts": {
+                "total_moves": len(moves),
+                "posted_moves": len(posted),
+                "draft_moves": len(draft),
+                "posted_invoices": len(posted_invoices),
+            },
+            "date_coverage": {
+                "first_move_date": fields.Date.to_string(min(dates))
+                if dates
+                else None,
+                "last_move_date": fields.Date.to_string(max(dates))
+                if dates
+                else None,
+            },
+            "move_type_counts": dict(sorted(move_types.items())),
+        }
+        return {
+            "value": detail,
+            "source_model": "account.move",
+            "source_domain": domain,
+            "source_record_ids": moves.ids[:2000],
+            "record_count": len(moves),
+            "aggregation_method": "full_period_ledger_basis_summary",
+            "is_complete": True,
+            "is_full_dataset": len(moves) <= 2000,
+            "quality_state": "complete" if len(moves) <= 2000 else "truncated",
+            "provider_version": "1",
+        }
 
     def _provide_cn_invoice_missing_attachment_count(
         self, assessment, _definition

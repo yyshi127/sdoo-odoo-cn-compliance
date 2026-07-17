@@ -148,6 +148,17 @@ class TestChinaRuleDrafts(TransactionCase):
 
         self.assertEqual(actual, expected)
         self.assertTrue(all(self.versions.mapped("requires_human_review")))
+
+    def test_accounting_period_rule_carries_ledger_basis_facts(self):
+        version = self.env.ref(
+            "sudo_country_pack_cn.rule_version_cn_acc_period_001_draft"
+        )
+        fact_keys = set(version.required_fact_ids.mapped("key"))
+
+        self.assertIn("cn.account.unposted_move_count", fact_keys)
+        self.assertIn("cn.account.posted_move_count", fact_keys)
+        self.assertIn("cn.account.posted_invoice_count", fact_keys)
+        self.assertIn("cn.account.ledger_basis_detail", fact_keys)
         self.assertTrue(
             all(
                 "cn_rule_nature" in version._checksum_payload()

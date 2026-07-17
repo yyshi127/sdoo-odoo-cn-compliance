@@ -51,6 +51,7 @@ class TestChinaFactProviders(TransactionCase):
             "cn.account.posted_move_count",
             "cn.account.unposted_move_count",
             "cn.account.posted_invoice_count",
+            "cn.account.ledger_basis_detail",
             "cn.evidence.invoice_missing_attachment_count",
             "cn.vat_invoice.posted_line_without_tax_count",
             "cn.master.transaction_partner_missing_tax_id_count",
@@ -196,6 +197,55 @@ class TestChinaFactProviders(TransactionCase):
             self.assertEqual(payload["value"], 0, key)
             self.assertTrue(payload["is_complete"], key)
             self.assertTrue(payload["is_full_dataset"], key)
+
+    def test_ledger_basis_detail_summarizes_period_accounting_moves(self):
+        journal = self.env["account.journal"].create(
+            {
+                "name": "China Fact Ledger Basis Journal",
+                "code": "ZCN2",
+                "type": "general",
+                "company_id": self.company.id,
+            }
+        )
+        posted = self.env["account.move"].with_company(self.company).create(
+            {
+                "date": "2099-06-01",
+                "journal_id": journal.id,
+                "company_id": self.company.id,
+                "move_type": "entry",
+            }
+        )
+        draft_invoice = self.env["account.move"].with_company(self.company).create(
+            {
+                "date": "2099-06-05",
+                "journal_id": journal.id,
+                "company_id": self.company.id,
+                "move_type": "out_invoice",
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE account_move SET state = 'posted' WHERE id = %s",
+            (posted.id,),
+        )
+        posted.invalidate_recordset(["state"])
+
+        payload = self._provider("cn.account.ledger_basis_detail")(
+            self.assessment,
+            False,
+        )
+        value = payload["value"]
+
+        self.assertEqual(value["schema"], "sdoo.cn.accounting-ledger-basis.v1")
+        self.assertEqual(value["counts"]["total_moves"], 2)
+        self.assertEqual(value["counts"]["posted_moves"], 1)
+        self.assertEqual(value["counts"]["draft_moves"], 1)
+        self.assertEqual(value["counts"]["posted_invoices"], 0)
+        self.assertEqual(value["date_coverage"]["first_move_date"], "2099-06-01")
+        self.assertEqual(value["date_coverage"]["last_move_date"], "2099-06-05")
+        self.assertEqual(value["move_type_counts"]["entry"], 1)
+        self.assertEqual(value["move_type_counts"]["out_invoice"], 1)
+        self.assertIn(posted.id, payload["source_record_ids"])
+        self.assertIn(draft_invoice.id, payload["source_record_ids"])
 
     def test_reconciliation_facts_require_an_exact_period_current_result(self):
         for key in (

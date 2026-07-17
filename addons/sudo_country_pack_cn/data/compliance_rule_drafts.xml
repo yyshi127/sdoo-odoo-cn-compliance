@@ -83,7 +83,12 @@
         <field name="risk_level">medium</field>
         <field name="stale_policy">block_all</field>
         <field name="authority_source_ids" eval="[(6, 0, [ref('source_cn_accounting_law_2024_candidate')])]"/>
-        <field name="required_fact_ids" eval="[(6, 0, [ref('fact_cn_unposted_move_count_v1')])]"/>
+        <field name="required_fact_ids" eval="[(6, 0, [
+            ref('fact_cn_unposted_move_count_v1'),
+            ref('fact_cn_posted_move_count_v1'),
+            ref('fact_cn_posted_invoice_count_v1'),
+            ref('fact_cn_account_ledger_basis_detail_v1')
+        ])]"/>
         <field name="legal_basis_summary">内部关账准备度控制草案。已登记会计法官方网址候选项，但尚未抓取原文、生成哈希、完成独立复核和中国会计与税务专业签核，不构成法定关账或申报期限判断。</field>
         <field name="failure_message">评估期间仍存在未过账会计凭证，当前账面数据可能尚未形成稳定评估基础。</field>
         <field name="pass_message">评估期间未发现草稿会计凭证。</field>
