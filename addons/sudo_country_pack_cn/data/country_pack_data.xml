@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.92.0</field>
+        <field name="version">19.0.1.93.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -37,6 +37,7 @@
                 'china_ai_data_basis_context': True,
                 'china_ai_risk_resolution_context': True,
                 'china_report_ai_guidance_snapshot': True,
+                'china_report_evidence_link_snapshot': True,
                 'source_governance': True,
                 'rule_nature_governance': True,
                 'tax_impact_review': True,

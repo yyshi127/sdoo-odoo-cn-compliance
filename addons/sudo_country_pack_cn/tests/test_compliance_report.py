@@ -267,6 +267,30 @@ class TestChinaFormalComplianceReport(TransactionCase):
         case.with_user(self.same_person).action_review()
         return case
 
+    def _verified_report_evidence(self, finding):
+        task = self.env["sudo.compliance.task"].with_user(
+            self.manager
+        ).create_from_finding(finding)
+        evidence = self.env["sudo.compliance.evidence"].with_user(
+            self.reader
+        ).with_company(self.company).create(
+            {
+                "name": "Formal report remediation evidence",
+                "company_id": self.company.id,
+                "task_id": task.id,
+                "evidence_type": "remediation_proof",
+                "external_reference": "DMS/CN/REPORT-EVIDENCE-001",
+                "evidence_date": "2026-07-12",
+                "issuer": "Controlled test evidence issuer",
+            }
+        )
+        evidence.with_user(self.reader).action_submit()
+        evidence.with_user(self.manager).write(
+            {"review_notes": "Controlled evidence verified for report traceability."}
+        )
+        evidence.with_user(self.manager).action_verify()
+        return evidence, task
+
     def _report(self, assessment=None, preparer=None, reviewer=None, **values):
         assessment = assessment or self.assessment
         preparer = preparer or self.manager
@@ -447,6 +471,30 @@ class TestChinaFormalComplianceReport(TransactionCase):
             limit=1,
         )
         self.assertEqual(event.details_json["snapshot_checksum"], report.snapshot_checksum)
+
+    def test_submission_freezes_evidence_link_context(self):
+        evidence, task = self._verified_report_evidence(self.finding)
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        evidence_row = report.snapshot_json["evidence"][0]
+        self.assertEqual(evidence_row["id"], evidence.id)
+        self.assertEqual(evidence_row["integrity_state"], "verified")
+        self.assertEqual(
+            evidence_row["links"]["finding"]["id"],
+            self.finding.id,
+        )
+        self.assertEqual(
+            evidence_row["links"]["finding"]["checksum"],
+            self.finding.checksum,
+        )
+        self.assertEqual(evidence_row["links"]["task"]["id"], task.id)
+        self.assertEqual(
+            evidence_row["links"]["assessment"]["id"],
+            self.assessment.id,
+        )
 
     def test_submission_summarizes_report_fact_basis(self):
         snapshot = self._fact_snapshot(self.finding, "complete")
@@ -697,6 +745,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_ai_guidance_snapshot"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_evidence_link_snapshot"
             ]
         )
         self.assertTrue(

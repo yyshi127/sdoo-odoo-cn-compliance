@@ -271,6 +271,65 @@ def _tax_impact_summary_from_cases(cases, currency):
     }
 
 
+def _evidence_link_payload(evidence):
+    task = evidence.task_id
+    finding = evidence.finding_id or task.finding_id
+    assessment = evidence.assessment_id or finding.assessment_id or task.assessment_id
+    filing = evidence.filing_id
+    return {
+        "assessment": (
+            {
+                "id": assessment.id,
+                "name": assessment.display_name,
+                "state": assessment.state,
+                "period_start": _date_value(assessment.period_start),
+                "period_end": _date_value(assessment.period_end),
+            }
+            if assessment
+            else None
+        ),
+        "finding": (
+            {
+                "id": finding.id,
+                "title": finding.title,
+                "result": finding.result,
+                "risk_level": finding.risk_level,
+                "review_state": finding.review_state,
+                "checksum": finding.checksum or None,
+            }
+            if finding
+            else None
+        ),
+        "task": (
+            {
+                "id": task.id,
+                "name": task.name,
+                "state": task.state,
+                "assignee_id": task.assignee_id.id or None,
+                "due_date": _date_value(task.due_date),
+                "verification_state": task.verification_state,
+                "verification_assessment_id": task.verification_assessment_id.id
+                or None,
+            }
+            if task
+            else None
+        ),
+        "filing": (
+            {
+                "id": filing.id,
+                "name": filing.filing_name,
+                "code": filing.filing_code,
+                "state": filing.state,
+                "payment_state": filing.payment_state,
+                "period_start": _date_value(filing.period_start),
+                "period_end": _date_value(filing.period_end),
+            }
+            if filing
+            else None
+        ),
+    }
+
+
 def _ai_guidance_summary_from_finding(finding):
     analyses = finding.ai_analysis_ids.filtered(
         lambda record: record.provider_key == "sdoo_cn_controlled_guidance"
@@ -900,6 +959,7 @@ class SudoChinaComplianceReport(models.Model):
                     "stored_checksum": evidence.document_checksum or None,
                     "current_checksum": current_checksum,
                     "integrity_state": integrity_state,
+                    "links": _evidence_link_payload(evidence),
                     "verified_by_id": evidence.verified_by_id.id or None,
                     "verified_at": _datetime_value(evidence.verified_at),
                 }
