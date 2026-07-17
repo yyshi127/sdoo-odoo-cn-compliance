@@ -309,6 +309,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_delivery_objective_coverage"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_business_uat_checklist"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()

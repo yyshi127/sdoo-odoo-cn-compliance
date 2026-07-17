@@ -578,6 +578,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China workbench next-best-action capability must be declared")
     if features.get("china_delivery_objective_coverage") is not True:
         fail("China delivery objective coverage capability must be declared")
+    if features.get("china_business_uat_checklist") is not True:
+        fail("China business UAT checklist capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3365,6 +3367,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China delivery objective coverage capability is missing from {label}"
             )
+        if "china_business_uat_checklist" not in content:
+            fail(f"China business UAT checklist capability is missing from {label}")
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4247,6 +4251,26 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
 
 def validate_delivery_objective_coverage() -> None:
+    uat_path = REPOSITORY_ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"
+    if not uat_path.is_file():
+        fail("China business UAT checklist must be documented")
+    uat_content = uat_path.read_text(encoding="utf-8")
+    for required in (
+        "# China Fiscal Compliance Pack Business UAT Checklist",
+        "## Preconditions",
+        "## Walkthrough",
+        "Open the China compliance workbench",
+        "Review data readiness",
+        "Review risks",
+        "Review remediation",
+        "Review controlled AI guidance",
+        "Review report readiness and formal reports",
+        "Screen and usability checks",
+        "## Acceptance Boundary",
+    ):
+        if required not in uat_content:
+            fail(f"China business UAT checklist is missing {required}")
+
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():
         fail("China delivery objective coverage matrix must be documented")
@@ -4271,6 +4295,7 @@ def validate_delivery_objective_coverage() -> None:
         REPOSITORY_ROOT / "tools" / "run_cn_delivery_acceptance.py"
     ).read_text(encoding="utf-8")
     for required in (
+        'ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
         '"summarize_cn_delivery_status.py"',
     ):
@@ -4281,9 +4306,12 @@ def validate_delivery_objective_coverage() -> None:
         REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py"
     ).read_text(encoding="utf-8")
     for required in (
+        "BUSINESS_UAT_PATH",
+        "business_uat",
         "OBJECTIVE_COVERAGE_PATH",
         "objective_coverage",
         "included_in_manifest",
+        "Business UAT checklist in manifest",
         "Objective coverage in manifest",
     ):
         if required not in status_tool:
