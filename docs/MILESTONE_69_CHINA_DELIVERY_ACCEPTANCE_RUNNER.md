@@ -93,8 +93,23 @@ checks, manifest aggregate SHA-256, runtime database and parsed Odoo test-log
 statistics when a logfile is supplied.  It is the handoff evidence that a
 specific manifest passed a specific acceptance profile.
 
+Delivery bundle:
+
+```powershell
+python tools\build_cn_delivery_bundle.py `
+  --output dist\sdoo-cn-compliance-delivery.tgz `
+  --metadata dist\sdoo-cn-compliance-delivery.bundle.json
+```
+
+The bundle builder uses the same audited file inventory as the delivery
+manifest, including the China addon, optional e-invoice XBRL parser addon,
+contract samples and delivery tools.  It writes a deterministic tar.gz archive
+with normalized ownership, permissions and mtimes, plus metadata containing the
+bundle SHA-256 and the same aggregate source SHA-256 used by the manifest.
+
 ## Acceptance Result
 
-For `19.0.1.99.0`, the delivery runner can emit both a deterministic delivery
-manifest and a machine-readable acceptance summary.  Every selected profile
-still expects `0 failed / 0 errors` before handoff.
+For `19.0.1.100.0`, the delivery toolchain can build a deterministic release
+bundle, emit a deterministic delivery manifest and write a machine-readable
+acceptance summary.  Every selected profile still expects `0 failed / 0 errors`
+before handoff.
