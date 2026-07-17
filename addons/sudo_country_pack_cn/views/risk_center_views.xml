@@ -551,6 +551,7 @@
                        decoration-success="cn_remediation_urgency == 'closed'"/>
                 <field name="cn_remediation_responsibility_summary" optional="show"/>
                 <field name="cn_remediation_next_action" optional="show"/>
+                <field name="cn_remediation_action_summary" optional="show"/>
                 <field name="cn_remediation_blocker_summary" optional="show"/>
                 <field name="cn_remediation_progress" optional="show"/>
                 <field name="cn_remediation_summary" optional="show"/>
@@ -625,6 +626,7 @@
                 <field name="cn_remediation_rescan_stage"/>
                 <field name="cn_remediation_period_label"/>
                 <field name="cn_remediation_next_action"/>
+                <field name="cn_remediation_action_summary"/>
                 <field name="cn_remediation_blocker_summary"/>
                 <field name="cn_remediation_progress"/>
                 <field name="cn_remediation_summary"/>
@@ -675,6 +677,8 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
                                 <div class="fw-semibold"><field name="cn_remediation_next_action"/></div>
+                                <div class="text-muted small mt-1">Action summary</div>
+                                <div class="small"><field name="cn_remediation_action_summary"/></div>
                                 <div class="text-muted small mt-1">Blockers</div>
                                 <div class="small"><field name="cn_remediation_blocker_summary"/></div>
                                 <div class="text-muted small">

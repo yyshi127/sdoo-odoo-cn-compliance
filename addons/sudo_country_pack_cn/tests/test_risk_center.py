@@ -598,6 +598,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertIn("Blocked by:", task.cn_remediation_blocker_summary)
         self.assertIn("missing data basis", task.cn_remediation_blocker_summary)
         self.assertIn("no verified evidence", task.cn_remediation_blocker_summary)
+        self.assertIn("Next:", task.cn_remediation_action_summary)
+        self.assertIn("Blockers:", task.cn_remediation_action_summary)
+        self.assertIn("Evidence:", task.cn_remediation_action_summary)
+        self.assertIn("Rescan:", task.cn_remediation_action_summary)
+        self.assertIn("Progress:", task.cn_remediation_action_summary)
 
         self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")

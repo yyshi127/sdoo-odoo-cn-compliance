@@ -761,6 +761,10 @@ class SudoChinaRiskCenterTask(models.Model):
         string="下一步动作",
         compute="_compute_cn_remediation_display",
     )
+    cn_remediation_action_summary = fields.Char(
+        string="Remediation Action Summary",
+        compute="_compute_cn_remediation_display",
+    )
     cn_remediation_urgency = fields.Selection(
         REMEDIATION_URGENCY_STATES,
         string="Remediation Urgency",
@@ -950,6 +954,9 @@ class SudoChinaRiskCenterTask(models.Model):
                 task.cn_remediation_urgency,
                 task.cn_remediation_responsibility_summary,
             ) = _remediation_responsibility_values(task)
+            task.cn_remediation_action_summary = (
+                task._cn_remediation_action_summary()
+            )
 
     def _cn_remediation_rescan_stage(self):
         self.ensure_one()
@@ -1062,6 +1069,31 @@ class SudoChinaRiskCenterTask(models.Model):
             "gaps": self.cn_remediation_traceability_gap_count,
         }
         return (progress, summary)
+
+    def _cn_remediation_action_summary(self):
+        self.ensure_one()
+        parts = []
+        if self.cn_remediation_next_action:
+            parts.append("Next: %s" % self.cn_remediation_next_action)
+        if self.cn_remediation_responsibility_summary:
+            parts.append(
+                "Owner/due: %s" % self.cn_remediation_responsibility_summary
+            )
+        if self.cn_remediation_blocker_summary:
+            parts.append("Blockers: %s" % self.cn_remediation_blocker_summary)
+        if self.cn_remediation_evidence_count:
+            parts.append(
+                "Evidence: %s/%s verified"
+                % (
+                    self.cn_remediation_verified_evidence_count,
+                    self.cn_remediation_evidence_count,
+                )
+            )
+        else:
+            parts.append("Evidence: none")
+        parts.append("Rescan: %s" % (self.cn_remediation_rescan_stage or "unknown"))
+        parts.append("Progress: %s%%" % (self.cn_remediation_progress or 0))
+        return " | ".join(parts)
 
     def _cn_remediation_blocker_summary(self):
         self.ensure_one()
