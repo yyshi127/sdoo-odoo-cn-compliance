@@ -778,6 +778,19 @@ class SudoChinaComplianceReport(models.Model):
             "missing_type_summary": (
                 assessment.cn_data_basis_missing_type_summary or None
             ),
+            "accounting_basis": {
+                "state": assessment.cn_accounting_basis_state or None,
+                "next_action": assessment.cn_accounting_basis_next_action or None,
+                "posted_move_count": (
+                    assessment.cn_accounting_basis_posted_move_count
+                ),
+                "draft_move_count": (
+                    assessment.cn_accounting_basis_draft_move_count
+                ),
+                "posted_invoice_count": (
+                    assessment.cn_accounting_basis_posted_invoice_count
+                ),
+            },
         }
 
     def _filing_archive_payload(self):
@@ -1126,6 +1139,7 @@ class SudoChinaComplianceReport(models.Model):
             or tax_impact["pending_count"]
             or tax_impact["unquantifiable_count"]
             or payload["data_basis"]["state"] != "ready"
+            or payload["data_basis"]["accounting_basis"]["state"] != "ready"
             or payload["filing_archive"]["state"] in ("blocked", "attention")
             or payload["obligation_readiness"]["state"]
             in ("not_started", "attention")
@@ -1190,6 +1204,7 @@ class SudoChinaComplianceReport(models.Model):
         if has_limits and not _text_is_complete(self.limitation_statement):
             obligation_state = payload["obligation_readiness"]["state"]
             data_basis_state = payload["data_basis"]["state"]
+            accounting_basis_state = payload["data_basis"]["accounting_basis"]["state"]
             if obligation_state in ("not_started", "attention"):
                 issues.append(
                     _(
@@ -1200,6 +1215,12 @@ class SudoChinaComplianceReport(models.Model):
                 issues.append(
                     _(
                         "Assessment data basis is incomplete; disclose missing data types and uncertainty before submitting the report."
+                    )
+                )
+            elif accounting_basis_state != "ready":
+                issues.append(
+                    _(
+                        "Odoo accounting ledger basis is incomplete; disclose draft or missing ledger coverage before submitting the report."
                     )
                 )
             else:

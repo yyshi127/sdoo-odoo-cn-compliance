@@ -51,17 +51,53 @@ class TestChinaAssessmentDataBasis(TransactionCase):
             }
         )
 
-    def _assessment(self):
+    def _assessment(self, period_start="2026-06-01", period_end="2026-06-30"):
         return self.env["sudo.compliance.assessment"].with_company(
             self.company
         ).create(
             {
                 "profile_id": self.profile.id,
                 "evaluation_date": "2026-07-01",
-                "period_start": "2026-06-01",
-                "period_end": "2026-06-30",
+                "period_start": period_start,
+                "period_end": period_end,
             }
         )
+
+    def _journal(self):
+        journal = self.env["account.journal"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("type", "=", "general"),
+            ],
+            limit=1,
+        )
+        if journal:
+            return journal
+        return self.env["account.journal"].create(
+            {
+                "name": "China Assessment Accounting Basis Journal",
+                "code": "CNAJ",
+                "type": "general",
+                "company_id": self.company.id,
+            }
+        )
+
+    def _accounting_move(self, date, state="draft", move_type="entry"):
+        move = self.env["account.move"].with_company(self.company).create(
+            {
+                "date": date,
+                "journal_id": self._journal().id,
+                "company_id": self.company.id,
+                "move_type": move_type,
+            }
+        )
+        if state == "posted":
+            self.env.cr.execute(
+                "UPDATE account_move SET state = 'posted' WHERE id = %s",
+                (move.id,),
+            )
+            move.invalidate_recordset(["state"])
+        return move
 
     def _attachment(self, dataset_type):
         return self.env["ir.attachment"].create(
@@ -162,6 +198,11 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_assessment_accounting_basis"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_assessment_obligation_basis"
             ]
         )
@@ -176,6 +217,9 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         assessment.invalidate_recordset()
 
         self.assertEqual(assessment.cn_data_basis_state, "missing")
+        self.assertEqual(assessment.cn_accounting_basis_state, "missing")
+        self.assertEqual(assessment.cn_accounting_basis_posted_move_count, 0)
+        self.assertIn("No posted", assessment.cn_accounting_basis_next_action)
         self.assertEqual(assessment.cn_data_basis_dataset_count, 0)
         self.assertEqual(assessment.cn_data_basis_ready_type_count, 0)
         self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
@@ -209,6 +253,32 @@ class TestChinaAssessmentDataBasis(TransactionCase):
             action["context"]["search_default_group_dataset_type"],
             1,
         )
+
+    def test_assessment_exposes_period_scoped_accounting_basis(self):
+        assessment = self._assessment("2026-05-01", "2026-05-31")
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_accounting_basis_state, "missing")
+        self.assertEqual(assessment.cn_accounting_basis_posted_move_count, 0)
+
+        self._accounting_move("2026-05-10", state="posted")
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_accounting_basis_state, "ready")
+        self.assertEqual(assessment.cn_accounting_basis_posted_move_count, 1)
+        self.assertEqual(assessment.cn_accounting_basis_draft_move_count, 0)
+        self.assertEqual(assessment.cn_accounting_basis_posted_invoice_count, 0)
+
+        self._accounting_move("2026-05-12", state="draft")
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_accounting_basis_state, "warning")
+        self.assertEqual(assessment.cn_accounting_basis_draft_move_count, 1)
+        action = assessment.action_cn_open_assessment_accounting_basis()
+        self.assertEqual(action["res_model"], "account.move")
+        self.assertIn(("company_id", "=", self.company.id), action["domain"])
+        self.assertIn(("date", ">=", assessment.period_start), action["domain"])
+        self.assertIn(("date", "<=", assessment.period_end), action["domain"])
 
     def test_assessment_opens_profile_scoped_obligation_basis(self):
         assessment = self._assessment()

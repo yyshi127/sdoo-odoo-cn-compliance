@@ -26,6 +26,16 @@ _CN_OBLIGATION_REQUIRED_DATASET_TYPES = {
 }
 
 
+_INVOICE_MOVE_TYPES = (
+    "out_invoice",
+    "out_refund",
+    "in_invoice",
+    "in_refund",
+    "out_receipt",
+    "in_receipt",
+)
+
+
 class SudoChinaAssessmentDataBasis(models.Model):
     _inherit = "sudo.compliance.assessment"
 
@@ -78,6 +88,32 @@ class SudoChinaAssessmentDataBasis(models.Model):
     )
     cn_data_basis_next_action = fields.Char(
         string="数据基础下一步",
+        compute="_compute_cn_data_basis",
+    )
+    cn_accounting_basis_state = fields.Selection(
+        [
+            ("no_period", "No Period"),
+            ("missing", "No Posted Ledger"),
+            ("warning", "Draft Entries Present"),
+            ("ready", "Ledger Available"),
+        ],
+        string="Odoo Accounting Basis",
+        compute="_compute_cn_data_basis",
+    )
+    cn_accounting_basis_posted_move_count = fields.Integer(
+        string="Posted Accounting Entries",
+        compute="_compute_cn_data_basis",
+    )
+    cn_accounting_basis_draft_move_count = fields.Integer(
+        string="Draft Accounting Entries",
+        compute="_compute_cn_data_basis",
+    )
+    cn_accounting_basis_posted_invoice_count = fields.Integer(
+        string="Posted Accounting Invoices",
+        compute="_compute_cn_data_basis",
+    )
+    cn_accounting_basis_next_action = fields.Char(
+        string="Accounting Basis Next Action",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_state = fields.Selection(
@@ -134,6 +170,11 @@ class SudoChinaAssessmentDataBasis(models.Model):
                 "cn_data_basis_missing_type_count": 0,
                 "cn_data_basis_missing_type_summary": False,
                 "cn_data_basis_next_action": False,
+                "cn_accounting_basis_state": False,
+                "cn_accounting_basis_posted_move_count": 0,
+                "cn_accounting_basis_draft_move_count": 0,
+                "cn_accounting_basis_posted_invoice_count": 0,
+                "cn_accounting_basis_next_action": False,
                 "cn_obligation_basis_state": False,
                 "cn_obligation_basis_candidate_count": 0,
                 "cn_obligation_basis_applicable_count": 0,
@@ -148,6 +189,10 @@ class SudoChinaAssessmentDataBasis(models.Model):
                 defaults.update(
                     {
                         "cn_data_basis_state": "no_period",
+                        "cn_accounting_basis_state": "no_period",
+                        "cn_accounting_basis_next_action": _(
+                            "Set an assessment period before evaluating the Odoo accounting ledger basis."
+                        ),
                         "cn_data_basis_next_action": _(
                             "先为规则评估设置明确的起止期间，再核对数据来源。"
                         ),
@@ -219,6 +264,7 @@ class SudoChinaAssessmentDataBasis(models.Model):
             assessment.cn_data_basis_missing_type_count = len(missing_types)
             assessment.cn_data_basis_missing_type_summary = missing_summary
             assessment.cn_data_basis_next_action = next_action
+            assessment._cn_update_accounting_basis_values()
             assessment._cn_update_obligation_basis_values()
 
     def _cn_required_dataset_types(self):
@@ -277,6 +323,52 @@ class SudoChinaAssessmentDataBasis(models.Model):
             assessment.cn_obligation_basis_filing_count = len(filing)
             assessment.cn_obligation_basis_next_action = next_action
 
+    def _cn_update_accounting_basis_values(self):
+        Move = self.env["account.move"].sudo()
+        for assessment in self:
+            if not assessment.period_start or not assessment.period_end:
+                assessment.cn_accounting_basis_state = "no_period"
+                assessment.cn_accounting_basis_posted_move_count = 0
+                assessment.cn_accounting_basis_draft_move_count = 0
+                assessment.cn_accounting_basis_posted_invoice_count = 0
+                assessment.cn_accounting_basis_next_action = _(
+                    "Set an assessment period before evaluating the Odoo accounting ledger basis."
+                )
+                continue
+
+            domain = assessment._cn_accounting_basis_domain()
+            posted_count = Move.search_count(domain + [("state", "=", "posted")])
+            draft_count = Move.search_count(domain + [("state", "=", "draft")])
+            posted_invoice_count = Move.search_count(
+                domain
+                + [
+                    ("state", "=", "posted"),
+                    ("move_type", "in", _INVOICE_MOVE_TYPES),
+                ]
+            )
+
+            if not posted_count:
+                state = "missing"
+                next_action = _(
+                    "No posted Odoo accounting entries exist for this assessment period; scan results cannot represent ledger-based compliance."
+                )
+            elif draft_count:
+                state = "warning"
+                next_action = _(
+                    "Review and either post or explicitly exclude draft accounting entries before relying on the assessment."
+                )
+            else:
+                state = "ready"
+                next_action = _(
+                    "Posted Odoo accounting entries are available for this period; keep draft entries reviewed before report sign-off."
+                )
+
+            assessment.cn_accounting_basis_state = state
+            assessment.cn_accounting_basis_posted_move_count = posted_count
+            assessment.cn_accounting_basis_draft_move_count = draft_count
+            assessment.cn_accounting_basis_posted_invoice_count = posted_invoice_count
+            assessment.cn_accounting_basis_next_action = next_action
+
     def _cn_data_basis_domain(self):
         self.ensure_one()
         domain = [("profile_id", "=", self.profile_id.id)]
@@ -285,6 +377,14 @@ class SudoChinaAssessmentDataBasis(models.Model):
         if self.period_end:
             domain.append(("period_start", "<=", self.period_end))
         return domain
+
+    def _cn_accounting_basis_domain(self):
+        self.ensure_one()
+        return [
+            ("company_id", "=", self.company_id.id),
+            ("date", ">=", self.period_start),
+            ("date", "<=", self.period_end),
+        ]
 
     def action_cn_open_assessment_data_basis(self):
         self.ensure_one()
@@ -309,6 +409,21 @@ class SudoChinaAssessmentDataBasis(models.Model):
             "view_mode": "kanban,list,form",
             "domain": domain,
             "context": context,
+            "target": "current",
+        }
+
+    def action_cn_open_assessment_accounting_basis(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Odoo accounting basis"),
+            "res_model": "account.move",
+            "view_mode": "list,form",
+            "domain": self._cn_accounting_basis_domain(),
+            "context": {
+                "default_company_id": self.company_id.id,
+                "search_default_posted": 1,
+            },
             "target": "current",
         }
 

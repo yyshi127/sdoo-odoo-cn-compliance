@@ -215,6 +215,12 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 not in (False, "ready")
             ):
                 limitation_count += 1
+            if (
+                "cn_accounting_basis_state" in assessment._fields
+                and assessment.cn_accounting_basis_state
+                not in (False, "ready")
+            ):
+                limitation_count += 1
             limitation_count += assessment.unknown_count or 0
             limitation_count += assessment.error_count or 0
             limitation_count += pending_tax_impact
