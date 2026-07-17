@@ -4468,9 +4468,28 @@ def validate_delivery_objective_coverage() -> None:
         "Release Candidate Is Ready For Business UAT When",
         "Release Candidate Is Ready For Production Sign-off When",
         "tools/check_cn_preview_health.py",
+        "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
     ):
         if required not in delivery_index_content:
             fail(f"China delivery index is missing {required}")
+
+    blocker_visibility_path = (
+        REPOSITORY_ROOT / "docs" / "MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md"
+    )
+    if not blocker_visibility_path.is_file():
+        fail("China blocker summary visibility milestone must be documented")
+    blocker_visibility_content = blocker_visibility_path.read_text(encoding="utf-8")
+    for required in (
+        "# Milestone 70 - China Blocker Summary Visibility",
+        "Data readiness center",
+        "Evidence center",
+        "Filing/payment archive center",
+        "Report readiness center",
+        "Business UAT should verify",
+        "certify a taxpayer position",
+    ):
+        if required not in blocker_visibility_content:
+            fail(f"China blocker visibility milestone is missing {required}")
 
     uat_path = REPOSITORY_ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"
     if not uat_path.is_file():
