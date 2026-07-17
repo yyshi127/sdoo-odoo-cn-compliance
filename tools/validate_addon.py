@@ -582,6 +582,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China business UAT checklist capability must be declared")
     if features.get("china_production_signoff_template") is not True:
         fail("China production sign-off template capability must be declared")
+    if features.get("china_delivery_preview_health_checker") is not True:
+        fail("China delivery preview health checker capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3375,6 +3377,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China production sign-off template capability is missing from {label}"
             )
+        if "china_delivery_preview_health_checker" not in content:
+            fail(
+                f"China delivery preview health checker capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -4295,6 +4301,22 @@ def validate_delivery_objective_coverage() -> None:
         if required not in signoff_content:
             fail(f"China production sign-off template is missing {required}")
 
+    preview_health_path = REPOSITORY_ROOT / "tools" / "check_cn_preview_health.py"
+    if not preview_health_path.is_file():
+        fail("China preview health checker must be packaged")
+    preview_health_content = preview_health_path.read_text(encoding="utf-8")
+    for required in (
+        "sdoo.cn.preview-health.v1",
+        "Internal Server Error",
+        "invalid CSRF token",
+        "Database not found",
+        "urlopen",
+        "preview health passed",
+        "preview health failed",
+    ):
+        if required not in preview_health_content:
+            fail(f"China preview health checker is missing {required}")
+
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():
         fail("China delivery objective coverage matrix must be documented")
@@ -4322,6 +4344,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
         'ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"',
+        'ROOT / "tools" / "check_cn_preview_health.py"',
         '"summarize_cn_delivery_status.py"',
     ):
         if required not in acceptance_tool:
@@ -4337,10 +4360,13 @@ def validate_delivery_objective_coverage() -> None:
         "objective_coverage",
         "PRODUCTION_SIGNOFF_PATH",
         "production_signoff",
+        "PREVIEW_HEALTH_TOOL_PATH",
+        "preview_health_checker",
         "included_in_manifest",
         "Business UAT checklist in manifest",
         "Objective coverage in manifest",
         "Production sign-off template in manifest",
+        "Preview health checker in manifest",
     ):
         if required not in status_tool:
             fail(f"China delivery status objective coverage is missing {required}")

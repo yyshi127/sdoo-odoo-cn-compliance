@@ -12,6 +12,7 @@ STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
+PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
 
 
 def _load(path: Path | None) -> dict[str, object] | None:
@@ -114,6 +115,17 @@ def _status(
                 )
             ),
         },
+        "preview_health_checker": {
+            "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
+            "included_in_manifest": bool(
+                manifest
+                and any(
+                    entry.get("path") == PREVIEW_HEALTH_TOOL_PATH.as_posix()
+                    for entry in manifest.get("files", [])
+                    if isinstance(entry, dict)
+                )
+            ),
+        },
         "bundle_metadata": _artifact_summary(bundle_metadata),
         "manifest": _artifact_summary(manifest),
         "acceptance_summary": _artifact_summary(summary),
@@ -130,6 +142,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     business_uat = status.get("business_uat") or {}
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
+    preview_health_checker = status.get("preview_health_checker") or {}
     lines = [
         "# China Delivery Status",
         "",
@@ -144,6 +157,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Objective coverage in manifest: `{objective_coverage.get('included_in_manifest', False)}`",
         f"- Production sign-off template: `{production_signoff.get('path', '')}`",
         f"- Production sign-off template in manifest: `{production_signoff.get('included_in_manifest', False)}`",
+        f"- Preview health checker: `{preview_health_checker.get('path', '')}`",
+        f"- Preview health checker in manifest: `{preview_health_checker.get('included_in_manifest', False)}`",
         "",
         "## Artifacts",
         "",
