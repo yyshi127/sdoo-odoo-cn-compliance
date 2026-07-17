@@ -12,6 +12,7 @@ import ast
 import hashlib
 import json
 import py_compile
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -64,6 +65,7 @@ FULL_PROFILE_TOOL_TESTS = [
     "tools.test_xbrl_worker_compatibility",
 ]
 MANIFEST_SCHEMA = "sdoo.cn.delivery-manifest.v1"
+SUMMARY_SCHEMA = "sdoo.cn.delivery-acceptance-summary.v1"
 MANIFEST_EXCLUDED_DIRS = {"__pycache__", ".git", "dist", "build", "artifacts", "tmp"}
 MANIFEST_EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 
@@ -191,6 +193,91 @@ def _write_manifest(path: Path) -> None:
     )
 
 
+def _load_manifest_summary(path: Path | None) -> dict[str, object] | None:
+    if not path or not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "schema": payload.get("schema"),
+        "path": str(path),
+        "version": payload.get("version"),
+        "git_commit": payload.get("git_commit"),
+        "file_count": payload.get("file_count"),
+        "aggregate_sha256": payload.get("aggregate_sha256"),
+    }
+
+
+def _parse_runtime_log(path: Path | None) -> dict[str, object] | None:
+    if not path or not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8", errors="replace")
+    stats_match = re.search(
+        r"odoo\.tests\.stats: (?P<module>\S+): (?P<tests>\d+) tests "
+        r"(?P<seconds>[0-9.]+)s (?P<queries>\d+) queries",
+        text,
+    )
+    result_match = re.search(
+        r"odoo\.tests\.result: (?P<failed>\d+) failed, "
+        r"(?P<errors>\d+) error\(s\) of (?P<loaded>\d+) tests",
+        text,
+    )
+    summary: dict[str, object] = {"path": str(path)}
+    if stats_match:
+        summary.update(
+            {
+                "module": stats_match.group("module"),
+                "reported_test_count": int(stats_match.group("tests")),
+                "seconds": float(stats_match.group("seconds")),
+                "queries": int(stats_match.group("queries")),
+            }
+        )
+    if result_match:
+        summary.update(
+            {
+                "failed": int(result_match.group("failed")),
+                "errors": int(result_match.group("errors")),
+                "loaded_test_count": int(result_match.group("loaded")),
+            }
+        )
+    return summary
+
+
+def _write_summary(args: argparse.Namespace, path: Path) -> None:
+    runtime_requested = all([args.odoo_bin, args.config, args.database])
+    payload = {
+        "schema": SUMMARY_SCHEMA,
+        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "addon": "sudo_country_pack_cn",
+        "version": _addon_version(),
+        "git_commit": _git_commit(),
+        "root": str(ROOT),
+        "profile": args.profile,
+        "selected_runtime_tags": args.test_tags or RUNTIME_PROFILES[args.profile],
+        "full_profile_tool_tests": FULL_PROFILE_TOOL_TESTS if args.profile == "full" else [],
+        "local_checks": {
+            "validate_addon": "passed",
+            "python_compile": "passed",
+            "xml_parse": "passed",
+            "git_diff_check": "passed" if _inside_git_worktree() else "skipped",
+        },
+        "runtime": {
+            "requested": runtime_requested,
+            "database": args.database,
+            "install": bool(args.install),
+            "http_port": args.http_port,
+            "log": _parse_runtime_log(args.logfile),
+        },
+        "manifest": _load_manifest_summary(args.write_manifest),
+        "result": "passed",
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(f"delivery acceptance summary written: {path}")
+
+
 def _compile_python() -> None:
     targets = [
         ADDON / "__manifest__.py",
@@ -304,6 +391,11 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="Write a deterministic delivery manifest with file SHA-256 checksums.",
     )
+    parser.add_argument(
+        "--write-summary",
+        type=Path,
+        help="Write a JSON acceptance summary after all selected checks pass.",
+    )
     return parser
 
 
@@ -319,6 +411,8 @@ def main() -> int:
         print("runtime skipped: supply --odoo-bin --config --database to run Odoo tests")
     if args.write_manifest:
         _write_manifest(args.write_manifest)
+    if args.write_summary:
+        _write_summary(args, args.write_summary)
     print("China delivery acceptance checks completed")
     return 0
 

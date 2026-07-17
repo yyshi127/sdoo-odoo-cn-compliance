@@ -79,9 +79,22 @@ SHA-256 over the sorted file paths and contents.  It is meant to prove what
 code was handed off or deployed.  It does not replace accounting data,
 business-rule or user-acceptance evidence.
 
+Acceptance summary:
+
+```powershell
+python tools\run_cn_delivery_acceptance.py `
+  --profile full `
+  --write-manifest dist\cn_delivery_manifest.json `
+  --write-summary dist\cn_delivery_acceptance_summary.json
+```
+
+The summary records the selected profile, selected runtime test tags, local
+checks, manifest aggregate SHA-256, runtime database and parsed Odoo test-log
+statistics when a logfile is supplied.  It is the handoff evidence that a
+specific manifest passed a specific acceptance profile.
+
 ## Acceptance Result
 
-For `19.0.1.98.0`, the delivery runner supports runtime profiles so a handoff
-can choose a fast `core` gate during daily iteration and a broader `full` gate
-before release.  Every selected profile still expects `0 failed / 0 errors`
-before handoff.
+For `19.0.1.99.0`, the delivery runner can emit both a deterministic delivery
+manifest and a machine-readable acceptance summary.  Every selected profile
+still expects `0 failed / 0 errors` before handoff.
