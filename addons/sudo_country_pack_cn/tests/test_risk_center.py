@@ -279,13 +279,23 @@ class TestChinaRiskCenterDisplay(TransactionCase):
 
         self.assertIn("2026-06-01", finding.cn_risk_period_label)
         self.assertIn("2026-06-30", finding.cn_risk_period_label)
-        self.assertIn("人工复核", finding.cn_risk_next_action)
+        self.assertIn("data basis", finding.cn_risk_next_action)
         self.assertEqual(finding.cn_risk_evidence_state, "none")
         self.assertEqual(finding.cn_risk_evidence_count, 0)
         self.assertEqual(finding.cn_risk_verified_evidence_count, 0)
         self.assertEqual(finding.cn_risk_fact_snapshot_count, 0)
         self.assertEqual(finding.cn_risk_fact_issue_count, 0)
         self.assertIn("No rule fact snapshots", finding.cn_risk_fact_summary)
+        self.assertEqual(finding.cn_risk_data_basis_state, "missing")
+        self.assertGreater(finding.cn_risk_data_basis_missing_type_count, 0)
+        self.assertIn(
+            "Electronic invoices",
+            finding.cn_risk_data_basis_missing_type_summary,
+        )
+        self.assertIn(
+            finding.cn_risk_data_basis_missing_type_summary,
+            finding.cn_risk_data_basis_next_action,
+        )
 
     def test_country_pack_advertises_risk_action_guidance(self):
         self.assertTrue(
@@ -299,6 +309,12 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         task = self.env["sudo.compliance.task"].create_from_finding(finding)
 
         task._transition_write({"state": "pending_review"})
+        self.assertEqual(task.cn_remediation_data_basis_state, "missing")
+        self.assertGreater(task.cn_remediation_data_basis_missing_type_count, 0)
+        self.assertIn(
+            "Electronic invoices",
+            task.cn_remediation_data_basis_missing_type_summary,
+        )
         self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")
 
         self._set_task_verification_state(task, "pending_rescan")
@@ -383,10 +399,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         finding = self._finding()
         task = self.env["sudo.compliance.task"].create_from_finding(finding)
 
-        self.assertEqual(
-            task.cn_remediation_traceability_state,
-            "action_required",
-        )
+        self.assertEqual(task.cn_remediation_traceability_state, "blocked")
         self.assertGreater(task.cn_remediation_traceability_gap_count, 0)
 
         self._set_task_verification_state(task, "pending_rescan")
@@ -416,5 +429,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_fact_basis_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_data_basis_visibility"
             ]
         )

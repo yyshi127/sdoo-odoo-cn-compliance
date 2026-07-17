@@ -15,6 +15,15 @@ TRACEABILITY_STATES = [
 ]
 
 
+DATA_BASIS_STATES = [
+    ("no_period", "No Period"),
+    ("missing", "Missing"),
+    ("blocked", "Blocked"),
+    ("warning", "Warning"),
+    ("ready", "Ready"),
+]
+
+
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
 
@@ -50,6 +59,31 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
     cn_risk_fact_summary = fields.Char(
         string="Fact Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_state = fields.Selection(
+        DATA_BASIS_STATES,
+        string="Data Basis",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_required_type_count = fields.Integer(
+        string="Required Data Types",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_ready_type_count = fields.Integer(
+        string="Ready Data Types",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_missing_type_count = fields.Integer(
+        string="Missing Data Types",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_missing_type_summary = fields.Char(
+        string="Missing Data Type Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_data_basis_next_action = fields.Char(
+        string="Data Basis Next Action",
         compute="_compute_cn_risk_center_display",
     )
 
@@ -155,6 +189,14 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_risk_fact_issue_count,
                 finding.cn_risk_fact_summary,
             ) = finding._cn_risk_fact_summary()
+            (
+                finding.cn_risk_data_basis_state,
+                finding.cn_risk_data_basis_required_type_count,
+                finding.cn_risk_data_basis_ready_type_count,
+                finding.cn_risk_data_basis_missing_type_count,
+                finding.cn_risk_data_basis_missing_type_summary,
+                finding.cn_risk_data_basis_next_action,
+            ) = _assessment_data_basis_values(assessment)
             finding.cn_risk_next_action = finding._cn_risk_next_action()
             (
                 finding.cn_traceability_state,
@@ -228,6 +270,12 @@ class SudoChinaRiskCenterFinding(models.Model):
     def _cn_risk_next_action(self):
         self.ensure_one()
         task = self.current_task_id
+        if self.cn_risk_data_basis_state in ("no_period", "missing", "blocked"):
+            return _(
+                "Complete the assessment data basis before relying on this risk conclusion."
+            )
+        if self.cn_risk_data_basis_state == "warning":
+            return _("Review incomplete period data before report sign-off.")
         if self.result in ("unknown", "error"):
             return _("先核对数据充分性、规则执行日志和来源限制。")
         if self.review_state == "pending":
@@ -254,6 +302,13 @@ class SudoChinaRiskCenterFinding(models.Model):
     def _cn_traceability_summary(self):
         self.ensure_one()
         gaps = []
+        if self.cn_risk_data_basis_state in (
+            "no_period",
+            "missing",
+            "blocked",
+            "warning",
+        ):
+            gaps.append("data_basis")
         if self.cn_risk_rule_basis_state != "ready":
             gaps.append("rule_basis")
         if self.result in ("unknown", "error"):
@@ -277,11 +332,11 @@ class SudoChinaRiskCenterFinding(models.Model):
             gaps.append("tax_impact")
         if not gaps:
             return ("complete", 0, _("Traceability is complete for reporting."))
-        if set(gaps) & {"rule_basis", "scan_result", "human_review"}:
+        if set(gaps) & {"data_basis", "rule_basis", "scan_result", "human_review"}:
             return (
                 "blocked",
                 len(gaps),
-                _("Complete rule basis, scan result and human review before reporting."),
+                _("Complete data basis, rule basis, scan result and human review before reporting."),
             )
         return (
             "action_required",
@@ -411,6 +466,23 @@ class SudoChinaRiskCenterTask(models.Model):
         string="Traceability Next Action",
         compute="_compute_cn_remediation_display",
     )
+    cn_remediation_data_basis_state = fields.Selection(
+        DATA_BASIS_STATES,
+        string="Data Basis",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_data_basis_missing_type_count = fields.Integer(
+        string="Missing Data Types",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_data_basis_missing_type_summary = fields.Char(
+        string="Missing Data Type Summary",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_data_basis_next_action = fields.Char(
+        string="Data Basis Next Action",
+        compute="_compute_cn_remediation_display",
+    )
 
     cn_remediation_rescan_stage = fields.Selection(
         [
@@ -450,6 +522,14 @@ class SudoChinaRiskCenterTask(models.Model):
             task.cn_remediation_rescan_stage = (
                 task._cn_remediation_rescan_stage()
             )
+            (
+                task.cn_remediation_data_basis_state,
+                _required_type_count,
+                _ready_type_count,
+                task.cn_remediation_data_basis_missing_type_count,
+                task.cn_remediation_data_basis_missing_type_summary,
+                task.cn_remediation_data_basis_next_action,
+            ) = _assessment_data_basis_values(assessment)
             task.cn_remediation_next_action = task._cn_remediation_next_action()
             (
                 task.cn_remediation_traceability_state,
@@ -479,6 +559,10 @@ class SudoChinaRiskCenterTask(models.Model):
 
     def _cn_remediation_next_action(self):
         self.ensure_one()
+        if self.cn_remediation_data_basis_state in ("no_period", "missing", "blocked"):
+            return _("Complete the assessment data basis before closing remediation.")
+        if self.cn_remediation_data_basis_state == "warning":
+            return _("Review incomplete period data before verification rescan.")
         if self.is_overdue:
             return _("任务已逾期，请优先处理并说明延期原因。")
         if self.state in ("open", "in_progress"):
@@ -515,6 +599,13 @@ class SudoChinaRiskCenterTask(models.Model):
     def _cn_remediation_traceability_summary(self):
         self.ensure_one()
         gaps = []
+        if self.cn_remediation_data_basis_state in (
+            "no_period",
+            "missing",
+            "blocked",
+            "warning",
+        ):
+            gaps.append("data_basis")
         if self.state not in ("done", "cancelled"):
             gaps.append("task_closure")
         if self.verification_state in ("pending_rescan", "failed"):
@@ -523,11 +614,11 @@ class SudoChinaRiskCenterTask(models.Model):
             gaps.append("evidence")
         if not gaps:
             return ("complete", 0, _("Remediation traceability is complete."))
-        if "verification_rescan" in gaps:
+        if "data_basis" in gaps or "verification_rescan" in gaps:
             return (
                 "blocked",
                 len(gaps),
-                _("Resolve verification rescan before report sign-off."),
+                _("Resolve data basis and verification rescan before report sign-off."),
             )
         return (
             "action_required",
@@ -548,3 +639,16 @@ def _evidence_state(evidence_count, verified_evidence_count):
     if evidence_count == verified_evidence_count:
         return "verified"
     return "partial"
+
+
+def _assessment_data_basis_values(assessment):
+    if not assessment or "cn_data_basis_state" not in assessment._fields:
+        return (False, 0, 0, 0, False, False)
+    return (
+        assessment.cn_data_basis_state,
+        assessment.cn_data_basis_required_type_count,
+        assessment.cn_data_basis_ready_type_count,
+        assessment.cn_data_basis_missing_type_count,
+        assessment.cn_data_basis_missing_type_summary,
+        assessment.cn_data_basis_next_action,
+    )
