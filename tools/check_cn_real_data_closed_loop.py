@@ -146,6 +146,11 @@ active_profile_report_domain = (
     if active_profile_ids
     else [("id", "=", 0)]
 )
+active_profile_evidence_domain = (
+    [("task_id.assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
 
 profiles = []
 if has_model("sudo.compliance.profile"):
@@ -184,8 +189,22 @@ objects = {{
         "sudo.compliance.task",
         active_profile_task_domain + [("task_type", "=", "remediation")],
     ) if has_model("sudo.compliance.task") else None,
+    "active_profile_verified_remediation_tasks": count(
+        "sudo.compliance.task",
+        active_profile_task_domain
+        + [
+            ("task_type", "=", "remediation"),
+            ("state", "=", "done"),
+            ("verification_state", "=", "verified"),
+        ],
+    ) if has_model("sudo.compliance.task") else None,
     "active_profile_formal_reports": count("sudo.cn.compliance.report", active_profile_report_domain),
     "evidence": count("sudo.compliance.evidence"),
+    "active_profile_evidence": count("sudo.compliance.evidence", active_profile_evidence_domain),
+    "active_profile_verified_evidence": count(
+        "sudo.compliance.evidence",
+        active_profile_evidence_domain + [("state", "=", "verified")],
+    ) if has_model("sudo.compliance.evidence") and "state" in env["sudo.compliance.evidence"]._fields else None,
     "filing_archives": count("sudo.compliance.filing"),
     "external_datasets": count("sudo.cn.external.dataset"),
     "einvoice_documents": count("sudo.cn.einvoice.document"),
@@ -275,6 +294,12 @@ readiness = {{
     "has_active_profile_report_activity": bool(
         (objects.get("active_profile_formal_reports") or 0) > 0
     ),
+    "has_active_profile_verified_remediation": bool(
+        (objects.get("active_profile_verified_remediation_tasks") or 0) > 0
+    ),
+    "has_active_profile_verified_evidence": bool(
+        (objects.get("active_profile_verified_evidence") or 0) > 0
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -298,8 +323,11 @@ readiness["closed_loop_evidence_ready"] = all(
     readiness[key]
     for key in (
         "demo_ready",
+        "has_external_tax_or_invoice_data",
         "has_reconciliation_activity",
         "has_active_profile_risk_or_remediation_activity",
+        "has_active_profile_verified_remediation",
+        "has_active_profile_verified_evidence",
         "has_active_profile_report_activity",
     )
 )

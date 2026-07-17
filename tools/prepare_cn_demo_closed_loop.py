@@ -65,7 +65,7 @@ def latest_or_create_vat_run(profile):
     run = Run.sudo().search([
         ("profile_id", "=", profile.id),
         ("state", "=", "succeeded"),
-    ], order="id desc", limit=1)
+    ], order="id desc", limit=20)
     if run:
         return run, False
     start = date(2026, 6, 1)
@@ -346,12 +346,17 @@ def ensure_demo_rule(profile):
 
 
 def ensure_assessment(run):
-    existing = env["sudo.compliance.assessment"].sudo().search([
+    candidates = env["sudo.compliance.assessment"].sudo().search([
         ("profile_id", "=", run.profile_id.id),
         ("period_start", "=", run.period_start),
         ("period_end", "=", run.period_end),
         ("finding_ids.rule_id.code", "=", "CN-CODEX-DEMO-VAT-RECON-CLOSED-LOOP"),
     ], order="id desc", limit=1)
+    verification_ids = env["sudo.compliance.task"].sudo().search([
+        ("assessment_id.profile_id", "=", run.profile_id.id),
+        ("verification_assessment_id", "!=", False),
+    ]).mapped("verification_assessment_id").ids
+    existing = candidates.filtered(lambda item: item.id not in verification_ids)[:1]
     if existing:
         return existing, False
     action = run.action_queue_compliance_assessment()
@@ -367,6 +372,14 @@ def ensure_finding_task(assessment):
     )[:1]
     if not finding:
         finding = assessment.finding_ids[:1]
+    if finding and finding.result == "pass":
+        verified_task = env["sudo.compliance.task"].sudo().search([
+            ("assessment_id.profile_id", "=", assessment.profile_id.id),
+            ("task_type", "=", "remediation"),
+            ("state", "=", "done"),
+            ("verification_state", "=", "verified"),
+        ], order="id desc", limit=1)
+        return finding, verified_task, False
     task = env["sudo.compliance.task"].sudo().search([
         ("finding_id", "=", finding.id),
         ("task_type", "=", "remediation"),
@@ -389,6 +402,450 @@ def ensure_finding_task(assessment):
             task = env["sudo.compliance.task"].sudo().browse(action["res_id"])
             changed = True
     return finding, task, changed
+
+
+def dataset_attachment(name, payload, mimetype="application/json"):
+    raw = payload if isinstance(payload, bytes) else json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+    ).encode("utf-8")
+    existing = env["ir.attachment"].sudo().search([("name", "=", name)], limit=1)
+    if existing:
+        return existing
+    return env["ir.attachment"].sudo().create({{
+        "name": name,
+        "raw": raw,
+        "mimetype": mimetype,
+    }})
+
+
+def create_external_dataset(profile, dataset_type, suffix, attachment_record, record_count, data_format="json"):
+    Dataset = env["sudo.cn.external.dataset"].with_company(profile.company_id)
+    dataset = Dataset.sudo().search([
+        ("profile_id", "=", profile.id),
+        ("dataset_type", "=", dataset_type),
+        ("source_reference", "=", "CODEX-DEMO/" + suffix),
+    ], order="id desc", limit=1)
+    if dataset:
+        if dataset.replacement_ids:
+            dataset = dataset.replacement_ids.sorted("id", reverse=True)[:1]
+        elif dataset.state == "sealed" and not dataset.supersedes_id:
+            action = dataset.action_create_replacement()
+            dataset = Dataset.browse(action["res_id"])
+        else:
+            return dataset
+    values = {{
+        "profile_id": profile.id,
+        "dataset_type": dataset_type,
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "coverage_scope": "full",
+        "scope_note": (
+            "CODEX-DEMO ONLY: controlled external tax data used to validate "
+            "the remediation and verification-rescan workflow."
+        ),
+        "source_channel": "official_export",
+        "source_system_name": "CODEX-DEMO controlled tax data source",
+        "source_reference": "CODEX-DEMO/" + suffix,
+        "source_generated_at": "2026-07-01 09:00:00",
+        "data_format": data_format,
+        "authorization_basis": (
+            "CODEX-DEMO ONLY: simulated lawful acquisition basis for development UAT."
+        ),
+        "separation_exception_reason": (
+            "CODEX-DEMO ONLY: one controlled automation user both acquires and "
+            "seals this development dataset so the UAT workflow can be repeated."
+        ),
+        "acquired_at": "2026-07-01 10:00:00",
+        "declared_record_count": record_count,
+        "currency_id": profile.company_id.currency_id.id,
+        "source_attachment_ids": command_set(attachment_record.ids),
+        "authenticity_state": "not_applicable",
+    }}
+    if dataset:
+        if dataset.state != "draft":
+            return dataset
+        dataset.write(values)
+    else:
+        dataset = Dataset.create(values)
+    dataset.action_seal()
+    return dataset
+
+
+def accounting_document(suffix, amount):
+    formatted = "%.2f" % float(amount or 0.0)
+    return {{
+        "voucher_number": "CODEX-DEMO-VOUCHER-" + suffix,
+        "posting_date": "2026-06-30",
+        "accounting_period": "2026-06",
+        "summary": "CODEX-DEMO VAT reconciliation remediation entry",
+        "entries": [
+            {{
+                "direction": "借方",
+                "general_ledger_subject": "CODEX-DEMO debit subject",
+                "amount": formatted,
+            }},
+            {{
+                "direction": "贷方",
+                "general_ledger_subject": "CODEX-DEMO credit subject",
+                "amount": formatted,
+            }},
+        ],
+    }}
+
+
+def einvoice_payload(profile, suffix, tax_amount, direction):
+    untaxed = 1000.0
+    tax_amount = float(tax_amount or 0.0)
+    total = untaxed + tax_amount
+    company = profile.company_id
+    taxpayer_id = company.partner_id.vat or "91310000CODEXDEMO01"
+    if direction == "output":
+        seller_name = company.name
+        seller_tax_id = taxpayer_id
+        entity_name = "CODEX-DEMO Customer"
+        entity_tax_id = "91310000CODEXOUT01"
+    else:
+        seller_name = "CODEX-DEMO Supplier"
+        seller_tax_id = "91310000CODEXIN01"
+        entity_name = company.name
+        entity_tax_id = taxpayer_id
+    return {{
+        "source_document_key": "CODEX-DEMO-vat-period-" + suffix + ".xml",
+        "invoice_number": "CODEX-DEMO-VAT-INVOICE-" + suffix,
+        "invoice_type_code": "VAT_CODEX_DEMO",
+        "request_time": "2026-06-30 08:30:00",
+        "seller_name": seller_name,
+        "seller_tax_id": seller_tax_id,
+        "accounting_entity_name": entity_name,
+        "accounting_entity_tax_id": entity_tax_id,
+        "currency_code": company.currency_id.name or "CNY",
+        "untaxed_amount": "%.2f" % untaxed,
+        "tax_amount": "%.2f" % tax_amount,
+        "total_amount": "%.2f" % total,
+        "is_red": False,
+        "is_booked": True,
+        "is_checked": True,
+        "is_paid": False,
+        "source_fact_count": 20,
+        "source_fact_digest": "b" * 64,
+        "accounting_documents": [accounting_document(suffix, total)],
+    }}
+
+
+def ensure_einvoice_documents(profile, source_run):
+    suffix = "VAT-REMEDIATION-EINVOICE-%s" % source_run.id
+    existing = env["sudo.cn.einvoice.document"].sudo().search_count([
+        ("profile_id", "=", profile.id),
+        ("source_document_key", "ilike", "CODEX-DEMO-vat-period-" + suffix),
+    ])
+    if existing:
+        return False
+    attachment_record = dataset_attachment(
+        "CODEX-DEMO-vat-period-einvoice-%s.zip" % source_run.id,
+        b"CODEX DEMO ONLY - controlled einvoice remediation input",
+        "application/zip",
+    )
+    dataset = create_external_dataset(
+        profile,
+        "electronic_invoice",
+        suffix,
+        attachment_record,
+        2,
+        data_format="zip",
+    )
+    parse_run = env["sudo.cn.external.parse.run"].with_company(
+        profile.company_id
+    )._start_for_dataset(
+        dataset,
+        attachment_record,
+        parser_key="mof_einvoice_xbrl",
+        parser_version="CODEX-DEMO-2026.1",
+        parser_distribution="CODEX-DEMO controlled parser contract",
+        taxonomy_namespace="http://xbrl.mof.gov.cn/taxonomy/2023-12-31/einv",
+        taxonomy_version="2023-12-31",
+        taxonomy_checksum="a" * 64,
+        taxonomy_source_reference="CODEX-DEMO-MOF-VAT",
+    )
+    payloads = [
+        einvoice_payload(
+            profile,
+            "output-%s" % source_run.id,
+            source_run.invoice_output_tax_amount,
+            "output",
+        ),
+        einvoice_payload(
+            profile,
+            "input-%s" % source_run.id,
+            source_run.invoice_input_tax_amount,
+            "input",
+        ),
+    ]
+    parse_run._record_success(
+        payloads,
+        observed_input_sha256=parse_run.input_sha256,
+        source_fact_count=20 * len(payloads),
+        warning_count=0,
+        error_count=0,
+        parser_log_checksum="c" * 64,
+    )
+    return True
+
+
+def ensure_tax_records(profile, source_run, dataset_type):
+    output_tax = float(source_run.invoice_output_tax_amount or 0.0)
+    input_tax = float(source_run.invoice_input_tax_amount or 0.0)
+    payable = max(output_tax - input_tax, 0.0)
+    currency_code = profile.company_id.currency_id.name or "CNY"
+    suffix = "%s-%s" % (dataset_type.upper(), source_run.id)
+    record_key = "CODEX-DEMO-" + suffix
+    model_name = (
+        "sudo.cn.vat.filing.record"
+        if dataset_type == "vat_filing"
+        else "sudo.cn.tax.payment.record"
+    )
+    key_field = "source_record_key" if dataset_type == "vat_filing" else "source_record_key"
+    if env[model_name].sudo().search_count([(key_field, "=", record_key)]):
+        return False
+    if dataset_type == "vat_filing":
+        record = {{
+            "source_record_key": record_key,
+            "taxpayer_name": profile.company_id.name,
+            "taxpayer_id": profile.company_id.partner_id.vat or "91310000CODEXDEMO01",
+            "return_type_code": "VAT-GENERAL",
+            "return_status": "accepted",
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "submitted_at": "2026-07-10T09:00:00+08:00",
+            "submission_reference": "CODEX-DEMO-VAT-ACK-%s" % source_run.id,
+            "revision_number": 0,
+            "currency_code": currency_code,
+            "output_tax_amount": "%.2f" % output_tax,
+            "input_tax_amount": "%.2f" % input_tax,
+            "tax_payable_amount": "%.2f" % payable,
+            "lines": [
+                {{
+                    "line_code": "L01",
+                    "line_name": "CODEX-DEMO output VAT",
+                    "amount_type": "tax",
+                    "current_amount": "%.2f" % output_tax,
+                }}
+            ],
+        }}
+    else:
+        record = {{
+            "source_record_key": record_key,
+            "taxpayer_name": profile.company_id.name,
+            "taxpayer_id": profile.company_id.partner_id.vat or "91310000CODEXDEMO01",
+            "tax_type_code": "VAT",
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "payment_date": "2026-07-12",
+            "payment_reference": "CODEX-DEMO-VAT-PAY-REF-%s" % source_run.id,
+            "payment_status": "succeeded",
+            "currency_code": currency_code,
+            "amount": "%.2f" % payable,
+            "principal_amount": "%.2f" % payable,
+            "interest_amount": "0.00",
+            "penalty_amount": "0.00",
+            "payer_account_masked": "CODEX-DEMO ****1234",
+            "receipt_reference": "CODEX-DEMO-VAT-PAY-ACK-%s" % source_run.id,
+        }}
+    contract = {{
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": dataset_type,
+        "source_schema": "CODEX-DEMO-" + dataset_type,
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [record],
+    }}
+    attachment_record = dataset_attachment(
+        "CODEX-DEMO-vat-period-%s-%s.json" % (dataset_type, source_run.id),
+        contract,
+    )
+    dataset = create_external_dataset(
+        profile,
+        dataset_type,
+        suffix,
+        attachment_record,
+        1,
+    )
+    parse_run = env["sudo.cn.tax.data.parse.run"].with_company(
+        profile.company_id
+    )._start_for_dataset(dataset, attachment_record)
+    parse_run._process_json_attachment()
+    return True
+
+
+def ensure_aligned_replacement_run(profile, source_run):
+    existing = env["sudo.cn.vat.period.reconciliation.run"].sudo().search([
+        ("profile_id", "=", profile.id),
+        ("period_start", "=", source_run.period_start),
+        ("period_end", "=", source_run.period_end),
+        ("state", "=", "succeeded"),
+        ("conclusion_state", "=", "aligned"),
+    ], order="id desc", limit=1)
+    if existing:
+        return existing, False
+    changed = False
+    changed = ensure_einvoice_documents(profile, source_run) or changed
+    changed = ensure_tax_records(profile, source_run, "vat_filing") or changed
+    changed = ensure_tax_records(profile, source_run, "tax_payment") or changed
+    changed = retire_stale_demo_datasets(
+        profile,
+        set((
+            "CODEX-DEMO/VAT-REMEDIATION-EINVOICE-%s" % source_run.id,
+            "CODEX-DEMO/VAT_FILING-%s" % source_run.id,
+            "CODEX-DEMO/TAX_PAYMENT-%s" % source_run.id,
+        )),
+    ) or changed
+    replacement = env["sudo.cn.vat.period.reconciliation.run"].with_company(
+        profile.company_id
+    ).enqueue(
+        profile,
+        source_run.period_start,
+        source_run.period_end,
+        source_run.vat_tax_type_code,
+    )
+    replacement._process()
+    replacement.invalidate_recordset()
+    return replacement, True or changed
+
+
+def retire_stale_demo_datasets(profile, keep_references):
+    Dataset = env["sudo.cn.external.dataset"].sudo()
+    stale = Dataset.search([
+        ("profile_id", "=", profile.id),
+        ("source_reference", "like", "CODEX-DEMO/%"),
+        ("period_start", "=", "2026-06-01"),
+        ("period_end", "=", "2026-06-30"),
+        ("state", "=", "sealed"),
+    ])
+    changed = False
+    for dataset in stale:
+        if dataset.source_reference in keep_references:
+            continue
+        if dataset.replacement_ids:
+            continue
+        action = dataset.action_create_replacement()
+        replacement = Dataset.browse(action["res_id"])
+        attachment_record = dataset_attachment(
+            "CODEX-DEMO-retired-dataset-%s.txt" % dataset.id,
+            b"CODEX DEMO ONLY - retired supersession placeholder",
+            "text/plain",
+        )
+        replacement.write({{
+            "period_start": "2000-01-01",
+            "period_end": "2000-01-31",
+            "source_reference": dataset.source_reference + "/RETIRED",
+            "source_generated_at": "2000-02-01 09:00:00",
+            "acquired_at": "2000-02-01 10:00:00",
+            "declared_record_count": 1,
+            "source_attachment_ids": command_set(attachment_record.ids),
+            "scope_note": (
+                "CODEX-DEMO ONLY: supersession placeholder that retires an "
+                "earlier malformed demo dataset from the current 2026-06 VAT "
+                "reconciliation period."
+            ),
+            "separation_exception_reason": (
+                "CODEX-DEMO ONLY: one automation user retires malformed demo "
+                "data so the UAT verification path remains repeatable."
+            ),
+        }})
+        replacement.action_seal()
+        changed = True
+    return changed
+
+
+def ensure_remediation_verification(profile, source_run, task):
+    if not task:
+        return {{
+            "changed": False,
+            "replacement_run": None,
+            "verification_assessment": None,
+            "evidence": None,
+        }}
+    changed = False
+    if task.state in ("open", "in_progress", "waiting"):
+        task.write({{
+            "completion_notes": (
+                "CODEX-DEMO ONLY: controlled external invoice, VAT filing and "
+                "payment data were added; exact-period reconciliation will be "
+                "rerun for verification."
+            ),
+            "external_evidence_reference": "CODEX-DEMO/CN/VAT-REMEDIATION/2026-06",
+        }})
+        task.action_done()
+        task.invalidate_recordset()
+        changed = True
+    if not profile.company_id.partner_id.vat:
+        profile.company_id.partner_id.write({{
+            "vat": "91310000CODEXDEMO01",
+        }})
+        changed = True
+    replacement_run, replacement_changed = ensure_aligned_replacement_run(
+        profile,
+        source_run,
+    )
+    changed = changed or replacement_changed
+    if task.state == "blocked" and task.verification_state == "failed":
+        task._transition_write({{
+            "state": "pending_review",
+            "verification_state": "pending_rescan",
+            "verification_assessment_id": False,
+        }})
+        task.invalidate_recordset()
+        changed = True
+    verification = task.verification_assessment_id
+    if not verification:
+        action = task.action_queue_verification_scan()
+        verification = env["sudo.compliance.assessment"].sudo().browse(action["res_id"])
+        changed = True
+    if verification.state != "completed":
+        verification.action_run_now()
+        verification.invalidate_recordset()
+        changed = True
+    evidence = env["sudo.compliance.evidence"].sudo().search([
+        ("task_id", "=", task.id),
+        ("external_reference", "=", "CODEX-DEMO/CN/VAT-REMEDIATION/VERIFIED-2026-06"),
+    ], limit=1)
+    if not evidence:
+        evidence = env["sudo.compliance.evidence"].with_company(
+            profile.company_id
+        ).create({{
+            "name": "CODEX-DEMO VAT remediation verification evidence",
+            "company_id": profile.company_id.id,
+            "task_id": task.id,
+            "evidence_type": "remediation_proof",
+            "external_reference": "CODEX-DEMO/CN/VAT-REMEDIATION/VERIFIED-2026-06",
+            "evidence_date": "2026-07-12",
+            "issuer": "CODEX-DEMO controlled evidence issuer",
+        }})
+        changed = True
+    if getattr(evidence, "state", False) == "draft":
+        evidence.action_submit()
+        changed = True
+    if getattr(evidence, "state", False) == "submitted":
+        evidence.write({{
+            "review_notes": (
+                "CODEX-DEMO ONLY: replacement reconciliation, exact period, "
+                "source scope and pass finding were checked for UAT."
+            )
+        }})
+        evidence.action_verify()
+        changed = True
+    task.invalidate_recordset()
+    if task.state == "pending_review" and task.verification_state != "verified":
+        task.action_verify_remediation()
+        task.invalidate_recordset()
+        changed = True
+    return {{
+        "changed": changed,
+        "replacement_run": replacement_run,
+        "verification_assessment": task.verification_assessment_id,
+        "evidence": evidence,
+    }}
 
 
 def ensure_report(assessment):
@@ -443,11 +900,31 @@ else:
         rule, version, changed_rule = ensure_demo_rule(profile)
         assessment, created_assessment = ensure_assessment(run)
         finding, task, changed_task = ensure_finding_task(assessment)
+        verification = ensure_remediation_verification(profile, run, task)
         report, created_report = ensure_report(assessment)
         profile.invalidate_recordset()
         payload.update({{
-            "ok": bool(assessment and finding and task and report),
-            "changed": bool(created_run or changed_rule or created_assessment or changed_task or created_report),
+            "ok": bool(
+                assessment
+                and finding
+                and report
+                and (
+                    finding.result == "pass"
+                    or (
+                        task
+                        and task.state == "done"
+                        and task.verification_state == "verified"
+                    )
+                )
+            ),
+            "changed": bool(
+                created_run
+                or changed_rule
+                or created_assessment
+                or changed_task
+                or verification.get("changed")
+                or created_report
+            ),
             "profile": {{
                 "id": profile.id,
                 "name": profile.display_name,
@@ -487,7 +964,47 @@ else:
                 "state": task.state,
                 "task_type": task.task_type,
                 "verification_state": task.verification_state,
+                "verification_assessment_id": (
+                    task.verification_assessment_id.id or None
+                ),
             }} if task else None,
+            "verification": {{
+                "replacement_run_id": (
+                    verification["replacement_run"].id
+                    if verification.get("replacement_run")
+                    else None
+                ),
+                "replacement_run_conclusion": (
+                    verification["replacement_run"].conclusion_state
+                    if verification.get("replacement_run")
+                    else None
+                ),
+                "assessment_id": (
+                    verification["verification_assessment"].id
+                    if verification.get("verification_assessment")
+                    else None
+                ),
+                "assessment_state": (
+                    verification["verification_assessment"].state
+                    if verification.get("verification_assessment")
+                    else None
+                ),
+                "finding_results": (
+                    verification["verification_assessment"].finding_ids.mapped("result")
+                    if verification.get("verification_assessment")
+                    else []
+                ),
+                "evidence_id": (
+                    verification["evidence"].id
+                    if verification.get("evidence")
+                    else None
+                ),
+                "evidence_state": (
+                    verification["evidence"].state
+                    if verification.get("evidence") and "state" in verification["evidence"]._fields
+                    else None
+                ),
+            }},
             "report": {{
                 "id": report.id,
                 "name": report.display_name,
@@ -499,6 +1016,7 @@ else:
                 "findings": env["sudo.compliance.finding"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "tasks": env["sudo.compliance.task"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "reports": env["sudo.cn.compliance.report"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
+                "evidence": env["sudo.compliance.evidence"].sudo().search_count([("task_id.assessment_id.profile_id", "=", profile.id)]),
             }},
         }})
         if payload["ok"]:
