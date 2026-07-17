@@ -176,7 +176,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_rule_source_count = fields.Integer(
-        string="官方来源",
+        string="规则官方来源数量",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_rule_release_state = fields.Selection(

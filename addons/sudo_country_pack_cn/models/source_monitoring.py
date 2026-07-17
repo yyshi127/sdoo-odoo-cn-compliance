@@ -423,7 +423,7 @@ class SudoChinaAuthoritySourceMonitorRun(models.Model):
         string="受影响规则版本",
         readonly=True,
     )
-    impacted_rule_count = fields.Integer(string="受影响规则版本", readonly=True)
+    impacted_rule_count = fields.Integer(string="受影响规则版本数量", readonly=True)
     active_impacted_rule_count = fields.Integer(
         string="受影响生效规则",
         readonly=True,

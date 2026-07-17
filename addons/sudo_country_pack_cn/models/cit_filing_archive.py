@@ -65,8 +65,8 @@ class SudoComplianceFiling(models.Model):
         string="所得税结算方向",
         compute="_compute_cn_cit_settlement_kind",
     )
-    cn_cit_refund_date = fields.Date(string="实际退库日期", tracking=True)
-    cn_cit_refund_reference = fields.Char(string="退库参考号", tracking=True)
+    cn_cit_refund_date = fields.Date(string="企业所得税实际退库日期", tracking=True)
+    cn_cit_refund_reference = fields.Char(string="企业所得税退库参考号", tracking=True)
     cn_cit_filing_payable_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.filing_payable_amount",
         string="来源应补所得税额",
@@ -81,37 +81,37 @@ class SudoComplianceFiling(models.Model):
     )
     cn_cit_paid_principal_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.paid_principal_amount",
-        string="缴款成功本金",
+        string="企业所得税缴款成功本金",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
     cn_cit_reversed_principal_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.reversed_principal_amount",
-        string="已冲正本金",
+        string="企业所得税已冲正本金",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
     cn_cit_effective_paid_principal_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.effective_paid_principal_amount",
-        string="有效缴款本金",
+        string="企业所得税有效缴款本金",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
     cn_cit_refunded_principal_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.refunded_principal_amount",
-        string="已退库本金",
+        string="企业所得税已退库本金",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
     cn_cit_interest_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.interest_amount",
-        string="来源利息合计",
+        string="企业所得税来源利息合计",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
     cn_cit_penalty_amount = fields.Monetary(
         related="cn_cit_reconciliation_run_id.penalty_amount",
-        string="来源滞纳金罚款合计",
+        string="企业所得税来源滞纳金罚款合计",
         currency_field="cn_cit_currency_id",
         readonly=True,
     )
