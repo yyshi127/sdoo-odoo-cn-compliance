@@ -213,6 +213,41 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(result["deployment_decision"], "deploy")
         self.assertEqual(result["blockers"], [])
 
+    def test_signoff_packet_requires_representative_ux_walkthrough(self):
+        packet = PACKET._build_packet(status_payload())
+
+        actions = {
+            action["key"]: action for action in packet["production_actions"]
+        }
+
+        self.assertIn("representative_ux_walkthrough", actions)
+        self.assertEqual(
+            actions["representative_ux_walkthrough"]["acceptable_decisions"],
+            ["passed", "passed_with_limitations"],
+        )
+        self.assertIn(
+            "risk level, cause, impact amount, period, owner, due date, status and next action visibility",
+            actions["representative_ux_walkthrough"]["required_evidence"],
+        )
+
+    def test_missing_representative_ux_walkthrough_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = [
+            item
+            for item in evidence["decisions"]
+            if item["key"] != "representative_ux_walkthrough"
+        ]
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "representative_ux_walkthrough: decision is missing",
+            result["blockers"],
+        )
+
     def test_missing_human_decision_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)

@@ -106,6 +106,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
         },
         {
+            "key": "representative_ux_walkthrough",
+            "owner": "business_reviewer",
+            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking and compliance report pages, including risk level, cause, impact amount, period, owner, due date, status and next action visibility on common desktop and laptop screen sizes.",
+            "acceptable_decisions": ["passed", "passed_with_limitations"],
+        },
+        {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",

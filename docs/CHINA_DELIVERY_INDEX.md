@@ -103,9 +103,13 @@ python tools/generate_cn_signoff_packet.py \
 
 The sign-off packet converts automated evidence into a reviewer-facing action
 list for business UAT, China tax professional rule/source sign-off,
-official-source freshness review, customer data/scope gap review and final
-deploy/defer/reject decision. It intentionally keeps production sign-off blocked
-until those human decisions and evidence references are recorded.
+official-source freshness review, customer data/scope gap review, representative
+UX walkthrough and final deploy/defer/reject decision. The walkthrough evidence
+must cover the workbench, risk center, remediation tracking and compliance
+report pages, including whether risk level, cause, impact amount, period, owner,
+due date, status and next action are readable on representative desktop and
+laptop screen sizes. It intentionally keeps production sign-off blocked until
+those human decisions and evidence references are recorded.
 
 Validate completed production sign-off evidence:
 

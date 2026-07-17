@@ -39,6 +39,14 @@
       "notes": "Customer-specific data gaps, evidence gaps and open risks reviewed."
     },
     {
+      "key": "representative_ux_walkthrough",
+      "decision": "passed",
+      "reviewer": "Business reviewer name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
+      "notes": "Risk level, cause, impact amount, period, owner, due date, status and next action were readable on representative desktop and laptop screen sizes."
+    },
+    {
       "key": "production_deployment_decision",
       "decision": "deploy",
       "reviewer": "Release owner name",
