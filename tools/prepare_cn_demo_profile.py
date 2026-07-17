@@ -17,6 +17,7 @@ MARKER = "SDOO_CN_DEMO_PROFILE_PREPARATION_JSON="
 def _shell_code(company_name: str | None, allow_demo_data: bool) -> str:
     return f"""
 import json
+from datetime import date
 
 allow_demo_data = {allow_demo_data!r}
 company_name = {company_name!r}
@@ -94,7 +95,7 @@ if not profile:
         "error": "no China compliance profile was found",
     }}
 else:
-    today = env["ir.fields"]._eval_context()["datetime"].date.today().isoformat()
+    today = date.today().isoformat()
     registration_number = "91310000CODEXDEMO01"
     registration_name = "CODEX-DEMO 中国合规演示统一社会信用代码登记"
     identity_name = "CODEX-DEMO 中国合规演示纳税人身份快照"
