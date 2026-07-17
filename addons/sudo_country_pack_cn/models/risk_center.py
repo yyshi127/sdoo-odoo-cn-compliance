@@ -719,6 +719,43 @@ class SudoChinaRiskCenterTask(models.Model):
         string="Data Basis Next Action",
         compute="_compute_cn_remediation_display",
     )
+    cn_remediation_tax_impact_state = fields.Selection(
+        TAX_IMPACT_STATES,
+        string="Remediation Tax Impact",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_pending_review_count = fields.Integer(
+        string="Pending Tax Impact",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_integrity_issue_count = fields.Integer(
+        string="Tax Impact Integrity Issues",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_reviewed_underpayment_amount = fields.Monetary(
+        string="Reviewed Underpayment",
+        currency_field="cn_remediation_currency_id",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_reviewed_overpayment_amount = fields.Monetary(
+        string="Reviewed Overpayment",
+        currency_field="cn_remediation_currency_id",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_reviewed_timing_amount = fields.Monetary(
+        string="Reviewed Timing Difference",
+        currency_field="cn_remediation_currency_id",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_tax_impact_summary = fields.Char(
+        string="Tax Impact Summary",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_currency_id = fields.Many2one(
+        related="company_id.currency_id",
+        string="Currency",
+        readonly=True,
+    )
 
     cn_remediation_rescan_stage = fields.Selection(
         [
@@ -776,6 +813,28 @@ class SudoChinaRiskCenterTask(models.Model):
                 task.cn_remediation_data_basis_next_action,
             ) = _assessment_data_basis_values(assessment)
             task.cn_remediation_next_action = task._cn_remediation_next_action()
+            finding = task.finding_id
+            task.cn_remediation_tax_impact_state = (
+                finding.cn_tax_impact_state if finding else "none"
+            )
+            task.cn_remediation_tax_impact_pending_review_count = (
+                finding.cn_tax_impact_pending_review_count if finding else 0
+            )
+            task.cn_remediation_tax_impact_integrity_issue_count = (
+                finding.cn_tax_impact_integrity_issue_count if finding else 0
+            )
+            task.cn_remediation_tax_impact_reviewed_underpayment_amount = (
+                finding.cn_tax_impact_reviewed_underpayment_amount if finding else 0.0
+            )
+            task.cn_remediation_tax_impact_reviewed_overpayment_amount = (
+                finding.cn_tax_impact_reviewed_overpayment_amount if finding else 0.0
+            )
+            task.cn_remediation_tax_impact_reviewed_timing_amount = (
+                finding.cn_tax_impact_reviewed_timing_amount if finding else 0.0
+            )
+            task.cn_remediation_tax_impact_summary = (
+                finding.cn_tax_impact_summary if finding else False
+            )
             (
                 task.cn_remediation_traceability_state,
                 task.cn_remediation_traceability_gap_count,

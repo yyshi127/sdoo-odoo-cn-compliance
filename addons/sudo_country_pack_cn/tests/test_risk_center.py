@@ -480,6 +480,19 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
         self.assertIn("underpayment 120", finding.cn_tax_impact_summary)
 
+    def test_remediation_task_exposes_tax_impact_summary(self):
+        finding = self._finding()
+        self._reviewed_tax_impact_case(finding, amount=230.0)
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+
+        self.assertEqual(task.cn_remediation_tax_impact_state, "reviewed")
+        self.assertEqual(task.cn_remediation_tax_impact_pending_review_count, 0)
+        self.assertAlmostEqual(
+            task.cn_remediation_tax_impact_reviewed_underpayment_amount,
+            230.0,
+        )
+        self.assertIn("underpayment 230", task.cn_remediation_tax_impact_summary)
+
     def test_cross_border_rule_finding_exposes_fact_review_status(self):
         transaction = self._cross_border_transaction()
         _assessment, finding = self._cross_border_assessment()
