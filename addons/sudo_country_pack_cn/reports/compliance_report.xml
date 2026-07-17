@@ -198,6 +198,19 @@
                                         <div class="text-muted" t-if="finding.get('recommendation')">
                                             下一步：<span t-esc="finding.get('recommendation')"/>
                                         </div>
+                                        <div t-if="finding.get('legal_basis')" style="margin-top: 6px; padding: 6px; border-left: 3px solid #2563eb; background: #eff6ff;">
+                                            <strong>Rule basis:</strong>
+                                            <span t-esc="finding.get('legal_basis')"/>
+                                        </div>
+                                        <div t-if="finding.get('evidence_required')" style="margin-top: 6px; padding: 6px; border-left: 3px solid #7c3aed; background: #f5f3ff;">
+                                            <strong>Evidence required:</strong>
+                                            <span t-esc="finding.get('evidence_required')"/>
+                                        </div>
+                                        <div t-if="finding.get('source_warning') or finding.get('professional_warning')" style="margin-top: 6px; padding: 6px; border-left: 3px solid #dc2626; background: #fef2f2;">
+                                            <strong>Basis warning:</strong>
+                                            <span t-if="finding.get('source_warning')">Source basis requires review. </span>
+                                            <span t-if="finding.get('professional_warning')">Professional sign-off requires review.</span>
+                                        </div>
                                         <t t-set="reconciliation" t-value="finding.get('reconciliation_risk_summary') or {}"/>
                                         <div t-if="reconciliation" style="margin-top: 6px; padding: 6px; border-left: 3px solid #0f766e; background: #f0fdfa;">
                                             <strong>Reconciliation:</strong>

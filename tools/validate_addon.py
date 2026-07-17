@@ -2930,6 +2930,13 @@ def validate_formal_compliance_report() -> None:
         "finding_closure_ready_count",
         "report.report_label('closure'",
         "finding.get('closure_summary')",
+        "Rule basis:",
+        "finding.get('legal_basis')",
+        "Evidence required:",
+        "finding.get('evidence_required')",
+        "Basis warning:",
+        "finding.get('source_warning')",
+        "finding.get('professional_warning')",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")
@@ -2987,6 +2994,8 @@ def validate_formal_compliance_report() -> None:
         "风险闭环阻断",
         "风险闭环待处理",
         "风险闭环可报告",
+        "Rule basis:",
+        "Evidence required:",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",
