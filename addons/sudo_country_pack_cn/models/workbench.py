@@ -569,7 +569,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 ):
                     ai_guidance_current |= finding
             ai_guidance_limited = ai_guidance_findings.filtered(
-                lambda finding: finding.cn_ai_guidance_state == "limited"
+                lambda finding: finding.source_warning
+                or finding.professional_warning
+                or bool(finding.missing_fact_keys)
+                or bool(finding.missing_parameter_keys)
+                or not finding.fact_snapshot_ids
             )
             profile.cn_workbench_ai_guidance_finding_count = len(
                 ai_guidance_findings

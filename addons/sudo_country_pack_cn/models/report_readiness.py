@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import _, fields, models
 
 
@@ -114,6 +116,40 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="Sealed Filing Archives",
         compute="_compute_cn_report_readiness",
     )
+    cn_report_ai_guidance_state = fields.Selection(
+        [
+            ("not_started", "No AI guidance needed"),
+            ("ready", "AI guidance current"),
+            ("attention", "AI guidance incomplete"),
+            ("blocked", "AI guidance stale"),
+        ],
+        string="Report AI Guidance Gate",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_next_action = fields.Char(
+        string="AI Guidance Next Action",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_finding_count = fields.Integer(
+        string="AI Guidance Findings",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_generated_count = fields.Integer(
+        string="AI Guidance Generated",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_current_count = fields.Integer(
+        string="AI Guidance Current",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_limited_count = fields.Integer(
+        string="AI Guidance Limited",
+        compute="_compute_cn_report_readiness",
+    )
+    cn_report_ai_guidance_stale_count = fields.Integer(
+        string="AI Guidance Stale",
+        compute="_compute_cn_report_readiness",
+    )
     cn_report_latest_report_id = fields.Many2one(
         "sudo.cn.compliance.report",
         string="最新正式报告",
@@ -206,6 +242,38 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 in ("changed", "invalid", "unsealed")
                 or filing.cn_filing_center_evidence_state != "verified"
             )
+            ai_guidance_findings = assessment.finding_ids.filtered(
+                lambda finding: finding.result in ("fail", "unknown", "error")
+            )
+            ai_guidance_generated = self.env["sudo.compliance.finding"]
+            ai_guidance_current = self.env["sudo.compliance.finding"]
+            for finding in ai_guidance_findings:
+                analyses = finding.ai_analysis_ids.filtered(
+                    lambda analysis: analysis.provider_key
+                    == "sdoo_cn_controlled_guidance"
+                ).sorted("id")
+                if not analyses:
+                    continue
+                ai_guidance_generated |= finding
+                latest = analyses[-1:]
+                if latest.generated_at and (
+                    not finding.write_date
+                    or latest.generated_at + timedelta(seconds=5) >= finding.write_date
+                ):
+                    ai_guidance_current |= finding
+            ai_guidance_limited = ai_guidance_findings.filtered(
+                lambda finding: finding.source_warning
+                or finding.professional_warning
+                or bool(finding.missing_fact_keys)
+                or bool(finding.missing_parameter_keys)
+                or not finding.fact_snapshot_ids
+            )
+            ai_guidance_stale_count = len(ai_guidance_generated) - len(
+                ai_guidance_current
+            )
+            ai_guidance_missing_count = len(ai_guidance_findings) - len(
+                ai_guidance_generated
+            )
             limitation_count = 0
             if assessment.data_sufficiency_state == "insufficient":
                 limitation_count += 1
@@ -234,6 +302,10 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 limitation_count += 1
             if filing_archive_issues:
                 limitation_count += 1
+            if ai_guidance_limited:
+                limitation_count += len(ai_guidance_limited)
+            if ai_guidance_missing_count:
+                limitation_count += ai_guidance_missing_count
 
             issue_count = (
                 review_pending
@@ -242,6 +314,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 + pending_rescan_count
                 + failed_rescan_count
                 + unverified_done_count
+                + ai_guidance_stale_count
                 + limitation_count
             )
 
@@ -261,7 +334,45 @@ class SudoChinaReportReadinessAssessment(models.Model):
             assessment.cn_report_sealed_filing_archive_count = len(
                 sealed_filing_archives
             )
+            assessment.cn_report_ai_guidance_finding_count = len(
+                ai_guidance_findings
+            )
+            assessment.cn_report_ai_guidance_generated_count = len(
+                ai_guidance_generated
+            )
+            assessment.cn_report_ai_guidance_current_count = len(
+                ai_guidance_current
+            )
+            assessment.cn_report_ai_guidance_limited_count = len(
+                ai_guidance_limited
+            )
+            assessment.cn_report_ai_guidance_stale_count = ai_guidance_stale_count
             assessment.cn_report_issue_count = issue_count
+            if not ai_guidance_findings:
+                assessment.cn_report_ai_guidance_state = "not_started"
+                assessment.cn_report_ai_guidance_next_action = _(
+                    "No unresolved China risk currently requires controlled AI guidance."
+                )
+            elif ai_guidance_stale_count:
+                assessment.cn_report_ai_guidance_state = "blocked"
+                assessment.cn_report_ai_guidance_next_action = _(
+                    "Regenerate controlled AI guidance for risks whose input facts, tax impact, or remediation state changed before report reliance."
+                )
+            elif len(ai_guidance_current) == len(ai_guidance_findings):
+                assessment.cn_report_ai_guidance_state = "ready"
+                assessment.cn_report_ai_guidance_next_action = _(
+                    "Controlled AI guidance is current for every unresolved China risk."
+                )
+            elif ai_guidance_generated:
+                assessment.cn_report_ai_guidance_state = "attention"
+                assessment.cn_report_ai_guidance_next_action = _(
+                    "Generate controlled AI guidance for remaining unresolved risks and disclose limited inputs in the report."
+                )
+            else:
+                assessment.cn_report_ai_guidance_state = "attention"
+                assessment.cn_report_ai_guidance_next_action = _(
+                    "Generate controlled AI guidance before using the report as a step-by-step remediation playbook."
+                )
             if not filing_archives:
                 assessment.cn_report_filing_archive_state = "not_started"
                 assessment.cn_report_filing_archive_next_action = _(
@@ -351,6 +462,12 @@ class SudoChinaReportReadinessAssessment(models.Model):
                 assessment.cn_report_readiness_state = "needs_review"
                 assessment.cn_report_next_action = _(
                     "Complete manual review, source review, and professional sign-off checks first."
+                )
+                assessment.cn_report_can_prepare = False
+            elif ai_guidance_stale_count:
+                assessment.cn_report_readiness_state = "needs_review"
+                assessment.cn_report_next_action = _(
+                    "Regenerate stale controlled AI guidance before preparing the formal report."
                 )
                 assessment.cn_report_can_prepare = False
             elif failed_rescan_count:

@@ -454,7 +454,7 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_ai_guidance_finding_count, 2)
         self.assertEqual(self.profile.cn_workbench_ai_guidance_generated_count, 1)
         self.assertEqual(self.profile.cn_workbench_ai_guidance_current_count, 1)
-        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 2)
         self.assertEqual(self.profile.cn_workbench_ai_guidance_stale_count, 0)
         self.assertIn("Generate", self.profile.cn_workbench_ai_guidance_next_action)
 

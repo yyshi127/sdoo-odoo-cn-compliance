@@ -153,5 +153,5 @@ _NORMALIZED_DATASET_TYPES = {
 
 def _period_label(period_start, period_end):
     if period_start and period_end:
-        return _("%(start)s 至 %(end)s", start=period_start, end=period_end)
-    return _("未记录期间")
+        return f"{period_start} to {period_end}"
+    return "No period recorded"

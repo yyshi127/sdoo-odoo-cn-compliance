@@ -185,6 +185,11 @@ class TestChinaReportReadiness(TransactionCase):
                 "china_report_filing_archive_gate"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_ai_guidance_readiness"
+            ]
+        )
 
     def test_report_readiness_blocks_pending_or_failed_rescans(self):
         assessment = self._assessment()
@@ -249,6 +254,27 @@ class TestChinaReportReadiness(TransactionCase):
             assessment.cn_report_filing_archive_next_action,
         )
         self.assertIn(filing, self.env["sudo.compliance.filing"].search([]))
+
+    def test_report_readiness_surfaces_ai_guidance_gate(self):
+        assessment = self._assessment()
+        generated = self._finding(assessment, "ai-generated")
+        self._finding(assessment, "ai-missing")
+
+        for finding in assessment.finding_ids:
+            finding.write({"review_notes": "Reviewed for AI guidance readiness."})
+            finding.action_confirm_review()
+        generated.action_generate_cn_ai_guidance()
+        assessment.invalidate_recordset()
+
+        self.assertEqual(assessment.cn_report_ai_guidance_state, "attention")
+        self.assertEqual(assessment.cn_report_ai_guidance_finding_count, 2)
+        self.assertEqual(assessment.cn_report_ai_guidance_generated_count, 1)
+        self.assertEqual(assessment.cn_report_ai_guidance_current_count, 1)
+        self.assertEqual(assessment.cn_report_ai_guidance_limited_count, 2)
+        self.assertEqual(assessment.cn_report_ai_guidance_stale_count, 0)
+        self.assertEqual(assessment.cn_report_readiness_state, "limited")
+        self.assertTrue(assessment.cn_report_can_prepare)
+        self.assertIn("Generate", assessment.cn_report_ai_guidance_next_action)
 
     def test_readiness_navigation_actions_are_scoped_to_assessment(self):
         assessment = self._assessment()
