@@ -750,6 +750,8 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(report.cn_report_traceability_state, "blocked")
         self.assertGreater(report.cn_report_traceability_gap_count, 0)
         self.assertTrue(report.cn_report_traceability_next_action)
+        self.assertIn("Blocked by:", report.cn_report_blocker_summary)
+        self.assertIn("fact basis incomplete", report.cn_report_blocker_summary)
         self.assertEqual(
             report.action_cn_open_report_evidence()["res_model"],
             "sudo.compliance.evidence",

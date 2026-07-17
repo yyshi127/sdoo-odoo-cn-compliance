@@ -46,6 +46,7 @@
                 <field name="cn_report_center_stage"/>
                 <field name="cn_report_center_integrity_state"/>
                 <field name="cn_report_center_next_action"/>
+                <field name="cn_report_blocker_summary"/>
                 <field name="cn_report_center_period_label"/>
                 <field name="cn_report_traceability_state"/>
                 <field name="cn_report_traceability_gap_count"/>
@@ -99,6 +100,8 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
                                 <div class="fw-semibold"><field name="cn_report_center_next_action"/></div>
+                                <div class="text-muted small mt-1">Blockers</div>
+                                <div class="small"><field name="cn_report_blocker_summary"/></div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -215,6 +218,7 @@
                        decoration-info="cn_report_center_stage in ('draft', 'approval')"
                        decoration-muted="cn_report_center_stage in ('withdrawn', 'superseded')"/>
                 <field name="cn_report_center_next_action" optional="show"/>
+                <field name="cn_report_blocker_summary" optional="show"/>
                 <field name="cn_report_traceability_state" widget="badge" optional="show"
                        decoration-success="cn_report_traceability_state == 'complete'"
                        decoration-warning="cn_report_traceability_state == 'action_required'"

@@ -670,6 +670,10 @@ class SudoChinaComplianceReport(models.Model):
         string="下一步动作",
         compute="_compute_cn_report_center_display",
     )
+    cn_report_blocker_summary = fields.Char(
+        string="Report Blockers",
+        compute="_compute_cn_report_traceability",
+    )
     cn_report_center_period_label = fields.Char(
         string="报告期间",
         compute="_compute_cn_report_center_display",
@@ -1750,6 +1754,9 @@ class SudoChinaComplianceReport(models.Model):
 
             unique_gap_count = len(set(gaps))
             report.cn_report_traceability_gap_count = unique_gap_count
+            report.cn_report_blocker_summary = report._cn_report_blocker_summary(
+                gaps
+            )
             if not unique_gap_count:
                 report.cn_report_traceability_state = "complete"
                 report.cn_report_traceability_next_action = _(
@@ -1783,6 +1790,36 @@ class SudoChinaComplianceReport(models.Model):
                 report.cn_report_traceability_next_action = _(
                     "Close remediation, evidence and tax impact gaps before distribution."
                 )
+
+    def _cn_report_blocker_summary(self, gaps):
+        self.ensure_one()
+        labels = {
+            "snapshot": _("unsealed snapshot"),
+            "source_changed": _("source changed after submission"),
+            "approval_integrity": _("approval integrity issue"),
+            "pdf_integrity": _("PDF integrity issue"),
+            "open_tasks": _("open remediation tasks"),
+            "overdue_tasks": _("overdue remediation tasks"),
+            "finding_closure": _("blocked risk closure"),
+            "finding_closure_action": _("risk closure needs action"),
+            "remediation_verification": _("remediation verification pending"),
+            "evidence": _("evidence not fully verified"),
+            "tax_impact": _("tax impact review pending"),
+            "fact_basis": _("fact basis incomplete"),
+            "obligation_readiness": _("tax obligation applicability not confirmed"),
+            "finding_traceability": _("risk traceability gaps"),
+            "remediation_traceability": _("remediation traceability gaps"),
+        }
+        ordered = []
+        for gap in gaps:
+            label = labels.get(gap, gap)
+            if label not in ordered:
+                ordered.append(label)
+        if not ordered:
+            return _("No blocker: report traceability is ready.")
+        return _("Blocked by: %(blockers)s") % {
+            "blockers": "; ".join(ordered[:6])
+        }
 
     @api.depends(
         "state",
