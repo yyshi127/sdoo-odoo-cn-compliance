@@ -91,6 +91,22 @@ acceptance summary.
 Use `--require-source-control-clean` for formal release packaging when the
 handoff must fail unless branch, commit and a clean worktree are recorded.
 
+Generate the human sign-off action packet from a delivery status JSON:
+
+```bash
+python tools/generate_cn_signoff_packet.py \
+  --status dist/cn_delivery_status.json \
+  --json-output dist/cn_signoff_packet.json \
+  --markdown-output dist/cn_signoff_packet.md \
+  --require-business-uat-ready
+```
+
+The sign-off packet converts automated evidence into a reviewer-facing action
+list for business UAT, China tax professional rule/source sign-off,
+official-source freshness review, customer data/scope gap review and final
+deploy/defer/reject decision. It intentionally keeps production sign-off blocked
+until those human decisions and evidence references are recorded.
+
 Check a preview URL before business UAT:
 
 ```bash
