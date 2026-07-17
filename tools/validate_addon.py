@@ -574,6 +574,10 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China formal report badge clarity capability must be declared")
     if features.get("china_workbench_remediation_rescan_summary") is not True:
         fail("China workbench remediation rescan summary capability must be declared")
+    if features.get("china_workbench_next_best_action") is not True:
+        fail("China workbench next-best-action capability must be declared")
+    if features.get("china_delivery_objective_coverage") is not True:
+        fail("China delivery objective coverage capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -3353,6 +3357,14 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(
                 f"China workbench remediation rescan summary capability is missing from {label}"
             )
+        if "china_workbench_next_best_action" not in content:
+            fail(
+                f"China workbench next-best-action capability is missing from {label}"
+            )
+        if "china_delivery_objective_coverage" not in content:
+            fail(
+                f"China delivery objective coverage capability is missing from {label}"
+            )
 
     model_content = (
         ADDON_ROOT / "models" / "workbench.py"
@@ -3410,6 +3422,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_filing_archive_count",
         "cn_workbench_sealed_filing_archive_count",
         "cn_workbench_filing_archive_issue_count",
+        "cn_workbench_next_best_action_key",
+        "cn_workbench_next_best_action_label",
+        "action_cn_open_workbench_next_best_action",
         "action_cn_open_workbench_findings",
         "action_cn_open_workbench_tasks",
         "action_cn_open_workbench_tax_impacts",
@@ -3464,6 +3479,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_data_readiness",
         "action_cn_open_workbench_evidence_center",
         "action_cn_open_workbench_filing_center",
+        "cn_workbench_next_best_action_key",
+        "cn_workbench_next_best_action_label",
+        "action_cn_open_workbench_next_best_action",
+        "Next best action",
         'decoration-success="cn_workbench_data_state == \'ready\'"',
         'decoration-danger="cn_workbench_data_state == \'blocked\'"',
         "可扫描 / 总数据集",
@@ -3531,8 +3550,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_workbench_state_badge_clarity",
         "china_workbench_data_readiness_summary",
         "china_workbench_remediation_rescan_summary",
+        "china_workbench_next_best_action",
+        "china_delivery_objective_coverage",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
+        "cn_workbench_next_best_action_key",
+        "cn_workbench_next_best_action_label",
+        "action_cn_open_workbench_next_best_action",
         "cn_workbench_data_state",
         "cn_workbench_data_next_action",
         "cn_workbench_dataset_count",
@@ -4222,6 +4246,50 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China risk center has unsafe UI expression: {forbidden}")
 
 
+def validate_delivery_objective_coverage() -> None:
+    coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
+    if not coverage_path.is_file():
+        fail("China delivery objective coverage matrix must be documented")
+    coverage_content = coverage_path.read_text(encoding="utf-8")
+    for required in (
+        "# China Fiscal Compliance Pack Objective Coverage",
+        "## Coverage Matrix",
+        "Installable and upgradeable Odoo 19 plugin",
+        "Odoo accounting and business-data basis",
+        "External tax data and data sufficiency",
+        "Source-governed and versioned rules",
+        "Risk discovery and fact traceability",
+        "Controlled AI guidance",
+        "User experience for overview and next action",
+        "Production boundary",
+        "Not A Completion Claim",
+    ):
+        if required not in coverage_content:
+            fail(f"China delivery objective coverage is missing {required}")
+
+    acceptance_tool = (
+        REPOSITORY_ROOT / "tools" / "run_cn_delivery_acceptance.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
+        '"summarize_cn_delivery_status.py"',
+    ):
+        if required not in acceptance_tool:
+            fail(f"China delivery manifest coverage is missing {required}")
+
+    status_tool = (
+        REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "OBJECTIVE_COVERAGE_PATH",
+        "objective_coverage",
+        "included_in_manifest",
+        "Objective coverage in manifest",
+    ):
+        if required not in status_tool:
+            fail(f"China delivery status objective coverage is missing {required}")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -4427,6 +4495,7 @@ def main() -> int:
     validate_official_source_change_monitoring()
     validate_china_jurisdiction_governance(manifest)
     validate_china_compliance_workbench(manifest)
+    validate_delivery_objective_coverage()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
