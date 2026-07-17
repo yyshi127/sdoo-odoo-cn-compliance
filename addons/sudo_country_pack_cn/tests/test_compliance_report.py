@@ -293,6 +293,21 @@ class TestChinaFormalComplianceReport(TransactionCase):
         source.action_compute_hash()
         return source
 
+    def _review_obligations_not_applicable(self, suffix="obligation"):
+        source = self._authority_source(suffix)
+        self.profile.obligation_ids.write(
+            {
+                "applicability": "not_applicable",
+                "authority_source_id": source.id,
+                "justification": (
+                    "Controlled test review marks these candidate obligations "
+                    "not applicable so another limitation can be isolated."
+                ),
+            }
+        )
+        self.profile.invalidate_recordset()
+        return source
+
     def _filing_archive(self, suffix):
         run = self._vat_run(suffix)
         action = run.action_open_cn_filing_archive()
@@ -345,6 +360,15 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertEqual(report.snapshot_json["filing_archive"]["state"], "not_started")
         self.assertEqual(report.snapshot_json["filing_archive"]["archive_count"], 0)
+        self.assertEqual(report.snapshot_json["data_basis"]["state"], "missing")
+        self.assertGreater(
+            report.snapshot_json["data_basis"]["missing_type_count"],
+            0,
+        )
+        self.assertIn(
+            "Electronic invoices",
+            report.snapshot_json["data_basis"]["missing_type_summary"],
+        )
         self.assertEqual(report.snapshot_json["fact_basis"]["state"], "blocked")
         self.assertEqual(report.fact_snapshot_count, 0)
         self.assertEqual(report.finding_without_fact_count, 1)
@@ -405,6 +429,25 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertIn(
             "obligation_readiness",
             report.snapshot_json,
+        )
+
+    def test_incomplete_data_basis_requires_report_limitation(self):
+        self._review_obligations_not_applicable("data-basis-limit")
+        report = self._report(limitation_statement="")
+
+        with self.assertRaisesRegex(
+            UserError,
+            "Assessment data basis is incomplete",
+        ):
+            report.with_user(self.manager).action_submit()
+
+        payload = report._snapshot_payload()
+        self.assertEqual(payload["obligation_readiness"]["state"], "ready")
+        self.assertEqual(payload["data_basis"]["state"], "missing")
+        self.assertGreater(payload["data_basis"]["missing_type_count"], 0)
+        self.assertEqual(
+            report._derive_conclusion(payload)[0],
+            "limited_action_required",
         )
 
     def test_unsealed_filing_archive_blocks_formal_submission(self):
@@ -496,6 +539,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_fact_basis_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_data_basis_snapshot"
             ]
         )
         self.assertTrue(

@@ -755,6 +755,31 @@ class SudoChinaComplianceReport(models.Model):
             "obligations": obligation_rows,
         }
 
+    def _data_basis_payload(self):
+        self.ensure_one()
+        assessment = self.assessment_id
+        return {
+            "state": assessment.cn_data_basis_state or None,
+            "next_action": assessment.cn_data_basis_next_action or None,
+            "dataset_count": assessment.cn_data_basis_dataset_count,
+            "ready_dataset_count": assessment.cn_data_basis_ready_count,
+            "warning_dataset_count": assessment.cn_data_basis_warning_count,
+            "blocked_dataset_count": assessment.cn_data_basis_blocked_count,
+            "normalized_record_count": (
+                assessment.cn_data_basis_normalized_record_count
+            ),
+            "required_type_count": (
+                assessment.cn_data_basis_required_type_count
+            ),
+            "ready_type_count": assessment.cn_data_basis_ready_type_count,
+            "missing_type_count": (
+                assessment.cn_data_basis_missing_type_count
+            ),
+            "missing_type_summary": (
+                assessment.cn_data_basis_missing_type_summary or None
+            ),
+        }
+
     def _filing_archive_payload(self):
         self.ensure_one()
         assessment = self.assessment_id
@@ -1043,6 +1068,7 @@ class SudoChinaComplianceReport(models.Model):
             },
             "rules": rules,
             "obligation_readiness": self._obligation_readiness_payload(),
+            "data_basis": self._data_basis_payload(),
             "filing_archive": self._filing_archive_payload(),
             "facts": facts,
             "findings": findings,
@@ -1099,6 +1125,7 @@ class SudoChinaComplianceReport(models.Model):
             or assessment["error_count"]
             or tax_impact["pending_count"]
             or tax_impact["unquantifiable_count"]
+            or payload["data_basis"]["state"] != "ready"
             or payload["filing_archive"]["state"] in ("blocked", "attention")
             or payload["obligation_readiness"]["state"]
             in ("not_started", "attention")
@@ -1162,10 +1189,17 @@ class SudoChinaComplianceReport(models.Model):
         conclusion, has_limits = self._derive_conclusion(payload)
         if has_limits and not _text_is_complete(self.limitation_statement):
             obligation_state = payload["obligation_readiness"]["state"]
+            data_basis_state = payload["data_basis"]["state"]
             if obligation_state in ("not_started", "attention"):
                 issues.append(
                     _(
                         "Tax obligation applicability is not fully confirmed; disclose this limitation before submitting the report."
+                    )
+                )
+            elif data_basis_state != "ready":
+                issues.append(
+                    _(
+                        "Assessment data basis is incomplete; disclose missing data types and uncertainty before submitting the report."
                     )
                 )
             else:

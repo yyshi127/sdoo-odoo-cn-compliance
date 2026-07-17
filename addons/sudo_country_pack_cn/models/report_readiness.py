@@ -209,6 +209,12 @@ class SudoChinaReportReadinessAssessment(models.Model):
             limitation_count = 0
             if assessment.data_sufficiency_state == "insufficient":
                 limitation_count += 1
+            if (
+                "cn_data_basis_state" in assessment._fields
+                and assessment.cn_data_basis_state
+                not in (False, "ready")
+            ):
+                limitation_count += 1
             limitation_count += assessment.unknown_count or 0
             limitation_count += assessment.error_count or 0
             limitation_count += pending_tax_impact

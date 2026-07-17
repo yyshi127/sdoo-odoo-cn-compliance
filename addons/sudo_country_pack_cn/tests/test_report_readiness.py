@@ -156,6 +156,9 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertEqual(assessment.cn_report_readiness_state, "limited")
         self.assertTrue(assessment.cn_report_can_prepare)
         self.assertGreater(assessment.cn_report_issue_count, 0)
+        self.assertEqual(assessment.cn_data_basis_state, "missing")
+        self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
+        self.assertGreaterEqual(assessment.cn_report_limitation_count, 1)
         self.assertIn("limitations", assessment.cn_report_next_action)
 
     def test_incomplete_assessment_requires_scan_completion(self):
