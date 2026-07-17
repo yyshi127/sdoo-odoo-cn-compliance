@@ -271,6 +271,73 @@ def _tax_impact_summary_from_cases(cases, currency):
     }
 
 
+def _ai_guidance_summary_from_finding(finding):
+    analyses = finding.ai_analysis_ids.filtered(
+        lambda record: record.provider_key == "sdoo_cn_controlled_guidance"
+    ).sorted("id")
+    latest = analyses[-1:] if analyses else analyses
+    current_checksum = finding.cn_ai_guidance_input_checksum or None
+    latest_input_checksum = latest.input_checksum if latest else None
+    is_current = bool(
+        latest and current_checksum and latest_input_checksum == current_checksum
+    )
+    limitation_flags = []
+    if finding.source_warning:
+        limitation_flags.append("source_warning")
+    if finding.professional_warning:
+        limitation_flags.append("professional_warning")
+    if finding.missing_fact_keys:
+        limitation_flags.append("missing_facts")
+    if finding.missing_parameter_keys:
+        limitation_flags.append("missing_parameters")
+    return {
+        "state": finding.cn_ai_guidance_state,
+        "next_action": finding.cn_ai_guidance_next_action or None,
+        "analysis_count": len(analyses),
+        "latest_analysis_id": latest.id if latest else None,
+        "latest_state": latest.state if latest else None,
+        "latest_revision": latest.revision if latest else None,
+        "provider_key": latest.provider_key if latest else None,
+        "model_name": latest.model_name if latest else None,
+        "prompt_version": latest.prompt_version if latest else None,
+        "current_input_checksum": current_checksum,
+        "latest_input_checksum": latest_input_checksum,
+        "input_is_current": is_current,
+        "latest_record_checksum": latest.record_checksum if latest else None,
+        "source_warning": bool(finding.source_warning),
+        "professional_warning": bool(finding.professional_warning),
+        "limitation_flags": limitation_flags,
+    }
+
+
+def _ai_guidance_report_summary(findings):
+    rows = [
+        finding.get("ai_guidance_summary") or {}
+        for finding in findings
+        if (finding.get("ai_guidance_summary") or {}).get("state")
+        != "unavailable"
+    ]
+    generated = [row for row in rows if row.get("analysis_count")]
+    return {
+        "schema": "sdoo.cn.report-ai-guidance-summary.v1",
+        "finding_count": len(rows),
+        "generated_count": len(generated),
+        "current_count": len(
+            [row for row in generated if row.get("input_is_current")]
+        ),
+        "limited_count": len([row for row in rows if row.get("state") == "limited"]),
+        "stale_count": len(
+            [row for row in generated if not row.get("input_is_current")]
+        ),
+        "source_warning_count": len(
+            [row for row in rows if row.get("source_warning")]
+        ),
+        "professional_warning_count": len(
+            [row for row in rows if row.get("professional_warning")]
+        ),
+    }
+
+
 class SudoChinaComplianceReport(models.Model):
     _name = "sudo.cn.compliance.report"
     _description = "China Governed Compliance Report"
@@ -1033,6 +1100,9 @@ class SudoChinaComplianceReport(models.Model):
                         finding.cn_tax_impact_case_ids,
                         currency,
                     ),
+                    "ai_guidance_summary": (
+                        _ai_guidance_summary_from_finding(finding)
+                    ),
                     "result_details": finding.result_details_json or {},
                     "source_snapshot": finding.source_snapshot_json or [],
                     "professional_snapshot": (
@@ -1142,7 +1212,9 @@ class SudoChinaComplianceReport(models.Model):
                 "state": analysis.state,
                 "provider_key": analysis.provider_key,
                 "model_name": analysis.model_name,
+                "prompt_version": analysis.prompt_version,
                 "generated_at": _datetime_value(analysis.generated_at),
+                "input_checksum": analysis.input_checksum,
                 "record_checksum": analysis.record_checksum,
                 "source_warning": bool(analysis.source_warning),
                 "professional_warning": bool(
@@ -1239,6 +1311,7 @@ class SudoChinaComplianceReport(models.Model):
                     assessment.cn_reviewed_timing_amount, currency
                 ),
             },
+            "ai_guidance": _ai_guidance_report_summary(findings),
             "ai_analysis_metadata": ai_rows,
         }
         payload["fact_basis"] = _fact_basis_summary(payload)

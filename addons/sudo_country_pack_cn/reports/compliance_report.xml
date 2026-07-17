@@ -354,6 +354,27 @@
                             <li>整改或源资料变化后应重新扫描并签发新版本，不能改写本报告。</li>
                             <li>AI 分析仅为辅助材料；本快照记录 <span t-esc="len(payload.get('ai_analysis_metadata', []))"/> 条 AI 元数据，其文本不作为正式结论或证据。</li>
                         </ul>
+                        <t t-set="ai_guidance" t-value="payload.get('ai_guidance') or {}"/>
+                        <table class="table table-sm table-bordered" t-if="ai_guidance">
+                            <tbody>
+                                <tr>
+                                    <th>AI guidance findings</th>
+                                    <td><span t-esc="ai_guidance.get('finding_count', 0)"/></td>
+                                    <th>Generated / current</th>
+                                    <td>
+                                        <span t-esc="ai_guidance.get('generated_count', 0)"/>
+                                        /
+                                        <span t-esc="ai_guidance.get('current_count', 0)"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Limited inputs</th>
+                                    <td><span t-esc="ai_guidance.get('limited_count', 0)"/></td>
+                                    <th>Stale AI inputs</th>
+                                    <td><span t-esc="ai_guidance.get('stale_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </t>
             </t>

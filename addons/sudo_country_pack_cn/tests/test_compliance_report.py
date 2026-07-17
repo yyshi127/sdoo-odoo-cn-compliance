@@ -518,6 +518,42 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(summary["reviewed_underpayment_amount"], "240.00")
         self.assertEqual(summary["case_ids"], case.ids)
 
+    def test_submission_freezes_ai_guidance_summary(self):
+        action = self.finding.with_user(self.manager).action_generate_cn_ai_guidance()
+        analysis = self.env["sudo.compliance.ai.analysis"].browse(
+            action["res_id"]
+        )
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        finding_summary = report.snapshot_json["findings"][0][
+            "ai_guidance_summary"
+        ]
+        self.assertEqual(finding_summary["analysis_count"], 1)
+        self.assertEqual(finding_summary["latest_analysis_id"], analysis.id)
+        self.assertEqual(
+            finding_summary["current_input_checksum"],
+            analysis.input_checksum,
+        )
+        self.assertTrue(finding_summary["input_is_current"])
+        self.assertEqual(
+            finding_summary["latest_record_checksum"],
+            analysis.record_checksum,
+        )
+        self.assertEqual(report.snapshot_json["ai_guidance"]["generated_count"], 1)
+        self.assertEqual(report.snapshot_json["ai_guidance"]["current_count"], 1)
+        self.assertEqual(report.snapshot_json["ai_guidance"]["stale_count"], 0)
+        self.assertEqual(
+            report.snapshot_json["ai_analysis_metadata"][0]["input_checksum"],
+            analysis.input_checksum,
+        )
+        self.assertEqual(
+            report.snapshot_json["ai_analysis_metadata"][0]["prompt_version"],
+            "cn-compliance-guidance-v1",
+        )
+
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")
 
@@ -656,6 +692,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_report_data_basis_snapshot"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_report_ai_guidance_snapshot"
             ]
         )
         self.assertTrue(
