@@ -70,7 +70,8 @@ python tools/summarize_cn_delivery_status.py \
 
 The status summary includes machine-readable readiness gates for business UAT
 and production sign-off. Business UAT readiness requires a passed preview health
-check for the intended URL. Production sign-off remains blocked until the
+check for the intended URL, and the preview health result URL must match the
+status summary preview URL. Production sign-off remains blocked until the
 business UAT decision, current-source review, professional rule sign-off and
 customer-specific limitations are recorded outside the automated status.
 

@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
+PREVIEW_HEALTH_SCHEMA = "sdoo.cn.preview-health.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
@@ -142,8 +143,13 @@ def _status(
         business_uat_blockers.append("preview URL was not recorded")
     if not preview_health_summary:
         business_uat_blockers.append("preview health result was not provided")
-    elif preview_health_summary["ok"] is not True:
-        business_uat_blockers.append("preview health check did not pass")
+    else:
+        if preview_health_summary["schema"] != PREVIEW_HEALTH_SCHEMA:
+            business_uat_blockers.append("preview health result schema is invalid")
+        if preview_health_summary["url"] != preview_url:
+            business_uat_blockers.append("preview health URL does not match preview URL")
+        if preview_health_summary["ok"] is not True:
+            business_uat_blockers.append("preview health check did not pass")
     production_signoff_blockers = list(business_uat_blockers)
     production_signoff_blockers.extend(
         [
