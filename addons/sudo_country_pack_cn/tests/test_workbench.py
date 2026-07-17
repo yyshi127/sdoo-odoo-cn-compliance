@@ -581,11 +581,12 @@ class TestChinaComplianceWorkbench(TransactionCase):
 
         self.profile.invalidate_recordset()
 
-        self.assertEqual(self.profile.cn_workbench_rescan_state, "blocked")
-        self.assertEqual(self.profile.cn_workbench_pending_rescan_count, 1)
-        self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 1)
+        self.assertEqual(self.profile.cn_workbench_rescan_state, "ready")
+        self.assertEqual(self.profile.cn_workbench_pending_rescan_count, 0)
+        self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 0)
         self.assertEqual(self.profile.cn_workbench_verified_remediation_count, 1)
-        self.assertIn("failed", self.profile.cn_workbench_rescan_next_action)
+        self.assertEqual(self.profile.cn_workbench_historical_blocked_task_count, 0)
+        self.assertIn("Verified remediation", self.profile.cn_workbench_rescan_next_action)
 
     def test_workbench_summarizes_controlled_ai_guidance_coverage(self):
         generated = self._finding("ai1")
@@ -595,11 +596,15 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.profile.invalidate_recordset()
 
         self.assertEqual(self.profile.cn_workbench_ai_guidance_state, "attention")
-        self.assertEqual(self.profile.cn_workbench_ai_guidance_finding_count, 2)
-        self.assertEqual(self.profile.cn_workbench_ai_guidance_generated_count, 1)
-        self.assertEqual(self.profile.cn_workbench_ai_guidance_current_count, 1)
-        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 2)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_finding_count, 1)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_generated_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_current_count, 0)
+        self.assertEqual(self.profile.cn_workbench_ai_guidance_limited_count, 1)
         self.assertEqual(self.profile.cn_workbench_ai_guidance_stale_count, 0)
+        self.assertEqual(
+            self.profile.cn_workbench_historical_unresolved_finding_count,
+            1,
+        )
         self.assertIn("Generate", self.profile.cn_workbench_ai_guidance_next_action)
 
         action = self.profile.action_cn_open_workbench_ai_guidance_findings()
@@ -609,6 +614,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
             action["domain"],
         )
         self.assertIn(("result", "in", ("fail", "unknown", "error")), action["domain"])
+        self.assertIn(
+            ("assessment_id", "=", self.profile.cn_workbench_last_assessment_id.id),
+            action["domain"],
+        )
 
     def test_workbench_surfaces_cross_border_identity_boundary(self):
         self.profile._write_import({"status": "active"})
