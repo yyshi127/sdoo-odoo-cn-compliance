@@ -63,6 +63,7 @@ FULL_PROFILE_TOOL_TESTS = [
     "tools.test_xbrl_contract",
     "tools.test_xbrl_normalizer",
     "tools.test_xbrl_worker_compatibility",
+    "tools.test_signoff_validation",
 ]
 MANIFEST_SCHEMA = "sdoo.cn.delivery-manifest.v1"
 SUMMARY_SCHEMA = "sdoo.cn.delivery-acceptance-summary.v1"
@@ -176,6 +177,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "tools" / "test_xbrl_contract.py",
         ROOT / "tools" / "test_xbrl_normalizer.py",
         ROOT / "tools" / "test_xbrl_worker_compatibility.py",
+        ROOT / "tools" / "test_signoff_validation.py",
     ]
     paths: list[Path] = []
     for root in roots:
