@@ -685,6 +685,18 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(payload["filing_archive"]["state"], "blocked")
         self.assertEqual(payload["filing_archive"]["archives"][0]["id"], filing.id)
         self.assertEqual(report._derive_conclusion(payload)[0], "limited_action_required")
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_report_cn_formal_compliance"
+        )
+        html, _report_type = action._render_qweb_html(
+            action.report_name,
+            report.ids,
+        )
+        self.assertIn("Filing/payment archive snapshot".encode(), html)
+        self.assertIn(filing.display_name.encode(), html)
+        self.assertIn("Submission / payment / evidence".encode(), html)
+        self.assertIn("submission".encode(), html)
+        self.assertIn("payment".encode(), html)
 
     def test_report_center_exposes_stage_next_action_and_navigation(self):
         report = self._report()

@@ -2954,6 +2954,15 @@ def validate_formal_compliance_report() -> None:
         "accounting_basis.get('posted_move_count'",
         "accounting_basis.get('draft_move_count'",
         "accounting_basis.get('posted_invoice_count'",
+        "Filing/payment archive snapshot",
+        "filing_archive.get('sealed_count'",
+        "filing_archive.get('archive_count'",
+        "filing_archive.get('issue_count'",
+        "archive.get('submission_integrity_state')",
+        "archive.get('payment_integrity_state')",
+        "archive.get('evidence_state')",
+        "archive.get('submission_checksum')",
+        "archive.get('payment_checksum')",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")
@@ -3017,6 +3026,8 @@ def validate_formal_compliance_report() -> None:
         "Professional review snapshot:",
         "Data basis snapshot",
         "Accounting basis",
+        "Filing/payment archive snapshot",
+        "Submission / payment / evidence",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",

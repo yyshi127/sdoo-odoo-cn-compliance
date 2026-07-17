@@ -387,6 +387,81 @@
                         </table>
 
                         <h2 style="font-size: 17px; color: #17313b;">六、经人工复核的税务影响</h2>
+                        <t t-set="filing_archive" t-value="payload.get('filing_archive') or {}"/>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th colspan="6">Filing/payment archive snapshot</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>Archive state</th>
+                                    <td><span t-esc="filing_archive.get('state') or '-'"/></td>
+                                    <th>Archives sealed / total</th>
+                                    <td>
+                                        <span t-esc="filing_archive.get('sealed_count', 0)"/>
+                                        /
+                                        <span t-esc="filing_archive.get('archive_count', 0)"/>
+                                    </td>
+                                    <th>Issues</th>
+                                    <td><span t-esc="filing_archive.get('issue_count', 0)"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Next action</th>
+                                    <td colspan="5"><span t-esc="filing_archive.get('next_action') or '-'"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Archive</th>
+                                    <th>Period</th>
+                                    <th>Due date</th>
+                                    <th>Submission / payment / evidence</th>
+                                    <th>Sealed</th>
+                                    <th>Checksums</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not filing_archive.get('archives')">
+                                    <td colspan="6">No controlled filing/payment archive is included in this report snapshot.</td>
+                                </tr>
+                                <tr t-foreach="filing_archive.get('archives', [])" t-as="archive">
+                                    <td>
+                                        <span t-esc="archive.get('name')"/>
+                                        <div class="text-muted small">
+                                            <span t-esc="archive.get('filing_code') or '-'"/>
+                                            <span> / </span>
+                                            <span t-esc="archive.get('filing_type') or '-'"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span t-esc="archive.get('period_start') or '-'"/>
+                                        <span> to </span>
+                                        <span t-esc="archive.get('period_end') or '-'"/>
+                                    </td>
+                                    <td><span t-esc="archive.get('due_date') or '-'"/></td>
+                                    <td>
+                                        <span t-esc="archive.get('submission_integrity_state') or '-'"/>
+                                        <span> / </span>
+                                        <span t-esc="archive.get('payment_integrity_state') or '-'"/>
+                                        <span> / </span>
+                                        <span t-esc="archive.get('evidence_state') or '-'"/>
+                                    </td>
+                                    <td>
+                                        <span t-if="archive.get('sealed')">yes</span>
+                                        <span t-else="">no</span>
+                                        <span t-if="archive.get('issue')"> / issue</span>
+                                    </td>
+                                    <td style="word-break: break-all; font-family: monospace; font-size: 8px;">
+                                        <div>submission <span t-esc="archive.get('submission_checksum') or '-'"/></div>
+                                        <div>payment <span t-esc="archive.get('payment_checksum') or '-'"/></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         <div class="alert alert-info">
                             潜在少缴、潜在多缴和期间错配影响分别列示，不计算净额。未完成复核、无法量化或完整性异常事项不进入金额。
                         </div>
