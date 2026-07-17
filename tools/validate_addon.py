@@ -4780,6 +4780,16 @@ def validate_delivery_objective_coverage() -> None:
         if required not in verify_tool:
             fail(f"China delivery artifact source control verification is missing {required}")
 
+    signoff_packet_tool_content = (
+        REPOSITORY_ROOT / "tools" / "generate_cn_signoff_packet.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "blocker_summary_walkthrough",
+        "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
+    ):
+        if required not in signoff_packet_tool_content:
+            fail(f"China sign-off packet blocker walkthrough is missing {required}")
+
     signoff_validation_tool_content = (
         REPOSITORY_ROOT / "tools" / "validate_cn_signoff_evidence.py"
     ).read_text(encoding="utf-8")
@@ -4796,6 +4806,22 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in signoff_validation_tool_content:
             fail(f"China sign-off validation binding is missing {required}")
+
+    signoff_test_content = (
+        REPOSITORY_ROOT / "tools" / "test_signoff_validation.py"
+    ).read_text(encoding="utf-8")
+    signoff_template_content = (
+        REPOSITORY_ROOT / "docs" / "samples" / "cn_signoff_evidence_template.json"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "test_signoff_packet_requires_blocker_summary_walkthrough",
+        "test_missing_blocker_summary_walkthrough_blocks_production_gate",
+        "blocker_summary_walkthrough",
+    ):
+        if required not in signoff_test_content:
+            fail(f"China sign-off blocker walkthrough runtime coverage is missing {required}")
+        if required == "blocker_summary_walkthrough" and required not in signoff_template_content:
+            fail("China sign-off evidence template is missing blocker_summary_walkthrough")
 
 
 def validate_xbrl_parser_addon() -> None:

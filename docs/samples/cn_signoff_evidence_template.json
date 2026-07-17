@@ -49,6 +49,14 @@
       "notes": "Risk level, cause, impact amount, period, owner, due date, status and next action were readable on representative desktop and laptop screen sizes."
     },
     {
+      "key": "blocker_summary_walkthrough",
+      "decision": "passed",
+      "reviewer": "Business reviewer name",
+      "date": "YYYY-MM-DD",
+      "evidence_reference": "Screenshots, recording or completed UAT reference for data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
+      "notes": "Each non-ready blocker summary explained why the record was blocked or limited and what next action was required."
+    },
+    {
       "key": "production_deployment_decision",
       "decision": "deploy",
       "reviewer": "Release owner name",

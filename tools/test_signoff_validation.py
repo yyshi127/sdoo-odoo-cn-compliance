@@ -256,6 +256,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
             actions["representative_ux_walkthrough"]["required_evidence"],
         )
 
+    def test_signoff_packet_requires_blocker_summary_walkthrough(self):
+        packet = PACKET._build_packet(status_payload())
+
+        actions = {
+            action["key"]: action for action in packet["production_actions"]
+        }
+
+        self.assertIn("blocker_summary_walkthrough", actions)
+        self.assertEqual(
+            actions["blocker_summary_walkthrough"]["acceptable_decisions"],
+            ["passed", "passed_with_limitations"],
+        )
+        self.assertIn(
+            "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
+            actions["blocker_summary_walkthrough"]["required_evidence"],
+        )
+
     def test_missing_representative_ux_walkthrough_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
@@ -271,6 +288,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["production_signoff_ready"])
         self.assertIn(
             "representative_ux_walkthrough: decision is missing",
+            result["blockers"],
+        )
+
+    def test_missing_blocker_summary_walkthrough_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = [
+            item
+            for item in evidence["decisions"]
+            if item["key"] != "blocker_summary_walkthrough"
+        ]
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "blocker_summary_walkthrough: decision is missing",
             result["blockers"],
         )
 
@@ -437,6 +472,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "official_source_freshness_review": "current_with_documented_limitations",
             "customer_scope_and_data_gap_review": "limitations_documented",
             "representative_ux_walkthrough": "passed_with_limitations",
+            "blocker_summary_walkthrough": "passed_with_limitations",
         }
         evidence = complete_evidence(packet)
         for item in evidence["decisions"]:
@@ -451,7 +487,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "entry of 20 or more characters: "
             "business_uat_decision, china_tax_professional_rule_signoff, "
             "official_source_freshness_review, customer_scope_and_data_gap_review, "
-            "representative_ux_walkthrough",
+            "representative_ux_walkthrough, blocker_summary_walkthrough",
             result["blockers"],
         )
 
@@ -468,7 +504,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "production sign-off includes documented limitations: "
                 "business_uat_decision, china_tax_professional_rule_signoff, "
                 "official_source_freshness_review, customer_scope_and_data_gap_review, "
-                "representative_ux_walkthrough"
+                "representative_ux_walkthrough, blocker_summary_walkthrough"
             ],
         )
 

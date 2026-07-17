@@ -112,6 +112,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "acceptable_decisions": ["passed", "passed_with_limitations"],
         },
         {
+            "key": "blocker_summary_walkthrough",
+            "owner": "business_reviewer",
+            "required_evidence": "Screenshot, recording or completed UAT reference showing that data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked or limited.",
+            "acceptable_decisions": ["passed", "passed_with_limitations"],
+        },
+        {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
