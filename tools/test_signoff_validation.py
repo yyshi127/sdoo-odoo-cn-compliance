@@ -288,6 +288,55 @@ class TestChinaSignoffValidation(unittest.TestCase):
             result["blockers"],
         )
 
+    def test_duplicate_decision_key_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"].append(deepcopy(evidence["decisions"][0]))
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "sign-off evidence decision keys must be unique: business_uat_decision",
+            result["blockers"],
+        )
+
+    def test_unknown_decision_key_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"].append(
+            {
+                "key": "uncontrolled_extra_approval",
+                "decision": "approved",
+                "reviewer": "Reviewer",
+                "date": "2026-07-17",
+                "evidence_reference": "uncontrolled evidence reference",
+            }
+        )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "sign-off evidence contains unknown decision keys: uncontrolled_extra_approval",
+            result["blockers"],
+        )
+
+    def test_decisions_must_be_a_list(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = {"business_uat_decision": "accepted"}
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn("sign-off evidence decisions must be a list", result["blockers"])
+        self.assertIn(
+            "business_uat_decision: decision is missing",
+            result["blockers"],
+        )
+
     def test_source_commit_mismatch_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)

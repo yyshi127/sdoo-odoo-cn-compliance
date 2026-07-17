@@ -55,6 +55,39 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
     if evidence.get("source_commit") != packet.get("source_commit"):
         blockers.append("sign-off evidence source commit does not match the packet")
 
+    raw_decisions = evidence.get("decisions")
+    if not isinstance(raw_decisions, list):
+        blockers.append("sign-off evidence decisions must be a list")
+        raw_decisions = []
+    allowed_keys = {
+        str(action.get("key"))
+        for action in packet.get("production_actions") or []
+        if isinstance(action, dict) and action.get("key")
+    }
+    seen_keys: set[str] = set()
+    duplicate_keys: list[str] = []
+    unknown_keys: list[str] = []
+    for item in raw_decisions:
+        if not isinstance(item, dict) or not item.get("key"):
+            blockers.append("sign-off evidence decision item is missing key")
+            continue
+        key = str(item.get("key"))
+        if key in seen_keys and key not in duplicate_keys:
+            duplicate_keys.append(key)
+        seen_keys.add(key)
+        if key not in allowed_keys:
+            unknown_keys.append(key)
+    if duplicate_keys:
+        blockers.append(
+            "sign-off evidence decision keys must be unique: %s"
+            % ", ".join(duplicate_keys)
+        )
+    if unknown_keys:
+        blockers.append(
+            "sign-off evidence contains unknown decision keys: %s"
+            % ", ".join(unknown_keys)
+        )
+
     decisions = _decision_map(evidence)
     limitations = _valid_limitations(evidence.get("limitations"))
     action_results: list[dict[str, Any]] = []
