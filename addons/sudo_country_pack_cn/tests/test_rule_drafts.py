@@ -176,6 +176,40 @@ class TestChinaRuleDrafts(TransactionCase):
         self.assertIn("cn.reconciliation.vat.detail", fact_keys)
         self.assertIn("cn.reconciliation.vat.risk_summary", fact_keys)
 
+    def test_cit_reconciliation_rules_carry_risk_summary_fact(self):
+        versions = (
+            self.env.ref(
+                "sudo_country_pack_cn."
+                "rule_version_cn_cit_reconciliation_ready_001_draft"
+            )
+            | self.env.ref(
+                "sudo_country_pack_cn."
+                "rule_version_cn_cit_reconciliation_control_001_draft"
+            )
+        )
+
+        for version in versions:
+            fact_keys = set(version.required_fact_ids.mapped("key"))
+            self.assertIn("cn.reconciliation.cit.detail", fact_keys)
+            self.assertIn("cn.reconciliation.cit.risk_summary", fact_keys)
+
+    def test_iit_reconciliation_rules_carry_risk_summary_fact(self):
+        versions = (
+            self.env.ref(
+                "sudo_country_pack_cn."
+                "rule_version_cn_iit_reconciliation_ready_001_draft"
+            )
+            | self.env.ref(
+                "sudo_country_pack_cn."
+                "rule_version_cn_iit_reconciliation_control_001_draft"
+            )
+        )
+
+        for version in versions:
+            fact_keys = set(version.required_fact_ids.mapped("key"))
+            self.assertIn("cn.reconciliation.iit.detail", fact_keys)
+            self.assertIn("cn.reconciliation.iit.risk_summary", fact_keys)
+
     def test_release_readiness_exposes_all_current_blockers(self):
         self.assertEqual(
             set(self.versions.mapped("cn_release_state")),

@@ -449,7 +449,8 @@
             ref('fact_cn_cit_reconciliation_blocking_count_v1'),
             ref('fact_cn_cit_reconciliation_difference_count_v1'),
             ref('fact_cn_cit_reconciliation_warning_count_v1'),
-            ref('fact_cn_cit_reconciliation_detail_v1')
+            ref('fact_cn_cit_reconciliation_detail_v1'),
+            ref('fact_cn_cit_reconciliation_risk_summary_v1')
         ])]"/>
         <field name="legal_basis_summary">内部企业所得税勾稽数据准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；通过仅表示当前受控账簿、申报和缴退税数据可以比较，不表示所得税计算、申报或缴税正确。</field>
         <field name="failure_message">当前期间企业所得税勾稽存在来源缺失、口径未核验或审计完整性阻断，数据尚不可用于正式差异判断。</field>
@@ -521,7 +522,8 @@
             ref('fact_cn_cit_reconciliation_blocking_count_v1'),
             ref('fact_cn_cit_reconciliation_difference_count_v1'),
             ref('fact_cn_cit_reconciliation_warning_count_v1'),
-            ref('fact_cn_cit_reconciliation_detail_v1')
+            ref('fact_cn_cit_reconciliation_detail_v1'),
+            ref('fact_cn_cit_reconciliation_risk_summary_v1')
         ])]"/>
         <field name="legal_basis_summary">内部企业所得税差异复核控制草稿。候选官方来源仅提供所得额、会计与税法差异调整、申报缴纳及会计资料的一般背景，尚未形成受控原文快照、独立复核和中国财税专业签核；系统差异不是税务认定或税款计算结果。</field>
         <field name="failure_message">受控账簿、企业所得税申报或缴退税金额存在一个或多个差异项目，需要逐项专业复核。</field>
@@ -622,7 +624,8 @@
             ref('fact_cn_iit_reconciliation_blocking_count_v1'),
             ref('fact_cn_iit_reconciliation_difference_count_v1'),
             ref('fact_cn_iit_reconciliation_warning_count_v1'),
-            ref('fact_cn_iit_reconciliation_detail_v1')
+            ref('fact_cn_iit_reconciliation_detail_v1'),
+            ref('fact_cn_iit_reconciliation_risk_summary_v1')
         ])]"/>
         <field name="legal_basis_summary">内部个人所得税勾稽数据准备度控制草稿。候选官方来源尚未形成受控原文快照、独立复核和中国财税专业签核；通过仅表示当前受控工资、账务、扣缴申报和缴退税数据可以比较，不表示人员身份、所得项目、扣除、税额计算、申报或缴税正确。</field>
         <field name="failure_message">当前期间个人所得税勾稽存在来源缺失、口径未核验、结构版本不一致或审计完整性阻断，数据尚不可用于正式差异判断。</field>
@@ -694,7 +697,8 @@
             ref('fact_cn_iit_reconciliation_blocking_count_v1'),
             ref('fact_cn_iit_reconciliation_difference_count_v1'),
             ref('fact_cn_iit_reconciliation_warning_count_v1'),
-            ref('fact_cn_iit_reconciliation_detail_v1')
+            ref('fact_cn_iit_reconciliation_detail_v1'),
+            ref('fact_cn_iit_reconciliation_risk_summary_v1')
         ])]"/>
         <field name="legal_basis_summary">内部个人所得税差异复核控制草稿。候选官方来源仅提供纳税义务、扣缴义务、扣缴申报和缴纳的一般背景，尚未形成受控原文快照、独立复核和中国财税专业签核；系统差异不是税务认定或税款计算结果。</field>
         <field name="failure_message">受控工资、账务、个人所得税扣缴申报或缴退税来源存在一个或多个金额或人数差异项目，需要逐项专业复核。</field>

@@ -836,6 +836,7 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         conclusion = self._fact("cn.reconciliation.cit.conclusion_state")
         blocking = self._fact("cn.reconciliation.cit.blocking_issue_count")
         detail = self._fact("cn.reconciliation.cit.detail")
+        summary = self._fact("cn.reconciliation.cit.risk_summary")
 
         self.assertEqual(conclusion["value"], "aligned")
         self.assertEqual(conclusion["quality_state"], "complete")
@@ -845,6 +846,23 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(
             detail["value"]["checksums"]["result"], run.result_checksum
         )
+        self.assertEqual(
+            summary["value"]["schema"],
+            "sdoo.cn.reconciliation.cit-risk-summary.v1",
+        )
+        self.assertEqual(summary["value"]["risk_status"], "aligned")
+        self.assertEqual(
+            summary["value"]["next_action"],
+            "retain_cit_snapshots_and_continue_monitoring",
+        )
+        self.assertEqual(
+            summary["value"]["checksums"]["result"], run.result_checksum
+        )
+        self.assertIn(
+            "ledger_accounting_profit_amount",
+            summary["value"]["amounts"],
+        )
+        self.assertIn("filing_payable_amount", summary["value"]["amounts"])
         self.assertIsNone(
             self._fact(
                 "cn.reconciliation.cit.conclusion_state",

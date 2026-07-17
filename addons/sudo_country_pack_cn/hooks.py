@@ -1,7 +1,7 @@
 from odoo import fields
 
 
-PACK_VERSION = "19.0.1.82.0"
+PACK_VERSION = "19.0.1.83.0"
 
 SETUP_DEFAULTS = {
     "registration_name": "统一社会信用代码登记",
@@ -82,6 +82,8 @@ def post_init_hook(env):
     update_country_pack_metadata(env)
     ensure_cn_accounting_rule_fact_links(env)
     ensure_cn_vat_reconciliation_rule_fact_links(env)
+    ensure_cn_cit_reconciliation_rule_fact_links(env)
+    ensure_cn_iit_reconciliation_rule_fact_links(env)
     profiles = ensure_cn_profiles(env)
     seed_cn_obligations(env, profiles)
 
@@ -143,6 +145,8 @@ def country_pack_capabilities():
             "china_assessment_accounting_basis": True,
             "china_accounting_ledger_basis_fact": True,
             "china_vat_reconciliation_risk_summary_fact": True,
+            "china_cit_reconciliation_risk_summary_fact": True,
+            "china_iit_reconciliation_risk_summary_fact": True,
             "china_assessment_required_dataset_type_coverage": True,
             "china_assessment_obligation_basis": True,
             "china_remediation_rescan_visibility": True,
@@ -257,6 +261,59 @@ def ensure_cn_vat_reconciliation_rule_fact_links(env):
     if facts:
         version.write({"required_fact_ids": [(6, 0, facts.ids)]})
     return True
+
+
+def _ensure_cn_reconciliation_rule_fact_links(env, version_xmlids, fact_xmlids):
+    facts = env["sudo.compliance.fact.definition"].browse()
+    for xmlid in fact_xmlids:
+        fact = env.ref(xmlid, raise_if_not_found=False)
+        if fact:
+            facts |= fact
+    if not facts:
+        return False
+    updated = False
+    for version_xmlid in version_xmlids:
+        version = env.ref(version_xmlid, raise_if_not_found=False)
+        if version:
+            version.write({"required_fact_ids": [(6, 0, facts.ids)]})
+            updated = True
+    return updated
+
+
+def ensure_cn_cit_reconciliation_rule_fact_links(env):
+    return _ensure_cn_reconciliation_rule_fact_links(
+        env,
+        (
+            "sudo_country_pack_cn.rule_version_cn_cit_reconciliation_ready_001_draft",
+            "sudo_country_pack_cn.rule_version_cn_cit_reconciliation_control_001_draft",
+        ),
+        (
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_conclusion_state_v1",
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_blocking_count_v1",
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_difference_count_v1",
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_warning_count_v1",
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_detail_v1",
+            "sudo_country_pack_cn.fact_cn_cit_reconciliation_risk_summary_v1",
+        ),
+    )
+
+
+def ensure_cn_iit_reconciliation_rule_fact_links(env):
+    return _ensure_cn_reconciliation_rule_fact_links(
+        env,
+        (
+            "sudo_country_pack_cn.rule_version_cn_iit_reconciliation_ready_001_draft",
+            "sudo_country_pack_cn.rule_version_cn_iit_reconciliation_control_001_draft",
+        ),
+        (
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_conclusion_state_v1",
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_blocking_count_v1",
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_difference_count_v1",
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_warning_count_v1",
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_detail_v1",
+            "sudo_country_pack_cn.fact_cn_iit_reconciliation_risk_summary_v1",
+        ),
+    )
 
 
 def ensure_cn_profiles(env):

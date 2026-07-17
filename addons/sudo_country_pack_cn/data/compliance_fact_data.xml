@@ -442,6 +442,22 @@
         <field name="sensitivity">restricted</field>
     </record>
 
+    <record id="fact_cn_cit_reconciliation_risk_summary_v1" model="sudo.compliance.fact.definition">
+        <field name="label">China CIT reconciliation risk summary</field>
+        <field name="key">cn.reconciliation.cit.risk_summary</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.cit.risk_summary</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.cit.period.reconciliation.run</field>
+        <field name="source_description">Human-readable CIT period risk summary derived from the controlled ledger, filing and payment reconciliation snapshot: conclusion, source states, issue counts, key amounts, material differences, top issue codes, next action and evidence checksums.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
     <record id="fact_cn_iit_reconciliation_conclusion_state_v1" model="sudo.compliance.fact.definition">
         <field name="label">个人所得税工资账表款勾稽结论状态</field>
         <field name="key">cn.reconciliation.iit.conclusion_state</field>
@@ -521,6 +537,22 @@
         <field name="evidence_required">True</field>
         <field name="sensitivity">restricted</field>
     </record>
+    <record id="fact_cn_iit_reconciliation_risk_summary_v1" model="sudo.compliance.fact.definition">
+        <field name="label">China IIT reconciliation risk summary</field>
+        <field name="key">cn.reconciliation.iit.risk_summary</field>
+        <field name="version">1</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="value_type">json</field>
+        <field name="provider_key">cn.reconciliation.iit.risk_summary</field>
+        <field name="provider_version">1</field>
+        <field name="source_model">sudo.cn.iit.period.reconciliation.run</field>
+        <field name="source_description">Human-readable IIT withholding period risk summary derived from the controlled payroll, ledger, filing and payment reconciliation snapshot: conclusion, source states, person-count and amount indicators, material differences, top issue codes, next action and evidence checksums.</field>
+        <field name="required_for_pass">False</field>
+        <field name="completeness_method">single_exact_period_current_success_snapshot</field>
+        <field name="evidence_required">True</field>
+        <field name="sensitivity">restricted</field>
+    </record>
+
     <record id="fact_cn_cross_border_pending_review_count_v1" model="sudo.compliance.fact.definition">
         <field name="label">Cross-border facts pending controlled review</field>
         <field name="key">cn.cross_border.pending_review_count</field>

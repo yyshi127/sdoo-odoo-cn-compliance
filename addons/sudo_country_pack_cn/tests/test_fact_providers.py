@@ -71,11 +71,13 @@ class TestChinaFactProviders(TransactionCase):
             "cn.reconciliation.cit.difference_issue_count",
             "cn.reconciliation.cit.warning_issue_count",
             "cn.reconciliation.cit.detail",
+            "cn.reconciliation.cit.risk_summary",
             "cn.reconciliation.iit.conclusion_state",
             "cn.reconciliation.iit.blocking_issue_count",
             "cn.reconciliation.iit.difference_issue_count",
             "cn.reconciliation.iit.warning_issue_count",
             "cn.reconciliation.iit.detail",
+            "cn.reconciliation.iit.risk_summary",
         }
         self.assertFalse(
             expected - set(self.engine._fact_provider_registry())

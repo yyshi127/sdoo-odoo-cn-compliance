@@ -849,6 +849,7 @@ class TestChinaIitPeriodReconciliation(AccountTestInvoicingCommon):
         conclusion = self._fact("cn.reconciliation.iit.conclusion_state")
         blocking = self._fact("cn.reconciliation.iit.blocking_issue_count")
         detail = self._fact("cn.reconciliation.iit.detail")
+        summary = self._fact("cn.reconciliation.iit.risk_summary")
 
         self.assertEqual(conclusion["value"], "aligned")
         self.assertEqual(conclusion["quality_state"], "complete")
@@ -860,7 +861,25 @@ class TestChinaIitPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(
             detail["value"]["checksums"]["result"], run.result_checksum
         )
+        self.assertEqual(
+            summary["value"]["schema"],
+            "sdoo.cn.reconciliation.iit-risk-summary.v1",
+        )
+        self.assertEqual(summary["value"]["risk_status"], "aligned")
+        self.assertEqual(
+            summary["value"]["next_action"],
+            "retain_iit_snapshots_and_continue_monitoring",
+        )
+        self.assertEqual(
+            summary["value"]["checksums"]["result"], run.result_checksum
+        )
+        self.assertIn(
+            "payroll_gross_income_amount",
+            summary["value"]["amounts"],
+        )
+        self.assertIn("filing_payable_amount", summary["value"]["amounts"])
         serialized = json.dumps(detail["value"], ensure_ascii=False)
+        serialized_summary = json.dumps(summary["value"], ensure_ascii=False)
         for sensitive_key in (
             "subject_key",
             "source_line_key",
@@ -868,6 +887,7 @@ class TestChinaIitPeriodReconciliation(AccountTestInvoicingCommon):
             "taxpayer_id",
         ):
             self.assertNotIn(sensitive_key, serialized)
+            self.assertNotIn(sensitive_key, serialized_summary)
         self.assertIsNone(
             self._fact(
                 "cn.reconciliation.iit.conclusion_state",

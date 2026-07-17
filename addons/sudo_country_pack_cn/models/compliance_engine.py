@@ -126,6 +126,9 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 "cn.reconciliation.cit.detail": (
                     self._provide_cn_cit_reconciliation_detail
                 ),
+                "cn.reconciliation.cit.risk_summary": (
+                    self._provide_cn_cit_reconciliation_risk_summary
+                ),
                 "cn.reconciliation.iit.conclusion_state": (
                     self._provide_cn_iit_reconciliation_conclusion_state
                 ),
@@ -140,6 +143,9 @@ class SudoChinaComplianceEngine(models.AbstractModel):
                 ),
                 "cn.reconciliation.iit.detail": (
                     self._provide_cn_iit_reconciliation_detail
+                ),
+                "cn.reconciliation.iit.risk_summary": (
+                    self._provide_cn_iit_reconciliation_risk_summary
                 ),
                 "cn.cross_border.pending_review_count": (
                     self._provide_cn_cross_border_pending_review_count
@@ -845,6 +851,71 @@ class SudoChinaComplianceEngine(models.AbstractModel):
             assessment, self._cn_vat_reconciliation_risk_summary
         )
 
+    @staticmethod
+    def _cn_reconciliation_risk_summary(
+        detail, schema, amount_fields, next_actions
+    ):
+        if not detail:
+            return None
+
+        counts = detail["counts"]
+        source_states = detail["source_states"]
+        differences = {
+            key: value
+            for key, value in detail["differences"].items()
+            if value not in (None, "0", "0.0", "0.00")
+        }
+        blocked_sources = [
+            key for key, value in source_states.items() if value == "blocked"
+        ]
+        missing_sources = [
+            key for key, value in source_states.items() if value == "no_data"
+        ]
+        if counts["blocking"]:
+            risk_status = "blocked"
+        elif counts["differences"]:
+            risk_status = "difference_review_required"
+        elif counts["warnings"]:
+            risk_status = "aligned_with_disclosure_required"
+        else:
+            risk_status = "aligned"
+
+        return {
+            "schema": schema,
+            "run_id": detail["run_id"],
+            "period_start": detail["period_start"],
+            "period_end": detail["period_end"],
+            "conclusion_state": detail["conclusion_state"],
+            "risk_status": risk_status,
+            "next_action": next_actions[risk_status],
+            "source_states": source_states,
+            "blocked_sources": blocked_sources,
+            "missing_sources": missing_sources,
+            "counts": {
+                "blocking": counts["blocking"],
+                "differences": counts["differences"],
+                "warnings": counts["warnings"],
+                "issues": counts["issues"],
+            },
+            "amounts": {
+                field_name: detail["amounts"].get(field_name)
+                for field_name in amount_fields
+            },
+            "material_differences": differences,
+            "top_issues": [
+                {
+                    "code": issue["code"],
+                    "severity": issue["severity"],
+                    "kind": issue["kind"],
+                    "source_area": issue["source_area"],
+                    "difference": issue["difference"],
+                    "count_comparison": issue.get("count_comparison"),
+                }
+                for issue in detail["issues"][:10]
+            ],
+            "checksums": detail["checksums"],
+        }
+
     def _cn_cit_reconciliation_snapshot(self, assessment):
         run, payload = self._current_reconciliation_run(
             assessment,
@@ -1117,6 +1188,37 @@ class SudoChinaComplianceEngine(models.AbstractModel):
     def _provide_cn_cit_reconciliation_detail(self, assessment, _definition):
         return self._provide_cn_cit_reconciliation_value(
             assessment, lambda detail: detail
+        )
+
+    def _provide_cn_cit_reconciliation_risk_summary(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_cit_reconciliation_value(
+            assessment,
+            lambda detail: self._cn_reconciliation_risk_summary(
+                detail,
+                "sdoo.cn.reconciliation.cit-risk-summary.v1",
+                (
+                    "ledger_accounting_profit_amount",
+                    "filing_accounting_profit_amount",
+                    "expected_taxable_income_amount",
+                    "filing_taxable_income_amount",
+                    "filing_payable_amount",
+                    "effective_paid_principal_amount",
+                    "filing_refundable_amount",
+                    "refunded_principal_amount",
+                ),
+                {
+                    "blocked": "resolve_cit_source_or_scope_blockers",
+                    "difference_review_required": (
+                        "review_cit_ledger_filing_payment_differences"
+                    ),
+                    "aligned_with_disclosure_required": (
+                        "review_cit_warnings_and_disclose_scope_limits"
+                    ),
+                    "aligned": "retain_cit_snapshots_and_continue_monitoring",
+                },
+            ),
         )
 
     def _cn_iit_reconciliation_snapshot(self, assessment):
@@ -1439,6 +1541,37 @@ class SudoChinaComplianceEngine(models.AbstractModel):
     def _provide_cn_iit_reconciliation_detail(self, assessment, _definition):
         return self._provide_cn_iit_reconciliation_value(
             assessment, lambda detail: detail
+        )
+
+    def _provide_cn_iit_reconciliation_risk_summary(
+        self, assessment, _definition
+    ):
+        return self._provide_cn_iit_reconciliation_value(
+            assessment,
+            lambda detail: self._cn_reconciliation_risk_summary(
+                detail,
+                "sdoo.cn.reconciliation.iit-risk-summary.v1",
+                (
+                    "ledger_payroll_expense_amount",
+                    "payroll_gross_income_amount",
+                    "filing_income_amount",
+                    "filing_tax_calculated_amount",
+                    "filing_payable_amount",
+                    "effective_paid_principal_amount",
+                    "filing_refundable_amount",
+                    "refunded_principal_amount",
+                ),
+                {
+                    "blocked": "resolve_iit_source_scope_or_person_count_blockers",
+                    "difference_review_required": (
+                        "review_iit_payroll_filing_payment_differences"
+                    ),
+                    "aligned_with_disclosure_required": (
+                        "review_iit_warnings_and_disclose_scope_limits"
+                    ),
+                    "aligned": "retain_iit_snapshots_and_continue_monitoring",
+                },
+            ),
         )
 
     @staticmethod
