@@ -299,6 +299,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_conclusion_boundary"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_next_best_action"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -385,6 +390,14 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "activate",
             self.profile.cn_workbench_conclusion_boundary_next_action.lower(),
         )
+        self.assertEqual(self.profile.cn_workbench_next_best_action_key, "profile")
+        self.assertIn(
+            "activate",
+            self.profile.cn_workbench_next_best_action_label.lower(),
+        )
+        action = self.profile.action_cn_open_workbench_next_best_action()
+        self.assertEqual(action["res_model"], "sudo.compliance.profile")
+        self.assertEqual(action["res_id"], self.profile.id)
 
     def test_workbench_summarizes_pending_data_readiness(self):
         self.env["sudo.cn.external.dataset"].create(
@@ -428,6 +441,12 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "controlled accounting/tax data",
             self.profile.cn_workbench_conclusion_boundary_summary,
         )
+        self.assertEqual(
+            self.profile.cn_workbench_next_best_action_key,
+            "data_readiness",
+        )
+        action = self.profile.action_cn_open_workbench_next_best_action()
+        self.assertEqual(action["res_model"], "sudo.cn.external.dataset")
 
     def test_workbench_surfaces_odoo_ledger_basis_counts(self):
         self.profile._write_import({"status": "active"})
@@ -449,6 +468,10 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn(
             "controlled accounting/tax data",
             self.profile.cn_workbench_conclusion_boundary_summary,
+        )
+        self.assertEqual(
+            self.profile.cn_workbench_next_best_action_key,
+            "data_readiness",
         )
 
     def test_workbench_summarizes_remediation_rescan_status(self):

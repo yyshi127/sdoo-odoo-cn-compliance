@@ -12,6 +12,18 @@ FLOW_STATES = [
     ("attention", "需处理"),
     ("blocked", "受限"),
 ]
+NEXT_STEP_KEYS = [
+    ("profile", "Profile Setup"),
+    ("data_readiness", "Data Readiness"),
+    ("obligations", "Tax Obligations"),
+    ("scan", "Rule Scan"),
+    ("risks", "Risk Review"),
+    ("remediation", "Remediation"),
+    ("report_readiness", "Report Readiness"),
+    ("evidence", "Evidence"),
+    ("filing", "Filing Archive"),
+    ("ai_guidance", "AI Guidance"),
+]
 
 
 def _tax_domain_state(latest_assessment, issue_count, limitation_count):
@@ -185,6 +197,34 @@ def _conclusion_boundary_values(profile):
         "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned.",
         "Keep rules, source references and period data current before the next scan.",
     )
+
+
+def _next_best_action_values(profile):
+    if profile.country_id.code != "CN":
+        return (False, False)
+    if profile.status != "active":
+        return ("profile", "Complete and activate the China profile")
+    if profile.cn_workbench_data_state in ("blocked", "not_started"):
+        return ("data_readiness", "Prepare controlled accounting and tax data")
+    if profile.cn_workbench_obligation_state != "ready":
+        return ("obligations", "Review China tax obligations")
+    if profile.cn_workbench_scan_state != "ready":
+        return ("scan", "Run or review the rule scan")
+    if profile.cn_workbench_risk_state in ("blocked", "attention"):
+        return ("risks", "Review unresolved compliance risks")
+    if profile.cn_workbench_remediation_state in ("blocked", "attention"):
+        return ("remediation", "Work remediation tasks")
+    if profile.cn_workbench_rescan_state in ("blocked", "attention"):
+        return ("remediation", "Verify remediation with rescans")
+    if profile.cn_workbench_report_state != "ready":
+        return ("report_readiness", "Prepare the formal compliance report")
+    if profile.cn_workbench_evidence_state != "ready":
+        return ("evidence", "Verify supporting evidence")
+    if profile.cn_workbench_filing_archive_state in ("blocked", "attention"):
+        return ("filing", "Seal filing and payment archives")
+    if profile.cn_workbench_ai_guidance_state in ("blocked", "attention"):
+        return ("ai_guidance", "Review controlled AI guidance")
+    return ("report_readiness", "Review the ready compliance report package")
 
 
 class SudoChinaComplianceWorkbenchProfile(models.Model):
@@ -516,6 +556,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_conclusion_boundary_next_action = fields.Char(
         string="Conclusion Boundary Next Action",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_next_best_action_key = fields.Selection(
+        NEXT_STEP_KEYS,
+        string="Next Best Action Target",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_next_best_action_label = fields.Char(
+        string="Next Best Action",
         compute="_compute_cn_workbench",
     )
 
@@ -1106,6 +1155,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_conclusion_boundary_summary,
                 profile.cn_workbench_conclusion_boundary_next_action,
             ) = _conclusion_boundary_values(profile)
+            (
+                profile.cn_workbench_next_best_action_key,
+                profile.cn_workbench_next_best_action_label,
+            ) = _next_best_action_values(profile)
 
     def _cn_action(self, name, res_model, domain, context=None):
         self.ensure_one()
@@ -1297,3 +1350,33 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             "sudo.cn.iit.period.reconciliation.issue",
             [("profile_id", "=", self.id)],
         )
+
+    def action_cn_open_workbench_next_best_action(self):
+        self.ensure_one()
+        target = self.cn_workbench_next_best_action_key
+        if target == "profile":
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("China Compliance Profile"),
+                "res_model": self._name,
+                "res_id": self.id,
+                "view_mode": "form",
+                "target": "current",
+            }
+        if target == "data_readiness":
+            return self.action_cn_open_workbench_data_readiness()
+        if target == "obligations":
+            return self.action_cn_open_workbench_obligations()
+        if target == "scan":
+            return self.action_cn_open_workbench_assessments()
+        if target == "risks":
+            return self.action_cn_open_workbench_findings()
+        if target == "remediation":
+            return self.action_cn_open_workbench_tasks()
+        if target == "evidence":
+            return self.action_cn_open_workbench_evidence_center()
+        if target == "filing":
+            return self.action_cn_open_workbench_filing_center()
+        if target == "ai_guidance":
+            return self.action_cn_open_workbench_ai_guidance_findings()
+        return self.action_cn_open_workbench_report_readiness()
