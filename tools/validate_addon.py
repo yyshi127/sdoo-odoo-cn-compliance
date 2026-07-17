@@ -2948,6 +2948,12 @@ def validate_formal_compliance_report() -> None:
         "analysis.get('prompt_version')",
         "analysis.get('input_checksum')",
         "analysis.get('record_checksum')",
+        "Data basis snapshot",
+        "data_basis.get('ready_dataset_count'",
+        "data_basis.get('missing_type_summary')",
+        "accounting_basis.get('posted_move_count'",
+        "accounting_basis.get('draft_move_count'",
+        "accounting_basis.get('posted_invoice_count'",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")
@@ -3009,6 +3015,8 @@ def validate_formal_compliance_report() -> None:
         "Evidence required:",
         "Source snapshot:",
         "Professional review snapshot:",
+        "Data basis snapshot",
+        "Accounting basis",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",

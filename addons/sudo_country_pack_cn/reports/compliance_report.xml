@@ -169,6 +169,61 @@
                             </tbody>
                         </table>
                         <p class="text-muted"><span t-esc="assessment.get('data_sufficiency_message')"/></p>
+                        <t t-set="data_basis" t-value="payload.get('data_basis') or {}"/>
+                        <t t-set="accounting_basis" t-value="data_basis.get('accounting_basis') or {}"/>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th colspan="4">Data basis snapshot</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>External data state</th>
+                                    <td><span t-esc="data_basis.get('state') or '-'"/></td>
+                                    <th>Next action</th>
+                                    <td><span t-esc="data_basis.get('next_action') or '-'"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Datasets ready / warning / blocked</th>
+                                    <td>
+                                        <span t-esc="data_basis.get('ready_dataset_count', 0)"/>
+                                        /
+                                        <span t-esc="data_basis.get('warning_dataset_count', 0)"/>
+                                        /
+                                        <span t-esc="data_basis.get('blocked_dataset_count', 0)"/>
+                                    </td>
+                                    <th>Normalized records</th>
+                                    <td><span t-esc="data_basis.get('normalized_record_count', 0)"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Required data types ready / missing</th>
+                                    <td>
+                                        <span t-esc="data_basis.get('ready_type_count', 0)"/>
+                                        /
+                                        <span t-esc="data_basis.get('missing_type_count', 0)"/>
+                                    </td>
+                                    <th>Missing data type summary</th>
+                                    <td><span t-esc="data_basis.get('missing_type_summary') or '-'"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Accounting basis</th>
+                                    <td><span t-esc="accounting_basis.get('state') or '-'"/></td>
+                                    <th>Accounting next action</th>
+                                    <td><span t-esc="accounting_basis.get('next_action') or '-'"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Posted / draft journal entries</th>
+                                    <td>
+                                        <span t-esc="accounting_basis.get('posted_move_count', 0)"/>
+                                        /
+                                        <span t-esc="accounting_basis.get('draft_move_count', 0)"/>
+                                    </td>
+                                    <th>Posted invoices</th>
+                                    <td><span t-esc="accounting_basis.get('posted_invoice_count', 0)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
 
                         <h2 style="font-size: 17px; color: #17313b;">四、规则结果与复核结论</h2>
                         <table class="table table-sm table-bordered">
