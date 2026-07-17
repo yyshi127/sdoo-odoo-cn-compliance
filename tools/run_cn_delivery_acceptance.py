@@ -115,6 +115,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "docs" / "samples",
         ROOT / "tools" / "run_cn_delivery_acceptance.py",
         ROOT / "tools" / "build_cn_delivery_bundle.py",
+        ROOT / "tools" / "verify_cn_delivery_artifacts.py",
         ROOT / "tools" / "validate_addon.py",
         ROOT / "tools" / "test_tax_data_contract.py",
         ROOT / "tools" / "test_xbrl_contract.py",

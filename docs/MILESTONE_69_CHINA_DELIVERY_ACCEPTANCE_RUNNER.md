@@ -107,9 +107,24 @@ contract samples and delivery tools.  It writes a deterministic tar.gz archive
 with normalized ownership, permissions and mtimes, plus metadata containing the
 bundle SHA-256 and the same aggregate source SHA-256 used by the manifest.
 
+Artifact verification:
+
+```powershell
+python tools\verify_cn_delivery_artifacts.py `
+  --bundle dist\sdoo-cn-compliance-delivery.tgz `
+  --bundle-metadata dist\sdoo-cn-compliance-delivery.bundle.json `
+  --manifest dist\cn_delivery_manifest.json `
+  --summary dist\cn_delivery_acceptance_summary.json
+```
+
+The verifier checks schema versions, addon versions, file counts, aggregate
+SHA-256 values, per-file size/SHA-256 entries, the bundle file SHA-256 when the
+bundle is available and the parsed runtime `0 failed / 0 errors` result when
+the acceptance summary contains a runtime log.
+
 ## Acceptance Result
 
-For `19.0.1.100.0`, the delivery toolchain can build a deterministic release
-bundle, emit a deterministic delivery manifest and write a machine-readable
-acceptance summary.  Every selected profile still expects `0 failed / 0 errors`
-before handoff.
+For `19.0.1.101.0`, the delivery toolchain can build a deterministic release
+bundle, emit a deterministic delivery manifest, write a machine-readable
+acceptance summary and verify the three artifacts agree before handoff.  Every
+selected profile still expects `0 failed / 0 errors` before handoff.
