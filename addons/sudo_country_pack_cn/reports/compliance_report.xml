@@ -211,6 +211,17 @@
                                             <span t-if="finding.get('source_warning')">Source basis requires review. </span>
                                             <span t-if="finding.get('professional_warning')">Professional sign-off requires review.</span>
                                         </div>
+                                        <div t-if="finding.get('source_snapshot')" style="margin-top: 6px; padding: 6px; border-left: 3px solid #0891b2; background: #ecfeff;">
+                                            <strong>Source snapshot:</strong>
+                                            <span t-foreach="finding.get('source_snapshot')" t-as="source">
+                                                <span t-esc="source.get('name') or '-'"/>
+                                                <span>(</span><span t-esc="source.get('status') or '-'"/><span>) </span>
+                                            </span>
+                                        </div>
+                                        <div t-if="finding.get('professional_snapshot')" style="margin-top: 6px; padding: 6px; border-left: 3px solid #4f46e5; background: #eef2ff;">
+                                            <strong>Professional review snapshot:</strong>
+                                            <span t-esc="finding.get('professional_snapshot').get('state') or '-'"/>
+                                        </div>
                                         <t t-set="reconciliation" t-value="finding.get('reconciliation_risk_summary') or {}"/>
                                         <div t-if="reconciliation" style="margin-top: 6px; padding: 6px; border-left: 3px solid #0f766e; background: #f0fdfa;">
                                             <strong>Reconciliation:</strong>

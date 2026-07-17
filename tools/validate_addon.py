@@ -2937,6 +2937,11 @@ def validate_formal_compliance_report() -> None:
         "Basis warning:",
         "finding.get('source_warning')",
         "finding.get('professional_warning')",
+        "Source snapshot:",
+        "finding.get('source_snapshot')",
+        "source.get('status')",
+        "Professional review snapshot:",
+        "finding.get('professional_snapshot')",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")
@@ -2996,6 +3001,8 @@ def validate_formal_compliance_report() -> None:
         "风险闭环可报告",
         "Rule basis:",
         "Evidence required:",
+        "Source snapshot:",
+        "Professional review snapshot:",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",
