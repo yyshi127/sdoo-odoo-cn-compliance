@@ -22,6 +22,16 @@ def _decision_has_limitations(decision: Any) -> bool:
     return isinstance(decision, str) and "limitation" in decision
 
 
+def _valid_limitations(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    limitations: list[str] = []
+    for item in value:
+        if isinstance(item, str) and len(item.strip()) >= 20:
+            limitations.append(item.strip())
+    return limitations
+
+
 def _decision_map(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
     decisions = evidence.get("decisions") or []
     if not isinstance(decisions, list):
@@ -46,7 +56,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence source commit does not match the packet")
 
     decisions = _decision_map(evidence)
-    limitations = evidence.get("limitations") or []
+    limitations = _valid_limitations(evidence.get("limitations"))
     action_results: list[dict[str, Any]] = []
     deployment_decision = None
     limitation_decision_keys: list[str] = []
@@ -92,7 +102,8 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
     if limitation_decision_keys:
         if not limitations:
             blockers.append(
-                "limitation decisions require limitations to be recorded: %s"
+                "limitation decisions require at least one substantive limitation "
+                "entry of 20 or more characters: %s"
                 % ", ".join(limitation_decision_keys)
             )
         else:

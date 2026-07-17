@@ -309,7 +309,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
         self.assertFalse(result["ok"])
         self.assertIn(
-            "limitation decisions require limitations to be recorded: production_deployment_decision",
+            "limitation decisions require at least one substantive limitation "
+            "entry of 20 or more characters: production_deployment_decision",
             result["blockers"],
         )
 
@@ -324,6 +325,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "production sign-off includes documented limitations: production_deployment_decision"
             ],
         )
+
+    def test_limitation_decision_rejects_empty_short_or_malformed_limitations(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet, deployment_decision="deploy_with_limitations")
+
+        for malformed_limitations in ([""], ["too short"], "not-a-list", [123]):
+            payload = deepcopy(evidence)
+            payload["limitations"] = malformed_limitations
+            result = VALIDATION._validate(packet, payload)
+
+            self.assertFalse(result["ok"])
+            self.assertIn(
+                "limitation decisions require at least one substantive limitation "
+                "entry of 20 or more characters: production_deployment_decision",
+                result["blockers"],
+            )
 
     def test_any_limitation_decision_requires_recorded_limitations(self):
         packet = PACKET._build_packet(status_payload())
@@ -343,7 +360,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
         self.assertFalse(result["ok"])
         self.assertIn(
-            "limitation decisions require limitations to be recorded: "
+            "limitation decisions require at least one substantive limitation "
+            "entry of 20 or more characters: "
             "business_uat_decision, china_tax_professional_rule_signoff, "
             "official_source_freshness_review, customer_scope_and_data_gap_review, "
             "representative_ux_walkthrough",
