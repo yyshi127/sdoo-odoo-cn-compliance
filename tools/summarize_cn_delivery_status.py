@@ -339,6 +339,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Preview country pack version: `{preview_module.get('country_pack_version', '')}`",
         f"- Real-data closed-loop checker: `{real_data_closed_loop_checker.get('path', '')}`",
         f"- Real-data closed-loop checker in manifest: `{real_data_closed_loop_checker.get('included_in_manifest', False)}`",
+        f"- Real-data setup demo ready: `{real_data_readiness.get('setup_demo_ready', False)}`",
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",

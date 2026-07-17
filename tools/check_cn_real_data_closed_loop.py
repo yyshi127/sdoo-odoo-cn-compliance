@@ -199,7 +199,7 @@ readiness = {{
     ),
     "has_report_activity": bool((objects.get("formal_reports") or 0) > 0),
 }}
-readiness["demo_ready"] = all(
+readiness["setup_demo_ready"] = all(
     readiness[key]
     for key in (
         "module_installed",
@@ -207,6 +207,13 @@ readiness["demo_ready"] = all(
         "country_pack_version_matches",
         "has_real_accounting_ledger",
         "has_china_profile",
+    )
+)
+readiness["demo_ready"] = all(
+    readiness[key]
+    for key in (
+        "setup_demo_ready",
+        "has_active_china_profile",
     )
 )
 readiness["closed_loop_evidence_ready"] = all(
