@@ -105,6 +105,88 @@ def _closed_loop_values(profile):
     )
 
 
+def _conclusion_boundary_values(profile):
+    if profile.country_id.code != "CN":
+        return (False, False, False)
+    if profile.status != "active":
+        return (
+            "blocked",
+            "Not usable as a compliance conclusion until the China profile is active.",
+            "Complete and activate the China compliance profile first.",
+        )
+    if profile.cn_workbench_data_state in ("blocked", "not_started"):
+        return (
+            "blocked",
+            "Not usable as a compliance conclusion because controlled accounting/tax data is not ready.",
+            profile.cn_workbench_data_next_action,
+        )
+    if profile.cn_workbench_limitation_count:
+        return (
+            "blocked",
+            "Only a limited conclusion is possible because scope, evidence or report limitations exist.",
+            "Resolve or explicitly document all limitations before final sign-off.",
+        )
+    if profile.cn_workbench_obligation_state != "ready":
+        return (
+            "attention",
+            "Conclusion is incomplete until China tax obligation applicability has been reviewed.",
+            profile.cn_workbench_obligation_next_action,
+        )
+    if profile.cn_workbench_scan_state != "ready":
+        return (
+            "attention",
+            "Conclusion is not current because no completed rule scan is available for this profile.",
+            "Run and complete a rule scan for the target period.",
+        )
+    if profile.cn_workbench_risk_state in ("blocked", "attention"):
+        return (
+            "attention",
+            "Conclusion requires review because unresolved or high-risk findings remain.",
+            "Review risks, quantify tax impact, and create remediation tasks where needed.",
+        )
+    if profile.cn_workbench_remediation_state in ("blocked", "attention"):
+        return (
+            "attention",
+            "Conclusion requires remediation follow-through before it can support management sign-off.",
+            "Complete open remediation tasks and verify them with evidence.",
+        )
+    if profile.cn_workbench_rescan_state in ("blocked", "attention"):
+        return (
+            "attention",
+            "Conclusion is waiting for remediation verification rescans.",
+            profile.cn_workbench_rescan_next_action,
+        )
+    if profile.cn_workbench_report_state != "ready":
+        return (
+            "attention",
+            "Conclusion is not yet packaged as an issued formal compliance report.",
+            "Generate and issue the formal China compliance report after review gates pass.",
+        )
+    if profile.cn_workbench_evidence_state != "ready":
+        return (
+            "attention",
+            "Conclusion is not fully supportable until evidence is attached and verified.",
+            "Verify supporting evidence for the report, risks, remediation and filing archives.",
+        )
+    if profile.cn_workbench_ai_guidance_limited_count:
+        return (
+            "attention",
+            "AI guidance is available only as controlled assistance and still has limited inputs to disclose.",
+            "Review AI guidance disclosures before using them in remediation instructions.",
+        )
+    if profile.cn_workbench_closed_loop_state != "ready":
+        return (
+            "attention",
+            "Conclusion is close but the closed-loop control summary still has open gaps.",
+            profile.cn_workbench_closed_loop_summary,
+        )
+    return (
+        "ready",
+        "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned.",
+        "Keep rules, source references and period data current before the next scan.",
+    )
+
+
 class SudoChinaComplianceWorkbenchProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
@@ -421,6 +503,19 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_closed_loop_summary = fields.Char(
         string="Closed Loop Summary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_conclusion_boundary_state = fields.Selection(
+        FLOW_STATES,
+        string="Conclusion Boundary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_conclusion_boundary_summary = fields.Char(
+        string="Conclusion Boundary Summary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_conclusion_boundary_next_action = fields.Char(
+        string="Conclusion Boundary Next Action",
         compute="_compute_cn_workbench",
     )
 
@@ -1006,6 +1101,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_closed_loop_gap_count,
                 profile.cn_workbench_closed_loop_summary,
             ) = _closed_loop_values(profile)
+            (
+                profile.cn_workbench_conclusion_boundary_state,
+                profile.cn_workbench_conclusion_boundary_summary,
+                profile.cn_workbench_conclusion_boundary_next_action,
+            ) = _conclusion_boundary_values(profile)
 
     def _cn_action(self, name, res_model, domain, context=None):
         self.ensure_one()

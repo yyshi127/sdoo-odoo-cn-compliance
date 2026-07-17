@@ -294,6 +294,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_closed_loop_readiness"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_conclusion_boundary"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -368,6 +373,18 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_gap_count, 1)
         self.assertIn("Activate", self.profile.cn_workbench_closed_loop_summary)
+        self.assertEqual(
+            self.profile.cn_workbench_conclusion_boundary_state,
+            "blocked",
+        )
+        self.assertIn(
+            "Not usable",
+            self.profile.cn_workbench_conclusion_boundary_summary,
+        )
+        self.assertIn(
+            "activate",
+            self.profile.cn_workbench_conclusion_boundary_next_action.lower(),
+        )
 
     def test_workbench_summarizes_pending_data_readiness(self):
         self.env["sudo.cn.external.dataset"].create(
@@ -403,6 +420,14 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "blocked")
         self.assertGreater(self.profile.cn_workbench_closed_loop_gap_count, 0)
         self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
+        self.assertEqual(
+            self.profile.cn_workbench_conclusion_boundary_state,
+            "blocked",
+        )
+        self.assertIn(
+            "controlled accounting/tax data",
+            self.profile.cn_workbench_conclusion_boundary_summary,
+        )
 
     def test_workbench_surfaces_odoo_ledger_basis_counts(self):
         self.profile._write_import({"status": "active"})
@@ -417,6 +442,14 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "attention")
         self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
+        self.assertEqual(
+            self.profile.cn_workbench_conclusion_boundary_state,
+            "blocked",
+        )
+        self.assertIn(
+            "controlled accounting/tax data",
+            self.profile.cn_workbench_conclusion_boundary_summary,
+        )
 
     def test_workbench_summarizes_remediation_rescan_status(self):
         pending = self.env["sudo.compliance.task"].create_from_finding(
