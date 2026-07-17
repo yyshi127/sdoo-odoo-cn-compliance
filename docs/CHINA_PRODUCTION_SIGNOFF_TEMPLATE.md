@@ -38,6 +38,8 @@ It is not a tax opinion.
 - Decision: accepted / accepted with limitations / rejected
 - Representative datasets reviewed:
 - Screens checked:
+- Blocker-summary walkthrough evidence:
+- Blocker-summary walkthrough decision: passed / passed with limitations / failed
 - Open usability issues:
 
 ## Rule And Source Governance
@@ -69,6 +71,11 @@ It is not a tax opinion.
 - Failed verification rescans:
 - Report readiness state:
 - Filing/payment archive issues:
+- Data readiness blockers reviewed: yes / no / not applicable
+- Evidence blockers reviewed: yes / no / not applicable
+- Remediation blockers reviewed: yes / no / not applicable
+- Report blockers reviewed: yes / no / not applicable
+- Report readiness blockers reviewed: yes / no / not applicable
 
 ## Deployment Decision
 

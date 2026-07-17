@@ -4506,6 +4506,8 @@ def validate_delivery_objective_coverage() -> None:
         "Review controlled AI guidance",
         "Review report readiness and formal reports",
         "Screen and usability checks",
+        "Review blocker-summary visibility",
+        "blocker_summary_walkthrough",
         "## Acceptance Boundary",
     ):
         if required not in uat_content:
@@ -4525,6 +4527,9 @@ def validate_delivery_objective_coverage() -> None:
         "## Risk And Remediation Status",
         "## Deployment Decision",
         "## Boundary Statement",
+        "Blocker-summary walkthrough evidence",
+        "Data readiness blockers reviewed",
+        "Report readiness blockers reviewed",
     ):
         if required not in signoff_content:
             fail(f"China production sign-off template is missing {required}")

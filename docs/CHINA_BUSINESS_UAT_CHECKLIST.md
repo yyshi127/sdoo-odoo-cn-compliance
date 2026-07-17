@@ -88,6 +88,15 @@ professional review.
       disappear.
     - Confirm list, kanban and form navigation feels native to Odoo.
 
+11. Review blocker-summary visibility.
+    - Confirm data readiness, evidence center, filing/payment archive,
+      remediation tracker, report center and report readiness pages show a
+      visible blocker or limitation summary for non-ready records.
+    - Confirm each blocker summary explains why the record is blocked, limited
+      or pending, and what next page or action should be used to close it.
+    - Capture screenshots, a short recording or a signed UAT note as evidence
+      for the production `blocker_summary_walkthrough` sign-off action.
+
 ## Sign-off Notes
 
 Record the following before marking a release candidate business-accepted:
@@ -98,6 +107,7 @@ Record the following before marking a release candidate business-accepted:
 - source datasets reviewed;
 - unresolved limitations or data gaps;
 - open high/critical risks;
+- blocker-summary walkthrough evidence reference;
 - reviewer name and role;
 - decision: accepted, accepted with limitations, or rejected.
 
