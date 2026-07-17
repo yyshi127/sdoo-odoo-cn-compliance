@@ -289,6 +289,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_workbench_ai_guidance_summary"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_workbench_closed_loop_readiness"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
@@ -360,6 +365,9 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
         self.assertEqual(self.profile.cn_workbench_cross_border_transaction_count, 0)
         self.assertEqual(self.profile.cn_workbench_cross_border_pending_count, 0)
+        self.assertEqual(self.profile.cn_workbench_closed_loop_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_closed_loop_gap_count, 1)
+        self.assertIn("Activate", self.profile.cn_workbench_closed_loop_summary)
 
     def test_workbench_summarizes_pending_data_readiness(self):
         self.env["sudo.cn.external.dataset"].create(
@@ -381,6 +389,7 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("封存", self.profile.cn_workbench_data_next_action)
 
     def test_workbench_blocks_scanned_period_without_posted_ledger(self):
+        self.profile._write_import({"status": "active"})
         self._finding("no-ledger")
         self.profile.invalidate_recordset()
 
@@ -391,8 +400,12 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "Post Odoo accounting entries",
             self.profile.cn_workbench_data_next_action,
         )
+        self.assertEqual(self.profile.cn_workbench_closed_loop_state, "blocked")
+        self.assertGreater(self.profile.cn_workbench_closed_loop_gap_count, 0)
+        self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
 
     def test_workbench_surfaces_odoo_ledger_basis_counts(self):
+        self.profile._write_import({"status": "active"})
         self._finding("ledger")
         self._ledger_move("post", posted=True)
         self._ledger_move("draft", posted=False)
@@ -402,6 +415,8 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_draft_move_count, 1)
         self.assertEqual(self.profile.cn_workbench_posted_invoice_count, 0)
         self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
+        self.assertEqual(self.profile.cn_workbench_closed_loop_state, "attention")
+        self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
 
     def test_workbench_summarizes_remediation_rescan_status(self):
         pending = self.env["sudo.compliance.task"].create_from_finding(

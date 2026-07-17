@@ -31,6 +31,13 @@
                        decoration-warning="cn_workbench_status in ('warning', 'limited', 'setup_required')"
                        decoration-success="cn_workbench_status == 'healthy'"/>
                 <field name="cn_workbench_period_label"/>
+                <field name="cn_workbench_closed_loop_state" widget="badge"
+                       decoration-success="cn_workbench_closed_loop_state == 'ready'"
+                       decoration-warning="cn_workbench_closed_loop_state == 'attention'"
+                       decoration-danger="cn_workbench_closed_loop_state == 'blocked'"
+                       decoration-muted="cn_workbench_closed_loop_state == 'not_started'"/>
+                <field name="cn_workbench_closed_loop_gap_count"/>
+                <field name="cn_workbench_closed_loop_summary" optional="show"/>
                 <field name="cn_workbench_data_state" widget="badge"
                        decoration-success="cn_workbench_data_state == 'ready'"
                        decoration-warning="cn_workbench_data_state == 'attention'"
@@ -130,6 +137,9 @@
                 <field name="cn_workbench_cross_border_next_action"/>
                 <field name="cn_workbench_cross_border_transaction_count"/>
                 <field name="cn_workbench_cross_border_pending_count"/>
+                <field name="cn_workbench_closed_loop_state"/>
+                <field name="cn_workbench_closed_loop_gap_count"/>
+                <field name="cn_workbench_closed_loop_summary"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_workbench_status.raw_value == 'action_required' ? 'border-danger' : record.cn_workbench_status.raw_value == 'healthy' ? 'border-success' : 'border-warning'}">
@@ -155,6 +165,24 @@
 
                             <div class="mt-3 text-muted">
                                 <field name="cn_workbench_next_action"/>
+                            </div>
+
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Closed-loop delivery</div>
+                                        <div class="fw-semibold"><field name="cn_workbench_closed_loop_summary"/></div>
+                                        <div class="text-muted small">
+                                            <field name="cn_workbench_closed_loop_gap_count"/>
+                                            <span> open control gaps</span>
+                                        </div>
+                                    </div>
+                                    <field name="cn_workbench_closed_loop_state" widget="badge"
+                                           decoration-success="cn_workbench_closed_loop_state == 'ready'"
+                                           decoration-warning="cn_workbench_closed_loop_state == 'attention'"
+                                           decoration-danger="cn_workbench_closed_loop_state == 'blocked'"
+                                           decoration-muted="cn_workbench_closed_loop_state == 'not_started'"/>
+                                </div>
                             </div>
 
                             <button type="object" name="action_cn_open_workbench_obligations"
@@ -564,6 +592,13 @@
                         <group string="当前判断">
                             <field name="cn_workbench_period_label" readonly="1"/>
                             <field name="cn_workbench_next_action" readonly="1"/>
+                            <field name="cn_workbench_closed_loop_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_closed_loop_state == 'ready'"
+                                   decoration-warning="cn_workbench_closed_loop_state == 'attention'"
+                                   decoration-danger="cn_workbench_closed_loop_state == 'blocked'"
+                                   decoration-muted="cn_workbench_closed_loop_state == 'not_started'"/>
+                            <field name="cn_workbench_closed_loop_gap_count" readonly="1"/>
+                            <field name="cn_workbench_closed_loop_summary" readonly="1"/>
                             <field name="cn_workbench_last_assessment_id" readonly="1"/>
                             <field name="cn_workbench_latest_report_id" readonly="1"/>
                         </group>

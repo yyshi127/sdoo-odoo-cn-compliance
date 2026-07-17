@@ -52,6 +52,59 @@ def _controlled_filing_domain(profile):
     ]
 
 
+def _closed_loop_values(profile):
+    if profile.country_id.code != "CN":
+        return (False, 0, False)
+    if profile.status != "active":
+        return (
+            "not_started",
+            1,
+            "Activate the China compliance profile before evaluating the closed loop.",
+        )
+
+    stages = [
+        ("obligations", profile.cn_workbench_obligation_state),
+        ("data", profile.cn_workbench_data_state),
+        ("scan", profile.cn_workbench_scan_state),
+        ("risk review", profile.cn_workbench_risk_state),
+        ("remediation", profile.cn_workbench_remediation_state),
+        ("verification rescan", profile.cn_workbench_rescan_state),
+        ("report", profile.cn_workbench_report_state),
+        ("evidence", profile.cn_workbench_evidence_state),
+    ]
+    if (
+        profile.cn_workbench_filing_obligation_count
+        or profile.cn_workbench_filing_archive_count
+    ):
+        stages.append(("filing archive", profile.cn_workbench_filing_archive_state))
+    if profile.cn_workbench_ai_guidance_finding_count:
+        stages.append(("AI guidance", profile.cn_workbench_ai_guidance_state))
+
+    blocked = [label for label, state in stages if state == "blocked"]
+    gaps = [
+        label
+        for label, state in stages
+        if state in ("not_started", "attention", "blocked")
+    ]
+    if blocked:
+        return (
+            "blocked",
+            len(gaps),
+            "Closed loop blocked: %s." % ", ".join(gaps[:6]),
+        )
+    if gaps:
+        return (
+            "attention",
+            len(gaps),
+            "Closed loop gaps: %s." % ", ".join(gaps[:6]),
+        )
+    return (
+        "ready",
+        0,
+        "Closed loop is ready: data, scan, risk review, remediation, evidence and report controls are aligned.",
+    )
+
+
 class SudoChinaComplianceWorkbenchProfile(models.Model):
     _inherit = "sudo.compliance.profile"
 
@@ -355,6 +408,19 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_ai_guidance_stale_count = fields.Integer(
         string="Stale AI Guidance Inputs",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_closed_loop_state = fields.Selection(
+        FLOW_STATES,
+        string="Closed Loop Readiness",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_closed_loop_gap_count = fields.Integer(
+        string="Closed Loop Gaps",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_closed_loop_summary = fields.Char(
+        string="Closed Loop Summary",
         compute="_compute_cn_workbench",
     )
 
@@ -934,6 +1000,12 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             else:
                 profile.cn_workbench_status = "healthy"
                 profile.cn_workbench_next_action = _("定期扫描并生成正式合规报告")
+
+            (
+                profile.cn_workbench_closed_loop_state,
+                profile.cn_workbench_closed_loop_gap_count,
+                profile.cn_workbench_closed_loop_summary,
+            ) = _closed_loop_values(profile)
 
     def _cn_action(self, name, res_model, domain, context=None):
         self.ensure_one()
