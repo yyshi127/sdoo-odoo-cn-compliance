@@ -138,9 +138,25 @@ Development preview access:
   loopback-only development Odoo instance, including local port checks and
   server-side listener checks.
 
+Delivery status summary:
+
+```powershell
+python tools\summarize_cn_delivery_status.py `
+  --bundle-metadata dist\sdoo-cn-compliance-delivery.bundle.json `
+  --manifest dist\cn_delivery_manifest.json `
+  --summary dist\cn_delivery_acceptance_summary.json `
+  --preview-url http://127.0.0.1:18069/web/login?db=target_database `
+  --json-output dist\cn_delivery_status.json `
+  --markdown-output dist\cn_delivery_status.md
+```
+
+The status summary does not replace the verifier.  It produces handoff-friendly
+JSON/Markdown from already verified evidence so reviewers can see version
+consistency, aggregate consistency, acceptance status, runtime status and the
+preview URL in one place.
+
 ## Acceptance Result
 
-For `19.0.1.103.0`, the audited bundle also includes development preview access
-notes so reviewers can restore the local browser entry point without exposing a
-development Odoo port publicly.  Every selected profile still expects
+For `19.0.1.104.0`, the delivery toolchain can also summarize verified evidence
+into handoff-friendly JSON and Markdown.  Every selected profile still expects
 `0 failed / 0 errors` before handoff.
