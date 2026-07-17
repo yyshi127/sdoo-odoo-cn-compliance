@@ -40,6 +40,7 @@
                        decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
                        decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
                 <field name="cn_report_issue_count"/>
+                <field name="cn_report_readiness_blocker_summary" optional="show"/>
                 <field name="cn_report_open_task_count"/>
                 <field name="cn_report_limitation_count"/>
                 <field name="cn_report_pending_tax_impact_count"/>
@@ -115,6 +116,7 @@
                 <field name="state"/>
                 <field name="cn_report_readiness_state"/>
                 <field name="cn_report_next_action"/>
+                <field name="cn_report_readiness_blocker_summary"/>
                 <field name="cn_report_issue_count"/>
                 <field name="cn_report_open_task_count"/>
                 <field name="cn_report_limitation_count"/>
@@ -181,6 +183,12 @@
                             </div>
                             <div class="mt-3 text-muted">
                                 <field name="cn_report_next_action"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">Report Blockers</div>
+                                <div class="fw-semibold">
+                                    <field name="cn_report_readiness_blocker_summary"/>
+                                </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -392,6 +400,7 @@
                                decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
                                decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
                         <field name="cn_report_next_action"/>
+                        <field name="cn_report_readiness_blocker_summary"/>
                         <field name="cn_report_latest_report_id"/>
                     </group>
                     <group>

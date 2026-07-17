@@ -46,6 +46,10 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="报告下一步",
         compute="_compute_cn_report_readiness",
     )
+    cn_report_readiness_blocker_summary = fields.Char(
+        string="Report Blockers",
+        compute="_compute_cn_report_readiness",
+    )
     cn_report_issue_count = fields.Integer(
         string="准备度问题",
         compute="_compute_cn_report_readiness",
@@ -432,6 +436,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
             if assessment.country_id.code != "CN":
                 assessment.cn_report_readiness_state = False
                 assessment.cn_report_next_action = False
+                assessment.cn_report_readiness_blocker_summary = False
                 assessment.cn_report_can_prepare = False
                 continue
             if latest_report and latest_report.state == "issued":
@@ -506,6 +511,54 @@ class SudoChinaReportReadinessAssessment(models.Model):
                     "The assessment is ready for formal compliance report preparation."
                 )
                 assessment.cn_report_can_prepare = True
+            assessment.cn_report_readiness_blocker_summary = (
+                assessment._cn_report_readiness_blocker_summary()
+            )
+
+    def _cn_report_readiness_blocker_summary(self):
+        self.ensure_one()
+        blockers = []
+        if self.state != "completed":
+            blockers.append(_("rule scan not completed"))
+        if self.cn_report_readiness_state == "needs_review":
+            blockers.append(_("manual review or source sign-off pending"))
+        if self.cn_report_open_task_count:
+            blockers.append(
+                _("%(count)s remediation task(s) still open")
+                % {"count": self.cn_report_open_task_count}
+            )
+        if self.cn_report_failed_rescan_count:
+            blockers.append(
+                _("%(count)s verification rescan(s) failed")
+                % {"count": self.cn_report_failed_rescan_count}
+            )
+        if self.cn_report_pending_rescan_count:
+            blockers.append(
+                _("%(count)s verification rescan(s) pending")
+                % {"count": self.cn_report_pending_rescan_count}
+            )
+        if self.cn_report_filing_archive_state == "blocked":
+            blockers.append(_("filing/payment archive not audit-ready"))
+        if self.cn_report_ai_guidance_state == "blocked":
+            blockers.append(_("controlled AI guidance is stale"))
+        if self.cn_data_basis_state not in (False, "ready"):
+            blockers.append(_("required tax data basis is incomplete"))
+        if self.cn_accounting_basis_state not in (False, "ready"):
+            blockers.append(_("Odoo accounting basis is incomplete"))
+        if self.cn_obligation_basis_state not in (False, "ready"):
+            blockers.append(_("tax obligation applicability is not confirmed"))
+        if self.cn_report_pending_tax_impact_count:
+            blockers.append(
+                _("%(count)s tax impact case(s) need quantification")
+                % {"count": self.cn_report_pending_tax_impact_count}
+            )
+        if self.cn_report_limitation_count and not blockers:
+            return _("Limited: prepare the report with explicit limitations.")
+        if not blockers:
+            return _("No blocker: assessment is ready for report preparation.")
+        return _("Blocked by: %(blockers)s") % {
+            "blockers": "; ".join(dict.fromkeys(blockers))
+        }
 
     def action_cn_open_report_readiness_findings(self):
         self.ensure_one()

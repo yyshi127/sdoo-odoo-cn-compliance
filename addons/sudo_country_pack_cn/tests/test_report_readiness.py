@@ -156,6 +156,7 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertEqual(assessment.cn_report_readiness_state, "limited")
         self.assertTrue(assessment.cn_report_can_prepare)
         self.assertGreater(assessment.cn_report_issue_count, 0)
+        self.assertIn("Blocked by:", assessment.cn_report_readiness_blocker_summary)
         self.assertEqual(assessment.cn_data_basis_state, "missing")
         self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
         self.assertGreaterEqual(assessment.cn_report_limitation_count, 1)
@@ -168,6 +169,10 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertEqual(assessment.cn_report_readiness_state, "needs_scan")
         self.assertFalse(assessment.cn_report_can_prepare)
         self.assertIn("rule scan", assessment.cn_report_next_action)
+        self.assertIn(
+            "rule scan not completed",
+            assessment.cn_report_readiness_blocker_summary,
+        )
 
     def test_country_pack_advertises_report_readiness_badge_clarity(self):
         self.assertTrue(
@@ -252,6 +257,10 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertIn(
             "Seal filing/payment archives",
             assessment.cn_report_filing_archive_next_action,
+        )
+        self.assertIn(
+            "filing/payment archive not audit-ready",
+            assessment.cn_report_readiness_blocker_summary,
         )
         self.assertIn(filing, self.env["sudo.compliance.filing"].search([]))
 
