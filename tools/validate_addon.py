@@ -4812,6 +4812,8 @@ def validate_delivery_objective_coverage() -> None:
         "evidence_reference is missing or still a template placeholder",
         "PLACEHOLDER_TEXTS",
         "_valid_iso_date",
+        "blocked_objective_areas",
+        "objective_areas are missing from the sign-off packet",
     ):
         if required not in signoff_validation_tool_content:
             fail(f"China sign-off validation binding is missing {required}")
@@ -4825,6 +4827,8 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "test_signoff_packet_requires_blocker_summary_walkthrough",
         "test_missing_blocker_summary_walkthrough_blocks_production_gate",
+        "test_signoff_validation_blocks_actions_without_objective_areas",
+        "blocked_objective_areas",
         "blocker_summary_walkthrough",
     ):
         if required not in signoff_test_content:

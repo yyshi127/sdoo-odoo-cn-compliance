@@ -126,13 +126,21 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
     decisions = _decision_map(evidence)
     limitations = _valid_limitations(evidence.get("limitations"))
     action_results: list[dict[str, Any]] = []
+    blocked_objective_areas: list[str] = []
     deployment_decision = None
     limitation_decision_keys: list[str] = []
     for action in packet.get("production_actions") or []:
         key = action.get("key")
+        objective_areas = [
+            str(area)
+            for area in action.get("objective_areas") or []
+            if isinstance(area, str) and area.strip()
+        ]
         item = decisions.get(str(key))
         acceptable = set(action.get("acceptable_decisions") or [])
         item_blockers: list[str] = []
+        if not objective_areas:
+            item_blockers.append("objective_areas are missing from the sign-off packet")
         if not item:
             item_blockers.append("decision is missing")
         else:
@@ -160,11 +168,15 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 deployment_decision = decision
         if item_blockers:
             blockers.extend([f"{key}: {blocker}" for blocker in item_blockers])
+            for area in objective_areas:
+                if area not in blocked_objective_areas:
+                    blocked_objective_areas.append(area)
         action_results.append(
             {
                 "key": key,
                 "ok": not item_blockers,
                 "decision": item.get("decision") if item else None,
+                "objective_areas": objective_areas,
                 "blockers": item_blockers,
             }
         )
@@ -210,6 +222,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "deployment_decision": deployment_decision,
         "blockers": blockers,
         "warnings": warnings,
+        "blocked_objective_areas": blocked_objective_areas,
         "action_results": action_results,
     }
 

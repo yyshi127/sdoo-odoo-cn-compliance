@@ -239,6 +239,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(result["production_signoff_ready"])
         self.assertEqual(result["deployment_decision"], "deploy")
         self.assertEqual(result["blockers"], [])
+        self.assertEqual(result["blocked_objective_areas"], [])
+        for item in result["action_results"]:
+            self.assertGreaterEqual(len(item["objective_areas"]), 1)
 
     def test_signoff_packet_requires_representative_ux_walkthrough(self):
         packet = PACKET._build_packet(status_payload())
@@ -342,6 +345,27 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["production_signoff_ready"])
         self.assertIn(
             "blocker_summary_walkthrough: decision is missing",
+            result["blockers"],
+        )
+        self.assertIn(
+            "limitations and uncertainty visibility",
+            result["blocked_objective_areas"],
+        )
+        self.assertIn(
+            "data/evidence/report readiness transparency",
+            result["blocked_objective_areas"],
+        )
+
+    def test_signoff_validation_blocks_actions_without_objective_areas(self):
+        packet = PACKET._build_packet(status_payload())
+        packet["production_actions"][0].pop("objective_areas")
+        evidence = complete_evidence(packet)
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: objective_areas are missing from the sign-off packet",
             result["blockers"],
         )
 
