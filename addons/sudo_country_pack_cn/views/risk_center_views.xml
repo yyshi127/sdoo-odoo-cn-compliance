@@ -80,6 +80,13 @@
                 <field name="cn_risk_data_basis_required_type_count" optional="show"/>
                 <field name="cn_risk_data_basis_missing_type_summary" optional="hide"/>
                 <field name="cn_risk_next_action" optional="show"/>
+                <field name="cn_risk_remediation_urgency" widget="badge" optional="show"
+                       decoration-danger="cn_risk_remediation_urgency == 'overdue'"
+                       decoration-warning="cn_risk_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
+                       decoration-info="cn_risk_remediation_urgency == 'waiting_rescan'"
+                       decoration-success="cn_risk_remediation_urgency == 'closed'"
+                       decoration-muted="cn_risk_remediation_urgency == 'no_task'"/>
+                <field name="cn_risk_responsibility_summary" optional="show"/>
                 <field name="rule_id"/>
                 <field name="cn_risk_rule_basis_state" widget="badge" optional="show"
                        decoration-success="cn_risk_rule_basis_state == 'ready'"
@@ -159,6 +166,8 @@
                 <field name="cn_risk_rule_professional_state"/>
                 <field name="cn_risk_period_label"/>
                 <field name="cn_risk_next_action"/>
+                <field name="cn_risk_remediation_urgency"/>
+                <field name="cn_risk_responsibility_summary"/>
                 <field name="cn_risk_fact_snapshot_count"/>
                 <field name="cn_risk_fact_issue_count"/>
                 <field name="cn_risk_fact_summary"/>
@@ -402,7 +411,15 @@
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">整改负责人</div>
-                                        <div class="fw-semibold"><field name="task_assignee_id"/></div>
+                                        <div class="fw-semibold"><field name="cn_risk_responsibility_summary"/></div>
+                                        <div class="mt-1">
+                                            <field name="cn_risk_remediation_urgency" widget="badge"
+                                                   decoration-danger="cn_risk_remediation_urgency == 'overdue'"
+                                                   decoration-warning="cn_risk_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
+                                                   decoration-info="cn_risk_remediation_urgency == 'waiting_rescan'"
+                                                   decoration-success="cn_risk_remediation_urgency == 'closed'"
+                                                   decoration-muted="cn_risk_remediation_urgency == 'no_task'"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
@@ -502,6 +519,12 @@
                 <field name="assignee_id" widget="many2one_avatar_user"/>
                 <field name="due_date"/>
                 <field name="cn_remediation_period_label"/>
+                <field name="cn_remediation_urgency" widget="badge" optional="show"
+                       decoration-danger="cn_remediation_urgency == 'overdue'"
+                       decoration-warning="cn_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
+                       decoration-info="cn_remediation_urgency == 'waiting_rescan'"
+                       decoration-success="cn_remediation_urgency == 'closed'"/>
+                <field name="cn_remediation_responsibility_summary" optional="show"/>
                 <field name="cn_remediation_next_action" optional="show"/>
                 <field name="cn_remediation_progress" optional="show"/>
                 <field name="cn_remediation_summary" optional="show"/>
@@ -571,6 +594,8 @@
                 <field name="state"/>
                 <field name="verification_state"/>
                 <field name="verification_assessment_id"/>
+                <field name="cn_remediation_urgency"/>
+                <field name="cn_remediation_responsibility_summary"/>
                 <field name="cn_remediation_rescan_stage"/>
                 <field name="cn_remediation_period_label"/>
                 <field name="cn_remediation_next_action"/>
@@ -672,7 +697,14 @@
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">负责人</div>
-                                        <div class="fw-semibold"><field name="assignee_id"/></div>
+                                        <div class="fw-semibold"><field name="cn_remediation_responsibility_summary"/></div>
+                                        <div class="mt-1">
+                                            <field name="cn_remediation_urgency" widget="badge"
+                                                   decoration-danger="cn_remediation_urgency == 'overdue'"
+                                                   decoration-warning="cn_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
+                                                   decoration-info="cn_remediation_urgency == 'waiting_rescan'"
+                                                   decoration-success="cn_remediation_urgency == 'closed'"/>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6">

@@ -45,6 +45,17 @@ TAX_IMPACT_STATES = [
     ("reviewed", "Reviewed"),
 ]
 
+REMEDIATION_URGENCY_STATES = [
+    ("no_task", "No Task"),
+    ("overdue", "Overdue"),
+    ("due_soon", "Due Soon"),
+    ("pending_review", "Pending Review"),
+    ("waiting_rescan", "Waiting Rescan"),
+    ("blocked", "Blocked"),
+    ("on_track", "On Track"),
+    ("closed", "Closed"),
+]
+
 
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
@@ -55,6 +66,15 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
     cn_risk_next_action = fields.Char(
         string="下一步动作",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_remediation_urgency = fields.Selection(
+        REMEDIATION_URGENCY_STATES,
+        string="Remediation Urgency",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_risk_responsibility_summary = fields.Char(
+        string="Responsibility Summary",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_evidence_state = fields.Selection(
@@ -280,6 +300,10 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_risk_data_basis_next_action,
             ) = _assessment_data_basis_values(assessment)
             finding.cn_risk_next_action = finding._cn_risk_next_action()
+            (
+                finding.cn_risk_remediation_urgency,
+                finding.cn_risk_responsibility_summary,
+            ) = _remediation_responsibility_values(finding.current_task_id)
             (
                 finding.cn_traceability_state,
                 finding.cn_traceability_gap_count,
@@ -675,6 +699,15 @@ class SudoChinaRiskCenterTask(models.Model):
         string="下一步动作",
         compute="_compute_cn_remediation_display",
     )
+    cn_remediation_urgency = fields.Selection(
+        REMEDIATION_URGENCY_STATES,
+        string="Remediation Urgency",
+        compute="_compute_cn_remediation_display",
+    )
+    cn_remediation_responsibility_summary = fields.Char(
+        string="Responsibility Summary",
+        compute="_compute_cn_remediation_display",
+    )
     cn_remediation_evidence_state = fields.Selection(
         EVIDENCE_STATES,
         string="证据状态",
@@ -844,6 +877,10 @@ class SudoChinaRiskCenterTask(models.Model):
                 task.cn_remediation_progress,
                 task.cn_remediation_summary,
             ) = task._cn_remediation_progress_summary()
+            (
+                task.cn_remediation_urgency,
+                task.cn_remediation_responsibility_summary,
+            ) = _remediation_responsibility_values(task)
 
     def _cn_remediation_rescan_stage(self):
         self.ensure_one()
@@ -970,6 +1007,44 @@ def _evidence_state(evidence_count, verified_evidence_count):
     if evidence_count == verified_evidence_count:
         return "verified"
     return "partial"
+
+
+def _remediation_responsibility_values(task):
+    if not task:
+        return ("no_task", "No remediation task has been created.")
+
+    assignee = task.assignee_id.display_name if task.assignee_id else "Unassigned"
+    due_date = task.due_date
+    today = fields.Date.context_today(task)
+
+    if task.state in ("done", "cancelled"):
+        return (
+            "closed",
+            "Closed by %(assignee)s; due %(due)s"
+            % {"assignee": assignee, "due": due_date or "-"},
+        )
+    if task.is_overdue:
+        urgency = "overdue"
+    elif task.state == "blocked":
+        urgency = "blocked"
+    elif task.verification_state == "pending_rescan":
+        urgency = "waiting_rescan"
+    elif task.state == "pending_review":
+        urgency = "pending_review"
+    elif due_date and 0 <= (due_date - today).days <= 7:
+        urgency = "due_soon"
+    else:
+        urgency = "on_track"
+
+    summary = (
+        "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s"
+    ) % {
+        "assignee": assignee,
+        "due": due_date or "-",
+        "state": task.state or "-",
+        "verification": task.verification_state or "-",
+    }
+    return (urgency, summary)
 
 
 def _assessment_data_basis_values(assessment):

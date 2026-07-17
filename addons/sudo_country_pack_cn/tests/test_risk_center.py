@@ -493,6 +493,35 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
         self.assertIn("underpayment 230", task.cn_remediation_tax_impact_summary)
 
+    def test_risk_and_remediation_expose_responsibility_urgency(self):
+        finding = self._finding()
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+        due_date = fields.Date.add(fields.Date.context_today(task), days=3)
+        task.write(
+            {
+                "assignee_id": self.env.user.id,
+                "due_date": due_date,
+            }
+        )
+        task.invalidate_recordset()
+        finding.invalidate_recordset()
+
+        self.assertEqual(task.cn_remediation_urgency, "due_soon")
+        self.assertIn(self.env.user.display_name, task.cn_remediation_responsibility_summary)
+        self.assertIn(str(due_date), task.cn_remediation_responsibility_summary)
+        self.assertEqual(finding.cn_risk_remediation_urgency, "due_soon")
+        self.assertIn(
+            self.env.user.display_name,
+            finding.cn_risk_responsibility_summary,
+        )
+
+        task.write({"due_date": fields.Date.add(fields.Date.context_today(task), days=-1)})
+        task.invalidate_recordset()
+        finding.invalidate_recordset()
+
+        self.assertEqual(task.cn_remediation_urgency, "overdue")
+        self.assertEqual(finding.cn_risk_remediation_urgency, "overdue")
+
     def test_cross_border_rule_finding_exposes_fact_review_status(self):
         transaction = self._cross_border_transaction()
         _assessment, finding = self._cross_border_assessment()
@@ -568,5 +597,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_tax_impact_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_remediation_responsibility_visibility"
             ]
         )
