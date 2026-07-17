@@ -217,6 +217,7 @@ def _status(
             "deployment_decision": signoff_validation.get("deployment_decision"),
             "blockers": signoff_validation.get("blockers"),
             "warnings": signoff_validation.get("warnings"),
+            "blocked_objective_areas": signoff_validation.get("blocked_objective_areas"),
         }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
@@ -423,6 +424,13 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {blocker}"
             for blocker in readiness.get("production_signoff_blockers", [])
+        ],
+        "",
+        "### Production Blocked Objective Areas",
+        "",
+        *[
+            f"- {area}"
+            for area in signoff_validation.get("blocked_objective_areas", []) or []
         ],
         "",
         "## Artifacts",

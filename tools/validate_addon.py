@@ -4732,6 +4732,8 @@ def validate_delivery_objective_coverage() -> None:
         "sign-off validation source commit does not match delivery source commit",
         "sign-off validation preview URL does not match delivery preview URL",
         "sign-off validation did not pass",
+        "blocked_objective_areas",
+        "Production Blocked Objective Areas",
         "real-data closed-loop result was not provided",
         "real-data closed-loop result schema is invalid",
         "real-data closed-loop expected version does not match delivery version",

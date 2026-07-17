@@ -606,6 +606,46 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(readiness["production_signoff_blockers"], [])
         self.assertEqual(status["signoff_validation"]["deployment_decision"], "deploy")
 
+    def test_delivery_status_surfaces_blocked_objective_areas(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = [
+            item
+            for item in evidence["decisions"]
+            if item["key"] != "blocker_summary_walkthrough"
+        ]
+        validation = VALIDATION._validate(packet, evidence)
+
+        status = delivery_status(validation)
+
+        self.assertFalse(status["readiness_gates"]["production_signoff_ready"])
+        self.assertIn(
+            "limitations and uncertainty visibility",
+            status["signoff_validation"]["blocked_objective_areas"],
+        )
+        self.assertIn(
+            "data/evidence/report readiness transparency",
+            status["signoff_validation"]["blocked_objective_areas"],
+        )
+
+    def test_delivery_status_markdown_surfaces_blocked_objective_areas(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = [
+            item
+            for item in evidence["decisions"]
+            if item["key"] != "blocker_summary_walkthrough"
+        ]
+        status = delivery_status(VALIDATION._validate(packet, evidence))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("### Production Blocked Objective Areas", content)
+        self.assertIn("limitations and uncertainty visibility", content)
+
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
