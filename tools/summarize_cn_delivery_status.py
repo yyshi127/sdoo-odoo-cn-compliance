@@ -10,6 +10,7 @@ from pathlib import Path
 
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
+DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
@@ -93,6 +94,17 @@ def _status(
                 )
             ),
         },
+        "delivery_index": {
+            "path": DELIVERY_INDEX_PATH.as_posix(),
+            "included_in_manifest": bool(
+                manifest
+                and any(
+                    entry.get("path") == DELIVERY_INDEX_PATH.as_posix()
+                    for entry in manifest.get("files", [])
+                    if isinstance(entry, dict)
+                )
+            ),
+        },
         "objective_coverage": {
             "path": OBJECTIVE_COVERAGE_PATH.as_posix(),
             "included_in_manifest": bool(
@@ -140,6 +152,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else None
     business_uat = status.get("business_uat") or {}
+    delivery_index = status.get("delivery_index") or {}
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
     preview_health_checker = status.get("preview_health_checker") or {}
@@ -151,6 +164,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Acceptance passed: `{status['acceptance_passed']}`",
         f"- Runtime passed: `{status['runtime_passed']}`",
         f"- Preview URL: `{status.get('preview_url') or ''}`",
+        f"- Delivery index: `{delivery_index.get('path', '')}`",
+        f"- Delivery index in manifest: `{delivery_index.get('included_in_manifest', False)}`",
         f"- Business UAT checklist: `{business_uat.get('path', '')}`",
         f"- Business UAT checklist in manifest: `{business_uat.get('included_in_manifest', False)}`",
         f"- Objective coverage: `{objective_coverage.get('path', '')}`",
