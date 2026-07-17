@@ -148,6 +148,73 @@ def _fact_basis_summary(payload):
     }
 
 
+_RECONCILIATION_RISK_SUMMARY_KEYS = {
+    "cn.reconciliation.vat.risk_summary",
+    "cn.reconciliation.cit.risk_summary",
+    "cn.reconciliation.iit.risk_summary",
+}
+
+
+def _reconciliation_risk_summary_from_snapshots(snapshots):
+    snapshot = next(
+        (
+            item
+            for item in snapshots
+            if item.definition_id.key in _RECONCILIATION_RISK_SUMMARY_KEYS
+        ),
+        None,
+    )
+    if not snapshot or not isinstance(snapshot.value_json, dict):
+        return None
+
+    value = snapshot.value_json
+    counts = value.get("counts") if isinstance(value.get("counts"), dict) else {}
+    material = value.get("material_differences")
+    if isinstance(material, dict):
+        material_count = len(material)
+    elif isinstance(material, list):
+        material_count = len(material)
+    else:
+        material_count = 0
+    issues = (
+        value.get("top_issues")
+        if isinstance(value.get("top_issues"), list)
+        else []
+    )
+    issue_codes = []
+    for issue in issues[:5]:
+        if isinstance(issue, dict):
+            code = issue.get("code") or issue.get("issue_code")
+        else:
+            code = str(issue)
+        if code:
+            issue_codes.append(code)
+
+    state = value.get("risk_status") or value.get("conclusion_state")
+    summary = "; ".join(
+        [
+            str(state or "unknown"),
+            "differences %s" % counts.get("difference_count", 0),
+            "blocking %s" % counts.get("blocking_issue_count", 0),
+            "warnings %s" % counts.get("warning_issue_count", 0),
+            "material %s" % material_count,
+        ]
+    )
+    if issue_codes:
+        summary = "%s; top issues %s" % (summary, ", ".join(issue_codes))
+    return {
+        "fact_key": snapshot.definition_id.key,
+        "state": state or "unknown",
+        "summary": summary,
+        "next_action": value.get("next_action") or None,
+        "source_states": value.get("source_states") or {},
+        "counts": counts,
+        "material_difference_count": material_count,
+        "top_issue_codes": issue_codes,
+        "checksum": snapshot.checksum,
+    }
+
+
 class SudoChinaComplianceReport(models.Model):
     _name = "sudo.cn.compliance.report"
     _description = "China Governed Compliance Report"
@@ -900,6 +967,11 @@ class SudoChinaComplianceReport(models.Model):
                     "checksum": finding.checksum,
                     "fact_snapshot_checksums": sorted(
                         finding.fact_snapshot_ids.mapped("checksum")
+                    ),
+                    "reconciliation_risk_summary": (
+                        _reconciliation_risk_summary_from_snapshots(
+                            finding.fact_snapshot_ids
+                        )
                     ),
                     "result_details": finding.result_details_json or {},
                     "source_snapshot": finding.source_snapshot_json or [],

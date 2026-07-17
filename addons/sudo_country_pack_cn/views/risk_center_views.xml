@@ -65,6 +65,13 @@
                 <field name="cn_risk_fact_snapshot_count" optional="show"/>
                 <field name="cn_risk_fact_issue_count" optional="show"/>
                 <field name="cn_risk_fact_summary" optional="show"/>
+                <field name="cn_reconciliation_risk_state" widget="badge" optional="show"
+                       decoration-success="cn_reconciliation_risk_state == 'aligned'"
+                       decoration-warning="cn_reconciliation_risk_state in ('difference_review_required', 'aligned_with_disclosure_required')"
+                       decoration-danger="cn_reconciliation_risk_state == 'blocked'"
+                       decoration-muted="cn_reconciliation_risk_state == 'unavailable'"/>
+                <field name="cn_reconciliation_risk_summary" optional="show"/>
+                <field name="cn_reconciliation_risk_next_action" optional="hide"/>
                 <field name="cn_risk_data_basis_state" widget="badge" optional="show"
                        decoration-success="cn_risk_data_basis_state == 'ready'"
                        decoration-warning="cn_risk_data_basis_state == 'warning'"
@@ -145,6 +152,9 @@
                 <field name="cn_risk_fact_snapshot_count"/>
                 <field name="cn_risk_fact_issue_count"/>
                 <field name="cn_risk_fact_summary"/>
+                <field name="cn_reconciliation_risk_state"/>
+                <field name="cn_reconciliation_risk_summary"/>
+                <field name="cn_reconciliation_risk_next_action"/>
                 <field name="cn_risk_data_basis_state"/>
                 <field name="cn_risk_data_basis_required_type_count"/>
                 <field name="cn_risk_data_basis_ready_type_count"/>
@@ -212,6 +222,20 @@
                                     <span> snapshots · </span>
                                     <field name="cn_risk_fact_issue_count"/>
                                     <span> issues</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 border rounded p-2" invisible="cn_reconciliation_risk_state == 'unavailable'">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Reconciliation</div>
+                                        <div class="fw-semibold"><field name="cn_reconciliation_risk_summary"/></div>
+                                        <div class="text-muted small"><field name="cn_reconciliation_risk_next_action"/></div>
+                                    </div>
+                                    <field name="cn_reconciliation_risk_state" widget="badge"
+                                           decoration-success="cn_reconciliation_risk_state == 'aligned'"
+                                           decoration-warning="cn_reconciliation_risk_state in ('difference_review_required', 'aligned_with_disclosure_required')"
+                                           decoration-danger="cn_reconciliation_risk_state == 'blocked'"
+                                           decoration-muted="cn_reconciliation_risk_state == 'unavailable'"/>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">

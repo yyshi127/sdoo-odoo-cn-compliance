@@ -197,6 +197,14 @@
                                         <div class="text-muted" t-if="finding.get('recommendation')">
                                             下一步：<span t-esc="finding.get('recommendation')"/>
                                         </div>
+                                        <t t-set="reconciliation" t-value="finding.get('reconciliation_risk_summary') or {}"/>
+                                        <div t-if="reconciliation" style="margin-top: 6px; padding: 6px; border-left: 3px solid #0f766e; background: #f0fdfa;">
+                                            <strong>Reconciliation:</strong>
+                                            <span t-esc="reconciliation.get('summary')"/>
+                                            <div class="text-muted" t-if="reconciliation.get('next_action')">
+                                                Next action: <span t-esc="reconciliation.get('next_action')"/>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td><span t-esc="report.report_label('result', finding.get('result'))"/></td>
                                     <td><span t-esc="report.report_label('review', finding.get('review_state'))"/></td>

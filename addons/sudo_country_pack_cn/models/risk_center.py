@@ -23,6 +23,20 @@ DATA_BASIS_STATES = [
     ("ready", "Ready"),
 ]
 
+RECONCILIATION_RISK_SUMMARY_KEYS = {
+    "cn.reconciliation.vat.risk_summary",
+    "cn.reconciliation.cit.risk_summary",
+    "cn.reconciliation.iit.risk_summary",
+}
+
+RECONCILIATION_RISK_STATES = [
+    ("unavailable", "Unavailable"),
+    ("blocked", "Blocked"),
+    ("difference_review_required", "Difference Review"),
+    ("aligned_with_disclosure_required", "Disclosure Review"),
+    ("aligned", "Aligned"),
+]
+
 
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
@@ -59,6 +73,19 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
     cn_risk_fact_summary = fields.Char(
         string="Fact Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_reconciliation_risk_state = fields.Selection(
+        RECONCILIATION_RISK_STATES,
+        string="Reconciliation Risk",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_reconciliation_risk_summary = fields.Char(
+        string="Reconciliation Summary",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_reconciliation_risk_next_action = fields.Char(
+        string="Reconciliation Next Action",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_state = fields.Selection(
@@ -190,6 +217,11 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_risk_fact_summary,
             ) = finding._cn_risk_fact_summary()
             (
+                finding.cn_reconciliation_risk_state,
+                finding.cn_reconciliation_risk_summary,
+                finding.cn_reconciliation_risk_next_action,
+            ) = finding._cn_reconciliation_risk_summary()
+            (
                 finding.cn_risk_data_basis_state,
                 finding.cn_risk_data_basis_required_type_count,
                 finding.cn_risk_data_basis_ready_type_count,
@@ -276,6 +308,12 @@ class SudoChinaRiskCenterFinding(models.Model):
             )
         if self.cn_risk_data_basis_state == "warning":
             return _("Review incomplete period data before report sign-off.")
+        if (
+            self.cn_reconciliation_risk_state
+            and self.cn_reconciliation_risk_state != "unavailable"
+            and self.cn_reconciliation_risk_next_action
+        ):
+            return self.cn_reconciliation_risk_next_action
         if self.result in ("unknown", "error"):
             return _("先核对数据充分性、规则执行日志和来源限制。")
         if self.review_state == "pending":
@@ -298,6 +336,66 @@ class SudoChinaRiskCenterFinding(models.Model):
             return _("补齐并验证正式证据，确保报告可引用。")
         return _("持续跟踪规则复扫、证据链和报告披露。")
 
+
+    def _cn_reconciliation_risk_summary(self):
+        self.ensure_one()
+        snapshot = next(
+            (
+                item
+                for item in self.fact_snapshot_ids
+                if item.definition_id.key in RECONCILIATION_RISK_SUMMARY_KEYS
+            ),
+            None,
+        )
+        if not snapshot or not isinstance(snapshot.value_json, dict):
+            return (
+                "unavailable",
+                _("No reconciliation risk summary is attached."),
+                False,
+            )
+
+        value = snapshot.value_json
+        state = value.get("risk_status") or value.get("conclusion_state")
+        allowed_states = {item[0] for item in RECONCILIATION_RISK_STATES}
+        if state not in allowed_states:
+            state = "blocked" if state else "unavailable"
+
+        counts = value.get("counts") if isinstance(value.get("counts"), dict) else {}
+        material = value.get("material_differences")
+        if isinstance(material, dict):
+            material_count = len(material)
+        elif isinstance(material, list):
+            material_count = len(material)
+        else:
+            material_count = 0
+        issues = (
+            value.get("top_issues")
+            if isinstance(value.get("top_issues"), list)
+            else []
+        )
+        issue_codes = []
+        for issue in issues[:3]:
+            if isinstance(issue, dict):
+                code = issue.get("code") or issue.get("issue_code")
+            else:
+                code = str(issue)
+            if code:
+                issue_codes.append(code)
+
+        summary_parts = [
+            str(state),
+            "differences %s" % counts.get("difference_count", 0),
+            "blocking %s" % counts.get("blocking_issue_count", 0),
+            "warnings %s" % counts.get("warning_issue_count", 0),
+            "material %s" % material_count,
+        ]
+        if issue_codes:
+            summary_parts.append("top issues %s" % ", ".join(issue_codes))
+        return (
+            state,
+            "; ".join(summary_parts),
+            value.get("next_action") or False,
+        )
 
     def _cn_traceability_summary(self):
         self.ensure_one()

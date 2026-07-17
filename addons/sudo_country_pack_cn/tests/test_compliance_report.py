@@ -161,27 +161,40 @@ class TestChinaFormalComplianceReport(TransactionCase):
             finding.with_user(self.manager).action_require_correction()
         return assessment, finding
 
-    def _fact_snapshot(self, finding, suffix="base", quality_state="complete"):
-        definition = self.env["sudo.compliance.fact.definition"].create(
-            {
-                "name": f"Formal report fact {suffix}",
-                "label": f"Formal report fact {suffix}",
-                "key": f"cn.report.fact.{finding.id}.{suffix}",
-                "version": "TEST-1",
-                "country_id": self.country.id,
-                "value_type": "integer",
-                "provider_key": f"formal_report_fact_{suffix}",
-                "provider_version": "1",
-                "source_model": "account.move",
-                "source_description": "Controlled formal report test fact.",
-                "completeness_method": "full_domain",
-            }
+    def _fact_snapshot(
+        self,
+        finding,
+        suffix="base",
+        quality_state="complete",
+        key=None,
+        value=1,
+        value_type="integer",
+    ):
+        key = key or f"cn.report.fact.{finding.id}.{suffix}"
+        definition = self.env["sudo.compliance.fact.definition"].search(
+            [("key", "=", key)], limit=1
         )
+        if not definition:
+            definition = self.env["sudo.compliance.fact.definition"].create(
+                {
+                    "name": f"Formal report fact {suffix}",
+                    "label": f"Formal report fact {suffix}",
+                    "key": key,
+                    "version": "TEST-1",
+                    "country_id": self.country.id,
+                    "value_type": value_type,
+                    "provider_key": f"formal_report_fact_{suffix}",
+                    "provider_version": "1",
+                    "source_model": "account.move",
+                    "source_description": "Controlled formal report test fact.",
+                    "completeness_method": "full_domain",
+                }
+            )
         snapshot = self.env["sudo.compliance.fact.snapshot"]._create_engine(
             {
                 "assessment_id": finding.assessment_id.id,
                 "definition_id": definition.id,
-                "value_json": 1,
+                "value_json": value,
                 "captured_at": fields.Datetime.now(),
                 "source_model": "account.move",
                 "source_domain_json": [("company_id", "=", self.company.id)],
@@ -405,6 +418,43 @@ class TestChinaFormalComplianceReport(TransactionCase):
             snapshot.checksum,
             report.snapshot_json["findings"][0]["fact_snapshot_checksums"],
         )
+
+    def test_submission_includes_reconciliation_risk_summary(self):
+        snapshot = self._fact_snapshot(
+            self.finding,
+            "cit_recon",
+            key="cn.reconciliation.cit.risk_summary",
+            value={
+                "risk_status": "difference_review_required",
+                "next_action": "Review CIT accounting and filing differences.",
+                "counts": {
+                    "difference_count": 3,
+                    "blocking_issue_count": 1,
+                    "warning_issue_count": 2,
+                },
+                "material_differences": [
+                    {"code": "CIT-REV-DIFF", "amount": "300.00"}
+                ],
+                "top_issues": [{"code": "CIT-DIFF-001"}],
+            },
+            value_type="json",
+        )
+        report = self._report()
+
+        report.with_user(self.manager).action_submit()
+        report.invalidate_recordset()
+
+        summary = report.snapshot_json["findings"][0][
+            "reconciliation_risk_summary"
+        ]
+        self.assertEqual(summary["state"], "difference_review_required")
+        self.assertIn("differences 3", summary["summary"])
+        self.assertIn("CIT-DIFF-001", summary["summary"])
+        self.assertEqual(
+            summary["next_action"],
+            "Review CIT accounting and filing differences.",
+        )
+        self.assertEqual(summary["checksum"], snapshot.checksum)
 
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")

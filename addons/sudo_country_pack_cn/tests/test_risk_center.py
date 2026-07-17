@@ -369,6 +369,37 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_risk_fact_issue_count, 1)
         self.assertIn("truncated", finding.cn_risk_fact_summary)
 
+    def test_finding_exposes_reconciliation_risk_summary(self):
+        finding = self._finding()
+        self._fact_snapshot(
+            finding,
+            "vat_recon",
+            key="cn.reconciliation.vat.risk_summary",
+            value={
+                "risk_status": "difference_review_required",
+                "next_action": "Review VAT reconciliation differences.",
+                "counts": {
+                    "difference_count": 2,
+                    "blocking_issue_count": 1,
+                    "warning_issue_count": 1,
+                },
+                "material_differences": {"output_tax": "100.00"},
+                "top_issues": [{"code": "VAT-DIFF-001"}],
+            },
+            value_type="json",
+        )
+
+        self.assertEqual(
+            finding.cn_reconciliation_risk_state,
+            "difference_review_required",
+        )
+        self.assertIn("differences 2", finding.cn_reconciliation_risk_summary)
+        self.assertIn("VAT-DIFF-001", finding.cn_reconciliation_risk_summary)
+        self.assertEqual(
+            finding.cn_reconciliation_risk_next_action,
+            "Review VAT reconciliation differences.",
+        )
+
     def test_cross_border_rule_finding_exposes_fact_review_status(self):
         transaction = self._cross_border_transaction()
         _assessment, finding = self._cross_border_assessment()
@@ -434,5 +465,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_data_basis_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_reconciliation_risk_visibility"
             ]
         )

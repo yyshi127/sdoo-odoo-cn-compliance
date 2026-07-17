@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.83.0</field>
+        <field name="version">19.0.1.84.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -52,6 +52,7 @@
                 'china_vat_reconciliation_risk_summary_fact': True,
                 'china_cit_reconciliation_risk_summary_fact': True,
                 'china_iit_reconciliation_risk_summary_fact': True,
+                'china_reconciliation_risk_visibility': True,
                 'china_assessment_required_dataset_type_coverage': True,
                 'china_assessment_obligation_basis': True,
                 'china_remediation_rescan_visibility': True,
