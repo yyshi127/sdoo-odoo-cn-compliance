@@ -566,6 +566,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China workbench state badge clarity capability must be declared")
     if features.get("china_risk_card_state_badge_clarity") is not True:
         fail("China risk card state badge clarity capability must be declared")
+    if features.get("china_risk_closure_status_summary") is not True:
+        fail("China risk closure status summary capability must be declared")
     if features.get("china_report_readiness_badge_clarity") is not True:
         fail("China report readiness badge clarity capability must be declared")
     if features.get("china_archive_evidence_badge_clarity") is not True:
@@ -4145,17 +4147,21 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_finding_exposes_rule_basis_status_and_navigation",
         "test_country_pack_advertises_risk_rule_basis_visibility",
         "test_finding_exposes_traceability_gaps_and_evidence_navigation",
+        "test_finding_closure_summary_distinguishes_ready_and_action_required",
         "test_remediation_task_exposes_traceability_gaps",
         "china_risk_action_guidance",
         "china_remediation_rescan_visibility",
         "china_risk_rule_basis_visibility",
         "china_traceability_matrix_visibility",
         "china_risk_card_state_badge_clarity",
+        "china_risk_closure_status_summary",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
         "cn_traceability_state",
         "cn_traceability_gap_count",
+        "cn_closure_state",
+        "cn_closure_summary",
         "action_cn_open_traceability_evidence",
         "cn_risk_rule_basis_state",
         "action_cn_open_risk_rule_version",

@@ -62,6 +62,11 @@
                        decoration-warning="review_state in ('pending', 'correction_required')"/>
                 <field name="title"/>
                 <field name="cn_risk_period_label"/>
+                <field name="cn_closure_state" widget="badge" optional="show"
+                       decoration-success="cn_closure_state == 'ready'"
+                       decoration-warning="cn_closure_state == 'action_required'"
+                       decoration-danger="cn_closure_state == 'blocked'"/>
+                <field name="cn_closure_summary" optional="show"/>
                 <field name="cn_risk_fact_snapshot_count" optional="show"/>
                 <field name="cn_risk_fact_issue_count" optional="show"/>
                 <field name="cn_risk_fact_summary" optional="show"/>
@@ -186,6 +191,8 @@
                 <field name="cn_traceability_state"/>
                 <field name="cn_traceability_gap_count"/>
                 <field name="cn_traceability_next_action"/>
+                <field name="cn_closure_state"/>
+                <field name="cn_closure_summary"/>
                 <field name="cn_cross_border_fact_state"/>
                 <field name="cn_cross_border_pending_count"/>
                 <field name="cn_cross_border_reviewed_count"/>
@@ -240,6 +247,18 @@
                             </div>
                             <div class="mt-3 small text-muted">
                                 <field name="summary"/>
+                            </div>
+                            <div class="mt-3 border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Closure status</div>
+                                        <div class="fw-semibold"><field name="cn_closure_summary"/></div>
+                                    </div>
+                                    <field name="cn_closure_state" widget="badge"
+                                           decoration-success="cn_closure_state == 'ready'"
+                                           decoration-warning="cn_closure_state == 'action_required'"
+                                           decoration-danger="cn_closure_state == 'blocked'"/>
+                                </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">Fact basis</div>

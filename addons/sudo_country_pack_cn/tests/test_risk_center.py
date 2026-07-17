@@ -1,6 +1,10 @@
 from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
+from odoo.addons.sudo_country_pack_cn.models.risk_center import (
+    _closure_summary_values,
+)
+
 
 @tagged("post_install", "-at_install")
 class TestChinaRiskCenterDisplay(TransactionCase):
@@ -342,6 +346,8 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_risk_evidence_state, "none")
         self.assertEqual(finding.cn_risk_evidence_count, 0)
         self.assertEqual(finding.cn_risk_verified_evidence_count, 0)
+        self.assertEqual(finding.cn_closure_state, "blocked")
+        self.assertIn("data basis", finding.cn_closure_summary)
         self.assertEqual(finding.cn_risk_fact_snapshot_count, 0)
         self.assertEqual(finding.cn_risk_fact_issue_count, 0)
         self.assertIn("No rule fact snapshots", finding.cn_risk_fact_summary)
@@ -414,10 +420,40 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_traceability_state, "blocked")
         self.assertGreater(finding.cn_traceability_gap_count, 0)
         self.assertTrue(finding.cn_traceability_next_action)
+        self.assertEqual(finding.cn_closure_state, "blocked")
+        self.assertIn("Blocked before sign-off", finding.cn_closure_summary)
 
         action = finding.action_cn_open_traceability_evidence()
         self.assertEqual(action["res_model"], "sudo.compliance.evidence")
         self.assertIn(("finding_id", "=", finding.id), action["domain"])
+
+    def test_finding_closure_summary_distinguishes_ready_and_action_required(self):
+        self.assertEqual(
+            _closure_summary_values(
+                data_basis_state="ready",
+                rule_basis_state="ready",
+                result="fail",
+                review_state="confirmed",
+                task_state=False,
+                task_verification_state=False,
+                tax_impact_state="reviewed",
+                evidence_state="verified",
+            )[1],
+            "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned.",
+        )
+
+        state, summary = _closure_summary_values(
+            data_basis_state="ready",
+            rule_basis_state="ready",
+            result="fail",
+            review_state="confirmed",
+            task_state=False,
+            task_verification_state=False,
+            tax_impact_state="reviewed",
+            evidence_state="partial",
+        )
+        self.assertEqual(state, "action_required")
+        self.assertIn("verify evidence", summary)
 
     def test_finding_exposes_fact_snapshot_summary(self):
         finding = self._finding()
@@ -597,6 +633,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_risk_tax_impact_visibility"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_risk_closure_status_summary"
             ]
         )
         self.assertTrue(

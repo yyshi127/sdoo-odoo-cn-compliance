@@ -82,6 +82,7 @@
                 'china_risk_fact_basis_visibility': True,
                 'china_risk_data_basis_visibility': True,
                 'china_risk_tax_impact_visibility': True,
+                'china_risk_closure_status_summary': True,
                 'china_remediation_responsibility_visibility': True,
                 'china_workbench_accounting_ledger_basis': True,
                 'china_workbench_filing_archive_summary': True,

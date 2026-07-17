@@ -15,6 +15,13 @@ TRACEABILITY_STATES = [
 ]
 
 
+CLOSURE_STATES = [
+    ("blocked", "Blocked"),
+    ("action_required", "Action Required"),
+    ("ready", "Ready"),
+]
+
+
 DATA_BASIS_STATES = [
     ("no_period", "No Period"),
     ("missing", "Missing"),
@@ -153,6 +160,15 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
     cn_traceability_next_action = fields.Char(
         string="Traceability Next Action",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_closure_state = fields.Selection(
+        CLOSURE_STATES,
+        string="Closure Status",
+        compute="_compute_cn_risk_center_display",
+    )
+    cn_closure_summary = fields.Char(
+        string="Closure Summary",
         compute="_compute_cn_risk_center_display",
     )
 
@@ -326,6 +342,10 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_tax_impact_reviewed_timing_amount,
                 finding.cn_tax_impact_summary,
             ) = finding._cn_tax_impact_summary()
+            (
+                finding.cn_closure_state,
+                finding.cn_closure_summary,
+            ) = finding._cn_closure_summary()
 
     def _cn_risk_rule_basis_state(self):
         self.ensure_one()
@@ -602,6 +622,20 @@ class SudoChinaRiskCenterFinding(models.Model):
             "action_required",
             len(gaps),
             _("Close remediation, tax impact and verified evidence gaps."),
+        )
+
+    def _cn_closure_summary(self):
+        self.ensure_one()
+        task = self.current_task_id
+        return _closure_summary_values(
+            data_basis_state=self.cn_risk_data_basis_state,
+            rule_basis_state=self.cn_risk_rule_basis_state,
+            result=self.result,
+            review_state=self.review_state,
+            task_state=task.state if task else False,
+            task_verification_state=task.verification_state if task else False,
+            tax_impact_state=self.cn_tax_impact_state,
+            evidence_state=self.cn_risk_evidence_state,
         )
 
     def _cn_cross_border_fact_summary(self):
@@ -1045,6 +1079,65 @@ def _remediation_responsibility_values(task):
         "verification": task.verification_state or "-",
     }
     return (urgency, summary)
+
+
+def _closure_summary_values(
+    *,
+    data_basis_state,
+    rule_basis_state,
+    result,
+    review_state,
+    task_state,
+    task_verification_state,
+    tax_impact_state,
+    evidence_state,
+):
+    blockers = []
+    actions = []
+    has_task = bool(task_state)
+    if data_basis_state in ("no_period", "missing", "blocked"):
+        blockers.append("data basis")
+    elif data_basis_state == "warning":
+        actions.append("review data basis warning")
+    if rule_basis_state != "ready":
+        blockers.append("rule/source basis")
+    if result in ("unknown", "error"):
+        blockers.append("scan result")
+    if review_state == "pending":
+        blockers.append("human review")
+    elif review_state == "correction_required" and not has_task:
+        actions.append("create remediation task")
+    if has_task:
+        if task_state not in ("done", "cancelled"):
+            actions.append("close remediation task")
+        if task_verification_state in ("pending_rescan", "failed"):
+            blockers.append("verification rescan")
+        elif task_verification_state not in ("verified", "not_required"):
+            actions.append("verify remediation")
+    if tax_impact_state in ("pending", "integrity_issue"):
+        blockers.append("tax impact review")
+    elif tax_impact_state in ("none", "unquantifiable") and result in (
+        "fail",
+        "unknown",
+        "error",
+    ):
+        actions.append("document tax impact")
+    if evidence_state != "verified":
+        actions.append("verify evidence")
+    if blockers:
+        return (
+            "blocked",
+            _("Blocked before sign-off: %s.") % ", ".join(blockers[:4]),
+        )
+    if actions:
+        return (
+            "action_required",
+            _("Next before sign-off: %s.") % ", ".join(actions[:4]),
+        )
+    return (
+        "ready",
+        _("Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."),
+    )
 
 
 def _assessment_data_basis_values(assessment):

@@ -177,6 +177,7 @@ def country_pack_capabilities():
             "china_risk_fact_basis_visibility": True,
             "china_risk_data_basis_visibility": True,
             "china_risk_tax_impact_visibility": True,
+            "china_risk_closure_status_summary": True,
             "china_remediation_responsibility_visibility": True,
             "china_workbench_filing_archive_summary": True,
             "china_workbench_state_badge_clarity": True,
