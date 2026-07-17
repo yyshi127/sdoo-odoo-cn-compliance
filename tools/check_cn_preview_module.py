@@ -34,7 +34,7 @@ payload = {{
     "country_pack_module_name": pack.module_name if pack else None,
     "country_pack_version": pack.version if pack else None,
     "required_capabilities": {{
-        "china_workbench": bool(features.get("china_workbench")),
+        "china_compliance_workbench": bool(features.get("china_compliance_workbench")),
         "china_delivery_preview_health_gate": bool(features.get("china_delivery_preview_health_gate")),
         "china_delivery_preview_module_gate": bool(features.get("china_delivery_preview_module_gate")),
         "china_delivery_source_control_traceability": bool(features.get("china_delivery_source_control_traceability")),
