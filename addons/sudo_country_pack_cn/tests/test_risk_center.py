@@ -550,6 +550,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             self.env.user.display_name,
             finding.cn_risk_responsibility_summary,
         )
+        self.assertIn("Next:", finding.cn_risk_action_summary)
+        self.assertIn("Owner/due:", finding.cn_risk_action_summary)
+        self.assertIn(self.env.user.display_name, finding.cn_risk_action_summary)
+        self.assertIn("Evidence:", finding.cn_risk_action_summary)
+        self.assertIn("Closure:", finding.cn_risk_action_summary)
 
         task.write({"due_date": fields.Date.add(fields.Date.context_today(task), days=-1)})
         task.invalidate_recordset()

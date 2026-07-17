@@ -75,6 +75,10 @@ class SudoChinaRiskCenterFinding(models.Model):
         string="下一步动作",
         compute="_compute_cn_risk_center_display",
     )
+    cn_risk_action_summary = fields.Char(
+        string="Risk Action Summary",
+        compute="_compute_cn_risk_center_display",
+    )
     cn_risk_remediation_urgency = fields.Selection(
         REMEDIATION_URGENCY_STATES,
         string="Remediation Urgency",
@@ -346,6 +350,7 @@ class SudoChinaRiskCenterFinding(models.Model):
                 finding.cn_closure_state,
                 finding.cn_closure_summary,
             ) = finding._cn_closure_summary()
+            finding.cn_risk_action_summary = finding._cn_risk_action_summary()
 
     def _cn_risk_rule_basis_state(self):
         self.ensure_one()
@@ -637,6 +642,29 @@ class SudoChinaRiskCenterFinding(models.Model):
             tax_impact_state=self.cn_tax_impact_state,
             evidence_state=self.cn_risk_evidence_state,
         )
+
+    def _cn_risk_action_summary(self):
+        self.ensure_one()
+        parts = []
+        if self.cn_risk_next_action:
+            parts.append("Next: %s" % self.cn_risk_next_action)
+        if self.cn_risk_responsibility_summary:
+            parts.append("Owner/due: %s" % self.cn_risk_responsibility_summary)
+        elif not self.current_task_id and self.review_state == "correction_required":
+            parts.append("Owner/due: no remediation task")
+        if self.cn_risk_evidence_count:
+            parts.append(
+                "Evidence: %s/%s verified"
+                % (
+                    self.cn_risk_verified_evidence_count,
+                    self.cn_risk_evidence_count,
+                )
+            )
+        else:
+            parts.append("Evidence: none")
+        if self.cn_closure_summary:
+            parts.append("Closure: %s" % self.cn_closure_summary)
+        return " | ".join(parts)
 
     def _cn_cross_border_fact_summary(self):
         self.ensure_one()
