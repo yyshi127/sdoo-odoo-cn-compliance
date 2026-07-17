@@ -8,10 +8,14 @@ runtime checks run only when --odoo-bin, --config and --database are supplied.
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
+import json
 import py_compile
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -23,6 +27,9 @@ DEFAULT_RUNTIME_TAGS = [
     "/sudo_country_pack_cn:TestChinaReportReadiness",
     "/sudo_country_pack_cn:TestChinaFormalComplianceReport",
 ]
+MANIFEST_SCHEMA = "sdoo.cn.delivery-manifest.v1"
+MANIFEST_EXCLUDED_DIRS = {"__pycache__", ".git", "dist", "build", "artifacts", "tmp"}
+MANIFEST_EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 
 
 def _run(command: list[str], *, cwd: Path = ROOT) -> None:
@@ -40,6 +47,106 @@ def _inside_git_worktree() -> bool:
         check=False,
     )
     return result.returncode == 0 and result.stdout.strip() == "true"
+
+
+def _git_commit() -> str | None:
+    if not _inside_git_worktree():
+        return None
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _addon_version() -> str:
+    manifest = ast.literal_eval((ADDON / "__manifest__.py").read_text(encoding="utf-8"))
+    return str(manifest["version"])
+
+
+def _manifest_paths() -> list[Path]:
+    roots = [
+        ADDON,
+        ROOT / "tools" / "run_cn_delivery_acceptance.py",
+        ROOT / "tools" / "validate_addon.py",
+    ]
+    paths: list[Path] = []
+    for root in roots:
+        if root.is_file():
+            paths.append(root)
+            continue
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            relative_parts = path.relative_to(ROOT).parts
+            if any(part in MANIFEST_EXCLUDED_DIRS for part in relative_parts):
+                continue
+            if path.suffix in MANIFEST_EXCLUDED_SUFFIXES:
+                continue
+            paths.append(path)
+    return sorted(paths, key=lambda path: path.relative_to(ROOT).as_posix())
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _manifest_entry(path: Path) -> dict[str, object]:
+    relative = path.relative_to(ROOT).as_posix()
+    return {
+        "path": relative,
+        "size": path.stat().st_size,
+        "sha256": _sha256(path),
+    }
+
+
+def _aggregate_sha256(entries: list[dict[str, object]]) -> str:
+    digest = hashlib.sha256()
+    for entry in entries:
+        path = str(entry["path"])
+        data = (ROOT / path).read_bytes()
+        path_bytes = path.encode("utf-8")
+        digest.update(len(path_bytes).to_bytes(8, "big"))
+        digest.update(path_bytes)
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+    return digest.hexdigest()
+
+
+def _write_manifest(path: Path) -> None:
+    entries = [_manifest_entry(file_path) for file_path in _manifest_paths()]
+    payload = {
+        "schema": MANIFEST_SCHEMA,
+        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "addon": "sudo_country_pack_cn",
+        "version": _addon_version(),
+        "git_commit": _git_commit(),
+        "root": str(ROOT),
+        "file_count": len(entries),
+        "aggregate_sha256": _aggregate_sha256(entries),
+        "files": entries,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        "delivery manifest written: "
+        f"{path} ({payload['file_count']} files, {payload['aggregate_sha256']})"
+    )
 
 
 def _compile_python() -> None:
@@ -134,6 +241,11 @@ def _parser() -> argparse.ArgumentParser:
         action="append",
         help="Odoo test tag. Repeat to override the default delivery tag set.",
     )
+    parser.add_argument(
+        "--write-manifest",
+        type=Path,
+        help="Write a deterministic delivery manifest with file SHA-256 checksums.",
+    )
     return parser
 
 
@@ -147,6 +259,8 @@ def main() -> int:
         _run_odoo_checks(args)
     else:
         print("runtime skipped: supply --odoo-bin --config --database to run Odoo tests")
+    if args.write_manifest:
+        _write_manifest(args.write_manifest)
     print("China delivery acceptance checks completed")
     return 0
 

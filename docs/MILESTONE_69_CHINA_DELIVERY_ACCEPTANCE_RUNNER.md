@@ -54,9 +54,22 @@ python tools\run_cn_delivery_acceptance.py `
 Use `--install` for a clean install database; otherwise the runner updates
 `sudo_country_pack_cn`.
 
+Delivery manifest:
+
+```powershell
+python tools\run_cn_delivery_acceptance.py `
+  --write-manifest dist\cn_delivery_manifest.json
+```
+
+The manifest records the addon version, Git commit when available, every
+delivered addon/tool file, each file SHA-256 and a deterministic aggregate
+SHA-256 over the sorted file paths and contents.  It is meant to prove what
+code was handed off or deployed.  It does not replace accounting data,
+business-rule or user-acceptance evidence.
+
 ## Acceptance Result
 
-For `19.0.1.96.0`, the local delivery runner passed on the development
-workstation.  The addon was then deployed to the isolated server dev database
-and the same runner executed the default Odoo runtime delivery tag set with
-`0 failed / 0 errors`.
+For `19.0.1.97.0`, the local delivery runner can also emit a delivery manifest
+for package audit.  The acceptance gate remains the same local checks plus the
+optional Odoo runtime tag set with `0 failed / 0 errors` expected before
+handoff.
