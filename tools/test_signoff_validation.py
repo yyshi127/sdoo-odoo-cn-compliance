@@ -281,10 +281,16 @@ class TestChinaSignoffValidation(unittest.TestCase):
         missing = {item["key"]: item for item in packet["missing_human_evidence"]}
 
         self.assertEqual(set(missing), action_keys)
+        for item in missing.values():
+            self.assertGreaterEqual(len(item["objective_areas"]), 1)
         self.assertIn("blocker_summary_walkthrough", missing)
         self.assertIn(
             "required_evidence",
             missing["blocker_summary_walkthrough"],
+        )
+        self.assertIn(
+            "limitations and uncertainty visibility",
+            missing["blocker_summary_walkthrough"]["objective_areas"],
         )
 
     def test_signoff_packet_markdown_lists_missing_human_evidence(self):
@@ -300,6 +306,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "These items must be completed before `production_signoff_ready` can become `true`.",
             content,
         )
+        self.assertIn("Objective areas:", content)
         self.assertIn("blocker_summary_walkthrough", content)
 
     def test_missing_representative_ux_walkthrough_blocks_production_gate(self):

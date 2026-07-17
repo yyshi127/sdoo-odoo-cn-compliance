@@ -32,6 +32,7 @@ def _missing_human_evidence(actions: list[dict[str, Any]]) -> list[dict[str, Any
             "owner": action["owner"],
             "required_evidence": action["required_evidence"],
             "acceptable_decisions": action["acceptable_decisions"],
+            "objective_areas": action["objective_areas"],
         }
         for action in actions
     ]
@@ -98,42 +99,70 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "owner": "business_reviewer",
             "required_evidence": "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md with company, period, reviewer, datasets, screens and decision.",
             "acceptable_decisions": ["accepted", "accepted_with_limitations"],
+            "objective_areas": [
+                "representative business UAT",
+                "closed-loop compliance workflow usability",
+            ],
         },
         {
             "key": "china_tax_professional_rule_signoff",
             "owner": "china_tax_professional",
             "required_evidence": "Signed rule/source review packet for all released rules used in formal conclusions.",
             "acceptable_decisions": ["approved", "approved_with_limitations"],
+            "objective_areas": [
+                "source-governed China rules",
+                "professional tax-rule sign-off",
+            ],
         },
         {
             "key": "official_source_freshness_review",
             "owner": "rule_governance_owner",
             "required_evidence": "Current official-source monitoring results and any local jurisdiction updates reviewed for the target period.",
             "acceptable_decisions": ["current", "current_with_documented_limitations"],
+            "objective_areas": [
+                "official-source freshness",
+                "national and local rule currency",
+            ],
         },
         {
             "key": "customer_scope_and_data_gap_review",
             "owner": "implementation_owner",
             "required_evidence": "Customer-specific accounting periods, external datasets, evidence gaps, open risks and remediation status reviewed.",
             "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
+            "objective_areas": [
+                "Odoo accounting and business-data basis",
+                "external tax data sufficiency",
+            ],
         },
         {
             "key": "representative_ux_walkthrough",
             "owner": "business_reviewer",
             "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking and compliance report pages, including risk level, cause, impact amount, period, owner, due date, status and next action visibility on common desktop and laptop screen sizes.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
+            "objective_areas": [
+                "risk center and remediation clarity",
+                "Odoo-consistent viewing experience",
+            ],
         },
         {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
             "required_evidence": "Screenshot, recording or completed UAT reference showing that data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked or limited.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
+            "objective_areas": [
+                "limitations and uncertainty visibility",
+                "data/evidence/report readiness transparency",
+            ],
         },
         {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
             "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
+            "objective_areas": [
+                "installable and upgradeable Odoo deployment",
+                "auditable release and rollback decision",
+            ],
         },
     ]
     return {
@@ -190,6 +219,7 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 f"### {item['key']}",
                 "",
                 f"- Owner: `{item['owner']}`",
+                f"- Objective areas: `{', '.join(item['objective_areas'])}`",
                 f"- Required evidence: {item['required_evidence']}",
                 f"- Acceptable decisions: `{', '.join(item['acceptable_decisions'])}`",
                 "",
@@ -202,6 +232,7 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 f"### {action['key']}",
                 "",
                 f"- Owner: `{action['owner']}`",
+                f"- Objective areas: `{', '.join(action['objective_areas'])}`",
                 f"- Required evidence: {action['required_evidence']}",
                 f"- Acceptable decisions: `{', '.join(action['acceptable_decisions'])}`",
                 "- Decision:",

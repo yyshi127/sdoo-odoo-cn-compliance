@@ -4793,6 +4793,8 @@ def validate_delivery_objective_coverage() -> None:
         "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
         "missing_human_evidence",
         "Missing Human Evidence",
+        "objective_areas",
+        "Objective areas",
     ):
         if required not in signoff_packet_tool_content:
             fail(f"China sign-off packet blocker walkthrough is missing {required}")
