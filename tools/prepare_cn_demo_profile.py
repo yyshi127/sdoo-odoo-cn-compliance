@@ -85,8 +85,69 @@ def activate(profile):
     return {{"changed": before != profile.status, "before": before, "after": profile.status, "issues": profile._activation_issues()}}
 
 
+def confirm_fiscal_year(profile):
+    if getattr(profile, "fiscal_year_end_confirmed", False):
+        return False
+    values = {{}}
+    if "fiscal_year_end_basis" in profile._fields and not profile.fiscal_year_end_basis:
+        values["fiscal_year_end_basis"] = (
+            "CODEX-DEMO ONLY: fiscal year end confirmed for controlled development walkthrough; "
+            "replace with board resolution, articles or tax filing evidence for production."
+        )
+    if values:
+        profile.write(values)
+    if hasattr(profile, "action_confirm_fiscal_year_end"):
+        profile.action_confirm_fiscal_year_end()
+    else:
+        profile.write({{"fiscal_year_end_confirmed": True}})
+    return True
+
+
+def review_obligations(profile):
+    obligations = profile.obligation_ids
+    if not obligations:
+        return {{"reviewed": 0, "applicable": []}}
+    source = env.ref(
+        "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate",
+        raise_if_not_found=False,
+    )
+    if not source:
+        source = env["sudo.compliance.authority.source"].sudo().search(
+            [("country_id.code", "=", "CN")], limit=1
+        )
+    base_values = {{
+        "applicability": "not_applicable",
+        "justification": (
+            "CODEX-DEMO ONLY: candidate obligation reviewed as not applicable "
+            "for controlled development walkthrough; replace with professional "
+            "source-backed applicability review before production use."
+        ),
+    }}
+    if source:
+        base_values["authority_source_id"] = source.id
+    obligations.write(base_values)
+    applicable = []
+    vat = obligations.filtered(lambda obligation: obligation.code == "CN-VAT")
+    if vat:
+        vat.write({{
+            "applicability": "applicable",
+            "justification": (
+                "CODEX-DEMO ONLY: VAT obligation marked applicable to exercise "
+                "the China compliance walkthrough; not a real taxpayer conclusion."
+            ),
+        }})
+        applicable.append("CN-VAT")
+    return {{"reviewed": len(obligations), "applicable": applicable}}
+
+
 profile = pick_profile()
-created = {{"registration": False, "classification": False, "attachments": []}}
+created = {{
+    "registration": False,
+    "classification": False,
+    "attachments": [],
+    "fiscal_year_confirmed": False,
+    "obligations": {{"reviewed": 0, "applicable": []}},
+}}
 if not profile:
     payload = {{
         "schema": "{SCHEMA}",
@@ -179,6 +240,8 @@ else:
             created["classification"] = True
         if classification.state == "draft":
             classification.action_verify()
+        created["fiscal_year_confirmed"] = confirm_fiscal_year(profile)
+        created["obligations"] = review_obligations(profile)
         activation = activate(profile)
     else:
         activation = {{"changed": False, "before": profile.status, "after": profile.status, "issues": profile._activation_issues()}}
