@@ -1,4 +1,4 @@
-# China Fiscal Compliance Pack Delivery Index
+﻿# China Fiscal Compliance Pack Delivery Index
 
 This is the starting point for release handoff and acceptance of the
 `sudo_country_pack_cn` delivery bundle.
@@ -107,7 +107,7 @@ python tools/check_cn_real_data_closed_loop.py \
   --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
   --config /path/to/odoo.conf \
   --database copied_real_data_db \
-  --expected-version 19.0.1.127.0 \
+  --expected-version 19.0.1.128.0 \
   --json-output dist/cn_real_data_closed_loop.json \
   --require-demo-ready
 ```
@@ -128,7 +128,7 @@ python tools/prepare_cn_demo_profile.py \
   --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
   --config /path/to/odoo.conf \
   --database copied_demo_db \
-  --company "鸿优嘉" \
+  --company "新加坡内账" \
   --allow-demo-data \
   --json-output dist/cn_demo_profile_preparation.json
 ```
@@ -137,6 +137,25 @@ The preparer refuses to write unless `--allow-demo-data` is passed. It creates
 `CODEX-DEMO` registration and taxpayer identity evidence only for a development
 walkthrough. These records must never be treated as real taxpayer evidence or
 used for production sign-off.
+
+After the active China profile belongs to a company with posted accounting
+ledger data, prepare the controlled demo closed loop:
+
+```bash
+python tools/prepare_cn_demo_closed_loop.py \
+  --python-bin /opt/odoo/odoo19/odoo19-venv/bin/python \
+  --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
+  --config /path/to/odoo.conf \
+  --database copied_demo_db \
+  --company "新加坡内账" \
+  --allow-demo-data \
+  --json-output dist/cn_demo_closed_loop_preparation.json
+```
+
+The closed-loop preparer creates clearly marked `CODEX-DEMO` rule-governance,
+assessment, finding, remediation task and draft report records through the same
+model actions used by the UI. It is development/UAT evidence only and is not a
+real Chinese tax opinion.
 
 ## Release Candidate Is Ready For Business UAT When
 
@@ -152,6 +171,7 @@ used for production sign-off.
   - preview module checker;
   - real-data closed-loop checker;
   - controlled demo profile preparer;
+  - controlled demo closed-loop preparer;
 - preview health check returns `ok=true` for the intended preview URL.
 - preview module check returns `ok=true` for the intended preview database.
 
@@ -168,3 +188,4 @@ used for production sign-off.
 
 This index organizes delivery evidence. It does not certify a taxpayer's filing
 position or replace China tax professional judgment.
+

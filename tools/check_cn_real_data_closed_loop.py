@@ -92,10 +92,60 @@ profile_ids = (
 profile_status_domain = profile_dom
 if has_model("sudo.compliance.profile") and "status" in env["sudo.compliance.profile"]._fields:
     profile_status_domain = profile_dom + [("status", "=", "active")]
+active_profiles = (
+    env["sudo.compliance.profile"].sudo().search(profile_status_domain)
+    if has_model("sudo.compliance.profile")
+    else env["res.company"].sudo().browse()
+)
+active_profile_ids = active_profiles.ids if has_model("sudo.compliance.profile") else []
+active_profile_company_ids = active_profiles.mapped("company_id").ids if active_profiles else []
+active_profiles_with_ledger = (
+    active_profiles.filtered(
+        lambda profile: count(
+            "account.move",
+            [
+                ("company_id", "=", profile.company_id.id),
+                ("state", "=", "posted"),
+            ],
+        )
+        and count(
+            "account.move.line",
+            [
+                ("company_id", "=", profile.company_id.id),
+                ("move_id.state", "=", "posted"),
+            ],
+        )
+    )
+    if active_profiles
+    else active_profiles
+)
 assessment_domain = [("profile_id", "in", profile_ids)] if profile_ids else []
 finding_domain = [("assessment_id.profile_id", "in", profile_ids)] if profile_ids else []
 posted_move_domain = [("state", "=", "posted")]
 invoice_domain = posted_move_domain + [("move_type", "!=", "entry")]
+active_profile_posted_move_domain = (
+    posted_move_domain + [("company_id", "in", active_profile_company_ids)]
+    if active_profile_company_ids
+    else posted_move_domain + [("id", "=", 0)]
+)
+active_profile_assessment_domain = (
+    [("profile_id", "in", active_profile_ids)] if active_profile_ids else [("id", "=", 0)]
+)
+active_profile_finding_domain = (
+    [("assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
+active_profile_task_domain = (
+    [("assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
+active_profile_report_domain = (
+    [("assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
 
 profiles = []
 if has_model("sudo.compliance.profile"):
@@ -123,10 +173,18 @@ if has_model("sudo.compliance.profile"):
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
     "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
+    "active_cn_profiles_with_ledger": len(active_profiles_with_ledger),
     "assessments": count("sudo.compliance.assessment", assessment_domain),
     "findings": count("sudo.compliance.finding", finding_domain),
     "remediation_tasks": count("sudo.compliance.task", [("task_type", "=", "remediation")]) if has_model("sudo.compliance.task") else None,
     "formal_reports": count("sudo.cn.compliance.report"),
+    "active_profile_assessments": count("sudo.compliance.assessment", active_profile_assessment_domain),
+    "active_profile_findings": count("sudo.compliance.finding", active_profile_finding_domain),
+    "active_profile_remediation_tasks": count(
+        "sudo.compliance.task",
+        active_profile_task_domain + [("task_type", "=", "remediation")],
+    ) if has_model("sudo.compliance.task") else None,
+    "active_profile_formal_reports": count("sudo.cn.compliance.report", active_profile_report_domain),
     "evidence": count("sudo.compliance.evidence"),
     "filing_archives": count("sudo.compliance.filing"),
     "external_datasets": count("sudo.cn.external.dataset"),
@@ -161,6 +219,13 @@ accounting = {{
     "posted_invoices": count("account.move", invoice_domain),
     "posted_move_lines": count("account.move.line", [("move_id.state", "=", "posted")]),
     "posted_move_date_range": first_last_dates("account.move", "date", posted_move_domain),
+    "active_profile_posted_moves": count("account.move", active_profile_posted_move_domain),
+    "active_profile_posted_move_lines": count(
+        "account.move.line",
+        [("company_id", "in", active_profile_company_ids), ("move_id.state", "=", "posted")]
+        if active_profile_company_ids
+        else [("id", "=", 0)],
+    ),
 }}
 
 readiness = {{
@@ -179,6 +244,11 @@ readiness = {{
     ),
     "has_china_profile": bool((objects.get("cn_profiles") or 0) > 0),
     "has_active_china_profile": bool((objects.get("active_cn_profiles") or 0) > 0),
+    "has_active_china_profile_with_ledger": bool(
+        (objects.get("active_cn_profiles_with_ledger") or 0) > 0
+        and (accounting.get("active_profile_posted_moves") or 0) > 0
+        and (accounting.get("active_profile_posted_move_lines") or 0) > 0
+    ),
     "has_external_tax_or_invoice_data": bool(
         sum(
             objects.get(key) or 0
@@ -198,6 +268,13 @@ readiness = {{
         (objects.get("findings") or 0) > 0 or (objects.get("remediation_tasks") or 0) > 0
     ),
     "has_report_activity": bool((objects.get("formal_reports") or 0) > 0),
+    "has_active_profile_risk_or_remediation_activity": bool(
+        (objects.get("active_profile_findings") or 0) > 0
+        or (objects.get("active_profile_remediation_tasks") or 0) > 0
+    ),
+    "has_active_profile_report_activity": bool(
+        (objects.get("active_profile_formal_reports") or 0) > 0
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -214,6 +291,7 @@ readiness["demo_ready"] = all(
     for key in (
         "setup_demo_ready",
         "has_active_china_profile",
+        "has_active_china_profile_with_ledger",
     )
 )
 readiness["closed_loop_evidence_ready"] = all(
@@ -221,8 +299,8 @@ readiness["closed_loop_evidence_ready"] = all(
     for key in (
         "demo_ready",
         "has_reconciliation_activity",
-        "has_risk_or_remediation_activity",
-        "has_report_activity",
+        "has_active_profile_risk_or_remediation_activity",
+        "has_active_profile_report_activity",
     )
 )
 

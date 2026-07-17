@@ -606,6 +606,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China real-data closed-loop checker capability must be declared")
     if features.get("china_controlled_demo_profile_preparer") is not True:
         fail("China controlled demo profile preparer capability must be declared")
+    if features.get("china_controlled_demo_closed_loop_preparer") is not True:
+        fail("China controlled demo closed-loop preparer capability must be declared")
     if features.get("vat_filing_payment_archive") is not True:
         fail("controlled VAT filing and payment archive capability must be declared")
     if features.get("cit_filing_normalization") is not True:
@@ -4450,6 +4452,26 @@ def validate_delivery_objective_coverage() -> None:
         if required not in demo_profile_content:
             fail(f"China controlled demo profile preparer is missing {required}")
 
+    demo_closed_loop_path = (
+        REPOSITORY_ROOT / "tools" / "prepare_cn_demo_closed_loop.py"
+    )
+    if not demo_closed_loop_path.is_file():
+        fail("China controlled demo closed-loop preparer must be packaged")
+    demo_closed_loop_content = demo_closed_loop_path.read_text(encoding="utf-8")
+    for required in (
+        "sdoo.cn.demo-closed-loop-preparation.v1",
+        "--allow-demo-data",
+        "CODEX-DEMO",
+        "action_queue_compliance_assessment",
+        "action_run_now",
+        "action_require_correction",
+        "action_create_task",
+        "sudo.cn.compliance.report",
+        "China demo closed loop ready",
+    ):
+        if required not in demo_closed_loop_content:
+            fail(f"China controlled demo closed-loop preparer is missing {required}")
+
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():
         fail("China delivery objective coverage matrix must be documented")
@@ -4482,6 +4504,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "tools" / "check_cn_preview_module.py"',
         'ROOT / "tools" / "check_cn_real_data_closed_loop.py"',
         'ROOT / "tools" / "prepare_cn_demo_profile.py"',
+        'ROOT / "tools" / "prepare_cn_demo_closed_loop.py"',
         '"summarize_cn_delivery_status.py"',
     ):
         if required not in acceptance_tool:
