@@ -21,11 +21,47 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / "addons" / "sudo_country_pack_cn"
+XBRL_ADDON = ROOT / "addons" / "sudo_country_pack_cn_einvoice_xbrl"
 DEFAULT_RUNTIME_TAGS = [
     "/sudo_country_pack_cn:TestChinaComplianceWorkbench",
     "/sudo_country_pack_cn:TestChinaRiskCenterDisplay",
     "/sudo_country_pack_cn:TestChinaReportReadiness",
     "/sudo_country_pack_cn:TestChinaFormalComplianceReport",
+]
+TAX_RUNTIME_TAGS = [
+    "/sudo_country_pack_cn:TestChinaTaxDataNormalization",
+    "/sudo_country_pack_cn:TestChinaInvoiceNormalization",
+    "/sudo_country_pack_cn:TestChinaInvoiceReconciliation",
+    "/sudo_country_pack_cn:TestChinaVatPeriodReconciliation",
+    "/sudo_country_pack_cn:TestChinaCitPeriodReconciliation",
+    "/sudo_country_pack_cn:TestChinaIitPeriodReconciliation",
+    "/sudo_country_pack_cn:TestChinaFilingCenter",
+]
+GOVERNANCE_RUNTIME_TAGS = [
+    "/sudo_country_pack_cn:TestChinaCountryPack",
+    "/sudo_country_pack_cn:TestChinaJurisdictionPackagedSafety",
+    "/sudo_country_pack_cn:TestChinaJurisdictionGovernance",
+    "/sudo_country_pack_cn:TestChinaTaxpayerClassification",
+    "/sudo_country_pack_cn:TestChinaExternalDataset",
+    "/sudo_country_pack_cn:TestChinaFactProviders",
+    "/sudo_country_pack_cn:TestChinaRuleDrafts",
+    "/sudo_country_pack_cn:TestChinaRuleReviewPacket",
+    "/sudo_country_pack_cn:TestChinaOfficialSourceMonitoring",
+    "/sudo_country_pack_cn:TestChinaControlledAiGuidance",
+    "/sudo_country_pack_cn:TestChinaAssessmentDataBasis",
+    "/sudo_country_pack_cn:TestChinaDataReadinessCenter",
+]
+RUNTIME_PROFILES = {
+    "core": DEFAULT_RUNTIME_TAGS,
+    "tax": TAX_RUNTIME_TAGS,
+    "governance": GOVERNANCE_RUNTIME_TAGS,
+    "full": DEFAULT_RUNTIME_TAGS + TAX_RUNTIME_TAGS + GOVERNANCE_RUNTIME_TAGS,
+}
+FULL_PROFILE_TOOL_TESTS = [
+    "tools.test_tax_data_contract",
+    "tools.test_xbrl_contract",
+    "tools.test_xbrl_normalizer",
+    "tools.test_xbrl_worker_compatibility",
 ]
 MANIFEST_SCHEMA = "sdoo.cn.delivery-manifest.v1"
 MANIFEST_EXCLUDED_DIRS = {"__pycache__", ".git", "dist", "build", "artifacts", "tmp"}
@@ -73,8 +109,14 @@ def _addon_version() -> str:
 def _manifest_paths() -> list[Path]:
     roots = [
         ADDON,
+        XBRL_ADDON,
+        ROOT / "docs" / "samples",
         ROOT / "tools" / "run_cn_delivery_acceptance.py",
         ROOT / "tools" / "validate_addon.py",
+        ROOT / "tools" / "test_tax_data_contract.py",
+        ROOT / "tools" / "test_xbrl_contract.py",
+        ROOT / "tools" / "test_xbrl_normalizer.py",
+        ROOT / "tools" / "test_xbrl_worker_compatibility.py",
     ]
     paths: list[Path] = []
     for root in roots:
@@ -180,10 +222,17 @@ def _parse_xml() -> None:
     print(f"parsed {len(targets)} XML files")
 
 
-def _run_local_checks() -> None:
+def _run_profile_tool_tests(profile: str) -> None:
+    if profile != "full":
+        return
+    _run([sys.executable, "-m", "unittest", *FULL_PROFILE_TOOL_TESTS])
+
+
+def _run_local_checks(profile: str) -> None:
     _run([sys.executable, "tools/validate_addon.py"])
     _compile_python()
     _parse_xml()
+    _run_profile_tool_tests(profile)
     if _inside_git_worktree():
         _run(["git", "diff", "--check", "--", "addons/sudo_country_pack_cn", "tools"])
     else:
@@ -191,7 +240,7 @@ def _run_local_checks() -> None:
 
 
 def _run_odoo_checks(args: argparse.Namespace) -> None:
-    tags = ",".join(args.test_tags or DEFAULT_RUNTIME_TAGS)
+    tags = ",".join(args.test_tags or RUNTIME_PROFILES[args.profile])
     command = [
         str(args.python_bin) if args.python_bin else str(args.odoo_bin),
     ]
@@ -237,6 +286,15 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--http-port", type=int)
     parser.add_argument("--logfile", type=Path)
     parser.add_argument(
+        "--profile",
+        choices=sorted(RUNTIME_PROFILES),
+        default="core",
+        help=(
+            "Runtime acceptance profile. "
+            "core is the fast visible closed loop; full also runs local contract tests."
+        ),
+    )
+    parser.add_argument(
         "--test-tags",
         action="append",
         help="Odoo test tag. Repeat to override the default delivery tag set.",
@@ -251,7 +309,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
-    _run_local_checks()
+    _run_local_checks(args.profile)
     runtime_args = [args.odoo_bin, args.config, args.database]
     if any(runtime_args) and not all(runtime_args):
         raise SystemExit("--odoo-bin, --config and --database must be supplied together")

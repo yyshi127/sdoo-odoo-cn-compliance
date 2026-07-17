@@ -44,6 +44,7 @@ Runtime gate:
 
 ```powershell
 python tools\run_cn_delivery_acceptance.py `
+  --profile core `
   --odoo-bin C:\path\to\odoo-bin `
   --config C:\path\to\odoo.conf `
   --database codex_cn_acceptance_01 `
@@ -53,6 +54,17 @@ python tools\run_cn_delivery_acceptance.py `
 
 Use `--install` for a clean install database; otherwise the runner updates
 `sudo_country_pack_cn`.
+
+Runtime profiles:
+
+- `core`: fast visible closed-loop acceptance for workbench, risk center,
+  report readiness and formal report controls.
+- `tax`: VAT invoice normalization/reconciliation, VAT period reconciliation,
+  CIT reconciliation, IIT reconciliation and filing center checks.
+- `governance`: country-pack metadata, jurisdiction governance, taxpayer
+  classification, source/rule governance, AI guidance and data readiness.
+- `full`: combines `core`, `tax` and `governance`, and also runs local tax-data
+  and e-invoice XBRL contract tests before the Odoo runtime tests.
 
 Delivery manifest:
 
@@ -69,7 +81,7 @@ business-rule or user-acceptance evidence.
 
 ## Acceptance Result
 
-For `19.0.1.97.0`, the local delivery runner can also emit a delivery manifest
-for package audit.  The acceptance gate remains the same local checks plus the
-optional Odoo runtime tag set with `0 failed / 0 errors` expected before
-handoff.
+For `19.0.1.98.0`, the delivery runner supports runtime profiles so a handoff
+can choose a fast `core` gate during daily iteration and a broader `full` gate
+before release.  Every selected profile still expects `0 failed / 0 errors`
+before handoff.

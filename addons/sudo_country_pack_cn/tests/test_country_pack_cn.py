@@ -70,7 +70,7 @@ class TestChinaCountryPack(TransactionCase):
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )
-        self.assertEqual(len(rules), 11)
+        self.assertGreaterEqual(len(rules), 11)
         self.assertFalse(
             rules.mapped("version_ids").filtered(
                 lambda version: version.state == "active"

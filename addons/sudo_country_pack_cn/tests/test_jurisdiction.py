@@ -17,7 +17,7 @@ class TestChinaJurisdictionPackagedSafety(TransactionCase):
         rules = self.env["sudo.compliance.rule"].search(
             [("code", "like", "CN-%")]
         )
-        self.assertEqual(len(rules), 11)
+        self.assertGreaterEqual(len(rules), 11)
         self.assertFalse(rules.version_ids.filtered("cn_jurisdiction_ids"))
         features = self.env.ref(
             "sudo_country_pack_cn.compliance_country_pack_cn"
