@@ -179,11 +179,12 @@
                                     <th>结论与事实</th>
                                     <th style="width: 13%;">结果</th>
                                     <th style="width: 13%;">人工复核</th>
+                                    <th style="width: 14%;">风险闭环</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-if="not payload.get('findings')">
-                                    <td colspan="5">未冻结任何规则结果。</td>
+                                    <td colspan="6">未冻结任何规则结果。</td>
                                 </tr>
                                 <tr t-foreach="payload.get('findings', [])" t-as="finding">
                                     <td><span t-esc="report.report_label('risk', finding.get('risk_level'))"/></td>
@@ -220,6 +221,12 @@
                                     </td>
                                     <td><span t-esc="report.report_label('result', finding.get('result'))"/></td>
                                     <td><span t-esc="report.report_label('review', finding.get('review_state'))"/></td>
+                                    <td>
+                                        <strong t-esc="report.report_label('closure', finding.get('closure_state'))"/>
+                                        <div class="text-muted" t-if="finding.get('closure_summary')">
+                                            <span t-esc="finding.get('closure_summary')"/>
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -232,6 +239,9 @@
                                     <th>已验证复扫</th>
                                     <th>待验证复扫</th>
                                     <th>未关闭整改</th>
+                                    <th>风险闭环阻断</th>
+                                    <th>风险闭环待处理</th>
+                                    <th>风险闭环可报告</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -240,6 +250,9 @@
                                     <td><span t-esc="report.remediation_verified_count"/></td>
                                     <td><span t-esc="report.remediation_pending_verification_count"/></td>
                                     <td><span t-esc="report.open_task_count"/></td>
+                                    <td><span t-esc="report.finding_closure_blocked_count"/></td>
+                                    <td><span t-esc="report.finding_closure_action_required_count"/></td>
+                                    <td><span t-esc="report.finding_closure_ready_count"/></td>
                                 </tr>
                             </tbody>
                         </table>

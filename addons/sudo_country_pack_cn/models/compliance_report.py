@@ -57,6 +57,11 @@ _CONCLUSION_LABELS = {
     "limited": "存在范围或数据限制",
     "limited_action_required": "存在限制且需要整改",
 }
+_CLOSURE_LABELS = {
+    "blocked": "Blocked",
+    "action_required": "Action Required",
+    "ready": "Ready",
+}
 
 
 def _canonical_checksum(payload):
@@ -2208,6 +2213,7 @@ class SudoChinaComplianceReport(models.Model):
             "evidence": _EVIDENCE_LABELS,
             "impact": _IMPACT_LABELS,
             "conclusion": _CONCLUSION_LABELS,
+            "closure": _CLOSURE_LABELS,
         }
         return mappings.get(category, {}).get(value, value or "-")
 

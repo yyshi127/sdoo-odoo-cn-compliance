@@ -2925,6 +2925,15 @@ def validate_formal_compliance_report() -> None:
         ADDON_ROOT / "reports" / "compliance_report.xml"
     ).read_text(encoding="utf-8")
     for required in (
+        "finding_closure_blocked_count",
+        "finding_closure_action_required_count",
+        "finding_closure_ready_count",
+        "report.report_label('closure'",
+        "finding.get('closure_summary')",
+    ):
+        if required not in report_content:
+            fail(f"formal compliance report risk closure PDF is missing {required}")
+    for required in (
         '<field name="binding_model_id" eval="False"/>',
         "不是纳税申报表、税务鉴证报告、法律意见、审计意见或税务机关认定",
         "潜在少缴、潜在多缴和期间错配影响分别列示",
@@ -2975,6 +2984,9 @@ def validate_formal_compliance_report() -> None:
         "finding_closure_blocked_count",
         "closure_state",
         "closure_summary",
+        "风险闭环阻断",
+        "风险闭环待处理",
+        "风险闭环可报告",
         "obligation_readiness",
         "filing_archive",
         "cn_report_traceability_state",
