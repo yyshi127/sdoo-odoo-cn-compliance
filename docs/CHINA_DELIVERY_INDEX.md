@@ -65,6 +65,7 @@ python tools/summarize_cn_delivery_status.py \
   --preview-health dist/cn_preview_health.json \
   --preview-url http://127.0.0.1:18069/web/login?db=target_database \
   --require-business-uat-ready \
+  --require-source-control-clean \
   --json-output dist/cn_delivery_status.json \
   --markdown-output dist/cn_delivery_status.md
 ```
@@ -80,6 +81,8 @@ automation when a non-zero exit code should stop handoff.
 Bundle metadata, delivery manifest, acceptance summary and status summary also
 carry source-control evidence so reviewers can see the branch, commit and dirty
 worktree state that produced the delivery artifact.
+Use `--require-source-control-clean` for formal release packaging when the
+handoff must fail unless branch, commit and a clean worktree are recorded.
 
 Check a preview URL before business UAT:
 

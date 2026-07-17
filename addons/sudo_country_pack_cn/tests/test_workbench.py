@@ -352,6 +352,11 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "china_delivery_source_control_traceability"
             ]
         )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_delivery_source_control_clean_gate"
+            ]
+        )
 
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()

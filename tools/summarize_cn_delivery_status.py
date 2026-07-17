@@ -66,6 +66,21 @@ def _runtime_summary(summary: dict[str, object] | None) -> dict[str, object] | N
     }
 
 
+def _source_control_blockers(source_control: object) -> list[str]:
+    if not isinstance(source_control, dict):
+        return ["source control evidence is missing"]
+    blockers: list[str] = []
+    if source_control.get("inside_worktree") is not True:
+        blockers.append("source control evidence was not captured from a Git worktree")
+    if not source_control.get("commit"):
+        blockers.append("source commit is missing")
+    if not source_control.get("branch"):
+        blockers.append("source branch is missing")
+    if source_control.get("dirty") is not False:
+        blockers.append("source worktree is not confirmed clean")
+    return blockers
+
+
 def _status(
     *,
     bundle_metadata: dict[str, object] | None,
@@ -182,6 +197,8 @@ def _status(
             "business_uat_blockers": business_uat_blockers,
             "production_signoff_ready": False,
             "production_signoff_blockers": production_signoff_blockers,
+            "source_control_clean": not _source_control_blockers(source_control),
+            "source_control_blockers": _source_control_blockers(source_control),
         },
         "bundle_metadata": _artifact_summary(bundle_metadata),
         "manifest": _artifact_summary(manifest),
@@ -285,6 +302,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Exit with status 3 unless production sign-off readiness is explicitly satisfied.",
     )
+    parser.add_argument(
+        "--require-source-control-clean",
+        action="store_true",
+        help="Exit with status 4 unless source-control evidence has a branch, commit and clean worktree.",
+    )
     return parser
 
 
@@ -329,6 +351,13 @@ def main() -> int:
         blockers = readiness.get("production_signoff_blockers") or []
         print(f"production sign-off readiness gate failed: {blockers}")
         return 3
+    if (
+        args.require_source_control_clean
+        and readiness.get("source_control_clean") is not True
+    ):
+        blockers = readiness.get("source_control_blockers") or []
+        print(f"source-control readiness gate failed: {blockers}")
+        return 4
     return 0
 
 
