@@ -122,9 +122,17 @@ SHA-256 values, per-file size/SHA-256 entries, the bundle file SHA-256 when the
 bundle is available and the parsed runtime `0 failed / 0 errors` result when
 the acceptance summary contains a runtime log.
 
+Delivery runbook:
+
+- `docs/DELIVERY_RUNBOOK_CN.md` is included in the audited delivery manifest and
+  bundle.
+- The runbook documents the standard bundle build, Odoo deployment, install,
+  upgrade, acceptance and artifact verification commands without embedding
+  production secrets, private keys, customer data or server-specific passwords.
+
 ## Acceptance Result
 
-For `19.0.1.101.0`, the delivery toolchain can build a deterministic release
-bundle, emit a deterministic delivery manifest, write a machine-readable
-acceptance summary and verify the three artifacts agree before handoff.  Every
-selected profile still expects `0 failed / 0 errors` before handoff.
+For `19.0.1.102.0`, the audited bundle also includes a clean Chinese delivery
+runbook so deployment, acceptance and artifact verification can be repeated
+without relying on chat history or operator memory.  Every selected profile
+still expects `0 failed / 0 errors` before handoff.
