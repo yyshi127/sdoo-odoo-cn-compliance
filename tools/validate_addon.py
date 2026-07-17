@@ -4287,6 +4287,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_data_readiness_period_label",
         "cn_data_readiness_record_count",
         "cn_data_readiness_next_action",
+        "cn_data_readiness_blocker_summary",
         "action_cn_open_workbench_data_readiness",
         "sudo_country_pack_cn.action_cn_data_readiness_center",
     ):
@@ -4306,6 +4307,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_data_readiness_stage",
         "cn_data_readiness_next_action",
         "cn_data_readiness_record_count",
+        "cn_data_readiness_blocker_summary",
         "review_control_state",
         "action_view_parse_runs",
         "action_view_tax_data_parse_runs",
@@ -4345,6 +4347,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_cn_open_workbench_data_readiness",
         "cn_data_readiness_stage",
         "cn_data_readiness_next_action",
+        "cn_data_readiness_blocker_summary",
     ):
         if required not in data_readiness_test_content:
             fail(f"China data readiness center runtime coverage is missing {required}")

@@ -28,6 +28,10 @@ class SudoChinaDataReadinessDataset(models.Model):
         string="下一步动作",
         compute="_compute_cn_data_readiness_display",
     )
+    cn_data_readiness_blocker_summary = fields.Char(
+        string="Data Readiness Blockers",
+        compute="_compute_cn_data_readiness_display",
+    )
 
     @api.depends(
         "period_start",
@@ -44,6 +48,7 @@ class SudoChinaDataReadinessDataset(models.Model):
         "normalized_iit_withholding_count",
         "normalized_payroll_summary_count",
         "normalized_tax_payment_count",
+        "review_control_state",
     )
     def _compute_cn_data_readiness_display(self):
         for dataset in self:
@@ -58,6 +63,9 @@ class SudoChinaDataReadinessDataset(models.Model):
             )
             dataset.cn_data_readiness_next_action = (
                 dataset._cn_data_readiness_next_action(normalized_count)
+            )
+            dataset.cn_data_readiness_blocker_summary = (
+                dataset._cn_data_readiness_blocker_summary(normalized_count)
             )
 
     def _cn_data_readiness_normalized_count(self):
@@ -108,6 +116,33 @@ class SudoChinaDataReadinessDataset(models.Model):
         if self.integrity_state == "verified":
             return _("数据已形成受控链路，可用于对账、风险扫描和报告引用。")
         return _("复核数据完整性和解析结果，确认后进入规则扫描。")
+
+    def _cn_data_readiness_blocker_summary(self, normalized_count):
+        self.ensure_one()
+        blockers = []
+        if self.state == "superseded":
+            blockers.append(_("superseded dataset"))
+        elif self.state != "sealed":
+            blockers.append(_("dataset not sealed"))
+        if self.integrity_state == "checksum_mismatch":
+            blockers.append(_("integrity checksum mismatch"))
+        elif self.integrity_state != "verified":
+            blockers.append(_("integrity not verified"))
+        if self.authenticity_state == "official_tool_failed":
+            blockers.append(_("authenticity verification failed"))
+        elif self.authenticity_state in ("not_checked", "unavailable"):
+            blockers.append(_("authenticity not verified"))
+        if self.review_control_state == "pending":
+            blockers.append(_("independent review pending"))
+        elif self.review_control_state == "exception":
+            blockers.append(_("review control exception"))
+        if self.dataset_type in _NORMALIZED_DATASET_TYPES and not normalized_count:
+            blockers.append(_("no normalized records"))
+        if not blockers:
+            return _("No blocker: dataset is ready for controlled scans.")
+        return _("Blocked by: %(blockers)s") % {
+            "blockers": "; ".join(dict.fromkeys(blockers))
+        }
 
 
 class SudoChinaDataReadinessProfile(models.Model):

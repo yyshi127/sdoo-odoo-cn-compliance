@@ -73,3 +73,14 @@ class TestChinaDataReadinessCenter(TransactionCase):
         self.assertIn("封存", dataset.cn_data_readiness_next_action)
         self.assertEqual(dataset.cn_data_readiness_record_count, 0)
         self.assertIn("2026-01-01", dataset.cn_data_readiness_period_label)
+        self.assertIn("Blocked by:", dataset.cn_data_readiness_blocker_summary)
+        self.assertIn("dataset not sealed", dataset.cn_data_readiness_blocker_summary)
+        self.assertIn(
+            "integrity not verified",
+            dataset.cn_data_readiness_blocker_summary,
+        )
+        self.assertIn(
+            "authenticity not verified",
+            dataset.cn_data_readiness_blocker_summary,
+        )
+        self.assertIn("no normalized records", dataset.cn_data_readiness_blocker_summary)
