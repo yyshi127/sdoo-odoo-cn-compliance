@@ -412,6 +412,45 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <table class="table table-sm table-bordered" t-if="payload.get('ai_analysis_metadata')">
+                            <thead>
+                                <tr>
+                                    <th>Controlled AI metadata</th>
+                                    <th>Provider / model</th>
+                                    <th>Prompt version</th>
+                                    <th>Input SHA-256</th>
+                                    <th>Record SHA-256</th>
+                                    <th>Warnings</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="payload.get('ai_analysis_metadata', [])" t-as="analysis">
+                                    <td>
+                                        <span>#</span><span t-esc="analysis.get('id')"/>
+                                        <div class="text-muted small">
+                                            Finding <span t-esc="analysis.get('finding_id')"/>
+                                            <span> / revision </span><span t-esc="analysis.get('revision')"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span t-esc="analysis.get('provider_key') or '-'"/>
+                                        <div class="text-muted small" t-esc="analysis.get('model_name') or '-'"/>
+                                    </td>
+                                    <td><span t-esc="analysis.get('prompt_version') or '-'"/></td>
+                                    <td style="word-break: break-all; font-family: monospace; font-size: 8px;">
+                                        <span t-esc="analysis.get('input_checksum') or '-'"/>
+                                    </td>
+                                    <td style="word-break: break-all; font-family: monospace; font-size: 8px;">
+                                        <span t-esc="analysis.get('record_checksum') or '-'"/>
+                                    </td>
+                                    <td>
+                                        <span t-if="analysis.get('source_warning')">source </span>
+                                        <span t-if="analysis.get('professional_warning')">professional </span>
+                                        <span t-if="not analysis.get('source_warning') and not analysis.get('professional_warning')">none</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </t>
             </t>

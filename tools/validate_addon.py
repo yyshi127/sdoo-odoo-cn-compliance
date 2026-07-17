@@ -2942,6 +2942,12 @@ def validate_formal_compliance_report() -> None:
         "source.get('status')",
         "Professional review snapshot:",
         "finding.get('professional_snapshot')",
+        "Controlled AI metadata",
+        "analysis.get('provider_key')",
+        "analysis.get('model_name')",
+        "analysis.get('prompt_version')",
+        "analysis.get('input_checksum')",
+        "analysis.get('record_checksum')",
     ):
         if required not in report_content:
             fail(f"formal compliance report risk closure PDF is missing {required}")

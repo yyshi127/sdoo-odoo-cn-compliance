@@ -612,6 +612,18 @@ class TestChinaFormalComplianceReport(TransactionCase):
             report.snapshot_json["ai_analysis_metadata"][0]["prompt_version"],
             "cn-compliance-guidance-v1",
         )
+        action = self.env.ref(
+            "sudo_country_pack_cn.action_report_cn_formal_compliance"
+        )
+        html, _report_type = action._render_qweb_html(
+            action.report_name,
+            report.ids,
+        )
+        self.assertIn("Controlled AI metadata".encode(), html)
+        self.assertIn(analysis.provider_key.encode(), html)
+        self.assertIn(analysis.model_name.encode(), html)
+        self.assertIn(analysis.input_checksum.encode(), html)
+        self.assertIn(analysis.record_checksum.encode(), html)
 
     def test_pending_obligations_require_report_limitation(self):
         report = self._report(limitation_statement="")
