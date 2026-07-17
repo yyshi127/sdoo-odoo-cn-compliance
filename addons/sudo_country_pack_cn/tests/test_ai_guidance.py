@@ -108,27 +108,40 @@ class TestChinaControlledAiGuidance(TransactionCase):
         assessment._engine_write({"state": "completed"})
         return finding
 
-    def _fact_snapshot(self, finding, suffix="base", quality_state="complete"):
-        definition = self.env["sudo.compliance.fact.definition"].create(
-            {
-                "name": f"AI guidance fact {suffix}",
-                "label": f"AI guidance fact {suffix}",
-                "key": f"cn.ai.guidance.fact.{finding.id}.{suffix}",
-                "version": "TEST-1",
-                "country_id": self.country.id,
-                "value_type": "integer",
-                "provider_key": f"ai_guidance_fact_{suffix}",
-                "provider_version": "1",
-                "source_model": "account.move",
-                "source_description": "Controlled AI guidance test fact.",
-                "completeness_method": "full_domain",
-            }
+    def _fact_snapshot(
+        self,
+        finding,
+        suffix="base",
+        quality_state="complete",
+        key=None,
+        value=1,
+        value_type="integer",
+    ):
+        key = key or f"cn.ai.guidance.fact.{finding.id}.{suffix}"
+        definition = self.env["sudo.compliance.fact.definition"].search(
+            [("key", "=", key)], limit=1
         )
+        if not definition:
+            definition = self.env["sudo.compliance.fact.definition"].create(
+                {
+                    "name": f"AI guidance fact {suffix}",
+                    "label": f"AI guidance fact {suffix}",
+                    "key": key,
+                    "version": "TEST-1",
+                    "country_id": self.country.id,
+                    "value_type": value_type,
+                    "provider_key": f"ai_guidance_fact_{suffix}",
+                    "provider_version": "1",
+                    "source_model": "account.move",
+                    "source_description": "Controlled AI guidance test fact.",
+                    "completeness_method": "full_domain",
+                }
+            )
         snapshot = self.env["sudo.compliance.fact.snapshot"]._create_engine(
             {
                 "assessment_id": finding.assessment_id.id,
                 "definition_id": definition.id,
-                "value_json": 1,
+                "value_json": value,
                 "captured_at": fields.Datetime.now(),
                 "source_model": "account.move",
                 "source_domain_json": [("company_id", "=", self.company.id)],
@@ -228,6 +241,23 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self._reset_obligations()
         finding = self._finding()
         self._fact_snapshot(finding, "complete")
+        self._fact_snapshot(
+            finding,
+            "vat_recon",
+            key="cn.reconciliation.vat.risk_summary",
+            value={
+                "risk_status": "difference_review_required",
+                "next_action": "Review VAT differences before report sign-off.",
+                "counts": {
+                    "difference_count": 2,
+                    "blocking_issue_count": 1,
+                    "warning_issue_count": 1,
+                },
+                "material_differences": {"output_tax": "88.00"},
+                "top_issues": [{"code": "VAT-AI-DIFF"}],
+            },
+            value_type="json",
+        )
         task = self.env["sudo.compliance.task"].create_from_finding(finding)
         evidence = self.env["sudo.compliance.evidence"].create(
             {
@@ -247,7 +277,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
 
         payload = finding._cn_ai_guidance_input()
         self.assertEqual(payload["fact_basis"]["state"], "ready")
-        self.assertEqual(payload["fact_basis"]["snapshot_count"], 1)
+        self.assertEqual(payload["fact_basis"]["snapshot_count"], 2)
         self.assertEqual(payload["fact_basis"]["issue_count"], 0)
         self.assertEqual(payload["remediation_evidence"]["state"], "verified")
         self.assertEqual(payload["remediation_evidence"]["evidence_count"], 1)
@@ -255,19 +285,34 @@ class TestChinaControlledAiGuidance(TransactionCase):
             payload["remediation_evidence"]["verified_evidence_count"],
             1,
         )
+        self.assertEqual(
+            payload["reconciliation_risk"]["state"],
+            "difference_review_required",
+        )
+        self.assertIn("VAT-AI-DIFF", payload["reconciliation_risk"]["summary"])
+        self.assertEqual(payload["tax_impact"]["state"], "none")
+        self.assertEqual(payload["remediation_progress"]["progress"], 33)
+        self.assertIn("evidence 1/1", payload["remediation_progress"]["summary"])
 
         action = finding.with_user(self.user).action_generate_cn_ai_guidance()
         analysis = self.env["sudo.compliance.ai.analysis"].browse(
             action["res_id"]
         )
         self.assertIn("Fact basis: state=ready", analysis.analysis)
+        self.assertIn("Reconciliation risk: state=difference_review_required", analysis.analysis)
+        self.assertIn("Tax impact: state=none", analysis.analysis)
         self.assertIn(
             "Remediation evidence: state=verified",
             analysis.analysis,
         )
+        self.assertIn("Remediation progress: progress=33%", analysis.analysis)
         self.assertEqual(
             analysis.input_snapshot_json["remediation_evidence"]["state"],
             "verified",
+        )
+        self.assertEqual(
+            analysis.input_snapshot_json["reconciliation_risk"]["state"],
+            "difference_review_required",
         )
 
     def test_country_pack_advertises_controlled_ai_guidance(self):
@@ -299,6 +344,11 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertTrue(
             self.country_pack.capability_json["features"][
                 "china_ai_data_basis_context"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
+                "china_ai_risk_resolution_context"
             ]
         )
 

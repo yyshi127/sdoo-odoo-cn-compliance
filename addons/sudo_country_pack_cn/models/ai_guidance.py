@@ -75,6 +75,10 @@ class SudoChinaAiGuidanceFinding(models.Model):
             filing_archive_state = payload.get("filing_archive", {}).get("state")
             fact_basis_state = payload.get("fact_basis", {}).get("state")
             evidence_state = payload.get("remediation_evidence", {}).get("state")
+            tax_impact_state = payload.get("tax_impact", {}).get("state")
+            remediation_progress = payload.get("remediation_progress", {}).get(
+                "progress"
+            )
             has_limit = (
                 finding.source_warning
                 or finding.professional_warning
@@ -85,6 +89,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 or filing_archive_state in ("not_started", "attention", "blocked")
                 or fact_basis_state in ("not_started", "blocked")
                 or evidence_state in ("none", "partial")
+                or tax_impact_state in ("pending", "integrity_issue", "unquantifiable")
+                or (remediation_progress is not None and remediation_progress < 100)
             )
             if finding.ai_analysis_count:
                 finding.cn_ai_guidance_state = "generated"
@@ -237,6 +243,71 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 "evidence_count": evidence_count,
                 "verified_evidence_count": verified_evidence_count,
             },
+            "reconciliation_risk": {
+                "state": self.cn_reconciliation_risk_state
+                if "cn_reconciliation_risk_state" in self._fields
+                else None,
+                "summary": self.cn_reconciliation_risk_summary
+                if "cn_reconciliation_risk_summary" in self._fields
+                else None,
+                "next_action": self.cn_reconciliation_risk_next_action
+                if "cn_reconciliation_risk_next_action" in self._fields
+                else None,
+            },
+            "tax_impact": {
+                "state": self.cn_tax_impact_state
+                if "cn_tax_impact_state" in self._fields
+                else None,
+                "case_count": self.cn_tax_impact_case_count
+                if "cn_tax_impact_case_count" in self._fields
+                else 0,
+                "pending_count": self.cn_tax_impact_pending_review_count
+                if "cn_tax_impact_pending_review_count" in self._fields
+                else 0,
+                "unquantifiable_count": (
+                    self.cn_tax_impact_unquantifiable_review_count
+                    if "cn_tax_impact_unquantifiable_review_count" in self._fields
+                    else 0
+                ),
+                "integrity_issue_count": self.cn_tax_impact_integrity_issue_count
+                if "cn_tax_impact_integrity_issue_count" in self._fields
+                else 0,
+                "reviewed_underpayment_amount": (
+                    self.cn_tax_impact_reviewed_underpayment_amount
+                    if "cn_tax_impact_reviewed_underpayment_amount" in self._fields
+                    else 0.0
+                ),
+                "reviewed_overpayment_amount": (
+                    self.cn_tax_impact_reviewed_overpayment_amount
+                    if "cn_tax_impact_reviewed_overpayment_amount" in self._fields
+                    else 0.0
+                ),
+                "reviewed_timing_amount": (
+                    self.cn_tax_impact_reviewed_timing_amount
+                    if "cn_tax_impact_reviewed_timing_amount" in self._fields
+                    else 0.0
+                ),
+                "summary": self.cn_tax_impact_summary
+                if "cn_tax_impact_summary" in self._fields
+                else None,
+            },
+            "remediation_progress": {
+                "progress": task.cn_remediation_progress
+                if task and "cn_remediation_progress" in task._fields
+                else None,
+                "summary": task.cn_remediation_summary
+                if task and "cn_remediation_summary" in task._fields
+                else None,
+                "rescan_stage": task.cn_remediation_rescan_stage
+                if task and "cn_remediation_rescan_stage" in task._fields
+                else None,
+                "traceability_state": task.cn_remediation_traceability_state
+                if task and "cn_remediation_traceability_state" in task._fields
+                else None,
+                "traceability_gap_count": task.cn_remediation_traceability_gap_count
+                if task and "cn_remediation_traceability_gap_count" in task._fields
+                else 0,
+            },
         }
 
     def _cn_ai_guidance_text(self, payload):
@@ -325,6 +396,40 @@ class SudoChinaAiGuidanceFinding(models.Model):
                 remediation_evidence.get("evidence_count") or 0,
             )
         )
+        reconciliation_risk = payload.get("reconciliation_risk", {})
+        reconciliation_risk_line = (
+            "Reconciliation risk: state=%s; summary=%s; next=%s"
+            % (
+                reconciliation_risk.get("state") or "-",
+                reconciliation_risk.get("summary") or "-",
+                reconciliation_risk.get("next_action") or "-",
+            )
+        )
+        tax_impact = payload.get("tax_impact", {})
+        tax_impact_line = (
+            "Tax impact: state=%s; cases=%s; pending=%s; underpayment=%s; "
+            "overpayment=%s; timing=%s"
+            % (
+                tax_impact.get("state") or "-",
+                tax_impact.get("case_count") or 0,
+                tax_impact.get("pending_count") or 0,
+                tax_impact.get("reviewed_underpayment_amount") or 0.0,
+                tax_impact.get("reviewed_overpayment_amount") or 0.0,
+                tax_impact.get("reviewed_timing_amount") or 0.0,
+            )
+        )
+        remediation_progress = payload.get("remediation_progress", {})
+        remediation_progress_line = (
+            "Remediation progress: progress=%s%%; stage=%s; traceability=%s; summary=%s"
+            % (
+                remediation_progress.get("progress")
+                if remediation_progress.get("progress") is not None
+                else "-",
+                remediation_progress.get("rescan_stage") or "-",
+                remediation_progress.get("traceability_state") or "-",
+                remediation_progress.get("summary") or "-",
+            )
+        )
         assignee_line = (
             self.current_task_id.assignee_id.display_name
             if self.current_task_id
@@ -345,7 +450,10 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "%(filing_archive_line)s\n\n"
             "%(data_basis_line)s\n\n"
             "%(fact_basis_line)s\n\n"
+            "%(reconciliation_risk_line)s\n\n"
+            "%(tax_impact_line)s\n\n"
             "%(remediation_evidence_line)s\n\n"
+            "%(remediation_progress_line)s\n\n"
             "四、处理建议\n"
             "%(recommendation)s\n\n"
             "五、证据要求\n"
@@ -371,7 +479,10 @@ class SudoChinaAiGuidanceFinding(models.Model):
             filing_archive_line=filing_archive_line,
             data_basis_line=data_basis_line,
             fact_basis_line=fact_basis_line,
+            reconciliation_risk_line=reconciliation_risk_line,
+            tax_impact_line=tax_impact_line,
             remediation_evidence_line=remediation_evidence_line,
+            remediation_progress_line=remediation_progress_line,
             recommendation=payload["recommendation"] or "暂无整改建议。",
             evidence=payload["evidence_required"] or "暂无证据要求。",
             warnings="\n".join(warning_lines),
