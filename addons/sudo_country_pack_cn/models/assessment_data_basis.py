@@ -1,6 +1,31 @@
 from odoo import _, api, fields, models
 
 
+_CN_REQUIRED_DATASET_LABELS = {
+    "electronic_invoice": "Electronic invoices",
+    "vat_filing": "VAT filings",
+    "cit_filing": "CIT filings",
+    "iit_withholding": "IIT withholding",
+    "payroll_summary": "Payroll summaries",
+    "tax_payment": "Tax payments",
+}
+
+_CN_BASE_REQUIRED_DATASET_TYPES = {
+    "electronic_invoice",
+    "vat_filing",
+    "tax_payment",
+}
+
+_CN_OBLIGATION_REQUIRED_DATASET_TYPES = {
+    "CN-VAT": {"electronic_invoice", "vat_filing", "tax_payment"},
+    "CN-CIT": {"cit_filing", "tax_payment"},
+    "CN-IIT-WHT": {"iit_withholding", "payroll_summary", "tax_payment"},
+    "CN-SURCHARGE": {"vat_filing", "tax_payment"},
+    "CN-STAMP-DUTY": {"tax_payment"},
+    "CN-SOCIAL-INSURANCE": {"payroll_summary", "tax_payment"},
+}
+
+
 class SudoChinaAssessmentDataBasis(models.Model):
     _inherit = "sudo.compliance.assessment"
 
@@ -33,6 +58,22 @@ class SudoChinaAssessmentDataBasis(models.Model):
     )
     cn_data_basis_normalized_record_count = fields.Integer(
         string="规范化记录",
+        compute="_compute_cn_data_basis",
+    )
+    cn_data_basis_required_type_count = fields.Integer(
+        string="Required Data Types",
+        compute="_compute_cn_data_basis",
+    )
+    cn_data_basis_ready_type_count = fields.Integer(
+        string="Ready Data Types",
+        compute="_compute_cn_data_basis",
+    )
+    cn_data_basis_missing_type_count = fields.Integer(
+        string="Missing Data Types",
+        compute="_compute_cn_data_basis",
+    )
+    cn_data_basis_missing_type_summary = fields.Char(
+        string="Missing Data Type Summary",
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_next_action = fields.Char(
@@ -88,6 +129,10 @@ class SudoChinaAssessmentDataBasis(models.Model):
                 "cn_data_basis_warning_count": 0,
                 "cn_data_basis_blocked_count": 0,
                 "cn_data_basis_normalized_record_count": 0,
+                "cn_data_basis_required_type_count": 0,
+                "cn_data_basis_ready_type_count": 0,
+                "cn_data_basis_missing_type_count": 0,
+                "cn_data_basis_missing_type_summary": False,
                 "cn_data_basis_next_action": False,
                 "cn_obligation_basis_state": False,
                 "cn_obligation_basis_candidate_count": 0,
@@ -126,6 +171,16 @@ class SudoChinaAssessmentDataBasis(models.Model):
             normalized_count = sum(
                 datasets.mapped("cn_data_readiness_record_count")
             )
+            required_types = assessment._cn_required_dataset_types()
+            ready_types = set(
+                datasets.filtered(
+                    lambda dataset: dataset.cn_data_readiness_stage == "ready"
+                ).mapped("dataset_type")
+            )
+            missing_types = required_types - ready_types
+            missing_summary = assessment._cn_required_dataset_type_summary(
+                missing_types
+            )
 
             state = "ready"
             next_action = _("数据基础已具备可追溯入口，可继续查看风险和报告准备。")
@@ -139,14 +194,52 @@ class SudoChinaAssessmentDataBasis(models.Model):
                 state = "warning"
                 next_action = _("复核待补齐、待验证或尚未规范化的数据集，再进入正式报告。")
 
+            if state == "missing":
+                next_action = _(
+                    "Register and seal ready data for this period: %(types)s.",
+                    types=missing_summary,
+                )
+            elif state == "ready" and missing_types:
+                state = "warning"
+                next_action = _(
+                    "Current data is usable but incomplete. Add ready data for: %(types)s.",
+                    types=missing_summary,
+                )
+
             assessment.cn_data_basis_state = state
             assessment.cn_data_basis_dataset_count = len(datasets)
             assessment.cn_data_basis_ready_count = ready_count
             assessment.cn_data_basis_warning_count = warning_count
             assessment.cn_data_basis_blocked_count = blocked_count
             assessment.cn_data_basis_normalized_record_count = normalized_count
+            assessment.cn_data_basis_required_type_count = len(required_types)
+            assessment.cn_data_basis_ready_type_count = len(
+                required_types & ready_types
+            )
+            assessment.cn_data_basis_missing_type_count = len(missing_types)
+            assessment.cn_data_basis_missing_type_summary = missing_summary
             assessment.cn_data_basis_next_action = next_action
             assessment._cn_update_obligation_basis_values()
+
+    def _cn_required_dataset_types(self):
+        self.ensure_one()
+        required = set(_CN_BASE_REQUIRED_DATASET_TYPES)
+        for obligation in self.profile_id.obligation_ids:
+            if obligation.applicability == "not_applicable":
+                continue
+            required |= _CN_OBLIGATION_REQUIRED_DATASET_TYPES.get(
+                obligation.code,
+                set(),
+            )
+        return required
+
+    def _cn_required_dataset_type_summary(self, dataset_types):
+        self.ensure_one()
+        labels = [
+            _CN_REQUIRED_DATASET_LABELS.get(dataset_type, dataset_type)
+            for dataset_type in sorted(dataset_types)
+        ]
+        return ", ".join(labels)
 
     def _cn_update_obligation_basis_values(self):
         for assessment in self:

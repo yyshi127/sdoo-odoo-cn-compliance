@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.74.0</field>
+        <field name="version">19.0.1.75.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -46,6 +46,7 @@
                 'china_filing_center': True,
                 'china_data_readiness_center': True,
                 'china_assessment_data_basis': True,
+                'china_assessment_required_dataset_type_coverage': True,
                 'china_assessment_obligation_basis': True,
                 'china_remediation_rescan_visibility': True,
                 'china_risk_rule_basis_visibility': True,
