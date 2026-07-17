@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
+OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 
 
 def _load(path: Path | None) -> dict[str, object] | None:
@@ -78,6 +79,17 @@ def _status(
         "acceptance_passed": artifact_result == "passed",
         "runtime_passed": runtime_passed,
         "preview_url": preview_url,
+        "objective_coverage": {
+            "path": OBJECTIVE_COVERAGE_PATH.as_posix(),
+            "included_in_manifest": bool(
+                manifest
+                and any(
+                    entry.get("path") == OBJECTIVE_COVERAGE_PATH.as_posix()
+                    for entry in manifest.get("files", [])
+                    if isinstance(entry, dict)
+                )
+            ),
+        },
         "bundle_metadata": _artifact_summary(bundle_metadata),
         "manifest": _artifact_summary(manifest),
         "acceptance_summary": _artifact_summary(summary),
@@ -91,6 +103,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     acceptance = status.get("acceptance_summary") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else None
+    objective_coverage = status.get("objective_coverage") or {}
     lines = [
         "# China Delivery Status",
         "",
@@ -99,6 +112,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Acceptance passed: `{status['acceptance_passed']}`",
         f"- Runtime passed: `{status['runtime_passed']}`",
         f"- Preview URL: `{status.get('preview_url') or ''}`",
+        f"- Objective coverage: `{objective_coverage.get('path', '')}`",
+        f"- Objective coverage in manifest: `{objective_coverage.get('included_in_manifest', False)}`",
         "",
         "## Artifacts",
         "",
