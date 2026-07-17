@@ -130,9 +130,17 @@ Delivery runbook:
   upgrade, acceptance and artifact verification commands without embedding
   production secrets, private keys, customer data or server-specific passwords.
 
+Development preview access:
+
+- `docs/DEVELOPMENT_PREVIEW_ACCESS_CN.md` is included in the audited delivery
+  manifest and bundle.
+- The preview note documents the recommended local SSH tunnel pattern for a
+  loopback-only development Odoo instance, including local port checks and
+  server-side listener checks.
+
 ## Acceptance Result
 
-For `19.0.1.102.0`, the audited bundle also includes a clean Chinese delivery
-runbook so deployment, acceptance and artifact verification can be repeated
-without relying on chat history or operator memory.  Every selected profile
-still expects `0 failed / 0 errors` before handoff.
+For `19.0.1.103.0`, the audited bundle also includes development preview access
+notes so reviewers can restore the local browser entry point without exposing a
+development Odoo port publicly.  Every selected profile still expects
+`0 failed / 0 errors` before handoff.

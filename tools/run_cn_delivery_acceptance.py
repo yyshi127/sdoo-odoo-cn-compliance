@@ -112,6 +112,7 @@ def _manifest_paths() -> list[Path]:
     roots = [
         ADDON,
         XBRL_ADDON,
+        ROOT / "docs" / "DEVELOPMENT_PREVIEW_ACCESS_CN.md",
         ROOT / "docs" / "DELIVERY_RUNBOOK_CN.md",
         ROOT / "docs" / "samples",
         ROOT / "tools" / "run_cn_delivery_acceptance.py",
