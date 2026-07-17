@@ -268,6 +268,8 @@ else:
             "active_cn_profiles": count("sudo.compliance.profile", [("country_id.code", "=", "CN"), ("status", "=", "active")]),
         }},
     }}
+    if allow_demo_data and payload["ok"]:
+        env.cr.commit()
 print("{MARKER}" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
 """
 
