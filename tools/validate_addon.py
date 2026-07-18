@@ -4706,6 +4706,7 @@ def validate_delivery_objective_coverage() -> None:
         "Review risks",
         "Review remediation",
         "Review controlled AI guidance",
+        "provider, prompt version, model, input/output checksum and record checksum",
         "Review report readiness and formal reports",
         "Screen and usability checks",
         "Review blocker-summary visibility",
@@ -4730,6 +4731,10 @@ def validate_delivery_objective_coverage() -> None:
         "## Deployment Decision",
         "## Boundary Statement",
         "Blocker-summary walkthrough evidence",
+        "Controlled AI guidance evidence reviewed",
+        "Controlled AI guidance evidence reference",
+        "Controlled AI guidance checksum evidence complete",
+        "AI limitation and professional warning disclosure reviewed",
         "Data readiness blockers reviewed",
         "Report readiness blockers reviewed",
     ):
@@ -5025,6 +5030,8 @@ def validate_delivery_objective_coverage() -> None:
         "has_evidence_filing_payment_summary_evidence",
         "workbench action/rule-basis/limitation summaries",
         "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
+        "controlled AI guidance disclosures",
+        "AI provider, prompt version, input/output checksum, record checksum and professional warning visibility",
         "missing_human_evidence",
         "Missing Human Evidence",
         "objective_areas",
@@ -5078,6 +5085,13 @@ def validate_delivery_objective_coverage() -> None:
             fail(f"China sign-off blocker walkthrough runtime coverage is missing {required}")
         if required == "blocker_summary_walkthrough" and required not in signoff_template_content:
             fail("China sign-off evidence template is missing blocker_summary_walkthrough")
+    for required in (
+        "controlled AI guidance evidence",
+        "controlled AI limitations",
+        "AI provider, prompt version, input/output checksum, record checksum and professional warnings",
+    ):
+        if required not in signoff_template_content:
+            fail(f"China sign-off evidence template is missing {required}")
     for required in (
         "Workbench Summary Evidence",
         "Workbench summary evidence ready",

@@ -62,6 +62,8 @@ professional review.
 
 7. Review controlled AI guidance.
    - Confirm AI guidance is generated only from controlled snapshots.
+   - Confirm provider, prompt version, model, input/output checksum and record checksum
+     are recorded or referenced in the UAT evidence.
    - Confirm missing fact, missing parameter, source and professional warnings are
      visible.
    - Confirm the guidance is framed as assistance, not as an official tax
@@ -105,6 +107,8 @@ Record the following before marking a release candidate business-accepted:
 - delivery version and Git commit;
 - review period and company;
 - source datasets reviewed;
+- controlled AI evidence reference, including provider, prompt version,
+  input/output checksum and record checksum where AI guidance was reviewed;
 - unresolved limitations or data gaps;
 - open high/critical risks;
 - blocker-summary walkthrough evidence reference;

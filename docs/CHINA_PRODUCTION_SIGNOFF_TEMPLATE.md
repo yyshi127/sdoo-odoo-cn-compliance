@@ -37,6 +37,10 @@ It is not a tax opinion.
 - China tax professional reviewer:
 - Decision: accepted / accepted with limitations / rejected
 - Representative datasets reviewed:
+- Controlled AI guidance evidence reviewed: yes / no / not applicable
+- Controlled AI guidance evidence reference:
+- Controlled AI guidance checksum evidence complete: yes / no / not applicable
+- AI limitation and professional warning disclosure reviewed: yes / no / not applicable
 - Screens checked:
 - Blocker-summary walkthrough evidence:
 - Blocker-summary walkthrough decision: passed / passed with limitations / failed
@@ -59,6 +63,7 @@ It is not a tax opinion.
 - External datasets complete: yes / no
 - Partial datasets or missing sources:
 - Evidence gaps:
+- Controlled AI limitations or excluded findings:
 - Known conclusion limitations:
 
 ## Risk And Remediation Status

@@ -109,14 +109,17 @@ list for business UAT, China tax professional rule/source sign-off,
 official-source freshness review, customer data/scope gap review, representative
 UX walkthrough, blocker-summary walkthrough and final deploy/defer/reject
 decision. The walkthrough evidence must cover the workbench, risk center,
-remediation tracking and compliance report pages, including whether risk level,
-cause, impact amount, period, owner, due date, status and next action are
-readable on representative desktop and laptop screen sizes. The
+remediation tracking, controlled AI guidance, filing/payment archive and
+compliance report pages, including whether risk level, cause, impact amount,
+period, owner, due date, status, next action and controlled AI provider/prompt
+checksum evidence are readable on representative desktop and laptop screen
+sizes. The
 blocker-summary walkthrough must separately confirm that data readiness,
 evidence, filing/payment archive, remediation, report center and report
-readiness blocker summaries explain why non-ready records are blocked or
-limited. It intentionally keeps production sign-off blocked until those human
-decisions and evidence references are recorded.
+readiness blocker summaries, plus controlled AI guidance disclosures, explain
+why non-ready records are blocked or limited. It intentionally keeps production
+sign-off blocked until those human decisions and evidence references are
+recorded.
 
 Validate completed production sign-off evidence:
 

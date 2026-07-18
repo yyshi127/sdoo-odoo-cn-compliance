@@ -14,7 +14,7 @@
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md",
-      "notes": "Company, period, datasets and screens reviewed."
+      "notes": "Company, period, datasets, screens, filing/payment archive and controlled AI guidance evidence reviewed."
     },
     {
       "key": "china_tax_professional_rule_signoff",
@@ -38,23 +38,23 @@
       "reviewer": "Implementation owner name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Customer data, evidence gap and open risk review reference",
-      "notes": "Customer-specific data gaps, evidence gaps and open risks reviewed."
+      "notes": "Customer-specific data gaps, external tax data coverage, controlled AI limitations, evidence gaps and open risks reviewed."
     },
     {
       "key": "representative_ux_walkthrough",
       "decision": "passed",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
-      "notes": "Risk level, cause, impact amount, period, owner, due date, status and next action were readable on representative desktop and laptop screen sizes."
+      "evidence_reference": "Screenshots or recording reference for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report walkthrough",
+      "notes": "Risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable on representative desktop and laptop screen sizes."
     },
     {
       "key": "blocker_summary_walkthrough",
       "decision": "passed",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Screenshots, recording or completed UAT reference for data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
-      "notes": "Each non-ready blocker summary explained why the record was blocked or limited and what next action was required."
+      "evidence_reference": "Screenshots, recording or completed UAT reference for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness blocker summaries",
+      "notes": "Each non-ready blocker summary and AI disclosure explained why the record was blocked or limited and what next action was required."
     },
     {
       "key": "production_deployment_decision",

@@ -179,7 +179,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "customer_scope_and_data_gap_review",
             "owner": "implementation_owner",
-            "required_evidence": "Customer-specific accounting periods, external datasets, evidence gaps, open risks and remediation status reviewed.",
+            "required_evidence": "Customer-specific accounting periods, external datasets, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
             "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
             "objective_areas": [
                 "Odoo accounting and business-data basis",
@@ -189,7 +189,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "representative_ux_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking and compliance report pages, including risk level, cause, impact amount, period, owner, due date, status and next action visibility on common desktop and laptop screen sizes.",
+            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages, including risk level, cause, impact amount, period, owner, due date, status and next action visibility on common desktop and laptop screen sizes, plus AI provider, prompt version, input/output checksum, record checksum and professional warning visibility.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
             "objective_areas": [
                 "risk center and remediation clarity",
@@ -199,7 +199,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Screenshot, recording or completed UAT reference showing that the workbench action/rule-basis/limitation summaries plus data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked, limited or uncertain.",
+            "required_evidence": "Screenshot, recording or completed UAT reference showing that the workbench action/rule-basis/limitation summaries plus data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked, limited or uncertain, including controlled AI guidance disclosures.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
             "objective_areas": [
                 "limitations and uncertainty visibility",
