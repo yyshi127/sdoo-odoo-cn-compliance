@@ -16,10 +16,13 @@ This is the starting point for release handoff and acceptance of the
 4. `docs/CHINA_BUSINESS_UAT_CHECKLIST.md`
    - Guides business reviewers through the workbench, data readiness, risk,
      remediation, AI guidance, report and evidence walkthrough.
-5. `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`
+5. `docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md`
+   - Converts the business UAT checklist into a screen-by-screen reviewer script
+     with pass/fail criteria and screenshot or recording evidence fields.
+6. `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`
    - Records the final deploy, defer or reject decision after automated
      acceptance and business UAT.
-6. `docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md`
+7. `docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md`
    - Summarizes the final blocker-summary visibility pass across data,
      evidence, filing, remediation, report and report-readiness pages.
 

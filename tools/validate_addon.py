@@ -4669,6 +4669,7 @@ def validate_delivery_objective_coverage() -> None:
         "## Command Index",
         "Release Candidate Is Ready For Business UAT When",
         "Release Candidate Is Ready For Production Sign-off When",
+        "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "tools/check_cn_preview_health.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
     ):
@@ -4715,6 +4716,33 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in uat_content:
             fail(f"China business UAT checklist is missing {required}")
+
+    walkthrough_path = REPOSITORY_ROOT / "docs" / "CHINA_UAT_WALKTHROUGH_SCRIPT.md"
+    if not walkthrough_path.is_file():
+        fail("China UAT walkthrough script must be documented")
+    walkthrough_content = walkthrough_path.read_text(encoding="utf-8")
+    for required in (
+        "# China Fiscal Compliance Pack UAT Walkthrough Script",
+        "## Session Header",
+        "## Pass Criteria",
+        "## 1. Compliance Workbench",
+        "## 2. Profile, Taxpayer Identity And Obligations",
+        "## 3. Data Readiness And External Datasets",
+        "## 4. Rule Scan And Assessment",
+        "## 5. Risk Center",
+        "## 6. Remediation Tracker",
+        "## 7. Controlled AI Guidance",
+        "## 8. Report Readiness And Compliance Report",
+        "## 9. Evidence, Filing And Payment Archives",
+        "## 10. Tax Domain Samples",
+        "## 11. Screen-Size And Native Odoo UX Check",
+        "## Final UAT Decision",
+        "risk level, reason, impact amount, applicable period, owner, due date, status and next action",
+        "provider, prompt version, model, input checksum, output checksum and record checksum",
+        "VAT, CIT, IIT and cross-border",
+    ):
+        if required not in walkthrough_content:
+            fail(f"China UAT walkthrough script is missing {required}")
 
     signoff_path = REPOSITORY_ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"
     if not signoff_path.is_file():
@@ -4925,6 +4953,7 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         'ROOT / "docs" / "CHINA_DELIVERY_INDEX.md"',
         'ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"',
+        'ROOT / "docs" / "CHINA_UAT_WALKTHROUGH_SCRIPT.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
         'ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"',
         'ROOT / "tools" / "check_cn_preview_health.py"',
