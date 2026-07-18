@@ -4672,6 +4672,7 @@ def validate_delivery_objective_coverage() -> None:
         "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
         "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "tools/check_cn_preview_health.py",
+        "tools/audit_cn_objective_completion.py",
         "tools/render_cn_signoff_evidence_template.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
     ):
@@ -4692,6 +4693,8 @@ def validate_delivery_objective_coverage() -> None:
         "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "official-source freshness",
         "China tax professional",
+        "audit_cn_objective_completion.py",
+        "cn_objective_completion_audit_mNNN.json",
         "render_cn_signoff_evidence_template.py",
         "cn_signoff_evidence_draft_mNNN.json",
         "validate_cn_signoff_evidence.py",
@@ -4966,6 +4969,7 @@ def validate_delivery_objective_coverage() -> None:
         "Risk discovery and fact traceability",
         "Controlled AI guidance",
         "User experience for overview and next action",
+        "audit_cn_objective_completion.py",
         "render_cn_signoff_evidence_template.py",
         "Production boundary",
         "Not A Completion Claim",
@@ -4985,6 +4989,9 @@ def validate_delivery_objective_coverage() -> None:
     runbook_content = runbook_path.read_text(encoding="utf-8")
     for required in (
         "Production Sign-Off Evidence Draft",
+        "Objective Completion Audit",
+        "tools/audit_cn_objective_completion.py",
+        "cn_objective_completion_audit_mNNN.json",
         "tools/render_cn_signoff_evidence_template.py",
         "cn_signoff_evidence_draft_mNNN.json",
         "validate_cn_signoff_evidence.py",
@@ -5007,6 +5014,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "tools" / "check_cn_real_data_closed_loop.py"',
         'ROOT / "tools" / "prepare_cn_demo_profile.py"',
         'ROOT / "tools" / "prepare_cn_demo_closed_loop.py"',
+        'ROOT / "tools" / "audit_cn_objective_completion.py"',
         'ROOT / "tools" / "generate_cn_signoff_packet.py"',
         'ROOT / "tools" / "render_cn_signoff_evidence_template.py"',
         'ROOT / "tools" / "validate_cn_signoff_evidence.py"',
@@ -5038,6 +5046,8 @@ def validate_delivery_objective_coverage() -> None:
         "preview_module_checker",
         "REAL_DATA_CLOSED_LOOP_TOOL_PATH",
         "real_data_closed_loop_checker",
+        "OBJECTIVE_AUDIT_TOOL_PATH",
+        "objective_audit_tool",
         "sample_profiles",
         "SIGNOFF_PACKET_TOOL_PATH",
         "signoff_packet_tool",
@@ -5055,6 +5065,7 @@ def validate_delivery_objective_coverage() -> None:
         "Production sign-off template in manifest",
         "Preview health checker in manifest",
         "Real-data closed-loop checker in manifest",
+        "Objective completion auditor in manifest",
         "Sign-off packet generator in manifest",
         "Sign-off evidence renderer in manifest",
         "Sign-off evidence validator in manifest",
@@ -5187,6 +5198,20 @@ def validate_delivery_objective_coverage() -> None:
     signoff_validation_tool_content = (
         REPOSITORY_ROOT / "tools" / "validate_cn_signoff_evidence.py"
     ).read_text(encoding="utf-8")
+    objective_audit_tool_content = (
+        REPOSITORY_ROOT / "tools" / "audit_cn_objective_completion.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "AUDIT_SCHEMA",
+        "audit",
+        "production_signoff_gate",
+        "completion_blockers",
+        "state_counts",
+        "tax_domain_coverage",
+        "--require-achieved",
+    ):
+        if required not in objective_audit_tool_content:
+            fail(f"China objective completion auditor is missing {required}")
     signoff_renderer_tool_content = (
         REPOSITORY_ROOT / "tools" / "render_cn_signoff_evidence_template.py"
     ).read_text(encoding="utf-8")
@@ -5250,6 +5275,8 @@ def validate_delivery_objective_coverage() -> None:
         "test_delivery_status_requires_signoff_evidence_renderer_in_manifest",
         "test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit",
         "test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders",
+        "test_objective_audit_marks_production_signoff_blocker",
+        "test_delivery_status_requires_objective_auditor_in_manifest",
         "test_delivery_status_markdown_lists_risk_task_report_summary_evidence",
         "test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence",
         "test_delivery_status_markdown_lists_official_source_governance_overview",

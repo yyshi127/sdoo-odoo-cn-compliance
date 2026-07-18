@@ -30,6 +30,10 @@ SUMMARY = load_tool(
     "cn_delivery_status",
     REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py",
 )
+OBJECTIVE_AUDIT = load_tool(
+    "cn_objective_audit",
+    REPOSITORY_ROOT / "tools" / "audit_cn_objective_completion.py",
+)
 RENDER_EVIDENCE = load_tool(
     "cn_render_signoff_evidence",
     REPOSITORY_ROOT / "tools" / "render_cn_signoff_evidence_template.py",
@@ -78,6 +82,10 @@ def status_payload() -> dict:
         },
         "signoff_evidence_renderer_tool": {
             "path": "tools/render_cn_signoff_evidence_template.py",
+            "included_in_manifest": True,
+        },
+        "objective_audit_tool": {
+            "path": "tools/audit_cn_objective_completion.py",
             "included_in_manifest": True,
         },
         "source_governance_summary": {
@@ -323,6 +331,7 @@ def manifest_payload() -> dict:
         "tools/check_cn_preview_health.py",
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
+        "tools/audit_cn_objective_completion.py",
         "tools/generate_cn_signoff_packet.py",
         "tools/render_cn_signoff_evidence_template.py",
         "tools/validate_cn_signoff_evidence.py",
@@ -753,6 +762,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "representative business UAT",
             result["blocked_objective_areas"],
         )
+
+    def test_objective_audit_marks_production_signoff_blocker(self):
+        status = delivery_status()
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        self.assertEqual(audit["schema"], OBJECTIVE_AUDIT.AUDIT_SCHEMA)
+        self.assertFalse(audit["achieved"])
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["production_signoff_gate"]["state"],
+            "blocked",
+        )
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            items["production_signoff_gate"]["blockers"],
+        )
+        self.assertGreaterEqual(audit["state_counts"]["evidence_ready"], 1)
+        self.assertGreaterEqual(audit["state_counts"]["blocked"], 1)
 
     def test_generic_signoff_evidence_reference_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
@@ -1661,6 +1689,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(
             status["signoff_evidence_renderer_tool"]["included_in_manifest"],
         )
+
+    def test_delivery_status_requires_objective_auditor_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/audit_cn_objective_completion.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "objective completion auditor is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(status["objective_audit_tool"]["included_in_manifest"])
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
         status = delivery_status_with_manifest(

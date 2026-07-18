@@ -153,6 +153,15 @@ Template placeholders cannot pass validation. Reviewers and evidence references
 must be real audit records, and dates must use ISO `YYYY-MM-DD` format such as
 `2026-07-17`.
 
+Generate an objective completion audit whenever the status file changes:
+
+```bash
+python tools/audit_cn_objective_completion.py \
+  --status dist/cn_delivery_status.json \
+  --json-output dist/cn_objective_completion_audit.json \
+  --markdown-output dist/cn_objective_completion_audit.md
+```
+
 Check a preview URL before business UAT:
 
 ```bash

@@ -22,6 +22,7 @@ PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
 PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
 REAL_DATA_CLOSED_LOOP_TOOL_PATH = Path("tools/check_cn_real_data_closed_loop.py")
+OBJECTIVE_AUDIT_TOOL_PATH = Path("tools/audit_cn_objective_completion.py")
 SIGNOFF_PACKET_TOOL_PATH = Path("tools/generate_cn_signoff_packet.py")
 SIGNOFF_EVIDENCE_RENDERER_TOOL_PATH = Path("tools/render_cn_signoff_evidence_template.py")
 SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
@@ -406,6 +407,10 @@ def _status(
             manifest, REAL_DATA_CLOSED_LOOP_TOOL_PATH
         ),
     }
+    objective_audit_tool = {
+        "path": OBJECTIVE_AUDIT_TOOL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, OBJECTIVE_AUDIT_TOOL_PATH),
+    }
     signoff_packet_tool = {
         "path": SIGNOFF_PACKET_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, SIGNOFF_PACKET_TOOL_PATH),
@@ -537,6 +542,7 @@ def _status(
         ("preview health checker", preview_health_checker),
         ("preview module checker", preview_module_checker),
         ("real-data closed-loop checker", real_data_closed_loop_checker),
+        ("objective completion auditor", objective_audit_tool),
         ("production sign-off packet generator", signoff_packet_tool),
         ("production sign-off evidence renderer", signoff_evidence_renderer_tool),
         ("production sign-off evidence validator", signoff_validation_tool),
@@ -626,6 +632,7 @@ def _status(
         "preview_health_checker": preview_health_checker,
         "preview_module_checker": preview_module_checker,
         "real_data_closed_loop_checker": real_data_closed_loop_checker,
+        "objective_audit_tool": objective_audit_tool,
         "signoff_packet_tool": signoff_packet_tool,
         "signoff_evidence_renderer_tool": signoff_evidence_renderer_tool,
         "signoff_validation_tool": signoff_validation_tool,
@@ -669,6 +676,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     preview_module_checker = status.get("preview_module_checker") or {}
     preview_module = status.get("preview_module") or {}
     real_data_closed_loop_checker = status.get("real_data_closed_loop_checker") or {}
+    objective_audit_tool = status.get("objective_audit_tool") or {}
     signoff_packet_tool = status.get("signoff_packet_tool") or {}
     signoff_evidence_renderer_tool = status.get("signoff_evidence_renderer_tool") or {}
     signoff_validation_tool = status.get("signoff_validation_tool") or {}
@@ -729,6 +737,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Preview country pack version: `{preview_module.get('country_pack_version', '')}`",
         f"- Real-data closed-loop checker: `{real_data_closed_loop_checker.get('path', '')}`",
         f"- Real-data closed-loop checker in manifest: `{real_data_closed_loop_checker.get('included_in_manifest', False)}`",
+        f"- Objective completion auditor: `{objective_audit_tool.get('path', '')}`",
+        f"- Objective completion auditor in manifest: `{objective_audit_tool.get('included_in_manifest', False)}`",
         f"- Sign-off packet generator: `{signoff_packet_tool.get('path', '')}`",
         f"- Sign-off packet generator in manifest: `{signoff_packet_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence renderer: `{signoff_evidence_renderer_tool.get('path', '')}`",

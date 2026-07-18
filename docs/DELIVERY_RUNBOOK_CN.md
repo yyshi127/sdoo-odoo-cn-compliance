@@ -303,3 +303,17 @@ sign-off evidence. It copies `version`, `source_commit` and every production
 action key from the current sign-off packet, then leaves reviewer, date,
 evidence reference and notes placeholders for human replacement. The draft must
 remain invalid until real signed evidence replaces every placeholder.
+
+## Objective Completion Audit
+
+```bash
+python tools/audit_cn_objective_completion.py \
+  --status dist/cn_delivery_status_mNNN.json \
+  --json-output dist/cn_objective_completion_audit_mNNN.json \
+  --markdown-output dist/cn_objective_completion_audit_mNNN.md
+```
+
+Use this audit after each status refresh to see which parts of the final
+objective are backed by current evidence and which remain blocked by human UAT,
+professional sign-off, official-source freshness review or customer-specific
+data/risk review.

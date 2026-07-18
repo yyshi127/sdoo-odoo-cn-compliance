@@ -17,6 +17,7 @@ Use the latest numbered files in `dist/` for the active release candidate:
 - local acceptance: `dist/cn_delivery_acceptance_m*_local.json`
 - remote acceptance: `dist/cn_delivery_acceptance_m*_remote.json`
 - delivery status: `dist/cn_delivery_status_m*.md`
+- objective completion audit: `dist/cn_objective_completion_audit_m*.md`
 - sign-off packet: `dist/cn_signoff_packet_m*.md`
 
 Always confirm the exact source commit in the selected delivery status file:
@@ -156,6 +157,12 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --json-output dist/cn_signoff_packet_mNNN.json \
   --markdown-output dist/cn_signoff_packet_mNNN.md \
   --require-business-uat-ready
+
+sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
+  tools/audit_cn_objective_completion.py \
+  --status dist/cn_delivery_status_mNNN.json \
+  --json-output dist/cn_objective_completion_audit_mNNN.json \
+  --markdown-output dist/cn_objective_completion_audit_mNNN.md
 ```
 
 ## Validate Completed Production Sign-Off
