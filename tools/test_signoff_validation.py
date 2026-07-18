@@ -1520,10 +1520,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
         self.assertEqual(set(status_actions), set(packet_actions))
         for key, status_action in status_actions.items():
-            self.assertEqual(status_action["owner"], packet_actions[key]["owner"])
+            packet_action = packet_actions[key]
+            self.assertEqual(status_action["owner"], packet_action["owner"])
+            self.assertEqual(
+                status_action["required_evidence"],
+                packet_action["required_evidence"],
+            )
+            self.assertEqual(
+                status_action["acceptable_decisions"],
+                packet_action["acceptable_decisions"],
+            )
+            self.assertEqual(
+                status_action["objective_areas"],
+                packet_action["objective_areas"],
+            )
             self.assertEqual(
                 set(status_action["addresses_blockers"]),
-                set(packet_actions[key]["addresses_blockers"]),
+                set(packet_action["addresses_blockers"]),
             )
 
     def test_delivery_status_accepts_valid_signoff_validation(self):

@@ -45,22 +45,42 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
         {
             "key": "business_uat_decision",
             "owner": "business_reviewer",
-            "required_evidence": "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md and docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md.",
+            "required_evidence": "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md with company, period, reviewer, datasets, screens and decision.",
+            "acceptable_decisions": ["accepted", "accepted_with_limitations"],
+            "objective_areas": [
+                "representative business UAT",
+                "closed-loop compliance workflow usability",
+            ],
         },
         {
             "key": "representative_ux_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages.",
+            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages, including risk level, cause, impact amount, period, owner, due date, status and next action visibility on common desktop and laptop screen sizes, plus AI provider, prompt version, input/output checksum, record checksum and professional warning visibility.",
+            "acceptable_decisions": ["passed", "passed_with_limitations"],
+            "objective_areas": [
+                "risk center and remediation clarity",
+                "Odoo-consistent viewing experience",
+            ],
         },
         {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Completed blocker summary walkthrough for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness.",
+            "required_evidence": "Screenshot, recording or completed UAT reference showing that the workbench action/rule-basis/limitation summaries plus data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked, limited or uncertain, including controlled AI guidance disclosures.",
+            "acceptable_decisions": ["passed", "passed_with_limitations"],
+            "objective_areas": [
+                "limitations and uncertainty visibility",
+                "data/evidence/report readiness transparency",
+            ],
         },
         {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+            "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
+            "objective_areas": [
+                "installable and upgradeable Odoo deployment",
+                "auditable release and rollback decision",
+            ],
         },
     ],
     "current official sources and released rules require professional sign-off evidence": [
@@ -68,16 +88,31 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "key": "china_tax_professional_rule_signoff",
             "owner": "china_tax_professional",
             "required_evidence": "Signed rule/source review packet for all released rules used in formal conclusions.",
+            "acceptable_decisions": ["approved", "approved_with_limitations"],
+            "objective_areas": [
+                "source-governed China rules",
+                "professional tax-rule sign-off",
+            ],
         },
         {
             "key": "official_source_freshness_review",
             "owner": "rule_governance_owner",
-            "required_evidence": "Current official-source monitoring results and local jurisdiction updates reviewed for the target period.",
+            "required_evidence": "Current official-source monitoring results and any local jurisdiction updates reviewed for the target period.",
+            "acceptable_decisions": ["current", "current_with_documented_limitations"],
+            "objective_areas": [
+                "official-source freshness",
+                "national and local rule currency",
+            ],
         },
         {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+            "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
+            "objective_areas": [
+                "installable and upgradeable Odoo deployment",
+                "auditable release and rollback decision",
+            ],
         },
     ],
     "customer-specific data gaps, evidence gaps and open critical risks must be reviewed": [
@@ -85,16 +120,31 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "key": "customer_scope_and_data_gap_review",
             "owner": "implementation_owner",
             "required_evidence": "Customer-specific accounting periods, external datasets, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
+            "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
+            "objective_areas": [
+                "Odoo accounting and business-data basis",
+                "external tax data sufficiency",
+            ],
         },
         {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Completed blocker summary walkthrough for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness.",
+            "required_evidence": "Screenshot, recording or completed UAT reference showing that the workbench action/rule-basis/limitation summaries plus data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked, limited or uncertain, including controlled AI guidance disclosures.",
+            "acceptable_decisions": ["passed", "passed_with_limitations"],
+            "objective_areas": [
+                "limitations and uncertainty visibility",
+                "data/evidence/report readiness transparency",
+            ],
         },
         {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+            "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
+            "objective_areas": [
+                "installable and upgradeable Odoo deployment",
+                "auditable release and rollback decision",
+            ],
         },
     ],
 }
@@ -113,6 +163,8 @@ def _production_signoff_required_actions(blockers: list[str]) -> list[dict[str, 
                     "key": key,
                     "owner": action.get("owner"),
                     "required_evidence": action.get("required_evidence"),
+                    "acceptable_decisions": action.get("acceptable_decisions") or [],
+                    "objective_areas": action.get("objective_areas") or [],
                     "addresses_blockers": [],
                 },
             )
