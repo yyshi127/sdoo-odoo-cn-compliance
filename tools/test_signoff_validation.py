@@ -72,6 +72,21 @@ def status_payload() -> dict:
         "runtime": {"log": {"failed": 0, "errors": 0}},
         "preview_health": {"ok": True, "url": "http://127.0.0.1:18070/web/login?db=test"},
         "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
+        "upgrade_migration_chain": {
+            "ready": True,
+            "module_manifest": "addons/sudo_country_pack_cn/__manifest__.py",
+            "module_manifest_included": True,
+            "validator": "tools/validate_addon.py",
+            "validator_included": True,
+            "current_version": "19.0.1.130.0",
+            "current_migration": (
+                "addons/sudo_country_pack_cn/migrations/"
+                "19.0.1.130.0/post-migration.py"
+            ),
+            "current_migration_included": True,
+            "migration_script_count": 120,
+            "packaged_migration_versions": ["19.0.1.129.0", "19.0.1.130.0"],
+        },
         "uat_walkthrough": {
             "path": "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
             "included_in_manifest": True,
@@ -388,6 +403,9 @@ def manifest_payload() -> dict:
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
         "docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",
         "docs/samples/cn_signoff_evidence_template.json",
+        "addons/sudo_country_pack_cn/__manifest__.py",
+        "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+        "tools/validate_addon.py",
         "tools/check_cn_preview_health.py",
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
@@ -1062,6 +1080,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["native_odoo_multi_company_security"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_upgrade_migration_chain_is_missing(self):
+        status = delivery_status()
+        status["upgrade_migration_chain"]["ready"] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["installable_upgradeable_odoo19"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "upgrade_migration_chain=False",
+            items["installable_upgradeable_odoo19"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1295,6 +1329,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "company_ids",
             automated["multi_company_security_contract_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_upgrade_migration_chain_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("upgrade_migration_chain_evidence", automated)
+        self.assertTrue(automated["upgrade_migration_chain_evidence"]["ready"])
+        self.assertIn(
+            "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+            automated["upgrade_migration_chain_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "tools/validate_addon.py",
+            automated["upgrade_migration_chain_evidence"]["evidence"],
         )
 
     def test_signoff_packet_blocks_when_multi_company_security_contract_is_missing(self):
@@ -2337,6 +2387,34 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(contracts[0]["rule_count"], 1)
         self.assertIn("company_ids", contracts[0]["rules"][0]["domain"])
 
+    def test_delivery_status_preserves_upgrade_migration_chain_details(self):
+        status = delivery_status()
+
+        chain = status["upgrade_migration_chain"]
+
+        self.assertTrue(chain["ready"])
+        self.assertTrue(chain["module_manifest_included"])
+        self.assertTrue(chain["validator_included"])
+        self.assertTrue(chain["current_migration_included"])
+        self.assertEqual(chain["current_version"], "19.0.1.130.0")
+        self.assertGreaterEqual(chain["migration_script_count"], 1)
+
+    def test_delivery_status_markdown_lists_upgrade_migration_chain_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("Upgrade migration chain evidence ready: `True`", content)
+        self.assertIn("## Upgrade Migration Chain Evidence", content)
+        self.assertIn(
+            "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+            content,
+        )
+        self.assertIn("tools/validate_addon.py", content)
+
     def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
         status = delivery_status()
         with tempfile.TemporaryDirectory() as directory:
@@ -2633,6 +2711,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["business_uat_blockers"],
         )
         self.assertFalse(status["release_handoff"]["included_in_manifest"])
+
+    def test_delivery_status_requires_current_migration_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without(
+                "addons/sudo_country_pack_cn/migrations/"
+                "19.0.1.130.0/post-migration.py"
+            )
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "upgrade migration chain evidence is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["upgrade_migration_chain"]["current_migration_included"],
+        )
 
 
 if __name__ == "__main__":

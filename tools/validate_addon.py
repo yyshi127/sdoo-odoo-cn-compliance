@@ -5207,6 +5207,9 @@ def validate_delivery_objective_coverage() -> None:
         "has_report_visibility_evidence",
         "has_reviewer_view_contract_evidence",
         "reviewer_view_contracts",
+        "upgrade_migration_chain_evidence",
+        "Current China compliance release includes the module manifest, static validator and current post-migration script in the delivery manifest",
+        "upgrade_migration_chain",
         "multi_company_security_contract_evidence",
         "has_multi_company_security_contract_evidence",
         "multi_company_security_contracts",
@@ -5255,6 +5258,9 @@ def validate_delivery_objective_coverage() -> None:
         "tax_domain_coverage",
         "production_blocker_coverage_binding",
         "coverage_evidence_matches_packet",
+        "upgrade_migration_chain",
+        "current_migration",
+        "migration_scripts",
         "--require-achieved",
     ):
         if required not in objective_audit_tool_content:
@@ -5325,6 +5331,11 @@ def validate_delivery_objective_coverage() -> None:
         "test_signoff_packet_blocks_when_multi_company_security_contract_is_missing",
         "test_objective_audit_blocks_when_multi_company_security_contract_is_missing",
         "test_delivery_status_preserves_multi_company_security_contract_details",
+        "test_signoff_packet_surfaces_upgrade_migration_chain_evidence",
+        "test_objective_audit_blocks_when_upgrade_migration_chain_is_missing",
+        "test_delivery_status_preserves_upgrade_migration_chain_details",
+        "test_delivery_status_markdown_lists_upgrade_migration_chain_evidence",
+        "test_delivery_status_requires_current_migration_in_manifest",
         "test_signoff_packet_surfaces_remediation_verification_rescan_evidence",
         "test_signoff_packet_blocks_when_remediation_rescan_evidence_is_missing",
         "test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence",
@@ -5381,6 +5392,8 @@ def validate_delivery_objective_coverage() -> None:
         "test_delivery_status_requires_uat_walkthrough_script_in_manifest",
         "blocked_objective_areas",
         "blocker_summary_walkthrough",
+        "upgrade_migration_chain_evidence",
+        "Upgrade Migration Chain Evidence",
     ):
         if required not in signoff_test_content:
             fail(f"China sign-off blocker walkthrough runtime coverage is missing {required}")

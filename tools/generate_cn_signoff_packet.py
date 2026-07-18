@@ -95,6 +95,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     real_data_readiness = real_data.get("readiness") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else {}
+    upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
 
     automated_items = [
         _readiness_item(
@@ -132,6 +133,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Preview database has the expected China compliance module version",
             preview_module.get("ok") is True,
             str(preview_module.get("module_installed_version") or ""),
+        ),
+        _readiness_item(
+            "upgrade_migration_chain_evidence",
+            "Current China compliance release includes the module manifest, static validator and current post-migration script in the delivery manifest",
+            upgrade_migration_chain.get("ready") is True,
+            json.dumps(upgrade_migration_chain, ensure_ascii=False, sort_keys=True),
         ),
         _readiness_item(
             "multi_company_security_contract_evidence",

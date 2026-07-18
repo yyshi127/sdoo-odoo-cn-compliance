@@ -29,6 +29,8 @@ SIGNOFF_EVIDENCE_RENDERER_TOOL_PATH = Path("tools/render_cn_signoff_evidence_tem
 SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
 SIGNOFF_CHAIN_TOOL_PATH = Path("tools/build_cn_signoff_evidence_chain.py")
 SIGNOFF_EVIDENCE_TEMPLATE_PATH = Path("docs/samples/cn_signoff_evidence_template.json")
+ADDON_MANIFEST_PATH = Path("addons/sudo_country_pack_cn/__manifest__.py")
+ADDON_VALIDATE_TOOL_PATH = Path("tools/validate_addon.py")
 MOJIBAKE_MARKDOWN_PLACEHOLDER = (
     "[unreadable preview-database text; inspect the JSON evidence by record id]"
 )
@@ -208,6 +210,60 @@ def _manifest_includes(
             if isinstance(entry, dict)
         )
     )
+
+
+def _manifest_paths(manifest: dict[str, object] | None) -> set[str]:
+    if not manifest:
+        return set()
+    return {
+        str(entry.get("path"))
+        for entry in manifest.get("files", [])
+        if isinstance(entry, dict) and entry.get("path")
+    }
+
+
+def _upgrade_migration_chain_summary(
+    manifest: dict[str, object] | None,
+    version: str | None,
+) -> dict[str, object]:
+    paths = _manifest_paths(manifest)
+    current_migration_path = (
+        Path("addons/sudo_country_pack_cn/migrations")
+        / str(version or "")
+        / "post-migration.py"
+    )
+    migration_paths = sorted(
+        path
+        for path in paths
+        if path.startswith("addons/sudo_country_pack_cn/migrations/")
+        and path.endswith("/post-migration.py")
+    )
+    packaged_versions = [
+        path.split("/")[3]
+        for path in migration_paths
+        if len(path.split("/")) >= 5
+    ]
+    module_manifest_included = ADDON_MANIFEST_PATH.as_posix() in paths
+    validator_included = ADDON_VALIDATE_TOOL_PATH.as_posix() in paths
+    current_migration_included = current_migration_path.as_posix() in paths
+    return {
+        "ready": bool(
+            version
+            and module_manifest_included
+            and validator_included
+            and current_migration_included
+            and migration_paths
+        ),
+        "module_manifest": ADDON_MANIFEST_PATH.as_posix(),
+        "module_manifest_included": module_manifest_included,
+        "validator": ADDON_VALIDATE_TOOL_PATH.as_posix(),
+        "validator_included": validator_included,
+        "current_version": version,
+        "current_migration": current_migration_path.as_posix(),
+        "current_migration_included": current_migration_included,
+        "migration_script_count": len(migration_paths),
+        "packaged_migration_versions": packaged_versions,
+    }
 
 
 def _load(path: Path | None) -> dict[str, object] | None:
@@ -631,6 +687,7 @@ def _status(
             manifest, SIGNOFF_EVIDENCE_TEMPLATE_PATH
         ),
     }
+    upgrade_migration_chain = _upgrade_migration_chain_summary(manifest, version)
     preview_health_summary = None
     if preview_health:
         preview_health_summary = {
@@ -779,6 +836,10 @@ def _status(
     ):
         if not evidence["included_in_manifest"]:
             business_uat_blockers.append(f"{label} is not included in the manifest")
+    if upgrade_migration_chain["ready"] is not True:
+        business_uat_blockers.append(
+            "upgrade migration chain evidence is not included in the manifest"
+        )
     if not preview_url:
         business_uat_blockers.append("preview URL was not recorded")
     if not preview_health_summary:
@@ -886,6 +947,7 @@ def _status(
         "signoff_validation_tool": signoff_validation_tool,
         "signoff_chain_tool": signoff_chain_tool,
         "signoff_evidence_template": signoff_evidence_template,
+        "upgrade_migration_chain": upgrade_migration_chain,
         "preview_health": preview_health_summary,
         "preview_module": preview_module_summary,
         "real_data_closed_loop": real_data_closed_loop_summary,
@@ -943,6 +1005,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     signoff_validation_tool = status.get("signoff_validation_tool") or {}
     signoff_chain_tool = status.get("signoff_chain_tool") or {}
     signoff_evidence_template = status.get("signoff_evidence_template") or {}
+    upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
     objective_audit = status.get("objective_audit") or {}
     signoff_validation = status.get("signoff_validation") or {}
@@ -1015,6 +1078,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Sign-off evidence chain builder in manifest: `{signoff_chain_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence template: `{signoff_evidence_template.get('path', '')}`",
         f"- Sign-off evidence template in manifest: `{signoff_evidence_template.get('included_in_manifest', False)}`",
+        f"- Upgrade migration chain evidence ready: `{upgrade_migration_chain.get('ready', False)}`",
+        f"- Upgrade migration current script: `{upgrade_migration_chain.get('current_migration', '')}`",
+        f"- Upgrade migration scripts packaged: `{upgrade_migration_chain.get('migration_script_count', 0)}`",
         f"- Real-data setup demo ready: `{real_data_readiness.get('setup_demo_ready', False)}`",
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
@@ -1124,6 +1190,18 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *_coverage_binding_markdown_lines(
             signoff_validation.get("production_blocker_coverage_binding")
         ),
+        "",
+        "### Upgrade Migration Chain Evidence",
+        "",
+        f"- Ready: `{upgrade_migration_chain.get('ready', False)}`",
+        f"- Module manifest: `{upgrade_migration_chain.get('module_manifest', '')}`",
+        f"- Module manifest in manifest: `{upgrade_migration_chain.get('module_manifest_included', False)}`",
+        f"- Validator: `{upgrade_migration_chain.get('validator', '')}`",
+        f"- Validator in manifest: `{upgrade_migration_chain.get('validator_included', False)}`",
+        f"- Current version: `{upgrade_migration_chain.get('current_version', '')}`",
+        f"- Current migration: `{upgrade_migration_chain.get('current_migration', '')}`",
+        f"- Current migration in manifest: `{upgrade_migration_chain.get('current_migration_included', False)}`",
+        f"- Migration script count: `{upgrade_migration_chain.get('migration_script_count', 0)}`",
         "",
         "### Objective Completion Audit Blockers",
         "",
