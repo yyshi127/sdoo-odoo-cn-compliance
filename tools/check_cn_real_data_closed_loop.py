@@ -79,6 +79,10 @@ def safe_field(record, field_name):
     return value
 
 
+def has_text(value):
+    return bool(value and str(value).strip())
+
+
 def sample_records(model_name, domain, order="id asc", limit=5):
     if not has_model(model_name):
         return []
@@ -520,21 +524,36 @@ readiness = {{
     ),
     "has_risk_task_report_summary_evidence": bool(
         any(
-            finding.get("risk_level") and finding.get("action_summary")
+            has_text(finding.get("period_label"))
+            and has_text(finding.get("risk_level"))
+            and has_text(finding.get("reason"))
+            and has_text(finding.get("tax_impact"))
+            and has_text(finding.get("evidence_state"))
+            and has_text(finding.get("closure_state"))
+            and has_text(finding.get("next_action"))
+            and has_text(finding.get("action_summary"))
             for finding in sample_findings
         )
         and any(
-            task.get("state")
-            and task.get("verification_state")
-            and task.get("action_summary")
+            has_text(task.get("risk_level"))
+            and has_text(task.get("state"))
+            and has_text(task.get("assignee"))
+            and has_text(task.get("due_date"))
+            and has_text(task.get("verification_state"))
+            and has_text(task.get("evidence_state"))
+            and has_text(task.get("traceability_state"))
+            and has_text(task.get("next_action"))
+            and has_text(task.get("action_summary"))
             for task in sample_tasks
         )
         and any(
-            report.get("state")
-            and (
-                report.get("conclusion_state")
-                or report.get("traceability_next_action")
-            )
+            has_text(report.get("period_start"))
+            and has_text(report.get("period_end"))
+            and has_text(report.get("state"))
+            and has_text(report.get("conclusion_state"))
+            and has_text(report.get("traceability_state"))
+            and has_text(report.get("fact_basis_state"))
+            and has_text(report.get("traceability_next_action"))
             for report in sample_reports
         )
     ),
