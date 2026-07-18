@@ -4848,6 +4848,9 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "blocker_summary_walkthrough",
+        "workbench_summary_evidence",
+        "has_workbench_summary_evidence",
+        "workbench action/rule-basis/limitation summaries",
         "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
         "missing_human_evidence",
         "Missing Human Evidence",
@@ -4884,6 +4887,7 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "test_signoff_packet_requires_blocker_summary_walkthrough",
+        "test_signoff_packet_surfaces_workbench_summary_automated_evidence",
         "test_missing_blocker_summary_walkthrough_blocks_production_gate",
         "test_signoff_validation_blocks_actions_without_objective_areas",
         "blocked_objective_areas",

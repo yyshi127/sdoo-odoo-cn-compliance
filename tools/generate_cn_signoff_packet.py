@@ -92,6 +92,16 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             and real_data_readiness.get("closed_loop_evidence_ready") is True,
             json.dumps(real_data_readiness, ensure_ascii=False, sort_keys=True),
         ),
+        _readiness_item(
+            "workbench_summary_evidence",
+            "Workbench exposes action, rule-basis, limitation and uncertainty summaries as machine-readable evidence",
+            real_data_readiness.get("has_workbench_summary_evidence") is True,
+            json.dumps(
+                real_data.get("sample_profiles") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {
@@ -147,7 +157,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Screenshot, recording or completed UAT reference showing that data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked or limited.",
+            "required_evidence": "Screenshot, recording or completed UAT reference showing that the workbench action/rule-basis/limitation summaries plus data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries explain why each non-ready record is blocked, limited or uncertain.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
             "objective_areas": [
                 "limitations and uncertainty visibility",

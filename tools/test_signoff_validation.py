@@ -62,7 +62,19 @@ def status_payload() -> dict:
         "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
         "real_data_closed_loop": {
             "ok": True,
-            "readiness": {"closed_loop_evidence_ready": True},
+            "readiness": {
+                "closed_loop_evidence_ready": True,
+                "has_workbench_summary_evidence": True,
+            },
+            "sample_profiles": [
+                {
+                    "name": "CN Demo",
+                    "action_summary": "Next: Review the ready compliance report package",
+                    "rule_basis_summary": "Rules are current.",
+                    "limitation_summary": "No explicit conclusion limitation is currently recorded.",
+                    "uncertainty_summary": "No open uncertainty driver is currently recorded.",
+                }
+            ],
         },
     }
 
@@ -151,7 +163,17 @@ def real_data_closed_loop_payload() -> dict:
         "readiness": {
             "demo_ready": True,
             "closed_loop_evidence_ready": True,
+            "has_workbench_summary_evidence": True,
         },
+        "sample_profiles": [
+            {
+                "name": "CN Demo",
+                "action_summary": "Next: Review the ready compliance report package",
+                "rule_basis_summary": "Rules are current.",
+                "limitation_summary": "No explicit conclusion limitation is currently recorded.",
+                "uncertainty_summary": "No open uncertainty driver is currently recorded.",
+            }
+        ],
     }
 
 
@@ -275,6 +297,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
             actions["blocker_summary_walkthrough"]["required_evidence"],
+        )
+        self.assertIn(
+            "workbench action/rule-basis/limitation summaries",
+            actions["blocker_summary_walkthrough"]["required_evidence"],
+        )
+
+    def test_signoff_packet_surfaces_workbench_summary_automated_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("workbench_summary_evidence", automated)
+        self.assertTrue(automated["workbench_summary_evidence"]["ready"])
+        self.assertIn(
+            "limitation_summary",
+            automated["workbench_summary_evidence"]["evidence"],
         )
 
     def test_signoff_packet_lists_missing_human_evidence(self):
