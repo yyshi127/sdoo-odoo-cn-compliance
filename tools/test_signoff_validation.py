@@ -744,6 +744,17 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(result["deployment_decision"], "deploy")
         self.assertEqual(result["blockers"], [])
         self.assertEqual(result["blocked_objective_areas"], [])
+        coverage_items = packet["production_blocker_coverage"]["coverage"]
+        self.assertEqual(
+            result["production_blocker_coverage_binding"],
+            {
+                "packet_all_covered": True,
+                "evidence_matches_packet": True,
+                "covered_blocker_count": len(coverage_items),
+                "total_blocker_count": len(coverage_items),
+                "uncovered_blockers": [],
+            },
+        )
         for item in result["action_results"]:
             self.assertGreaterEqual(len(item["objective_areas"]), 1)
 
@@ -806,6 +817,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
         result = VALIDATION._validate(packet, evidence)
 
         self.assertFalse(result["production_signoff_ready"])
+        self.assertFalse(
+            result["production_blocker_coverage_binding"]["evidence_matches_packet"]
+        )
         self.assertIn(
             "sign-off evidence production_blocker_coverage does not match the packet",
             result["blockers"],
@@ -1641,6 +1655,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(readiness["production_signoff_ready"])
         self.assertEqual(readiness["production_signoff_blockers"], [])
         self.assertEqual(status["signoff_validation"]["deployment_decision"], "deploy")
+        self.assertTrue(
+            status["signoff_validation"]["production_blocker_coverage_binding"][
+                "evidence_matches_packet"
+            ]
+        )
 
     def test_delivery_status_surfaces_blocked_objective_areas(self):
         packet = PACKET._build_packet(status_payload())
@@ -1686,6 +1705,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("### Production Blocked Objective Areas", content)
         self.assertIn("limitations and uncertainty visibility", content)
         self.assertIn("### Production Blocked Sign-off Blockers", content)
+        self.assertIn("### Production Blocker Coverage Binding", content)
+        self.assertIn("evidence matches packet: `True`", content)
         self.assertIn("### Production Sign-off Required Human Actions", content)
         self.assertIn(
             "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",

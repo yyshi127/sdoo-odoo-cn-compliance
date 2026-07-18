@@ -383,6 +383,19 @@ def _tax_domain_markdown_lines(
     return lines or ["- No tax domain coverage summary was provided.", ""]
 
 
+def _coverage_binding_markdown_lines(binding: object) -> list[str]:
+    if not isinstance(binding, dict):
+        return ["- No sign-off validation coverage binding summary was provided."]
+    return [
+        (
+            f"- Packet all covered: `{binding.get('packet_all_covered', False)}`; "
+            f"evidence matches packet: `{binding.get('evidence_matches_packet', False)}`; "
+            f"covered blockers: `{binding.get('covered_blocker_count', 0)}` / "
+            f"`{binding.get('total_blocker_count', 0)}`"
+        )
+    ]
+
+
 def _parse_date(value: object) -> date | None:
     if not isinstance(value, str) or not value:
         return None
@@ -720,6 +733,9 @@ def _status(
             ),
             "uncovered_production_signoff_blockers": signoff_validation.get(
                 "uncovered_production_signoff_blockers"
+            ),
+            "production_blocker_coverage_binding": signoff_validation.get(
+                "production_blocker_coverage_binding"
             ),
         }
     business_uat_blockers: list[str] = []
@@ -1069,6 +1085,12 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             )
             or []
         ],
+        "",
+        "### Production Blocker Coverage Binding",
+        "",
+        *_coverage_binding_markdown_lines(
+            signoff_validation.get("production_blocker_coverage_binding")
+        ),
         "",
         "### Objective Completion Audit Blockers",
         "",

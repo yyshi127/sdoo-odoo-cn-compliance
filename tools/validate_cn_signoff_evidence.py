@@ -158,10 +158,16 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence source commit does not match the packet")
     production_blocker_coverage = packet.get("production_blocker_coverage") or {}
     evidence_blocker_coverage = evidence.get("production_blocker_coverage")
-    if evidence_blocker_coverage != production_blocker_coverage:
+    coverage_matches_packet = evidence_blocker_coverage == production_blocker_coverage
+    if not coverage_matches_packet:
         blockers.append(
             "sign-off evidence production_blocker_coverage does not match the packet"
         )
+    coverage_items = [
+        item
+        for item in production_blocker_coverage.get("coverage") or []
+        if isinstance(item, dict)
+    ]
     uncovered_production_blockers = [
         str(blocker)
         for blocker in production_blocker_coverage.get("uncovered_blockers") or []
@@ -330,6 +336,16 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "blocked_objective_areas": blocked_objective_areas,
         "blocked_production_signoff_blockers": blocked_production_signoff_blockers,
         "uncovered_production_signoff_blockers": uncovered_production_blockers,
+        "production_blocker_coverage_binding": {
+            "packet_all_covered": production_blocker_coverage.get("all_covered")
+            is True,
+            "evidence_matches_packet": coverage_matches_packet,
+            "covered_blocker_count": sum(
+                1 for item in coverage_items if item.get("covered") is True
+            ),
+            "total_blocker_count": len(coverage_items),
+            "uncovered_blockers": uncovered_production_blockers,
+        },
         "action_results": action_results,
     }
 
