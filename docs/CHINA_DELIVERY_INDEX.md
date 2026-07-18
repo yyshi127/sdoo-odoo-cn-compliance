@@ -130,9 +130,13 @@ recorded.
 Validate completed production sign-off evidence:
 
 ```bash
+python tools/render_cn_signoff_evidence_template.py \
+  --packet dist/cn_signoff_packet.json \
+  --json-output dist/cn_signoff_evidence_draft.json
+
 python tools/validate_cn_signoff_evidence.py \
   --packet dist/cn_signoff_packet.json \
-  --evidence docs/samples/cn_signoff_evidence_template.json \
+  --evidence dist/cn_signoff_evidence_completed.json \
   --json-output dist/cn_signoff_validation.json \
   --require-production-signoff-ready
 ```
@@ -140,10 +144,11 @@ python tools/validate_cn_signoff_evidence.py \
 After validation passes, include `--signoff-validation
 dist/cn_signoff_validation.json` when running `tools/summarize_cn_delivery_status.py`.
 Only then can the automated status report `production_signoff_ready=true`.
-Use `docs/samples/cn_signoff_evidence_template.json` as the starting point for
-the machine-readable evidence file; replace the version, source commit,
-reviewers, dates, decisions and evidence references with the actual signed
-review records.
+Use `tools/render_cn_signoff_evidence_template.py` as the preferred starting
+point for the machine-readable evidence file because it copies the current
+packet version, source commit and action keys into the draft. Replace the
+reviewers, dates, decisions, notes and evidence references with the actual
+signed review records.
 Template placeholders cannot pass validation. Reviewers and evidence references
 must be real audit records, and dates must use ISO `YYYY-MM-DD` format such as
 `2026-07-17`.

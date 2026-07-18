@@ -85,8 +85,9 @@ completed and validated:
 - customer-specific accounting, external tax data, evidence gap and open risk
   review;
 - final deploy, deploy-with-limitations, defer or reject decision;
-- validated machine-readable sign-off evidence generated from
-  `docs/samples/cn_signoff_evidence_template.json`.
+- validated machine-readable sign-off evidence rendered from the current
+  sign-off packet with `tools/render_cn_signoff_evidence_template.py`, then
+  completed from real reviewer evidence.
 
 This release candidate is not a China tax opinion and does not certify any real
 taxpayer filing position.
@@ -159,8 +160,20 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
 
 ## Validate Completed Production Sign-Off
 
-After human reviewers complete real evidence, create a non-template evidence
-file from `docs/samples/cn_signoff_evidence_template.json` and run:
+After generating the sign-off packet, render a version-aligned evidence draft:
+
+```bash
+python tools/render_cn_signoff_evidence_template.py \
+  --packet dist/cn_signoff_packet_mNNN.json \
+  --json-output dist/cn_signoff_evidence_draft_mNNN.json
+```
+
+The rendered draft copies the release version, source commit and production
+action keys from the packet. It is intentionally not valid for production while
+reviewer, date, evidence reference and notes placeholders remain.
+
+After human reviewers complete real evidence, create a non-template completed
+evidence file from the rendered draft and run:
 
 ```bash
 python tools/validate_cn_signoff_evidence.py \

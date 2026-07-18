@@ -4672,6 +4672,7 @@ def validate_delivery_objective_coverage() -> None:
         "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
         "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "tools/check_cn_preview_health.py",
+        "tools/render_cn_signoff_evidence_template.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
     ):
         if required not in delivery_index_content:
@@ -4691,6 +4692,8 @@ def validate_delivery_objective_coverage() -> None:
         "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "official-source freshness",
         "China tax professional",
+        "render_cn_signoff_evidence_template.py",
+        "cn_signoff_evidence_draft_mNNN.json",
         "validate_cn_signoff_evidence.py",
         "Next Best Work",
     ):
@@ -4963,6 +4966,7 @@ def validate_delivery_objective_coverage() -> None:
         "Risk discovery and fact traceability",
         "Controlled AI guidance",
         "User experience for overview and next action",
+        "render_cn_signoff_evidence_template.py",
         "Production boundary",
         "Not A Completion Claim",
     ):
@@ -4974,6 +4978,19 @@ def validate_delivery_objective_coverage() -> None:
                 "China delivery objective coverage references a missing path: "
                 f"{referenced_path}"
             )
+
+    runbook_path = REPOSITORY_ROOT / "docs" / "DELIVERY_RUNBOOK_CN.md"
+    if not runbook_path.is_file():
+        fail("China delivery runbook must be documented")
+    runbook_content = runbook_path.read_text(encoding="utf-8")
+    for required in (
+        "Production Sign-Off Evidence Draft",
+        "tools/render_cn_signoff_evidence_template.py",
+        "cn_signoff_evidence_draft_mNNN.json",
+        "validate_cn_signoff_evidence.py",
+    ):
+        if required not in runbook_content:
+            fail(f"China delivery runbook is missing {required}")
 
     acceptance_tool = (
         REPOSITORY_ROOT / "tools" / "run_cn_delivery_acceptance.py"

@@ -290,3 +290,16 @@ python tools/prepare_cn_demo_closed_loop.py \
 - 正式业务库部署前，应先在隔离副本完成安装、升级、权限、多公司、真实数据只读验收和业务 UAT。
 - 生产数据库、filestore、客户附件、密钥和访问口令不得进入 Git 或交付包。
 - 若官方来源、规则内容、适用范围或客户数据口径发生变化，必须重新执行来源治理、规则测试、专业签核和交付状态汇总。
+## Production Sign-Off Evidence Draft
+
+```bash
+python tools/render_cn_signoff_evidence_template.py \
+  --packet dist/cn_signoff_packet_mNNN.json \
+  --json-output dist/cn_signoff_evidence_draft_mNNN.json
+```
+
+Use this generated draft as the preferred starting point for production
+sign-off evidence. It copies `version`, `source_commit` and every production
+action key from the current sign-off packet, then leaves reviewer, date,
+evidence reference and notes placeholders for human replacement. The draft must
+remain invalid until real signed evidence replaces every placeholder.
