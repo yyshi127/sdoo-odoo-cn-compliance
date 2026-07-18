@@ -366,6 +366,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
     signoff_validation = status.get("signoff_validation") or {}
     real_data_readiness = real_data_closed_loop.get("readiness") or {}
+    sample_profiles = real_data_closed_loop.get("sample_profiles") or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -406,6 +407,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Real-data setup demo ready: `{real_data_readiness.get('setup_demo_ready', False)}`",
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
+        f"- Workbench summary evidence ready: `{real_data_readiness.get('has_workbench_summary_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -442,6 +444,31 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Manifest aggregate SHA-256: `{manifest.get('aggregate_sha256', '')}`",
         f"- Acceptance result: `{acceptance.get('result', '')}`",
         "",
+        "## Workbench Summary Evidence",
+        "",
+        *(
+            [
+                line
+                for profile in sample_profiles[:5]
+                if isinstance(profile, dict)
+                for line in (
+                    f"### {profile.get('name') or profile.get('company') or profile.get('id') or 'Compliance Profile'}",
+                    "",
+                    f"- Company: `{profile.get('company', '')}`",
+                    f"- Status: `{profile.get('status', '')}`",
+                    f"- Period: `{profile.get('period_label', '')}`",
+                    f"- Next action: `{profile.get('next_action', '')}`",
+                    f"- Action summary: {profile.get('action_summary', '')}",
+                    f"- Rule basis: `{profile.get('rule_basis_state', '')}` - {profile.get('rule_basis_summary', '')}",
+                    f"- Limitations: {profile.get('limitation_summary', '')}",
+                    f"- Uncertainty: {profile.get('uncertainty_summary', '')}",
+                    f"- Limitation next action: {profile.get('limitation_next_action', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_profiles, list) and sample_profiles
+            else ["- No sample profile workbench summary evidence was provided.", ""]
+        ),
         "## Runtime",
         "",
         f"- Database: `{runtime.get('database', '') if isinstance(runtime, dict) else ''}`",

@@ -684,6 +684,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("### Production Blocked Objective Areas", content)
         self.assertIn("limitations and uncertainty visibility", content)
 
+    def test_delivery_status_markdown_lists_workbench_summary_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Workbench Summary Evidence", content)
+        self.assertIn("Workbench summary evidence ready: `True`", content)
+        self.assertIn("### CN Demo", content)
+        self.assertIn("Action summary", content)
+        self.assertIn("Rule basis", content)
+        self.assertIn("Limitations", content)
+        self.assertIn("Uncertainty", content)
+
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
