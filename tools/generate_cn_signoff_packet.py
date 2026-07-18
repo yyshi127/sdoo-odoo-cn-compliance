@@ -195,7 +195,8 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             and real_data_readiness.get("has_risk_finding_visibility_evidence") is True
             and real_data_readiness.get("has_remediation_task_visibility_evidence")
             is True
-            and real_data_readiness.get("has_report_visibility_evidence") is True,
+            and real_data_readiness.get("has_report_visibility_evidence") is True
+            and real_data_readiness.get("has_reviewer_view_contract_evidence") is True,
             json.dumps(
                 {
                     "visibility": {
@@ -208,7 +209,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                         "report": real_data_readiness.get(
                             "has_report_visibility_evidence"
                         ),
+                        "reviewer_view_contract": real_data_readiness.get(
+                            "has_reviewer_view_contract_evidence"
+                        ),
                     },
+                    "reviewer_view_contracts": real_data.get("reviewer_view_contracts")
+                    or [],
                     "findings": real_data.get("sample_findings") or [],
                     "remediation_tasks": (
                         real_data.get("sample_remediation_tasks") or []

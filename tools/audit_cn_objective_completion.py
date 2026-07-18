@@ -178,6 +178,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
                 and _ready(real_data_readiness.get("has_risk_finding_visibility_evidence"))
                 and _ready(real_data_readiness.get("has_remediation_task_visibility_evidence"))
                 and _ready(real_data_readiness.get("has_report_visibility_evidence"))
+                and _ready(real_data_readiness.get("has_reviewer_view_contract_evidence"))
             ),
             [
                 f"workbench_summary={real_data_readiness.get('has_workbench_summary_evidence')}",
@@ -185,6 +186,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
                 f"risk_finding_visibility={real_data_readiness.get('has_risk_finding_visibility_evidence')}",
                 f"remediation_task_visibility={real_data_readiness.get('has_remediation_task_visibility_evidence')}",
                 f"report_visibility={real_data_readiness.get('has_report_visibility_evidence')}",
+                f"reviewer_view_contract={real_data_readiness.get('has_reviewer_view_contract_evidence')}",
             ],
         ),
         _item(

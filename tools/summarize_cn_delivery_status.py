@@ -698,6 +698,9 @@ def _status(
             "sample_cross_border_transactions": real_data_closed_loop.get(
                 "sample_cross_border_transactions"
             ),
+            "reviewer_view_contracts": real_data_closed_loop.get(
+                "reviewer_view_contracts"
+            ),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -1018,6 +1021,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Remediation task visibility evidence ready: `{real_data_readiness.get('has_remediation_task_visibility_evidence', False)}`",
         f"- Remediation verification rescan evidence ready: `{real_data_readiness.get('has_remediation_verification_rescan_evidence', False)}`",
         f"- Report visibility evidence ready: `{real_data_readiness.get('has_report_visibility_evidence', False)}`",
+        f"- Reviewer view contract evidence ready: `{real_data_readiness.get('has_reviewer_view_contract_evidence', False)}`",
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",

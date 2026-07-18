@@ -145,6 +145,7 @@ def status_payload() -> dict:
                 "has_remediation_task_visibility_evidence": True,
                 "has_remediation_verification_rescan_evidence": True,
                 "has_report_visibility_evidence": True,
+                "has_reviewer_view_contract_evidence": True,
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
                 "has_rule_source_governance_evidence": True,
@@ -218,6 +219,18 @@ def status_payload() -> dict:
                     "approval_integrity_state": "verified",
                     "pdf_integrity_state": "verified",
                     "traceability_next_action": "Archive issued report evidence.",
+                }
+            ],
+            "reviewer_view_contracts": [
+                {
+                    "xml_id": "view_cn_risk_center_finding_list",
+                    "ready": True,
+                    "missing": [],
+                    "required_fields": [
+                        "risk_level",
+                        "cn_risk_period_label",
+                        "cn_risk_next_action",
+                    ],
                 }
             ],
             "sample_evidence": [
@@ -456,6 +469,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_remediation_task_visibility_evidence": True,
             "has_remediation_verification_rescan_evidence": True,
             "has_report_visibility_evidence": True,
+            "has_reviewer_view_contract_evidence": True,
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
             "has_rule_source_governance_evidence": True,
@@ -529,6 +543,18 @@ def real_data_closed_loop_payload() -> dict:
                 "approval_integrity_state": "verified",
                 "pdf_integrity_state": "verified",
                 "traceability_next_action": "Archive issued report evidence.",
+            }
+        ],
+        "reviewer_view_contracts": [
+            {
+                "xml_id": "view_cn_risk_center_finding_list",
+                "ready": True,
+                "missing": [],
+                "required_fields": [
+                    "risk_level",
+                    "cn_risk_period_label",
+                    "cn_risk_next_action",
+                ],
             }
         ],
         "sample_evidence": [
@@ -966,6 +992,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["customer_scope_gap_review_evidence"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_reviewer_view_contract_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_reviewer_view_contract_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["risk_remediation_report_visibility"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "reviewer_view_contract=False",
+            items["risk_remediation_report_visibility"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1216,6 +1260,14 @@ class TestChinaSignoffValidation(unittest.TestCase):
             '"report": true',
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
+        self.assertIn(
+            '"reviewer_view_contract": true',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "view_cn_risk_center_finding_list",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
 
     def test_signoff_packet_blocks_when_risk_visibility_evidence_is_incomplete(self):
         payload = status_payload()
@@ -1229,6 +1281,33 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(automated["risk_task_report_summary_evidence"]["ready"])
         self.assertIn(
             '"remediation_task": false',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_reviewer_view_contract_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_reviewer_view_contract_evidence"
+        ] = False
+        payload["real_data_closed_loop"]["reviewer_view_contracts"] = [
+            {
+                "xml_id": "view_cn_risk_center_finding_list",
+                "ready": False,
+                "missing": ["cn_risk_next_action"],
+                "required_fields": ["risk_level", "cn_risk_next_action"],
+            }
+        ]
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["risk_task_report_summary_evidence"]["ready"])
+        self.assertIn(
+            '"reviewer_view_contract": false',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"missing": ["cn_risk_next_action"]',
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
 
@@ -2135,12 +2214,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Report visibility evidence ready: `True`", content)
+        self.assertIn("Reviewer view contract evidence ready: `True`", content)
         self.assertIn("VAT filing mismatch", content)
         self.assertIn("Correct VAT filing mismatch", content)
         self.assertIn("CN Compliance Report", content)
         self.assertIn("Risk level", content)
         self.assertIn("State/verification", content)
         self.assertIn("State/conclusion", content)
+
+    def test_delivery_status_preserves_reviewer_view_contract_details(self):
+        status = delivery_status()
+
+        contracts = status["real_data_closed_loop"]["reviewer_view_contracts"]
+
+        self.assertEqual(
+            contracts[0]["xml_id"],
+            "view_cn_risk_center_finding_list",
+        )
+        self.assertEqual(contracts[0]["missing"], [])
+        self.assertIn("cn_risk_next_action", contracts[0]["required_fields"])
 
     def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
         status = delivery_status()

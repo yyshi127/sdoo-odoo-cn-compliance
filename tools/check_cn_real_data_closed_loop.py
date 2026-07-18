@@ -89,6 +89,22 @@ def sample_records(model_name, domain, order="id asc", limit=5):
     return env[model_name].sudo().search(domain or [], order=order, limit=limit)
 
 
+def view_field_contract(xml_id, required_fields):
+    view = env.ref("sudo_country_pack_cn." + xml_id, raise_if_not_found=False)
+    arch = str(view.arch_db or "") if view else ""
+    missing = [
+        field
+        for field in required_fields
+        if ('name="' + field + '"') not in arch and ("name='" + field + "'") not in arch
+    ]
+    return {{
+        "xml_id": xml_id,
+        "ready": bool(view and not missing),
+        "missing": missing,
+        "required_fields": required_fields,
+    }}
+
+
 module = env["ir.module.module"].sudo().search(
     [("name", "=", "sudo_country_pack_cn")], limit=1
 )
@@ -637,6 +653,75 @@ objects["total_reconciliation_issues"] = sum(
     if key.endswith("_reconciliation_issues")
 )
 
+reviewer_view_contracts = [
+    view_field_contract(
+        "view_cn_compliance_workbench_kanban",
+        [
+            "cn_workbench_next_action",
+            "cn_workbench_action_summary",
+            "cn_workbench_rule_basis_summary",
+            "cn_workbench_limitation_summary",
+            "cn_workbench_uncertainty_summary",
+        ],
+    ),
+    view_field_contract(
+        "view_cn_risk_center_finding_list",
+        [
+            "risk_level",
+            "review_state",
+            "cn_risk_period_label",
+            "cn_risk_next_action",
+            "cn_risk_action_summary",
+            "cn_tax_impact_summary",
+            "task_assignee_id",
+            "task_due_date",
+        ],
+    ),
+    view_field_contract(
+        "view_cn_remediation_tracker_task_list",
+        [
+            "risk_level",
+            "assignee_id",
+            "due_date",
+            "cn_remediation_next_action",
+            "cn_remediation_action_summary",
+            "state",
+            "verification_state",
+            "cn_remediation_evidence_state",
+            "cn_remediation_rescan_stage",
+        ],
+    ),
+    view_field_contract(
+        "view_cn_report_readiness_kanban",
+        [
+            "cn_report_next_action",
+            "cn_report_readiness_state",
+            "cn_report_readiness_blocker_summary",
+            "cn_report_limitation_count",
+        ],
+    ),
+    view_field_contract(
+        "view_cn_evidence_center_list",
+        [
+            "state",
+            "cn_evidence_source_summary",
+            "cn_evidence_blocker_summary",
+            "document_checksum",
+        ],
+    ),
+    view_field_contract(
+        "view_cn_filing_center_kanban",
+        [
+            "state",
+            "payment_state",
+            "due_date",
+            "cn_filing_center_next_action",
+            "cn_filing_center_blocker_summary",
+            "cn_filing_center_evidence_state",
+        ],
+    ),
+]
+
 accounting = {{
     "companies": count("res.company"),
     "partners": count("res.partner"),
@@ -912,6 +997,10 @@ readiness = {{
         and customer_evidence_gap_review_evidence
         and open_high_risk_review_evidence
     ),
+    "has_reviewer_view_contract_evidence": bool(
+        reviewer_view_contracts
+        and all(contract.get("ready") for contract in reviewer_view_contracts)
+    ),
     "has_iit_payroll_withholding_scope_evidence": bool(
         any(
             run.get("state") == "succeeded"
@@ -1017,6 +1106,7 @@ payload = {{
     "sample_source_monitor_runs": sample_source_monitor_runs,
     "sample_iit_reconciliation_runs": sample_iit_reconciliation_runs,
     "sample_cross_border_transactions": sample_cross_border_transactions,
+    "reviewer_view_contracts": reviewer_view_contracts,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}
