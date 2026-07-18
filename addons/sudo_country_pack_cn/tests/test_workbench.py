@@ -448,6 +448,26 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertTrue(self.profile.cn_workbench_cross_border_next_action)
         self.assertEqual(self.profile.cn_workbench_cross_border_transaction_count, 0)
         self.assertEqual(self.profile.cn_workbench_cross_border_pending_count, 0)
+        self.assertEqual(self.profile.cn_workbench_rule_basis_state, "attention")
+        self.assertGreaterEqual(self.profile.cn_workbench_rule_version_count, 1)
+        self.assertGreaterEqual(
+            self.profile.cn_workbench_rule_governance_issue_count,
+            1,
+        )
+        self.assertGreaterEqual(
+            self.profile.cn_workbench_rule_pending_professional_count,
+            0,
+        )
+        self.assertGreaterEqual(
+            self.profile.cn_workbench_source_review_overdue_count,
+            0,
+        )
+        self.assertGreaterEqual(
+            self.profile.cn_workbench_source_monitor_issue_count,
+            0,
+        )
+        self.assertIn("governance gaps", self.profile.cn_workbench_rule_basis_summary)
+        self.assertTrue(self.profile.cn_workbench_rule_basis_next_action)
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_gap_count, 1)
         self.assertIn("Activate", self.profile.cn_workbench_closed_loop_summary)
@@ -475,9 +495,13 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("Tasks:", self.profile.cn_workbench_action_summary)
         self.assertIn("Data:", self.profile.cn_workbench_action_summary)
         self.assertIn("Report:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Rule basis:", self.profile.cn_workbench_action_summary)
         action = self.profile.action_cn_open_workbench_next_best_action()
         self.assertEqual(action["res_model"], "sudo.compliance.profile")
         self.assertEqual(action["res_id"], self.profile.id)
+        rule_action = self.profile.action_cn_open_workbench_rule_basis()
+        self.assertEqual(rule_action["res_model"], "sudo.compliance.rule.version")
+        self.assertIn(("rule_id.country_id.code", "=", "CN"), rule_action["domain"])
 
     def test_workbench_summarizes_pending_data_readiness(self):
         self.env["sudo.cn.external.dataset"].create(

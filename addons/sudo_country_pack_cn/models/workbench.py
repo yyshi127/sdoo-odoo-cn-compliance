@@ -14,6 +14,7 @@ FLOW_STATES = [
 ]
 NEXT_STEP_KEYS = [
     ("profile", "Profile Setup"),
+    ("rule_basis", "Rule Basis"),
     ("data_readiness", "Data Readiness"),
     ("obligations", "Tax Obligations"),
     ("scan", "Rule Scan"),
@@ -75,6 +76,7 @@ def _closed_loop_values(profile):
         )
 
     stages = [
+        ("rule basis", profile.cn_workbench_rule_basis_state),
         ("obligations", profile.cn_workbench_obligation_state),
         ("data", profile.cn_workbench_data_state),
         ("scan", profile.cn_workbench_scan_state),
@@ -131,6 +133,18 @@ def _conclusion_boundary_values(profile):
             "blocked",
             "Not usable as a compliance conclusion because controlled accounting/tax data is not ready.",
             profile.cn_workbench_data_next_action,
+        )
+    if profile.cn_workbench_rule_basis_state == "blocked":
+        return (
+            "blocked",
+            "Not usable as a compliance conclusion because China rule sources or rule governance require attention.",
+            profile.cn_workbench_rule_basis_next_action,
+        )
+    if profile.cn_workbench_rule_basis_state == "attention":
+        return (
+            "attention",
+            "Conclusion is limited until China rule source freshness and professional sign-off gaps are reviewed.",
+            profile.cn_workbench_rule_basis_next_action,
         )
     if profile.cn_workbench_limitation_count:
         return (
@@ -204,6 +218,8 @@ def _next_best_action_values(profile):
         return (False, False)
     if profile.status != "active":
         return ("profile", "Complete and activate the China profile")
+    if profile.cn_workbench_rule_basis_state == "blocked":
+        return ("rule_basis", "Review China rule source and sign-off basis")
     if profile.cn_workbench_data_state in ("blocked", "not_started"):
         return ("data_readiness", "Prepare controlled accounting and tax data")
     if profile.cn_workbench_obligation_state != "ready":
@@ -435,6 +451,43 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="Cross-Border Pending Review",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_rule_basis_state = fields.Selection(
+        FLOW_STATES,
+        string="Rule Basis Readiness",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rule_basis_summary = fields.Char(
+        string="Rule Basis Summary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rule_basis_next_action = fields.Char(
+        string="Rule Basis Next Action",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rule_version_count = fields.Integer(
+        string="China Rule Versions",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_active_rule_version_count = fields.Integer(
+        string="Active China Rule Versions",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rule_governance_issue_count = fields.Integer(
+        string="Rule Governance Issues",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_rule_pending_professional_count = fields.Integer(
+        string="Rules Pending Professional Sign-off",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_source_review_overdue_count = fields.Integer(
+        string="Official Sources Review Overdue",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_source_monitor_issue_count = fields.Integer(
+        string="Official Source Monitor Issues",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_limitation_count = fields.Integer(
         string="范围/证据限制",
         compute="_compute_cn_workbench",
@@ -626,6 +679,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                     self.cn_workbench_filing_archive_state or "unknown",
                     self.cn_workbench_ai_guidance_state or "unknown",
                 ),
+                "Rule basis: %s - %s"
+                % (
+                    self.cn_workbench_rule_basis_state or "unknown",
+                    self.cn_workbench_rule_basis_summary or "no summary",
+                ),
             ]
         )
         return " | ".join(parts)
@@ -644,6 +702,8 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         Filing = self.env["sudo.compliance.filing"].sudo()
         Dataset = self.env["sudo.cn.external.dataset"].sudo()
         Move = self.env["account.move"].sudo()
+        RuleVersion = self.env["sudo.compliance.rule.version"].sudo()
+        Source = self.env["sudo.compliance.authority.source"].sudo()
 
         issue_models = (
             "sudo.cn.vat.period.reconciliation.issue",
@@ -1002,6 +1062,97 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_cross_border_pending_count = (
                 CrossBorder.search_count(cross_border_pending_domain)
             )
+            rule_versions = RuleVersion.search(
+                [
+                    ("rule_id.country_id.code", "=", "CN"),
+                    ("state", "!=", "retired"),
+                ]
+            )
+            active_rule_versions = rule_versions.filtered(
+                lambda version: version.state == "active"
+            )
+            governance_issue_versions = rule_versions.filtered(
+                lambda version: not version.cn_governance_ready
+            )
+            pending_professional_versions = rule_versions.filtered(
+                lambda version: version.professional_review_state != "approved"
+                and version.cn_professional_review_ready
+            )
+            source_review_overdue_count = Source.search_count(
+                [
+                    ("country_id.code", "=", "CN"),
+                    ("status", "=", "valid"),
+                    ("next_review_date", "!=", False),
+                    ("next_review_date", "<", today),
+                ]
+            )
+            source_monitor_issue_count = Source.search_count(
+                [
+                    ("country_id.code", "=", "CN"),
+                    ("cn_last_monitor_state", "in", ("changed", "failed")),
+                ]
+            )
+            profile.cn_workbench_rule_version_count = len(rule_versions)
+            profile.cn_workbench_active_rule_version_count = len(
+                active_rule_versions
+            )
+            profile.cn_workbench_rule_governance_issue_count = len(
+                governance_issue_versions
+            )
+            profile.cn_workbench_rule_pending_professional_count = len(
+                pending_professional_versions
+            )
+            profile.cn_workbench_source_review_overdue_count = (
+                source_review_overdue_count
+            )
+            profile.cn_workbench_source_monitor_issue_count = (
+                source_monitor_issue_count
+            )
+            if not rule_versions:
+                profile.cn_workbench_rule_basis_state = "not_started"
+                profile.cn_workbench_rule_basis_summary = (
+                    "No China rule versions are installed or governed yet."
+                )
+                profile.cn_workbench_rule_basis_next_action = (
+                    "Install or seed China rule versions before relying on rule scans."
+                )
+            elif source_monitor_issue_count or source_review_overdue_count:
+                profile.cn_workbench_rule_basis_state = "blocked"
+                profile.cn_workbench_rule_basis_summary = (
+                    "%s China rule versions, %s active; %s official sources overdue; %s source monitor issues."
+                    % (
+                        len(rule_versions),
+                        len(active_rule_versions),
+                        source_review_overdue_count,
+                        source_monitor_issue_count,
+                    )
+                )
+                profile.cn_workbench_rule_basis_next_action = (
+                    "Review overdue or changed official sources, update affected rule versions, and rerun scans."
+                )
+            elif governance_issue_versions or pending_professional_versions:
+                profile.cn_workbench_rule_basis_state = "attention"
+                profile.cn_workbench_rule_basis_summary = (
+                    "%s China rule versions, %s active; %s governance gaps; %s pending professional sign-off."
+                    % (
+                        len(rule_versions),
+                        len(active_rule_versions),
+                        len(governance_issue_versions),
+                        len(pending_professional_versions),
+                    )
+                )
+                profile.cn_workbench_rule_basis_next_action = (
+                    "Complete source governance, review packets, tests and China tax professional sign-off for rule gaps."
+                )
+            else:
+                profile.cn_workbench_rule_basis_state = "ready"
+                profile.cn_workbench_rule_basis_summary = (
+                    "%s China rule versions, %s active; sources and professional sign-off gates are current."
+                    % (len(rule_versions), len(active_rule_versions))
+                )
+                profile.cn_workbench_rule_basis_next_action = (
+                    "Keep official source monitoring current and rescan when rules or data change."
+                )
             cross_border_state = _cross_border_state(
                 current_classification,
                 limitation_count,
@@ -1204,9 +1355,23 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_status = False
                 profile.cn_workbench_next_action = False
                 profile.cn_workbench_action_summary = False
+                profile.cn_workbench_rule_basis_state = False
+                profile.cn_workbench_rule_basis_summary = False
+                profile.cn_workbench_rule_basis_next_action = False
+                profile.cn_workbench_rule_version_count = 0
+                profile.cn_workbench_active_rule_version_count = 0
+                profile.cn_workbench_rule_governance_issue_count = 0
+                profile.cn_workbench_rule_pending_professional_count = 0
+                profile.cn_workbench_source_review_overdue_count = 0
+                profile.cn_workbench_source_monitor_issue_count = 0
             elif profile.status != "active":
                 profile.cn_workbench_status = "setup_required"
                 profile.cn_workbench_next_action = _("先完善并启用中国合规档案")
+            elif profile.cn_workbench_rule_basis_state == "blocked":
+                profile.cn_workbench_status = "limited"
+                profile.cn_workbench_next_action = _(
+                    "Review official source freshness and rule governance before relying on China compliance conclusions."
+                )
             elif profile.cn_workbench_obligation_state == "attention":
                 profile.cn_workbench_status = "warning"
                 profile.cn_workbench_next_action = _(
@@ -1467,6 +1632,18 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             [("profile_id", "=", self.id)],
         )
 
+    def action_cn_open_workbench_rule_basis(self):
+        self.ensure_one()
+        return self._cn_action(
+            _("China Rule Basis"),
+            "sudo.compliance.rule.version",
+            [
+                ("rule_id.country_id.code", "=", "CN"),
+                ("state", "!=", "retired"),
+            ],
+            {"group_by": "cn_release_state"},
+        )
+
     def action_cn_open_workbench_next_best_action(self):
         self.ensure_one()
         target = self.cn_workbench_next_best_action_key
@@ -1479,6 +1656,8 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 "view_mode": "form",
                 "target": "current",
             }
+        if target == "rule_basis":
+            return self.action_cn_open_workbench_rule_basis()
         if target == "data_readiness":
             return self.action_cn_open_workbench_data_readiness()
         if target == "obligations":

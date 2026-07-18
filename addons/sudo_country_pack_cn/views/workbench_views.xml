@@ -46,6 +46,16 @@
                 <field name="cn_workbench_conclusion_boundary_summary" optional="show"/>
                 <field name="cn_workbench_next_best_action_label" optional="show"/>
                 <field name="cn_workbench_action_summary" optional="show"/>
+                <field name="cn_workbench_rule_basis_state" widget="badge"
+                       decoration-success="cn_workbench_rule_basis_state == 'ready'"
+                       decoration-warning="cn_workbench_rule_basis_state == 'attention'"
+                       decoration-danger="cn_workbench_rule_basis_state == 'blocked'"
+                       decoration-muted="cn_workbench_rule_basis_state == 'not_started'"/>
+                <field name="cn_workbench_rule_basis_summary" optional="show"/>
+                <field name="cn_workbench_rule_governance_issue_count"/>
+                <field name="cn_workbench_rule_pending_professional_count"/>
+                <field name="cn_workbench_source_review_overdue_count"/>
+                <field name="cn_workbench_source_monitor_issue_count"/>
                 <field name="cn_workbench_data_state" widget="badge"
                        decoration-success="cn_workbench_data_state == 'ready'"
                        decoration-warning="cn_workbench_data_state == 'attention'"
@@ -158,6 +168,15 @@
                 <field name="cn_workbench_conclusion_boundary_next_action"/>
                 <field name="cn_workbench_next_best_action_key"/>
                 <field name="cn_workbench_next_best_action_label"/>
+                <field name="cn_workbench_rule_basis_state"/>
+                <field name="cn_workbench_rule_basis_summary"/>
+                <field name="cn_workbench_rule_basis_next_action"/>
+                <field name="cn_workbench_rule_version_count"/>
+                <field name="cn_workbench_active_rule_version_count"/>
+                <field name="cn_workbench_rule_governance_issue_count"/>
+                <field name="cn_workbench_rule_pending_professional_count"/>
+                <field name="cn_workbench_source_review_overdue_count"/>
+                <field name="cn_workbench_source_monitor_issue_count"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_workbench_status.raw_value == 'action_required' ? 'border-danger' : record.cn_workbench_status.raw_value == 'healthy' ? 'border-success' : 'border-warning'}">
@@ -191,6 +210,52 @@
                                     <field name="cn_workbench_action_summary"/>
                                 </div>
                             </div>
+
+                            <button type="object" name="action_cn_open_workbench_rule_basis"
+                                    class="btn btn-light w-100 text-start border mt-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-muted small">Rule basis</div>
+                                        <div class="fw-semibold">
+                                            <field name="cn_workbench_rule_basis_summary"/>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <field name="cn_workbench_rule_basis_next_action"/>
+                                        </div>
+                                    </div>
+                                    <field name="cn_workbench_rule_basis_state" widget="badge"
+                                           decoration-success="cn_workbench_rule_basis_state == 'ready'"
+                                           decoration-warning="cn_workbench_rule_basis_state == 'attention'"
+                                           decoration-danger="cn_workbench_rule_basis_state == 'blocked'"
+                                           decoration-muted="cn_workbench_rule_basis_state == 'not_started'"/>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-3">
+                                        <div class="text-muted small">Versions</div>
+                                        <div class="fw-bold">
+                                            <field name="cn_workbench_active_rule_version_count"/>
+                                            <span> / </span>
+                                            <field name="cn_workbench_rule_version_count"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">Gaps</div>
+                                        <div class="fw-bold"><field name="cn_workbench_rule_governance_issue_count"/></div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">Sign-off</div>
+                                        <div class="fw-bold"><field name="cn_workbench_rule_pending_professional_count"/></div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="text-muted small">Sources</div>
+                                        <div class="fw-bold">
+                                            <field name="cn_workbench_source_review_overdue_count"/>
+                                            <span> / </span>
+                                            <field name="cn_workbench_source_monitor_issue_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
 
                             <button type="object" name="action_cn_open_workbench_next_best_action"
                                     class="btn btn-primary w-100 text-start mt-3">
@@ -666,6 +731,21 @@
                             <field name="cn_workbench_last_assessment_id" readonly="1"/>
                             <field name="cn_workbench_latest_report_id" readonly="1"/>
                         </group>
+                        <group string="Rule Basis">
+                            <field name="cn_workbench_rule_basis_state" readonly="1" widget="badge"
+                                   decoration-success="cn_workbench_rule_basis_state == 'ready'"
+                                   decoration-warning="cn_workbench_rule_basis_state == 'attention'"
+                                   decoration-danger="cn_workbench_rule_basis_state == 'blocked'"
+                                   decoration-muted="cn_workbench_rule_basis_state == 'not_started'"/>
+                            <field name="cn_workbench_rule_basis_summary" readonly="1"/>
+                            <field name="cn_workbench_rule_basis_next_action" readonly="1"/>
+                            <field name="cn_workbench_rule_version_count" readonly="1"/>
+                            <field name="cn_workbench_active_rule_version_count" readonly="1"/>
+                            <field name="cn_workbench_rule_governance_issue_count" readonly="1"/>
+                            <field name="cn_workbench_rule_pending_professional_count" readonly="1"/>
+                            <field name="cn_workbench_source_review_overdue_count" readonly="1"/>
+                            <field name="cn_workbench_source_monitor_issue_count" readonly="1"/>
+                        </group>
                         <group string="风险与整改">
                             <field name="cn_workbench_finding_count" readonly="1"/>
                             <field name="cn_workbench_high_risk_count" readonly="1"/>
@@ -754,6 +834,8 @@
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         <button name="action_cn_open_workbench_next_best_action" type="object"
                                 string="Next Best Action" class="btn-primary"/>
+                        <button name="action_cn_open_workbench_rule_basis" type="object"
+                                string="Rule Basis" class="btn-secondary"/>
                         <button name="action_cn_open_workbench_data_readiness" type="object"
                                 string="查看数据准备中心" class="btn-secondary"/>
                         <button name="action_cn_open_workbench_obligations" type="object"
