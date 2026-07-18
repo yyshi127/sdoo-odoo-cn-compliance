@@ -552,7 +552,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
                     f"- State/conclusion: `{report.get('state', '')}` / `{report.get('conclusion_state', '')}`",
                     f"- Traceability/fact basis: `{report.get('traceability_state', '')}` / `{report.get('fact_basis_state', '')}`",
                     f"- Integrity: center `{report.get('center_integrity_state', '')}`, snapshot `{report.get('snapshot_integrity_state', '')}`, approval `{report.get('approval_integrity_state', '')}`, pdf `{report.get('pdf_integrity_state', '')}`",
-                    f"- Next action: {report.get('traceability_next_action', '')}",
+                    f"- Blockers: {report.get('blocker_summary', '')}",
+                    f"- Next action: {report.get('traceability_next_action') or report.get('center_next_action') or ''}",
                     "",
                 )
             ]

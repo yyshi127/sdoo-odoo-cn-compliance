@@ -233,7 +233,12 @@ for finding in sample_records(
             "result": safe_field(finding, "result"),
             "review_state": safe_field(finding, "review_state"),
             "title": safe_field(finding, "title"),
-            "reason": safe_field(finding, "message"),
+            "reason": (
+                safe_field(finding, "message")
+                or safe_field(finding, "summary")
+                or safe_field(finding, "recommendation")
+                or safe_field(finding, "title")
+            ),
             "action_summary": safe_field(finding, "cn_risk_action_summary"),
             "next_action": safe_field(finding, "cn_risk_next_action"),
             "tax_impact": safe_field(finding, "cn_tax_impact_summary"),
@@ -295,6 +300,8 @@ for report in sample_records(
             "conclusion_state": safe_field(report, "conclusion_state"),
             "traceability_state": safe_field(report, "cn_report_traceability_state"),
             "traceability_next_action": safe_field(report, "cn_report_traceability_next_action"),
+            "center_next_action": safe_field(report, "cn_report_center_next_action"),
+            "blocker_summary": safe_field(report, "cn_report_blocker_summary"),
             "fact_basis_state": safe_field(report, "cn_report_fact_basis_state"),
             "center_integrity_state": safe_field(report, "cn_report_center_integrity_state"),
             "snapshot_integrity_state": safe_field(report, "snapshot_integrity_state"),
@@ -550,10 +557,18 @@ readiness = {{
             has_text(report.get("period_start"))
             and has_text(report.get("period_end"))
             and has_text(report.get("state"))
-            and has_text(report.get("conclusion_state"))
             and has_text(report.get("traceability_state"))
             and has_text(report.get("fact_basis_state"))
-            and has_text(report.get("traceability_next_action"))
+            and (
+                has_text(report.get("conclusion_state"))
+                or (
+                    has_text(report.get("blocker_summary"))
+                    and (
+                        has_text(report.get("traceability_next_action"))
+                        or has_text(report.get("center_next_action"))
+                    )
+                )
+            )
             for report in sample_reports
         )
     ),

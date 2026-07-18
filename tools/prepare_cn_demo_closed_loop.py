@@ -379,6 +379,8 @@ def ensure_finding_task(assessment):
             ("state", "=", "done"),
             ("verification_state", "=", "verified"),
         ], order="id desc", limit=1)
+        if verified_task and not verified_task.due_date:
+            verified_task.write({{"due_date": date(2026, 7, 31)}})
         return finding, verified_task, False
     task = env["sudo.compliance.task"].sudo().search([
         ("finding_id", "=", finding.id),
@@ -400,6 +402,9 @@ def ensure_finding_task(assessment):
         if not task:
             action = finding.action_create_task()
             task = env["sudo.compliance.task"].sudo().browse(action["res_id"])
+            changed = True
+        if task and not task.due_date:
+            task.write({{"due_date": date(2026, 7, 31)}})
             changed = True
     return finding, task, changed
 

@@ -4803,6 +4803,7 @@ def validate_delivery_objective_coverage() -> None:
         "has_text(finding.get(\"tax_impact\"))",
         "has_text(task.get(\"assignee\"))",
         "has_text(task.get(\"due_date\"))",
+        "safe_field(report, \"cn_report_blocker_summary\")",
         "has_text(report.get(\"traceability_next_action\"))",
         "sample_evidence",
         "sample_filing_archives",
