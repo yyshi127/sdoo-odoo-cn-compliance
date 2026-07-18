@@ -191,9 +191,24 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         _readiness_item(
             "risk_task_report_summary_evidence",
             "Risk center, remediation tracker and report center expose representative summary evidence for UAT review",
-            real_data_readiness.get("has_risk_task_report_summary_evidence") is True,
+            real_data_readiness.get("has_risk_task_report_summary_evidence") is True
+            and real_data_readiness.get("has_risk_finding_visibility_evidence") is True
+            and real_data_readiness.get("has_remediation_task_visibility_evidence")
+            is True
+            and real_data_readiness.get("has_report_visibility_evidence") is True,
             json.dumps(
                 {
+                    "visibility": {
+                        "risk_finding": real_data_readiness.get(
+                            "has_risk_finding_visibility_evidence"
+                        ),
+                        "remediation_task": real_data_readiness.get(
+                            "has_remediation_task_visibility_evidence"
+                        ),
+                        "report": real_data_readiness.get(
+                            "has_report_visibility_evidence"
+                        ),
+                    },
                     "findings": real_data.get("sample_findings") or [],
                     "remediation_tasks": (
                         real_data.get("sample_remediation_tasks") or []

@@ -141,6 +141,9 @@ def status_payload() -> dict:
                 "closed_loop_evidence_ready": True,
                 "has_workbench_summary_evidence": True,
                 "has_risk_task_report_summary_evidence": True,
+                "has_risk_finding_visibility_evidence": True,
+                "has_remediation_task_visibility_evidence": True,
+                "has_report_visibility_evidence": True,
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
                 "has_rule_source_governance_evidence": True,
@@ -437,6 +440,9 @@ def real_data_closed_loop_payload() -> dict:
             "closed_loop_evidence_ready": True,
             "has_workbench_summary_evidence": True,
             "has_risk_task_report_summary_evidence": True,
+            "has_risk_finding_visibility_evidence": True,
+            "has_remediation_task_visibility_evidence": True,
+            "has_report_visibility_evidence": True,
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
             "has_rule_source_governance_evidence": True,
@@ -861,6 +867,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertGreaterEqual(audit["state_counts"]["evidence_ready"], 1)
         self.assertGreaterEqual(audit["state_counts"]["blocked"], 1)
 
+    def test_objective_audit_blocks_when_risk_visibility_evidence_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_remediation_task_visibility_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["risk_remediation_report_visibility"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "remediation_task_visibility=False",
+            items["risk_remediation_report_visibility"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1097,6 +1121,33 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertIn(
             "CN Compliance Report",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"risk_finding": true',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"remediation_task": true',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"report": true',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_risk_visibility_evidence_is_incomplete(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_remediation_task_visibility_evidence"
+        ] = False
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["risk_task_report_summary_evidence"]["ready"])
+        self.assertIn(
+            '"remediation_task": false',
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
 
@@ -1896,6 +1947,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
         self.assertIn("## Risk, Remediation and Report Summary Evidence", content)
         self.assertIn("Risk/task/report summary evidence ready: `True`", content)
+        self.assertIn("Risk finding visibility evidence ready: `True`", content)
+        self.assertIn("Remediation task visibility evidence ready: `True`", content)
+        self.assertIn("Report visibility evidence ready: `True`", content)
         self.assertIn("VAT filing mismatch", content)
         self.assertIn("Correct VAT filing mismatch", content)
         self.assertIn("CN Compliance Report", content)

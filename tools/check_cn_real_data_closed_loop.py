@@ -650,6 +650,54 @@ accounting = {{
     ),
 }}
 
+risk_finding_visibility_evidence = bool(
+    any(
+        has_text(finding.get("period_label"))
+        and has_text(finding.get("risk_level"))
+        and has_text(finding.get("reason"))
+        and has_text(finding.get("tax_impact"))
+        and has_text(finding.get("evidence_state"))
+        and has_text(finding.get("closure_state"))
+        and has_text(finding.get("next_action"))
+        and has_text(finding.get("action_summary"))
+        for finding in sample_findings
+    )
+)
+remediation_task_visibility_evidence = bool(
+    any(
+        has_text(task.get("risk_level"))
+        and has_text(task.get("state"))
+        and has_text(task.get("assignee"))
+        and has_text(task.get("due_date"))
+        and has_text(task.get("verification_state"))
+        and has_text(task.get("evidence_state"))
+        and has_text(task.get("traceability_state"))
+        and has_text(task.get("next_action"))
+        and has_text(task.get("action_summary"))
+        for task in sample_tasks
+    )
+)
+report_visibility_evidence = bool(
+    any(
+        has_text(report.get("period_start"))
+        and has_text(report.get("period_end"))
+        and has_text(report.get("state"))
+        and has_text(report.get("traceability_state"))
+        and has_text(report.get("fact_basis_state"))
+        and (
+            has_text(report.get("conclusion_state"))
+            or (
+                has_text(report.get("blocker_summary"))
+                and (
+                    has_text(report.get("traceability_next_action"))
+                    or has_text(report.get("center_next_action"))
+                )
+            )
+        )
+        for report in sample_reports
+    )
+)
+
 readiness = {{
     "module_installed": bool(module and module.state == "installed"),
     "module_version_matches": bool(
@@ -713,48 +761,13 @@ readiness = {{
             if profile.get("status") == "active"
         )
     ),
+    "has_risk_finding_visibility_evidence": risk_finding_visibility_evidence,
+    "has_remediation_task_visibility_evidence": remediation_task_visibility_evidence,
+    "has_report_visibility_evidence": report_visibility_evidence,
     "has_risk_task_report_summary_evidence": bool(
-        any(
-            has_text(finding.get("period_label"))
-            and has_text(finding.get("risk_level"))
-            and has_text(finding.get("reason"))
-            and has_text(finding.get("tax_impact"))
-            and has_text(finding.get("evidence_state"))
-            and has_text(finding.get("closure_state"))
-            and has_text(finding.get("next_action"))
-            and has_text(finding.get("action_summary"))
-            for finding in sample_findings
-        )
-        and any(
-            has_text(task.get("risk_level"))
-            and has_text(task.get("state"))
-            and has_text(task.get("assignee"))
-            and has_text(task.get("due_date"))
-            and has_text(task.get("verification_state"))
-            and has_text(task.get("evidence_state"))
-            and has_text(task.get("traceability_state"))
-            and has_text(task.get("next_action"))
-            and has_text(task.get("action_summary"))
-            for task in sample_tasks
-        )
-        and any(
-            has_text(report.get("period_start"))
-            and has_text(report.get("period_end"))
-            and has_text(report.get("state"))
-            and has_text(report.get("traceability_state"))
-            and has_text(report.get("fact_basis_state"))
-            and (
-                has_text(report.get("conclusion_state"))
-                or (
-                    has_text(report.get("blocker_summary"))
-                    and (
-                        has_text(report.get("traceability_next_action"))
-                        or has_text(report.get("center_next_action"))
-                    )
-                )
-            )
-            for report in sample_reports
-        )
+        risk_finding_visibility_evidence
+        and remediation_task_visibility_evidence
+        and report_visibility_evidence
     ),
     "has_evidence_filing_payment_summary_evidence": bool(
         any(

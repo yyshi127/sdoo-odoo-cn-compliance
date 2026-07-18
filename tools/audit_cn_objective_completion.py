@@ -151,10 +151,16 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
             _state(
                 _ready(real_data_readiness.get("has_workbench_summary_evidence"))
                 and _ready(real_data_readiness.get("has_risk_task_report_summary_evidence"))
+                and _ready(real_data_readiness.get("has_risk_finding_visibility_evidence"))
+                and _ready(real_data_readiness.get("has_remediation_task_visibility_evidence"))
+                and _ready(real_data_readiness.get("has_report_visibility_evidence"))
             ),
             [
                 f"workbench_summary={real_data_readiness.get('has_workbench_summary_evidence')}",
                 f"risk_task_report_summary={real_data_readiness.get('has_risk_task_report_summary_evidence')}",
+                f"risk_finding_visibility={real_data_readiness.get('has_risk_finding_visibility_evidence')}",
+                f"remediation_task_visibility={real_data_readiness.get('has_remediation_task_visibility_evidence')}",
+                f"report_visibility={real_data_readiness.get('has_report_visibility_evidence')}",
             ],
         ),
         _item(
