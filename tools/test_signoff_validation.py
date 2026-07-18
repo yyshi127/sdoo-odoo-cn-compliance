@@ -1363,6 +1363,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
+        self.assertTrue(SUMMARY._looks_mojibake("涓浗鍚堣妗ｆ"))
         self.assertTrue(SUMMARY._looks_mojibake("中国合规" + "\ufffd" + "档案"))
         self.assertTrue(SUMMARY._looks_mojibake("中国合规?档案"))
         status = delivery_status()
@@ -1373,8 +1374,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "company": "中国公司",
                 "status": "active",
                 "period_label": "2026-06",
-                "next_action": "复核风险",
-                "action_summary": "中国合规?档案",
+                "next_action": "澶嶆牳椋庨櫓",
+                "action_summary": "涓浗鍚堣?妗ｆ",
             }
         ]
         with tempfile.TemporaryDirectory() as directory:

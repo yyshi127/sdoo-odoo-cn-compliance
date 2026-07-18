@@ -27,6 +27,14 @@ SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
 MOJIBAKE_MARKDOWN_PLACEHOLDER = (
     "[unreadable preview-database text; inspect the JSON evidence by record id]"
 )
+MOJIBAKE_MARKER_CHARS = frozenset(
+    "锟斤拷"
+    "涓涔浠佽妗楦塦鑻窞鐟崕浜"
+    "鏂板姞鍧唴璐"
+    "澶嶆牳椋庨櫓"
+    "銆冩弿鎻"
+    "鐧昏笉"
+)
 
 
 def _manifest_includes(
@@ -58,8 +66,17 @@ def _looks_mojibake(text: object) -> bool:
         return False
     if "\ufffd" in text:
         return True
+    if any("\ue000" <= char <= "\uf8ff" for char in text):
+        return True
     cjk_count = _cjk_count(text)
-    return "?" in text and cjk_count >= 2
+    if "?" in text and cjk_count >= 2:
+        return True
+    if cjk_count < 2:
+        return False
+    marker_count = sum(char in MOJIBAKE_MARKER_CHARS for char in text)
+    if marker_count >= 4 and marker_count / max(cjk_count, 1) >= 0.45:
+        return True
+    return False
 
 
 def _markdown_text(value: object, fallback: str = MOJIBAKE_MARKDOWN_PLACEHOLDER) -> str:
