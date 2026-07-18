@@ -277,8 +277,11 @@ def _function_domain_variables(node: ast.FunctionDef) -> dict[str, set[str]]:
         changed = False
         for name, value in assignments:
             fields = _domain_field_names(value, variables)
-            if fields is not None and variables.get(name) != fields:
-                variables[name] = fields
+            if fields is None:
+                continue
+            combined = (variables.get(name) or set()) | fields
+            if variables.get(name) != combined:
+                variables[name] = combined
                 changed = True
     return variables
 

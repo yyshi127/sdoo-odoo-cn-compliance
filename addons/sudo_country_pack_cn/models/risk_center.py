@@ -280,11 +280,13 @@ class SudoChinaRiskCenterFinding(models.Model):
                 assessment.period_start,
                 assessment.period_end,
             )
-            evidence_domain = [
-                "|",
-                ("finding_id", "=", finding.id),
-                ("task_id", "=", finding.current_task_id.id),
-            ]
+            evidence_domain = [("finding_id", "=", finding.id)]
+            if finding.current_task_id:
+                evidence_domain = [
+                    "|",
+                    ("finding_id", "=", finding.id),
+                    ("task_id", "=", finding.current_task_id.id),
+                ]
             evidence_count = Evidence.search_count(evidence_domain)
             verified_evidence_count = Evidence.search_count(
                 evidence_domain + [("state", "=", "verified")]
