@@ -7,15 +7,19 @@ It is not a tax opinion.
 ## How To Use This Template
 
 Complete this template after generating the delivery status and sign-off action
-packet for the release candidate. For the current m152 evidence set, start from:
+packet for the release candidate. Use the latest numbered `mNNN` evidence set
+for the exact candidate under review:
 
-- `dist/cn_delivery_status_m152.json`
-- `dist/cn_delivery_status_m152.md`
-- `dist/cn_signoff_packet_m152.json`
-- `dist/cn_signoff_packet_m152.md`
-- `dist/cn_delivery_acceptance_m152_remote.json`
-- `dist/sdoo-cn-compliance-delivery-m152.bundle.json`
-- `dist/cn_delivery_manifest_m152_full.json`
+- `dist/cn_delivery_status_mNNN.json`
+- `dist/cn_delivery_status_mNNN.md`
+- `dist/cn_signoff_packet_mNNN.json`
+- `dist/cn_signoff_packet_mNNN.md`
+- `dist/cn_delivery_acceptance_mNNN_remote.json`
+- `dist/sdoo-cn-compliance-delivery-mNNN.bundle.json`
+- `dist/cn_delivery_manifest_mNNN_full.json`
+
+Confirm that all selected `mNNN` files point to the same delivery version,
+source commit, manifest aggregate hash and remote runtime acceptance result.
 
 Use the Markdown files for reviewer walkthroughs and the JSON files for audit
 traceability. Do not copy placeholder text into the final sign-off evidence.
