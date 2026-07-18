@@ -760,6 +760,16 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertIn("placeholder", draft["placeholder_notice"].lower())
         self.assertIn("objective_areas", draft["decisions"][0])
+        self.assertIn("addresses_blockers", draft["decisions"][0])
+        self.assertIn("Objective areas:", draft["decisions"][0]["notes"])
+        self.assertIn(
+            "Production blockers addressed:",
+            draft["decisions"][0]["notes"],
+        )
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            draft["decisions"][0]["notes"],
+        )
 
     def test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders(self):
         packet = PACKET._build_packet(status_payload())

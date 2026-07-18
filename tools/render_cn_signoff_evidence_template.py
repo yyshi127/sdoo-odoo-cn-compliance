@@ -31,6 +31,8 @@ def _reviewer_placeholder(owner: object) -> str:
 
 def _draft_decision(action: dict[str, Any]) -> dict[str, Any]:
     acceptable = action.get("acceptable_decisions") or []
+    objective_areas = action.get("objective_areas") or []
+    addresses_blockers = action.get("addresses_blockers") or []
     return {
         "key": action.get("key"),
         "decision": acceptable[0] if acceptable else "",
@@ -39,10 +41,16 @@ def _draft_decision(action: dict[str, Any]) -> dict[str, Any]:
         "evidence_reference": action.get("required_evidence") or "Evidence reference",
         "notes": (
             "Replace this draft note with the reviewer conclusion. "
-            "The final evidence must mention the required evidence and objective areas."
+            "The final evidence must mention the required evidence, objective "
+            "areas and production blockers. Objective areas: %s. "
+            "Production blockers addressed: %s."
+            % (
+                "; ".join(str(item) for item in objective_areas) or "None",
+                "; ".join(str(item) for item in addresses_blockers) or "None",
+            )
         ),
-        "objective_areas": action.get("objective_areas") or [],
-        "addresses_blockers": action.get("addresses_blockers") or [],
+        "objective_areas": objective_areas,
+        "addresses_blockers": addresses_blockers,
     }
 
 
