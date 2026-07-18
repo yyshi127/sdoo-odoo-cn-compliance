@@ -81,6 +81,12 @@ def render_template(packet: dict[str, Any]) -> dict[str, Any]:
                 "of 20 or more characters."
             )
         ],
+        "production_blocker_coverage": packet.get("production_blocker_coverage") or {},
+        "production_blocker_coverage_note": (
+            "Use this packet-derived matrix to confirm every production blocker "
+            "has at least one completed human decision. It is not a substitute for "
+            "the decision evidence below."
+        ),
         "decisions": [_draft_decision(action) for action in actions],
     }
 

@@ -758,6 +758,12 @@ class TestChinaSignoffValidation(unittest.TestCase):
             [item["key"] for item in draft["decisions"]],
             [item["key"] for item in packet["production_actions"]],
         )
+        self.assertEqual(
+            draft["production_blocker_coverage"],
+            packet["production_blocker_coverage"],
+        )
+        self.assertTrue(draft["production_blocker_coverage"]["all_covered"])
+        self.assertIn("matrix", draft["production_blocker_coverage_note"])
         self.assertIn("placeholder", draft["placeholder_notice"].lower())
         self.assertIn("objective_areas", draft["decisions"][0])
         self.assertIn("addresses_blockers", draft["decisions"][0])

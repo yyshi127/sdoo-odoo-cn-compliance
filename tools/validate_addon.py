@@ -5229,6 +5229,8 @@ def validate_delivery_objective_coverage() -> None:
         "production_actions",
         "acceptable_decisions",
         "objective_areas",
+        "production_blocker_coverage",
+        "production_blocker_coverage_note",
         "placeholder_notice",
     ):
         if required not in signoff_renderer_tool_content:
