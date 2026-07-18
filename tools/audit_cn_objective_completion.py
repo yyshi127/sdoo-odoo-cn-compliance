@@ -69,6 +69,14 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
     tax_domains = status.get("tax_domain_coverage") or {}
     preview_module = status.get("preview_module") or {}
     preview_health = status.get("preview_health") or {}
+    signoff_validation = status.get("signoff_validation") or {}
+    coverage_binding = (
+        signoff_validation.get("production_blocker_coverage_binding")
+        if isinstance(signoff_validation, dict)
+        else {}
+    )
+    if not isinstance(coverage_binding, dict):
+        coverage_binding = {}
     production_blockers = [
         str(blocker)
         for blocker in readiness.get("production_signoff_blockers") or []
@@ -168,7 +176,11 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
             "production_signoff_gate",
             "Production sign-off gate",
             _state(_ready(readiness.get("production_signoff_ready")), production_blockers),
-            [f"production_signoff_ready={readiness.get('production_signoff_ready')}"],
+            [
+                f"production_signoff_ready={readiness.get('production_signoff_ready')}",
+                f"coverage_packet_all_covered={coverage_binding.get('packet_all_covered')}",
+                f"coverage_evidence_matches_packet={coverage_binding.get('evidence_matches_packet')}",
+            ],
             production_blockers,
         ),
     ]

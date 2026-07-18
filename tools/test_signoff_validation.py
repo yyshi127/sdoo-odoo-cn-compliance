@@ -861,6 +861,14 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["production_signoff_gate"]["state"],
             "evidence_ready",
         )
+        self.assertIn(
+            "coverage_packet_all_covered=True",
+            items["production_signoff_gate"]["evidence"],
+        )
+        self.assertIn(
+            "coverage_evidence_matches_packet=True",
+            items["production_signoff_gate"]["evidence"],
+        )
         self.assertEqual(audit["completion_blockers"], [])
 
     def test_generic_signoff_evidence_reference_blocks_production_gate(self):
@@ -1660,6 +1668,31 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "evidence_matches_packet"
             ]
         )
+
+    def test_delivery_status_keeps_required_actions_for_incomplete_signoff_validation(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["decisions"] = [
+            item
+            for item in evidence["decisions"]
+            if item["key"] != "china_tax_professional_rule_signoff"
+        ]
+        validation = VALIDATION._validate(packet, evidence)
+
+        status = delivery_status(validation)
+
+        readiness = status["readiness_gates"]
+        required_actions = {
+            action["key"]: action
+            for action in readiness["production_signoff_required_actions"]
+        }
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "current official sources and released rules require professional sign-off evidence",
+            readiness["production_signoff_blockers"],
+        )
+        self.assertIn("china_tax_professional_rule_signoff", required_actions)
+        self.assertIn("production_deployment_decision", required_actions)
 
     def test_delivery_status_surfaces_blocked_objective_areas(self):
         packet = PACKET._build_packet(status_payload())

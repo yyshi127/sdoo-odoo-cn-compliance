@@ -5214,6 +5214,8 @@ def validate_delivery_objective_coverage() -> None:
         "completion_blockers",
         "state_counts",
         "tax_domain_coverage",
+        "production_blocker_coverage_binding",
+        "coverage_evidence_matches_packet",
         "--require-achieved",
     ):
         if required not in objective_audit_tool_content:

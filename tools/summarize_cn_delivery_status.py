@@ -836,7 +836,11 @@ def _status(
         if signoff_binding_blockers:
             production_signoff_blockers.extend(signoff_binding_blockers)
         elif signoff_validation_summary["production_signoff_ready"] is not True:
-            blockers = signoff_validation_summary.get("blockers") or []
+            blockers = (
+                signoff_validation_summary.get("blocked_production_signoff_blockers")
+                or signoff_validation_summary.get("blockers")
+                or []
+            )
             production_signoff_blockers.extend(
                 blockers if isinstance(blockers, list) else ["sign-off validation did not pass"]
             )
