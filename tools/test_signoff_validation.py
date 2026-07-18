@@ -1503,6 +1503,29 @@ class TestChinaSignoffValidation(unittest.TestCase):
             set(readiness["production_signoff_blockers"]),
         )
 
+    def test_delivery_status_required_actions_match_signoff_packet_evidence(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+
+        status_actions = {
+            action["key"]: action
+            for action in status["readiness_gates"][
+                "production_signoff_required_actions"
+            ]
+        }
+        packet_actions = {
+            action["key"]: action
+            for action in packet["missing_human_evidence"]
+        }
+
+        self.assertEqual(set(status_actions), set(packet_actions))
+        for key, status_action in status_actions.items():
+            self.assertEqual(status_action["owner"], packet_actions[key]["owner"])
+            self.assertEqual(
+                set(status_action["addresses_blockers"]),
+                set(packet_actions[key]["addresses_blockers"]),
+            )
+
     def test_delivery_status_accepts_valid_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))

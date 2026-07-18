@@ -5283,6 +5283,7 @@ def validate_delivery_objective_coverage() -> None:
         "production_signoff_required_actions",
         "Production Sign-off Required Human Actions",
         "production_deployment_decision",
+        "test_delivery_status_required_actions_match_signoff_packet_evidence",
         "test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit",
         "test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders",
         "test_objective_audit_marks_production_signoff_blocker",

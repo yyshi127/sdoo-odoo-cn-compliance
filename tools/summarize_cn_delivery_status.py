@@ -53,6 +53,11 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages.",
         },
         {
+            "key": "blocker_summary_walkthrough",
+            "owner": "business_reviewer",
+            "required_evidence": "Completed blocker summary walkthrough for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness.",
+        },
+        {
             "key": "production_deployment_decision",
             "owner": "release_owner",
             "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
