@@ -704,6 +704,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "schema": VALIDATION.EVIDENCE_SCHEMA,
         "version": packet["version"],
         "source_commit": packet["source_commit"],
+        "production_blocker_coverage": packet["production_blocker_coverage"],
         "decisions": decisions,
         "limitations": [],
     }
@@ -791,6 +792,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "representative business UAT",
             result["blocked_objective_areas"],
+        )
+
+    def test_signoff_evidence_requires_packet_blocker_coverage_match(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["production_blocker_coverage"] = {
+            "all_covered": True,
+            "coverage": [],
+            "uncovered_blockers": [],
+        }
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "sign-off evidence production_blocker_coverage does not match the packet",
+            result["blockers"],
         )
 
     def test_objective_audit_marks_production_signoff_blocker(self):

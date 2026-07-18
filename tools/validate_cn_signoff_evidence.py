@@ -157,6 +157,11 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
     if evidence.get("source_commit") != packet.get("source_commit"):
         blockers.append("sign-off evidence source commit does not match the packet")
     production_blocker_coverage = packet.get("production_blocker_coverage") or {}
+    evidence_blocker_coverage = evidence.get("production_blocker_coverage")
+    if evidence_blocker_coverage != production_blocker_coverage:
+        blockers.append(
+            "sign-off evidence production_blocker_coverage does not match the packet"
+        )
     uncovered_production_blockers = [
         str(blocker)
         for blocker in production_blocker_coverage.get("uncovered_blockers") or []
