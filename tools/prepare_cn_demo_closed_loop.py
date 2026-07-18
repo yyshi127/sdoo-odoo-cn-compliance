@@ -1006,6 +1006,406 @@ def ensure_filing_archive(profile, run, source):
     }}
 
 
+def ensure_account(company, code, name, account_type):
+    Account = env["account.account"].sudo().with_company(company)
+    account = Account.search([
+        ("code", "=", code),
+        ("company_ids", "in", company.ids),
+    ], limit=1)
+    if account:
+        return account, False
+    account = Account.create({{
+        "name": name,
+        "code": code,
+        "account_type": account_type,
+        "company_ids": command_set(company.ids),
+    }})
+    return account, True
+
+
+def misc_journal(company):
+    Journal = env["account.journal"].sudo().with_company(company)
+    journal = Journal.search([
+        ("company_id", "=", company.id),
+        ("type", "=", "general"),
+    ], limit=1)
+    if journal:
+        return journal, False
+    journal = Journal.create({{
+        "name": "CODEX-DEMO China Compliance Journal",
+        "code": "CDCN",
+        "type": "general",
+        "company_id": company.id,
+    }})
+    return journal, True
+
+
+def ensure_iit_accounting_scope(profile, accounts):
+    Scope = env["sudo.cn.iit.accounting.scope"].sudo().with_company(profile.company_id)
+    scope = Scope.search([
+        ("profile_id", "=", profile.id),
+        ("source_reference", "=", "CODEX-DEMO/CN/IIT-SCOPE/2026-06"),
+    ], order="id desc", limit=1)
+    changed = False
+    if not scope:
+        scope = Scope.create({{
+            "profile_id": profile.id,
+            "valid_from": "2026-01-01",
+            "valid_to": "2026-12-31",
+            "source_reference": "CODEX-DEMO/CN/IIT-SCOPE/2026-06",
+            "payroll_source_schema": "CODEX-DEMO-payroll_summary",
+            "payroll_source_schema_version": "2026.1",
+            "iit_source_schema": "CODEX-DEMO-iit_withholding",
+            "iit_source_schema_version": "2026.1",
+            "payable_refundable_sign_convention": "positive_payable_negative_refundable",
+            "scope_note": (
+                "CODEX-DEMO ONLY: maps payroll expense, employee compensation "
+                "payable and individual income tax payable accounts for the "
+                "2026-06 controlled IIT walkthrough."
+            ),
+            "line_ids": [
+                (0, 0, {{"account_id": accounts["payroll_expense"].id, "role": "payroll_expense"}}),
+                (0, 0, {{"account_id": accounts["employee_payable"].id, "role": "employee_payable"}}),
+                (0, 0, {{"account_id": accounts["iit_payable"].id, "role": "iit_payable"}}),
+            ],
+        }})
+        changed = True
+    if not scope.evidence_attachment_ids:
+        evidence = attachment(
+            "CODEX-DEMO-cn-iit-accounting-scope-2026-06.pdf",
+            b"CODEX DEMO ONLY - China IIT accounting scope evidence",
+        )
+        evidence.sudo().write({{"res_model": scope._name, "res_id": scope.id}})
+        scope.write({{"evidence_attachment_ids": command_set(evidence.ids)}})
+        changed = True
+    if hasattr(scope, "action_verify") and getattr(scope, "state", False) != "verified":
+        scope.action_verify()
+        changed = True
+    return scope, changed
+
+
+def ensure_iit_ledger(profile, accounts):
+    company = profile.company_id
+    journal, journal_changed = misc_journal(company)
+    Move = env["account.move"].sudo().with_company(company)
+    changed = journal_changed
+    if not Move.search_count([
+        ("company_id", "=", company.id),
+        ("ref", "=", "CODEX-DEMO-CN-IIT-PAYROLL-ACCRUAL-2026-06"),
+        ("state", "=", "posted"),
+    ]):
+        move = Move.create({{
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": "2026-06-30",
+            "ref": "CODEX-DEMO-CN-IIT-PAYROLL-ACCRUAL-2026-06",
+            "line_ids": [
+                (0, 0, {{"name": "CODEX-DEMO payroll expense", "account_id": accounts["payroll_expense"].id, "debit": 10000.0}}),
+                (0, 0, {{"name": "CODEX-DEMO employee compensation payable", "account_id": accounts["employee_payable"].id, "credit": 10000.0}}),
+            ],
+        }})
+        move.action_post()
+        changed = True
+    if not Move.search_count([
+        ("company_id", "=", company.id),
+        ("ref", "=", "CODEX-DEMO-CN-IIT-WITHHOLDING-ACCRUAL-2026-06"),
+        ("state", "=", "posted"),
+    ]):
+        move = Move.create({{
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": "2026-06-30",
+            "ref": "CODEX-DEMO-CN-IIT-WITHHOLDING-ACCRUAL-2026-06",
+            "line_ids": [
+                (0, 0, {{"name": "CODEX-DEMO employee payable deduction", "account_id": accounts["employee_payable"].id, "debit": 90.0}}),
+                (0, 0, {{"name": "CODEX-DEMO IIT payable accrual", "account_id": accounts["iit_payable"].id, "credit": 90.0}}),
+            ],
+        }})
+        move.action_post()
+        changed = True
+    if not Move.search_count([
+        ("company_id", "=", company.id),
+        ("ref", "=", "CODEX-DEMO-CN-IIT-PAYMENT-SETTLEMENT-2026-06"),
+        ("state", "=", "posted"),
+    ]):
+        move = Move.create({{
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": "2026-07-15",
+            "ref": "CODEX-DEMO-CN-IIT-PAYMENT-SETTLEMENT-2026-06",
+            "line_ids": [
+                (0, 0, {{"name": "CODEX-DEMO IIT payable settlement", "account_id": accounts["iit_payable"].id, "debit": 90.0}}),
+                (0, 0, {{"name": "CODEX-DEMO bank payment clearing", "account_id": accounts["clearing"].id, "credit": 90.0}}),
+            ],
+        }})
+        move.action_post()
+        changed = True
+    return changed
+
+
+def iit_payroll_record(profile):
+    taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
+    return {{
+        "source_record_key": "CODEX-DEMO-IIT-PAYROLL-2026-06",
+        "taxpayer_name": profile.company_id.name,
+        "taxpayer_id": taxpayer_id,
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "currency_code": profile.company_id.currency_id.name or "CNY",
+        "payroll_frequency": "monthly",
+        "payroll_status": "confirmed",
+        "payroll_run_reference": "CODEX-DEMO-PAYROLL-RUN-2026-06",
+        "approved_at": "2026-06-30T18:00:00+08:00",
+        "declared_person_count": 1,
+        "gross_income_amount": "10000.00",
+        "tax_exempt_income_amount": "0.00",
+        "employee_social_insurance_amount": "0.00",
+        "employee_housing_fund_amount": "0.00",
+        "other_pre_tax_deduction_amount": "0.00",
+        "net_pay_amount": "9910.00",
+        "withheld_iit_amount": "90.00",
+    }}
+
+
+def iit_withholding_record(profile):
+    taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
+    return {{
+        "source_record_key": "CODEX-DEMO-IIT-WITHHOLDING-2026-06",
+        "taxpayer_name": profile.company_id.name,
+        "taxpayer_id": taxpayer_id,
+        "jurisdiction_code": "310000",
+        "jurisdiction_name": "CODEX-DEMO China tax authority",
+        "tax_year": 2026,
+        "filing_frequency": "monthly",
+        "return_type_code": "IIT-WITHHOLDING",
+        "return_status": "accepted",
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "submitted_at": "2026-07-10T09:00:00+08:00",
+        "submission_reference": "CODEX-DEMO-IIT-ACK-2026-06",
+        "revision_number": 0,
+        "currency_code": profile.company_id.currency_id.name or "CNY",
+        "declared_person_count": 1,
+        "declared_line_count": 1,
+        "total_income_amount": "10000.00",
+        "total_tax_exempt_income_amount": "0.00",
+        "total_basic_deduction_amount": "5000.00",
+        "total_special_deduction_amount": "1000.00",
+        "total_special_additional_deduction_amount": "1000.00",
+        "total_other_deduction_amount": "0.00",
+        "total_donation_deduction_amount": "0.00",
+        "total_taxable_income_amount": "3000.00",
+        "total_tax_calculated_amount": "90.00",
+        "total_tax_relief_amount": "0.00",
+        "total_tax_paid_amount": "0.00",
+        "total_payable_refundable_amount": "90.00",
+        "lines": [
+            {{
+                "source_line_key": "opaque:" + "b" * 32,
+                "subject_key": "hmac-sha256:" + "a" * 64,
+                "residency_status": "resident",
+                "income_type_code": "wages_salary",
+                "current_income_amount": "10000.00",
+                "current_tax_exempt_income_amount": "0.00",
+                "current_basic_deduction_amount": "5000.00",
+                "current_special_deduction_amount": "1000.00",
+                "current_other_deduction_amount": "0.00",
+                "taxable_income_amount": "3000.00",
+                "tax_calculated_amount": "90.00",
+                "tax_relief_amount": "0.00",
+                "tax_paid_amount": "0.00",
+                "payable_refundable_amount": "90.00",
+            }}
+        ],
+    }}
+
+
+def iit_payment_record(profile):
+    taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
+    return {{
+        "source_record_key": "CODEX-DEMO-IIT-PAYMENT-2026-06",
+        "taxpayer_name": profile.company_id.name,
+        "taxpayer_id": taxpayer_id,
+        "tax_type_code": "IIT",
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "payment_date": "2026-07-15",
+        "payment_reference": "CODEX-DEMO-IIT-PAY-REF-2026-06",
+        "payment_status": "succeeded",
+        "currency_code": profile.company_id.currency_id.name or "CNY",
+        "amount": "90.00",
+        "principal_amount": "90.00",
+        "interest_amount": "0.00",
+        "penalty_amount": "0.00",
+        "receipt_reference": "CODEX-DEMO-IIT-PAY-ACK-2026-06",
+    }}
+
+
+def ensure_iit_tax_record(profile, dataset_type, record):
+    model_by_type = {{
+        "payroll_summary": "sudo.cn.payroll.summary.record",
+        "iit_withholding": "sudo.cn.iit.withholding.record",
+        "tax_payment": "sudo.cn.tax.payment.record",
+    }}
+    if env[model_by_type[dataset_type]].sudo().search_count([
+        ("source_record_key", "=", record["source_record_key"]),
+    ]):
+        return False
+    contract = {{
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": dataset_type,
+        "source_schema": "CODEX-DEMO-" + dataset_type,
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [record],
+    }}
+    attachment_record = dataset_attachment(
+        "CODEX-DEMO-iit-%s-2026-06.json" % dataset_type,
+        contract,
+    )
+    dataset = create_external_dataset(
+        profile,
+        dataset_type,
+        "IIT-" + dataset_type.upper() + "-2026-06",
+        attachment_record,
+        1,
+    )
+    parse_run = env["sudo.cn.tax.data.parse.run"].sudo().with_company(
+        profile.company_id
+    )._start_for_dataset(dataset, attachment_record)
+    parse_run._process_json_attachment()
+    return True
+
+
+def ensure_iit_demo_scope(profile):
+    payroll_expense, changed_expense = ensure_account(
+        profile.company_id,
+        "66029991",
+        "CODEX-DEMO payroll expense",
+        "expense",
+    )
+    employee_payable, changed_employee = ensure_account(
+        profile.company_id,
+        "22119991",
+        "CODEX-DEMO employee compensation payable",
+        "liability_current",
+    )
+    iit_payable, changed_iit = ensure_account(
+        profile.company_id,
+        "22219991",
+        "CODEX-DEMO individual income tax payable",
+        "liability_current",
+    )
+    clearing, changed_clearing = ensure_account(
+        profile.company_id,
+        "19999991",
+        "CODEX-DEMO IIT payment clearing",
+        "asset_current",
+    )
+    accounts = {{
+        "payroll_expense": payroll_expense,
+        "employee_payable": employee_payable,
+        "iit_payable": iit_payable,
+        "clearing": clearing,
+    }}
+    scope, changed_scope = ensure_iit_accounting_scope(profile, accounts)
+    changed_ledger = ensure_iit_ledger(profile, accounts)
+    changed_records = False
+    changed_records = ensure_iit_tax_record(profile, "payroll_summary", iit_payroll_record(profile)) or changed_records
+    changed_records = ensure_iit_tax_record(profile, "iit_withholding", iit_withholding_record(profile)) or changed_records
+    changed_records = ensure_iit_tax_record(profile, "tax_payment", iit_payment_record(profile)) or changed_records
+    existing = env["sudo.cn.iit.period.reconciliation.run"].sudo().search([
+        ("profile_id", "=", profile.id),
+        ("period_start", "=", "2026-06-01"),
+        ("period_end", "=", "2026-06-30"),
+        ("state", "=", "succeeded"),
+        ("conclusion_state", "=", "aligned"),
+    ], order="id desc", limit=1)
+    if existing:
+        return {{
+            "run": existing,
+            "scope": scope,
+            "changed": bool(
+                changed_expense or changed_employee or changed_iit or changed_clearing
+                or changed_scope or changed_ledger or changed_records
+            ),
+        }}
+    run = env["sudo.cn.iit.period.reconciliation.run"].sudo().with_company(
+        profile.company_id
+    ).enqueue(profile, "2026-06-01", "2026-06-30", "IIT")
+    run._process()
+    run.invalidate_recordset()
+    return {{
+        "run": run,
+        "scope": scope,
+        "changed": True,
+    }}
+
+
+def ensure_cross_border_demo_scope(profile):
+    Transaction = env["sudo.cn.cross.border.transaction"].sudo().with_company(
+        profile.company_id
+    )
+    transaction = Transaction.search([
+        ("profile_id", "=", profile.id),
+        ("contract_reference", "=", "CODEX-DEMO-CB-2026-06"),
+    ], order="id desc", limit=1)
+    changed = False
+    us = env.ref("base.us", raise_if_not_found=False)
+    if not us:
+        us = env["res.country"].sudo().search([("code", "=", "US")], limit=1)
+    if not transaction:
+        evidence = attachment(
+            "CODEX-DEMO-cn-cross-border-service-fee-2026-06.txt",
+            b"CODEX DEMO ONLY - reviewed cross-border service fee contract, invoice and payment evidence",
+        )
+        transaction = Transaction.create({{
+            "profile_id": profile.id,
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+            "transaction_date": "2026-06-18",
+            "transaction_type": "service_fee",
+            "counterparty_name": "CODEX-DEMO US Service Provider",
+            "counterparty_country_id": us.id,
+            "related_party": True,
+            "contract_reference": "CODEX-DEMO-CB-2026-06",
+            "payment_reference": "CODEX-DEMO-CB-PAY-2026-06",
+            "service_or_asset_location": "United States",
+            "currency_id": profile.company_id.currency_id.id,
+            "amount": 12000.0,
+            "withholding_considered": True,
+            "withholding_note": (
+                "CODEX-DEMO ONLY: withholding and treaty/source questions were "
+                "considered for workflow visibility; this is not a production conclusion."
+            ),
+            "limitation_note": (
+                "CODEX-DEMO ONLY: real contracts, invoices, payment bank slips "
+                "and treaty analysis are required before production reliance."
+            ),
+            "evidence_attachment_ids": command_set(evidence.ids),
+        }})
+        changed = True
+    if not transaction.evidence_attachment_ids:
+        evidence = attachment(
+            "CODEX-DEMO-cn-cross-border-service-fee-2026-06.txt",
+            b"CODEX DEMO ONLY - reviewed cross-border service fee contract, invoice and payment evidence",
+        )
+        transaction.write({{"evidence_attachment_ids": command_set(evidence.ids)}})
+        changed = True
+    if transaction.state == "draft":
+        transaction.action_submit()
+        changed = True
+    if transaction.state == "submitted":
+        transaction.review_notes = (
+            "CODEX-DEMO ONLY: manager reviewed withholding consideration, "
+            "controlled evidence and limitation notes for UAT."
+        )
+        transaction.action_mark_reviewed()
+        changed = True
+    transaction.invalidate_recordset()
+    return {{"transaction": transaction, "changed": changed}}
+
+
 def ensure_report(assessment):
     report = env["sudo.cn.compliance.report"].sudo().search([
         ("assessment_id", "=", assessment.id),
@@ -1086,6 +1486,8 @@ else:
             archive_run,
             version.authority_source_ids[:1],
         )
+        iit_scope = ensure_iit_demo_scope(profile)
+        cross_border = ensure_cross_border_demo_scope(profile)
         report, created_report = ensure_report(assessment)
         ai_guidance = ensure_ai_guidance(finding)
         profile.invalidate_recordset()
@@ -1112,6 +1514,14 @@ else:
                         and task.verification_state == "verified"
                     )
                 )
+                and iit_scope.get("run")
+                and iit_scope["run"].state == "succeeded"
+                and iit_scope["run"].conclusion_state == "aligned"
+                and iit_scope["run"].result_integrity_state == "verified"
+                and cross_border.get("transaction")
+                and cross_border["transaction"].state == "reviewed"
+                and cross_border["transaction"].cn_cross_border_readiness_state == "reviewed"
+                and cross_border["transaction"].snapshot_checksum
             ),
             "changed": bool(
                 created_run
@@ -1120,6 +1530,8 @@ else:
                 or changed_task
                 or verification.get("changed")
                 or archive.get("changed")
+                or iit_scope.get("changed")
+                or cross_border.get("changed")
                 or created_report
                 or ai_guidance.get("changed")
             ),
@@ -1228,6 +1640,27 @@ else:
                 "payment_integrity_state": archive["filing"].cn_payment_integrity_state,
                 "evidence_state": archive["filing"].cn_filing_center_evidence_state,
             }} if archive.get("filing") else None,
+            "iit_scope": {{
+                "run_id": iit_scope["run"].id,
+                "run_name": iit_scope["run"].display_name,
+                "state": iit_scope["run"].state,
+                "conclusion_state": iit_scope["run"].conclusion_state,
+                "result_integrity_state": iit_scope["run"].result_integrity_state,
+                "payroll_record_count": iit_scope["run"].payroll_record_count,
+                "filing_record_count": iit_scope["run"].filing_record_count,
+                "payment_record_count": iit_scope["run"].payment_record_count,
+                "issue_count": iit_scope["run"].issue_count,
+                "result_checksum": iit_scope["run"].result_checksum,
+            }} if iit_scope.get("run") else None,
+            "cross_border_scope": {{
+                "transaction_id": cross_border["transaction"].id,
+                "name": cross_border["transaction"].display_name,
+                "state": cross_border["transaction"].state,
+                "readiness_state": cross_border["transaction"].cn_cross_border_readiness_state,
+                "withholding_considered": cross_border["transaction"].withholding_considered,
+                "evidence_count": len(cross_border["transaction"].evidence_attachment_ids),
+                "snapshot_checksum": cross_border["transaction"].snapshot_checksum,
+            }} if cross_border.get("transaction") else None,
             "counts": {{
                 "assessments": env["sudo.compliance.assessment"].sudo().search_count([("profile_id", "=", profile.id)]),
                 "findings": env["sudo.compliance.finding"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
@@ -1235,6 +1668,8 @@ else:
                 "reports": env["sudo.cn.compliance.report"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "evidence": env["sudo.compliance.evidence"].sudo().search_count([("task_id.assessment_id.profile_id", "=", profile.id)]),
                 "filing_archives": env["sudo.compliance.filing"].sudo().search_count([("profile_id", "=", profile.id)]),
+                "iit_reconciliation_runs": env["sudo.cn.iit.period.reconciliation.run"].sudo().search_count([("profile_id", "=", profile.id)]),
+                "cross_border_transactions": env["sudo.cn.cross.border.transaction"].sudo().search_count([("profile_id", "=", profile.id)]),
             }},
         }})
         if payload["ok"]:
