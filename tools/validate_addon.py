@@ -5310,9 +5310,26 @@ def validate_delivery_objective_coverage() -> None:
         "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "Official-source freshness monitoring result and governance summary reference",
         "source governance summary",
+        '"objective_areas"',
+        '"addresses_blockers"',
+        "business UAT decision must be recorded outside this automated status",
+        "current official sources and released rules require professional sign-off evidence",
+        "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
     ):
         if required not in signoff_template_content:
             fail(f"China sign-off evidence template is missing {required}")
+    signoff_template = json.loads(signoff_template_content)
+    for decision in signoff_template.get("decisions") or []:
+        if not decision.get("objective_areas"):
+            fail(
+                "China sign-off evidence template decision is missing objective_areas: "
+                f"{decision.get('key')}"
+            )
+        if not decision.get("addresses_blockers"):
+            fail(
+                "China sign-off evidence template decision is missing addresses_blockers: "
+                f"{decision.get('key')}"
+            )
     for required in (
         "Workbench Summary Evidence",
         "Workbench summary evidence ready",

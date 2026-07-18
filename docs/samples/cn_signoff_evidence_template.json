@@ -14,6 +14,13 @@
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md and CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+      "objective_areas": [
+        "representative business UAT",
+        "closed-loop compliance workflow usability"
+      ],
+      "addresses_blockers": [
+        "business UAT decision must be recorded outside this automated status"
+      ],
       "notes": "Company, period, datasets, screen-by-screen walkthrough script, filing/payment archive and controlled AI guidance evidence reviewed."
     },
     {
@@ -22,6 +29,13 @@
       "reviewer": "China tax professional name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Rule/source review packet reference",
+      "objective_areas": [
+        "source-governed China rules",
+        "professional tax-rule sign-off"
+      ],
+      "addresses_blockers": [
+        "current official sources and released rules require professional sign-off evidence"
+      ],
       "notes": "Released rules and official sources reviewed for the target period."
     },
     {
@@ -30,6 +44,13 @@
       "reviewer": "Rule governance owner name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Official-source freshness monitoring result and governance summary reference",
+      "objective_areas": [
+        "official-source freshness",
+        "national and local rule currency"
+      ],
+      "addresses_blockers": [
+        "current official sources and released rules require professional sign-off evidence"
+      ],
       "notes": "Official source freshness, source governance summary, monitoring results and local jurisdiction changes reviewed."
     },
     {
@@ -38,6 +59,13 @@
       "reviewer": "Implementation owner name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Customer data, evidence gap and open risk review reference",
+      "objective_areas": [
+        "Odoo accounting and business-data basis",
+        "external tax data sufficiency"
+      ],
+      "addresses_blockers": [
+        "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
+      ],
       "notes": "Customer-specific data gaps, external tax data coverage, controlled AI limitations, evidence gaps and open risks reviewed."
     },
     {
@@ -46,6 +74,13 @@
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Screenshots, recording or completed CHINA_UAT_WALKTHROUGH_SCRIPT.md reference for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report walkthrough",
+      "objective_areas": [
+        "risk center and remediation clarity",
+        "Odoo-consistent viewing experience"
+      ],
+      "addresses_blockers": [
+        "business UAT decision must be recorded outside this automated status"
+      ],
       "notes": "Screen-by-screen walkthrough script completed; risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable on representative desktop and laptop screen sizes."
     },
     {
@@ -54,6 +89,14 @@
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Screenshots, recording or completed UAT reference for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness blocker summaries",
+      "objective_areas": [
+        "limitations and uncertainty visibility",
+        "data/evidence/report readiness transparency"
+      ],
+      "addresses_blockers": [
+        "business UAT decision must be recorded outside this automated status",
+        "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
+      ],
       "notes": "Each non-ready blocker summary and AI disclosure explained why the record was blocked or limited and what next action was required."
     },
     {
@@ -62,6 +105,15 @@
       "reviewer": "Release owner name",
       "date": "YYYY-MM-DD",
       "evidence_reference": "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
+      "objective_areas": [
+        "installable and upgradeable Odoo deployment",
+        "auditable release and rollback decision"
+      ],
+      "addresses_blockers": [
+        "business UAT decision must be recorded outside this automated status",
+        "current official sources and released rules require professional sign-off evidence",
+        "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
+      ],
       "notes": "Deploy, deploy_with_limitations, defer or reject."
     }
   ]
