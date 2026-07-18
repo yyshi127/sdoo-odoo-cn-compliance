@@ -161,6 +161,13 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
         self.assertGreaterEqual(assessment.cn_report_limitation_count, 1)
         self.assertIn("limitations", assessment.cn_report_next_action)
+        self.assertIn("Next:", assessment.cn_report_action_summary)
+        self.assertIn("Blockers:", assessment.cn_report_action_summary)
+        self.assertIn("Issues:", assessment.cn_report_action_summary)
+        self.assertIn("Rescan:", assessment.cn_report_action_summary)
+        self.assertIn("Archive:", assessment.cn_report_action_summary)
+        self.assertIn("AI:", assessment.cn_report_action_summary)
+        self.assertIn("Can prepare:", assessment.cn_report_action_summary)
 
     def test_incomplete_assessment_requires_scan_completion(self):
         assessment = self._assessment(state="draft")

@@ -3846,6 +3846,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         '_inherit = "sudo.compliance.assessment"',
         "cn_report_readiness_state",
         "cn_report_next_action",
+        "cn_report_action_summary",
         "cn_report_readiness_blocker_summary",
         "cn_report_issue_count",
         "cn_report_can_prepare",
@@ -3876,6 +3877,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'id="view_cn_report_readiness_search"',
         "cn_report_readiness_state",
         "cn_report_next_action",
+        "cn_report_action_summary",
         "cn_report_readiness_blocker_summary",
         "cn_report_open_task_count",
         "cn_report_limitation_count",
@@ -3999,6 +4001,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China report filing archive gate runtime coverage is missing")
     if "cn_report_readiness_blocker_summary" not in report_test_content:
         fail("China report readiness blocker summary runtime coverage is missing")
+    if "cn_report_action_summary" not in report_test_content:
+        fail("China report action summary runtime coverage is missing")
 
     data_basis_model_content = (
         ADDON_ROOT / "models" / "assessment_data_basis.py"

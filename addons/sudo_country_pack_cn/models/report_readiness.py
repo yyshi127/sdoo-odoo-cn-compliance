@@ -46,6 +46,10 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="报告下一步",
         compute="_compute_cn_report_readiness",
     )
+    cn_report_action_summary = fields.Char(
+        string="Report Action Summary",
+        compute="_compute_cn_report_readiness",
+    )
     cn_report_readiness_blocker_summary = fields.Char(
         string="Report Blockers",
         compute="_compute_cn_report_readiness",
@@ -436,6 +440,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
             if assessment.country_id.code != "CN":
                 assessment.cn_report_readiness_state = False
                 assessment.cn_report_next_action = False
+                assessment.cn_report_action_summary = False
                 assessment.cn_report_readiness_blocker_summary = False
                 assessment.cn_report_can_prepare = False
                 continue
@@ -514,6 +519,9 @@ class SudoChinaReportReadinessAssessment(models.Model):
             assessment.cn_report_readiness_blocker_summary = (
                 assessment._cn_report_readiness_blocker_summary()
             )
+            assessment.cn_report_action_summary = (
+                assessment._cn_report_action_summary()
+            )
 
     def _cn_report_readiness_blocker_summary(self):
         self.ensure_one()
@@ -559,6 +567,50 @@ class SudoChinaReportReadinessAssessment(models.Model):
         return _("Blocked by: %(blockers)s") % {
             "blockers": "; ".join(dict.fromkeys(blockers))
         }
+
+    def _cn_report_action_summary(self):
+        self.ensure_one()
+        parts = []
+        if self.cn_report_next_action:
+            parts.append("Next: %s" % self.cn_report_next_action)
+        if self.cn_report_readiness_blocker_summary:
+            parts.append("Blockers: %s" % self.cn_report_readiness_blocker_summary)
+        parts.append(
+            "Issues: %s | Open tasks: %s | Limitations: %s"
+            % (
+                self.cn_report_issue_count or 0,
+                self.cn_report_open_task_count or 0,
+                self.cn_report_limitation_count or 0,
+            )
+        )
+        parts.append(
+            "Rescan: %s (%s pending, %s failed)"
+            % (
+                self.cn_report_rescan_state or "unknown",
+                self.cn_report_pending_rescan_count or 0,
+                self.cn_report_failed_rescan_count or 0,
+            )
+        )
+        parts.append(
+            "Archive: %s (%s/%s sealed)"
+            % (
+                self.cn_report_filing_archive_state or "unknown",
+                self.cn_report_sealed_filing_archive_count or 0,
+                self.cn_report_filing_archive_count or 0,
+            )
+        )
+        parts.append(
+            "AI: %s (%s/%s current)"
+            % (
+                self.cn_report_ai_guidance_state or "unknown",
+                self.cn_report_ai_guidance_current_count or 0,
+                self.cn_report_ai_guidance_finding_count or 0,
+            )
+        )
+        parts.append(
+            "Can prepare: %s" % ("yes" if self.cn_report_can_prepare else "no")
+        )
+        return " | ".join(parts)
 
     def action_cn_open_report_readiness_findings(self):
         self.ensure_one()
