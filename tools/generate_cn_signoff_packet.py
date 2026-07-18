@@ -55,6 +55,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     preview_health = status.get("preview_health") or {}
     preview_module = status.get("preview_module") or {}
     uat_walkthrough = status.get("uat_walkthrough") or {}
+    release_handoff = status.get("release_handoff") or {}
     real_data = status.get("real_data_closed_loop") or {}
     source_governance = status.get("source_governance_summary") or {}
     real_data_readiness = real_data.get("readiness") or {}
@@ -110,6 +111,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Screen-by-screen UAT walkthrough script is included in the delivery manifest",
             uat_walkthrough.get("included_in_manifest") is True,
             str(uat_walkthrough.get("path") or ""),
+        ),
+        _readiness_item(
+            "current_release_handoff_in_manifest",
+            "Current release handoff is included in the delivery manifest",
+            release_handoff.get("included_in_manifest") is True,
+            str(release_handoff.get("path") or ""),
         ),
         _readiness_item(
             "workbench_summary_evidence",

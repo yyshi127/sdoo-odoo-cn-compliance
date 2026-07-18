@@ -64,6 +64,10 @@ def status_payload() -> dict:
             "path": "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
             "included_in_manifest": True,
         },
+        "release_handoff": {
+            "path": "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
+            "included_in_manifest": True,
+        },
         "source_governance_summary": {
             "ready": True,
             "source_count": 1,
@@ -298,6 +302,7 @@ def manifest_payload() -> dict:
     paths = [
         "docs/CHINA_BUSINESS_UAT_CHECKLIST.md",
         "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+        "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
         "docs/CHINA_DELIVERY_INDEX.md",
         "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
@@ -848,6 +853,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["uat_walkthrough_script_in_manifest"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_current_release_handoff_manifest_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("current_release_handoff_in_manifest", automated)
+        self.assertTrue(automated["current_release_handoff_in_manifest"]["ready"])
+        self.assertIn(
+            "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
+            automated["current_release_handoff_in_manifest"]["evidence"],
+        )
+
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1338,6 +1355,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Business UAT walkthrough script in manifest: `True`", content)
+        self.assertIn(
+            "Current release handoff: `docs/CHINA_RELEASE_HANDOFF_CURRENT.md`",
+            content,
+        )
+        self.assertIn("Current release handoff in manifest: `True`", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
@@ -1541,6 +1563,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["business_uat_blockers"],
         )
         self.assertFalse(status["uat_walkthrough"]["included_in_manifest"])
+
+    def test_delivery_status_requires_current_release_handoff_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("docs/CHINA_RELEASE_HANDOFF_CURRENT.md")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "current release handoff is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(status["release_handoff"]["included_in_manifest"])
 
 
 if __name__ == "__main__":
