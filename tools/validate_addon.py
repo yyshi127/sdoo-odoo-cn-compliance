@@ -3963,6 +3963,74 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     risk_model_content = (
         ADDON_ROOT / "models" / "risk_center.py"
     ).read_text(encoding="utf-8")
+    risk_view_root = ElementTree.parse(
+        ADDON_ROOT / "views" / "risk_center_views.xml"
+    ).getroot()
+
+    def view_field_names(record_id: str) -> set[str]:
+        arch = risk_view_root.find(
+            f".//record[@id='{record_id}']/field[@name='arch']"
+        )
+        if arch is None:
+            fail(f"China risk UX view contract is missing record {record_id}")
+        return {
+            element.attrib["name"]
+            for element in arch.iter("field")
+            if element.attrib.get("name")
+        }
+
+    risk_list_fields = view_field_names("view_cn_risk_center_finding_list")
+    remediation_list_fields = view_field_names("view_cn_remediation_tracker_task_list")
+    required_risk_list_fields = {
+        "risk_level",
+        "result",
+        "review_state",
+        "title",
+        "cn_risk_period_label",
+        "cn_risk_fact_summary",
+        "cn_reconciliation_risk_summary",
+        "cn_risk_next_action",
+        "cn_risk_action_summary",
+        "task_assignee_id",
+        "task_due_date",
+        "task_state",
+        "task_verification_state",
+        "cn_tax_impact_state",
+        "cn_tax_impact_reviewed_underpayment_amount",
+    }
+    missing_risk_fields = required_risk_list_fields - risk_list_fields
+    if missing_risk_fields:
+        fail(
+            "China risk center list must expose clear risk, cause, impact, "
+            f"period, owner, due date, status and next action fields: {sorted(missing_risk_fields)}"
+        )
+    required_remediation_list_fields = {
+        "risk_level",
+        "priority",
+        "assignee_id",
+        "due_date",
+        "cn_remediation_period_label",
+        "cn_remediation_urgency",
+        "cn_remediation_responsibility_summary",
+        "cn_remediation_next_action",
+        "cn_remediation_action_summary",
+        "cn_remediation_blocker_summary",
+        "cn_remediation_progress",
+        "cn_remediation_tax_impact_state",
+        "cn_remediation_tax_impact_reviewed_underpayment_amount",
+        "state",
+        "verification_state",
+        "cn_remediation_rescan_stage",
+    }
+    missing_remediation_fields = (
+        required_remediation_list_fields - remediation_list_fields
+    )
+    if missing_remediation_fields:
+        fail(
+            "China remediation tracker list must expose clear risk, impact, "
+            "period, owner, due date, status, rescan and next action fields: "
+            f"{sorted(missing_remediation_fields)}"
+        )
     for required in (
         '_inherit = "sudo.compliance.finding"',
         '_inherit = "sudo.compliance.task"',
