@@ -8,21 +8,24 @@ This is the starting point for release handoff and acceptance of the
 1. `docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md`
    - Confirms how the product objective maps to software evidence and known
      production boundaries.
-2. `docs/DELIVERY_RUNBOOK_CN.md`
+2. `docs/CHINA_RELEASE_HANDOFF_M154.md`
+   - Gives the current m154 release candidate, artifact paths, remote runtime
+     evidence, reproduction commands, sign-off boundary and next-best work.
+3. `docs/DELIVERY_RUNBOOK_CN.md`
    - Explains how to install, upgrade, build and verify the delivery bundle.
-3. `docs/DEVELOPMENT_PREVIEW_ACCESS_CN.md`
+4. `docs/DEVELOPMENT_PREVIEW_ACCESS_CN.md`
    - Explains how to open an isolated development preview through a local SSH
      tunnel.
-4. `docs/CHINA_BUSINESS_UAT_CHECKLIST.md`
+5. `docs/CHINA_BUSINESS_UAT_CHECKLIST.md`
    - Guides business reviewers through the workbench, data readiness, risk,
      remediation, AI guidance, report and evidence walkthrough.
-5. `docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md`
+6. `docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md`
    - Converts the business UAT checklist into a screen-by-screen reviewer script
      with pass/fail criteria and screenshot or recording evidence fields.
-6. `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`
+7. `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`
    - Records the final deploy, defer or reject decision after automated
      acceptance and business UAT.
-7. `docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md`
+8. `docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md`
    - Summarizes the final blocker-summary visibility pass across data,
      evidence, filing, remediation, report and report-readiness pages.
 
