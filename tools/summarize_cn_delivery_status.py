@@ -202,6 +202,7 @@ def _status(
             ),
             "accounting": real_data_closed_loop.get("accounting"),
             "objects": real_data_closed_loop.get("objects"),
+            "sample_profiles": real_data_closed_loop.get("sample_profiles"),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }

@@ -172,6 +172,12 @@ if has_model("sudo.compliance.profile"):
                 "closed_loop_state": safe_field(profile, "cn_workbench_closed_loop_state"),
                 "next_action_key": safe_field(profile, "cn_workbench_next_best_action_key"),
                 "next_action": safe_field(profile, "cn_workbench_next_action"),
+                "action_summary": safe_field(profile, "cn_workbench_action_summary"),
+                "rule_basis_state": safe_field(profile, "cn_workbench_rule_basis_state"),
+                "rule_basis_summary": safe_field(profile, "cn_workbench_rule_basis_summary"),
+                "limitation_summary": safe_field(profile, "cn_workbench_limitation_summary"),
+                "uncertainty_summary": safe_field(profile, "cn_workbench_uncertainty_summary"),
+                "limitation_next_action": safe_field(profile, "cn_workbench_limitation_next_action"),
             }}
         )
 
@@ -300,6 +306,16 @@ readiness = {{
     "has_active_profile_verified_evidence": bool(
         (objects.get("active_profile_verified_evidence") or 0) > 0
     ),
+    "has_workbench_summary_evidence": bool(
+        any(
+            profile.get("action_summary")
+            and profile.get("rule_basis_summary")
+            and profile.get("limitation_summary")
+            and profile.get("uncertainty_summary")
+            for profile in profiles
+            if profile.get("status") == "active"
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -329,6 +345,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_active_profile_verified_remediation",
         "has_active_profile_verified_evidence",
         "has_active_profile_report_activity",
+        "has_workbench_summary_evidence",
     )
 )
 
