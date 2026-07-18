@@ -151,6 +151,10 @@ def status_payload() -> dict:
                 "has_official_source_freshness_evidence": True,
                 "has_rule_professional_signoff_evidence": True,
                 "has_rule_checksum_traceability_evidence": True,
+                "has_customer_scope_gap_review_evidence": True,
+                "has_customer_data_scope_review_evidence": True,
+                "has_customer_evidence_gap_review_evidence": True,
+                "has_open_high_risk_review_evidence": True,
                 "has_iit_payroll_withholding_scope_evidence": True,
                 "has_cross_border_review_scope_evidence": True,
             },
@@ -458,6 +462,10 @@ def real_data_closed_loop_payload() -> dict:
             "has_official_source_freshness_evidence": True,
             "has_rule_professional_signoff_evidence": True,
             "has_rule_checksum_traceability_evidence": True,
+            "has_customer_scope_gap_review_evidence": True,
+            "has_customer_data_scope_review_evidence": True,
+            "has_customer_evidence_gap_review_evidence": True,
+            "has_open_high_risk_review_evidence": True,
             "has_iit_payroll_withholding_scope_evidence": True,
             "has_cross_border_review_scope_evidence": True,
         },
@@ -940,6 +948,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["source_governed_versioned_rules"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_customer_scope_gap_review_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_open_high_risk_review_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["customer_scope_gap_review_evidence"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "open_high_risk_review=False",
+            items["customer_scope_gap_review_evidence"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -950,7 +976,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(audit["achieved"])
         self.assertEqual(
             audit["state_counts"],
-            {"evidence_ready": 13, "blocked": 0, "not_ready": 0},
+            {"evidence_ready": 14, "blocked": 0, "not_ready": 0},
         )
         items = {item["key"]: item for item in audit["items"]}
         self.assertEqual(
@@ -1267,6 +1293,40 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             '"rule_professional_signoff": false',
             automated["rule_source_governance_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_customer_scope_gap_review_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertTrue(automated["customer_scope_gap_review_evidence"]["ready"])
+        self.assertIn(
+            '"customer_data_scope": true',
+            automated["customer_scope_gap_review_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"customer_evidence_gap": true',
+            automated["customer_scope_gap_review_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"open_high_risk": true',
+            automated["customer_scope_gap_review_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_customer_scope_gap_review_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_customer_evidence_gap_review_evidence"
+        ] = False
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["customer_scope_gap_review_evidence"]["ready"])
+        self.assertIn(
+            '"customer_evidence_gap": false',
+            automated["customer_scope_gap_review_evidence"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence(self):
@@ -1883,7 +1943,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertEqual(
             chain["objective_audit"]["state_counts"],
-            {"evidence_ready": 12, "blocked": 1, "not_ready": 0},
+            {"evidence_ready": 13, "blocked": 1, "not_ready": 0},
         )
 
     def test_signoff_chain_accepts_completed_human_evidence(self):
@@ -2113,6 +2173,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Official source freshness evidence ready: `True`", content)
         self.assertIn("Rule professional sign-off evidence ready: `True`", content)
         self.assertIn("Rule checksum traceability evidence ready: `True`", content)
+        self.assertIn("Customer scope/gap review evidence ready: `True`", content)
+        self.assertIn("Customer data-scope evidence ready: `True`", content)
+        self.assertIn("Customer evidence-gap evidence ready: `True`", content)
+        self.assertIn("Open high-risk review evidence ready: `True`", content)
         self.assertIn("CODEX-DEMO China VAT source", content)
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)

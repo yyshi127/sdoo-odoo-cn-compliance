@@ -721,6 +721,58 @@ rule_checksum_traceability_evidence = bool(
         for version in sample_rule_versions
     )
 )
+customer_data_scope_review_evidence = bool(
+    (accounting.get("active_profile_posted_moves") or 0) > 0
+    and (accounting.get("active_profile_posted_move_lines") or 0) > 0
+    and any(
+        profile.get("status") == "active"
+        and has_text(profile.get("period_label"))
+        and has_text(profile.get("data_state"))
+        and has_text(profile.get("limitation_summary"))
+        and has_text(profile.get("uncertainty_summary"))
+        and has_text(profile.get("limitation_next_action"))
+        for profile in profiles
+    )
+    and (objects.get("external_datasets") or 0) > 0
+    and (objects.get("total_reconciliation_runs") or 0) > 0
+)
+customer_evidence_gap_review_evidence = bool(
+    any(
+        has_text(evidence.get("source_summary"))
+        and has_text(evidence.get("blocker_summary"))
+        and has_text(evidence.get("document_checksum"))
+        and has_text(evidence.get("state"))
+        for evidence in sample_evidence
+    )
+    and any(
+        has_text(filing.get("blocker_summary"))
+        and has_text(filing.get("next_action"))
+        and has_text(filing.get("submission_integrity_state"))
+        and has_text(filing.get("payment_integrity_state"))
+        and has_text(filing.get("evidence_state"))
+        for filing in sample_filing_archives
+    )
+)
+open_high_risk_review_evidence = bool(
+    any(
+        finding.get("risk_level") in ("high", "critical")
+        and has_text(finding.get("review_state"))
+        and has_text(finding.get("closure_state"))
+        and has_text(finding.get("closure_summary"))
+        and has_text(finding.get("next_action"))
+        and has_text(finding.get("action_summary"))
+        for finding in sample_findings
+    )
+    and any(
+        task.get("risk_level") in ("high", "critical")
+        and has_text(task.get("state"))
+        and has_text(task.get("verification_state"))
+        and has_text(task.get("evidence_state"))
+        and has_text(task.get("rescan_stage"))
+        and has_text(task.get("action_summary"))
+        for task in sample_tasks
+    )
+)
 report_visibility_evidence = bool(
     any(
         has_text(report.get("period_start"))
@@ -851,6 +903,14 @@ readiness = {{
         official_source_freshness_evidence
         and rule_professional_signoff_evidence
         and rule_checksum_traceability_evidence
+    ),
+    "has_customer_data_scope_review_evidence": customer_data_scope_review_evidence,
+    "has_customer_evidence_gap_review_evidence": customer_evidence_gap_review_evidence,
+    "has_open_high_risk_review_evidence": open_high_risk_review_evidence,
+    "has_customer_scope_gap_review_evidence": bool(
+        customer_data_scope_review_evidence
+        and customer_evidence_gap_review_evidence
+        and open_high_risk_review_evidence
     ),
     "has_iit_payroll_withholding_scope_evidence": bool(
         any(

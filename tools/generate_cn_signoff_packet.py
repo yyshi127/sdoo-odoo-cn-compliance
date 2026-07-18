@@ -314,6 +314,43 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "customer_scope_gap_review_evidence",
+            "Customer scope review exposes accounting coverage, external data, evidence gaps and open high-risk remediation status",
+            real_data_readiness.get("has_customer_scope_gap_review_evidence") is True
+            and real_data_readiness.get("has_customer_data_scope_review_evidence")
+            is True
+            and real_data_readiness.get("has_customer_evidence_gap_review_evidence")
+            is True
+            and real_data_readiness.get("has_open_high_risk_review_evidence")
+            is True,
+            json.dumps(
+                {
+                    "review": {
+                        "customer_data_scope": real_data_readiness.get(
+                            "has_customer_data_scope_review_evidence"
+                        ),
+                        "customer_evidence_gap": real_data_readiness.get(
+                            "has_customer_evidence_gap_review_evidence"
+                        ),
+                        "open_high_risk": real_data_readiness.get(
+                            "has_open_high_risk_review_evidence"
+                        ),
+                    },
+                    "objects": real_data.get("objects") or {},
+                    "accounting": real_data.get("accounting") or {},
+                    "profiles": real_data.get("profiles")
+                    or real_data.get("sample_profiles")
+                    or [],
+                    "findings": real_data.get("sample_findings") or [],
+                    "remediation_tasks": real_data.get("sample_remediation_tasks") or [],
+                    "evidence": real_data.get("sample_evidence") or [],
+                    "filing_archives": real_data.get("sample_filing_archives") or [],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {

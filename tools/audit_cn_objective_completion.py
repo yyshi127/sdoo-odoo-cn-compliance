@@ -137,6 +137,21 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
             ],
         ),
         _item(
+            "customer_scope_gap_review_evidence",
+            "Customer-specific data, evidence-gap and open high-risk review evidence",
+            _state(
+                _ready(real_data_readiness.get("has_customer_scope_gap_review_evidence"))
+                and _ready(real_data_readiness.get("has_customer_data_scope_review_evidence"))
+                and _ready(real_data_readiness.get("has_customer_evidence_gap_review_evidence"))
+                and _ready(real_data_readiness.get("has_open_high_risk_review_evidence"))
+            ),
+            [
+                f"customer_data_scope={real_data_readiness.get('has_customer_data_scope_review_evidence')}",
+                f"customer_evidence_gap={real_data_readiness.get('has_customer_evidence_gap_review_evidence')}",
+                f"open_high_risk_review={real_data_readiness.get('has_open_high_risk_review_evidence')}",
+            ],
+        ),
+        _item(
             "source_governed_versioned_rules",
             "Source-governed, versioned and professionally signable China rules",
             _state(
