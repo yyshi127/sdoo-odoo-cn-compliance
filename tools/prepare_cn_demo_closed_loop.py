@@ -1547,10 +1547,10 @@ def cit_accounting_profit_from_scope(profile, scope):
 
 def cit_filing_record(profile, accounting_profit):
     taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
-    adjustment_increase = 100.0
     adjustment_decrease = 50.0
-    taxable_income = profile.company_id.currency_id.round(
-        accounting_profit + adjustment_increase - adjustment_decrease
+    taxable_income = 650.0
+    adjustment_increase = profile.company_id.currency_id.round(
+        taxable_income - accounting_profit + adjustment_decrease
     )
     tax_payable = profile.company_id.currency_id.round(taxable_income * 0.25)
     prepaid = profile.company_id.currency_id.round(max(tax_payable - 12.5, 0.0))
