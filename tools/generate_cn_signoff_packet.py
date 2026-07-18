@@ -44,6 +44,7 @@ def _missing_human_evidence(actions: list[dict[str, Any]]) -> list[dict[str, Any
             "required_evidence": action["required_evidence"],
             "acceptable_decisions": action["acceptable_decisions"],
             "objective_areas": action["objective_areas"],
+            "addresses_blockers": action["addresses_blockers"],
         }
         for action in actions
     ]
@@ -251,6 +252,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 "representative business UAT",
                 "closed-loop compliance workflow usability",
             ],
+            "addresses_blockers": [
+                "business UAT decision must be recorded outside this automated status",
+            ],
         },
         {
             "key": "china_tax_professional_rule_signoff",
@@ -260,6 +264,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "objective_areas": [
                 "source-governed China rules",
                 "professional tax-rule sign-off",
+            ],
+            "addresses_blockers": [
+                "current official sources and released rules require professional sign-off evidence",
             ],
         },
         {
@@ -271,6 +278,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 "official-source freshness",
                 "national and local rule currency",
             ],
+            "addresses_blockers": [
+                "current official sources and released rules require professional sign-off evidence",
+            ],
         },
         {
             "key": "customer_scope_and_data_gap_review",
@@ -280,6 +290,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "objective_areas": [
                 "Odoo accounting and business-data basis",
                 "external tax data sufficiency",
+            ],
+            "addresses_blockers": [
+                "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
             ],
         },
         {
@@ -291,6 +304,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 "risk center and remediation clarity",
                 "Odoo-consistent viewing experience",
             ],
+            "addresses_blockers": [
+                "business UAT decision must be recorded outside this automated status",
+            ],
         },
         {
             "key": "blocker_summary_walkthrough",
@@ -301,6 +317,10 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 "limitations and uncertainty visibility",
                 "data/evidence/report readiness transparency",
             ],
+            "addresses_blockers": [
+                "business UAT decision must be recorded outside this automated status",
+                "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            ],
         },
         {
             "key": "production_deployment_decision",
@@ -310,6 +330,11 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "objective_areas": [
                 "installable and upgradeable Odoo deployment",
                 "auditable release and rollback decision",
+            ],
+            "addresses_blockers": [
+                "business UAT decision must be recorded outside this automated status",
+                "current official sources and released rules require professional sign-off evidence",
+                "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
             ],
         },
     ]
@@ -368,6 +393,7 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 "",
                 f"- Owner: `{item['owner']}`",
                 f"- Objective areas: `{', '.join(item['objective_areas'])}`",
+                f"- Addresses blockers: `{', '.join(item['addresses_blockers'])}`",
                 f"- Required evidence: {item['required_evidence']}",
                 f"- Acceptable decisions: `{', '.join(item['acceptable_decisions'])}`",
                 "",
@@ -381,6 +407,7 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 "",
                 f"- Owner: `{action['owner']}`",
                 f"- Objective areas: `{', '.join(action['objective_areas'])}`",
+                f"- Addresses blockers: `{', '.join(action['addresses_blockers'])}`",
                 f"- Required evidence: {action['required_evidence']}",
                 f"- Acceptable decisions: `{', '.join(action['acceptable_decisions'])}`",
                 "- Decision:",

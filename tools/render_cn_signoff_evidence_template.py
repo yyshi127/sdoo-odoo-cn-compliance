@@ -42,6 +42,7 @@ def _draft_decision(action: dict[str, Any]) -> dict[str, Any]:
             "The final evidence must mention the required evidence and objective areas."
         ),
         "objective_areas": action.get("objective_areas") or [],
+        "addresses_blockers": action.get("addresses_blockers") or [],
     }
 
 

@@ -1067,6 +1067,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(set(missing), action_keys)
         for item in missing.values():
             self.assertGreaterEqual(len(item["objective_areas"]), 1)
+            self.assertGreaterEqual(len(item["addresses_blockers"]), 1)
         self.assertIn("blocker_summary_walkthrough", missing)
         self.assertIn(
             "required_evidence",
@@ -1075,6 +1076,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "limitations and uncertainty visibility",
             missing["blocker_summary_walkthrough"]["objective_areas"],
+        )
+        self.assertIn(
+            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            missing["blocker_summary_walkthrough"]["addresses_blockers"],
         )
 
     def test_signoff_packet_markdown_lists_missing_human_evidence(self):
@@ -1091,6 +1096,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Objective areas:", content)
+        self.assertIn("Addresses blockers:", content)
         self.assertIn("blocker_summary_walkthrough", content)
 
     def test_signoff_packet_markdown_truncates_long_automated_evidence_only(self):
@@ -1154,6 +1160,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "data/evidence/report readiness transparency",
             result["blocked_objective_areas"],
+        )
+        self.assertIn(
+            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            result["blocked_production_signoff_blockers"],
         )
 
     def test_signoff_validation_blocks_actions_without_objective_areas(self):
@@ -1430,6 +1440,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "data/evidence/report readiness transparency",
             status["signoff_validation"]["blocked_objective_areas"],
         )
+        self.assertIn(
+            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            status["signoff_validation"]["blocked_production_signoff_blockers"],
+        )
 
     def test_delivery_status_markdown_surfaces_blocked_objective_areas(self):
         packet = PACKET._build_packet(status_payload())
@@ -1448,6 +1462,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
         self.assertIn("### Production Blocked Objective Areas", content)
         self.assertIn("limitations and uncertainty visibility", content)
+        self.assertIn("### Production Blocked Sign-off Blockers", content)
+        self.assertIn(
+            "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
+            content,
+        )
 
     def test_delivery_status_markdown_lists_workbench_summary_evidence(self):
         status = delivery_status()

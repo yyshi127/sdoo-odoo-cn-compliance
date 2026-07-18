@@ -194,6 +194,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
     limitations = _valid_limitations(evidence.get("limitations"))
     action_results: list[dict[str, Any]] = []
     blocked_objective_areas: list[str] = []
+    blocked_production_signoff_blockers: list[str] = []
     deployment_decision = None
     limitation_decision_keys: list[str] = []
     for action in packet.get("production_actions") or []:
@@ -203,11 +204,18 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
             for area in action.get("objective_areas") or []
             if isinstance(area, str) and area.strip()
         ]
+        addresses_blockers = [
+            str(blocker)
+            for blocker in action.get("addresses_blockers") or []
+            if isinstance(blocker, str) and blocker.strip()
+        ]
         item = decisions.get(str(key))
         acceptable = set(action.get("acceptable_decisions") or [])
         item_blockers: list[str] = []
         if not objective_areas:
             item_blockers.append("objective_areas are missing from the sign-off packet")
+        if not addresses_blockers:
+            item_blockers.append("addresses_blockers are missing from the sign-off packet")
         if not item:
             item_blockers.append("decision is missing")
         else:
@@ -244,12 +252,16 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
             for area in objective_areas:
                 if area not in blocked_objective_areas:
                     blocked_objective_areas.append(area)
+            for blocker in addresses_blockers:
+                if blocker not in blocked_production_signoff_blockers:
+                    blocked_production_signoff_blockers.append(blocker)
         action_results.append(
             {
                 "key": key,
                 "ok": not item_blockers,
                 "decision": item.get("decision") if item else None,
                 "objective_areas": objective_areas,
+                "addresses_blockers": addresses_blockers,
                 "blockers": item_blockers,
             }
         )
@@ -296,6 +308,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "blockers": blockers,
         "warnings": warnings,
         "blocked_objective_areas": blocked_objective_areas,
+        "blocked_production_signoff_blockers": blocked_production_signoff_blockers,
         "action_results": action_results,
     }
 
