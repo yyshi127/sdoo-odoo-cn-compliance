@@ -60,6 +60,10 @@ def status_payload() -> dict:
         "runtime": {"log": {"failed": 0, "errors": 0}},
         "preview_health": {"ok": True, "url": "http://127.0.0.1:18070/web/login?db=test"},
         "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
+        "uat_walkthrough": {
+            "path": "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+            "included_in_manifest": True,
+        },
         "real_data_closed_loop": {
             "ok": True,
             "objects": {
@@ -272,6 +276,7 @@ def status_payload() -> dict:
 def manifest_payload() -> dict:
     paths = [
         "docs/CHINA_BUSINESS_UAT_CHECKLIST.md",
+        "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "docs/CHINA_DELIVERY_INDEX.md",
         "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
@@ -761,6 +766,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["workbench_summary_evidence"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_uat_walkthrough_script_manifest_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("uat_walkthrough_script_in_manifest", automated)
+        self.assertTrue(automated["uat_walkthrough_script_in_manifest"]["ready"])
+        self.assertIn(
+            "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+            automated["uat_walkthrough_script_in_manifest"]["evidence"],
+        )
+
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1222,6 +1239,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Limitations", content)
         self.assertIn("Uncertainty", content)
 
+    def test_delivery_status_markdown_lists_uat_walkthrough_script(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn(
+            "Business UAT walkthrough script: `docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md`",
+            content,
+        )
+        self.assertIn("Business UAT walkthrough script in manifest: `True`", content)
+
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
         self.assertTrue(SUMMARY._looks_mojibake("中国合规" + "\ufffd" + "档案"))
@@ -1395,6 +1426,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(
             status["signoff_validation_tool"]["included_in_manifest"],
         )
+
+    def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "business UAT walkthrough script is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(status["uat_walkthrough"]["included_in_manifest"])
 
 
 if __name__ == "__main__":

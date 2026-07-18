@@ -14,6 +14,7 @@ PREVIEW_MODULE_SCHEMA = "sdoo.cn.preview-module.v1"
 REAL_DATA_CLOSED_LOOP_SCHEMA = "sdoo.cn.real-data-closed-loop.v1"
 SIGNOFF_VALIDATION_SCHEMA = "sdoo.cn.signoff-validation.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
+UAT_WALKTHROUGH_PATH = Path("docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
@@ -260,6 +261,10 @@ def _status(
         "path": BUSINESS_UAT_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, BUSINESS_UAT_PATH),
     }
+    uat_walkthrough = {
+        "path": UAT_WALKTHROUGH_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(manifest, UAT_WALKTHROUGH_PATH),
+    }
     objective_coverage = {
         "path": OBJECTIVE_COVERAGE_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, OBJECTIVE_COVERAGE_PATH),
@@ -392,6 +397,7 @@ def _status(
         ("delivery index", delivery_index),
         ("objective coverage", objective_coverage),
         ("business UAT checklist", business_uat),
+        ("business UAT walkthrough script", uat_walkthrough),
         ("production sign-off template", production_signoff),
         ("preview health checker", preview_health_checker),
         ("preview module checker", preview_module_checker),
@@ -475,6 +481,7 @@ def _status(
         "preview_url": preview_url,
         "source_control": source_control,
         "business_uat": business_uat,
+        "uat_walkthrough": uat_walkthrough,
         "delivery_index": delivery_index,
         "objective_coverage": objective_coverage,
         "production_signoff": production_signoff,
@@ -511,6 +518,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else None
     source_control = status.get("source_control") or {}
     business_uat = status.get("business_uat") or {}
+    uat_walkthrough = status.get("uat_walkthrough") or {}
     delivery_index = status.get("delivery_index") or {}
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
@@ -555,6 +563,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Delivery index in manifest: `{delivery_index.get('included_in_manifest', False)}`",
         f"- Business UAT checklist: `{business_uat.get('path', '')}`",
         f"- Business UAT checklist in manifest: `{business_uat.get('included_in_manifest', False)}`",
+        f"- Business UAT walkthrough script: `{uat_walkthrough.get('path', '')}`",
+        f"- Business UAT walkthrough script in manifest: `{uat_walkthrough.get('included_in_manifest', False)}`",
         f"- Objective coverage: `{objective_coverage.get('path', '')}`",
         f"- Objective coverage in manifest: `{objective_coverage.get('included_in_manifest', False)}`",
         f"- Production sign-off template: `{production_signoff.get('path', '')}`",

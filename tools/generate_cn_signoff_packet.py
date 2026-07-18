@@ -54,6 +54,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     source_control = status.get("source_control") or {}
     preview_health = status.get("preview_health") or {}
     preview_module = status.get("preview_module") or {}
+    uat_walkthrough = status.get("uat_walkthrough") or {}
     real_data = status.get("real_data_closed_loop") or {}
     real_data_readiness = real_data.get("readiness") or {}
     runtime = status.get("runtime") or {}
@@ -102,6 +103,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             real_data.get("ok") is True
             and real_data_readiness.get("closed_loop_evidence_ready") is True,
             json.dumps(real_data_readiness, ensure_ascii=False, sort_keys=True),
+        ),
+        _readiness_item(
+            "uat_walkthrough_script_in_manifest",
+            "Screen-by-screen UAT walkthrough script is included in the delivery manifest",
+            uat_walkthrough.get("included_in_manifest") is True,
+            str(uat_walkthrough.get("path") or ""),
         ),
         _readiness_item(
             "workbench_summary_evidence",

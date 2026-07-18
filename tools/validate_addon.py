@@ -4977,6 +4977,8 @@ def validate_delivery_objective_coverage() -> None:
         "delivery_index",
         "BUSINESS_UAT_PATH",
         "business_uat",
+        "UAT_WALKTHROUGH_PATH",
+        "uat_walkthrough",
         "OBJECTIVE_COVERAGE_PATH",
         "objective_coverage",
         "PRODUCTION_SIGNOFF_PATH",
@@ -4994,6 +4996,7 @@ def validate_delivery_objective_coverage() -> None:
         "signoff_validation_tool",
         "included_in_manifest",
         "Business UAT checklist in manifest",
+        "Business UAT walkthrough script in manifest",
         "Objective coverage in manifest",
         "Production sign-off template in manifest",
         "Preview health checker in manifest",
@@ -5087,6 +5090,8 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "blocker_summary_walkthrough",
+        "uat_walkthrough_script_in_manifest",
+        "Screen-by-screen UAT walkthrough script is included in the delivery manifest",
         "workbench_summary_evidence",
         "has_workbench_summary_evidence",
         "risk_task_report_summary_evidence",
@@ -5143,11 +5148,13 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "test_signoff_packet_requires_blocker_summary_walkthrough",
+        "test_signoff_packet_surfaces_uat_walkthrough_script_manifest_evidence",
         "test_signoff_packet_surfaces_workbench_summary_automated_evidence",
         "test_signoff_packet_surfaces_risk_task_report_summary_evidence",
         "test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence",
         "test_signoff_packet_surfaces_iit_and_cross_border_scope_evidence",
         "test_delivery_status_markdown_lists_workbench_summary_evidence",
+        "test_delivery_status_markdown_lists_uat_walkthrough_script",
         "test_delivery_status_markdown_lists_risk_task_report_summary_evidence",
         "test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence",
         "test_delivery_status_markdown_lists_iit_and_cross_border_scope_evidence",
@@ -5156,6 +5163,7 @@ def validate_delivery_objective_coverage() -> None:
         "test_signoff_validation_blocks_actions_without_objective_areas",
         "test_generic_signoff_evidence_reference_blocks_production_gate",
         "test_missing_ai_checksum_scope_blocks_ux_walkthrough",
+        "test_delivery_status_requires_uat_walkthrough_script_in_manifest",
         "blocked_objective_areas",
         "blocker_summary_walkthrough",
     ):
