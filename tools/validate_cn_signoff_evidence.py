@@ -21,8 +21,10 @@ PLACEHOLDER_TEXTS = {
     "Implementation owner name",
     "Release owner name",
     "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md",
+    "Path or document reference for completed CHINA_UAT_WALKTHROUGH_SCRIPT.md",
     "Rule/source review packet reference",
     "Official-source freshness monitoring result reference",
+    "Official-source freshness monitoring result and governance summary reference",
     "Customer data, evidence gap and open risk review reference",
     "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
     "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
@@ -33,6 +35,7 @@ PLACEHOLDER_TEXTS = {
 
 ACTION_EVIDENCE_REQUIREMENTS = {
     "business_uat_decision": (
+        ("walkthrough script", ("walkthrough script", "walkthrough", "screen-by-screen")),
         ("uat", ("uat", "user acceptance", "用户验收", "业务验收")),
         ("company", ("company", "公司")),
         ("period", ("period", "期间")),
@@ -44,6 +47,8 @@ ACTION_EVIDENCE_REQUIREMENTS = {
         ("professional", ("professional", "专业人员", "税务专业")),
     ),
     "official_source_freshness_review": (
+        ("governance summary", ("governance summary", "source governance")),
+        ("monitoring", ("monitoring", "monitor")),
         ("official source", ("official source", "官方来源", "官方依据")),
         ("freshness", ("freshness", "时效", "更新")),
         ("local jurisdiction", ("local jurisdiction", "地方", "属地")),
@@ -55,6 +60,7 @@ ACTION_EVIDENCE_REQUIREMENTS = {
         ("controlled ai limitation", ("controlled ai limitation", "受控 ai 限制", "受控AI限制")),
     ),
     "representative_ux_walkthrough": (
+        ("walkthrough script", ("walkthrough script", "walkthrough", "screen-by-screen")),
         ("workbench", ("workbench", "工作台", "总览")),
         ("risk center", ("risk center", "风险中心")),
         ("controlled ai guidance", ("controlled ai guidance", "受控 ai 引导", "受控AI引导")),

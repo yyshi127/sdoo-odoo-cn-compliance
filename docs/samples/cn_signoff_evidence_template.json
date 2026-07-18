@@ -13,8 +13,8 @@
       "decision": "accepted",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md",
-      "notes": "Company, period, datasets, screens, filing/payment archive and controlled AI guidance evidence reviewed."
+      "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md and CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+      "notes": "Company, period, datasets, screen-by-screen walkthrough script, filing/payment archive and controlled AI guidance evidence reviewed."
     },
     {
       "key": "china_tax_professional_rule_signoff",
@@ -29,8 +29,8 @@
       "decision": "current",
       "reviewer": "Rule governance owner name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Official-source freshness monitoring result reference",
-      "notes": "National and local source changes reviewed."
+      "evidence_reference": "Official-source freshness monitoring result and governance summary reference",
+      "notes": "Official source freshness, source governance summary, monitoring results and local jurisdiction changes reviewed."
     },
     {
       "key": "customer_scope_and_data_gap_review",
@@ -45,8 +45,8 @@
       "decision": "passed",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Screenshots or recording reference for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report walkthrough",
-      "notes": "Risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable on representative desktop and laptop screen sizes."
+      "evidence_reference": "Screenshots, recording or completed CHINA_UAT_WALKTHROUGH_SCRIPT.md reference for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report walkthrough",
+      "notes": "Screen-by-screen walkthrough script completed; risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable on representative desktop and laptop screen sizes."
     },
     {
       "key": "blocker_summary_walkthrough",

@@ -4766,12 +4766,18 @@ def validate_delivery_objective_coverage() -> None:
         "AI limitation and professional warning disclosure reviewed",
         "Choose `defer` or `reject` instead of `deploy`",
         "deploy with limitations",
-        "dist/cn_delivery_status_m144.json",
-        "dist/cn_signoff_packet_m144.md",
+        "dist/cn_delivery_status_m152.json",
+        "dist/cn_signoff_packet_m152.md",
         "Delivery status `business_uat_ready`",
+        "Business UAT walkthrough script included in manifest",
+        "Official source governance summary ready",
+        "Completed UAT walkthrough script reference",
         "Sign-off action packet path",
         "Rule versions requiring China tax professional sign-off",
         "Official-source freshness evidence reference",
+        "Official source governance summary evidence reference",
+        "Changed source monitor runs",
+        "Rule governance issues",
         "External tax/invoice/payment data acquisition basis reviewed",
         "Workbench next-action and limitation summary readable",
         "Risk center risk level, reason, impact amount and next action readable",
@@ -5139,6 +5145,9 @@ def validate_delivery_objective_coverage() -> None:
         "objective_areas are missing from the sign-off packet",
         "ACTION_EVIDENCE_REQUIREMENTS",
         "evidence_reference or notes must mention",
+        "walkthrough script",
+        "governance summary",
+        "monitoring",
     ):
         if required not in signoff_validation_tool_content:
             fail(f"China sign-off validation binding is missing {required}")
@@ -5171,6 +5180,8 @@ def validate_delivery_objective_coverage() -> None:
         "test_signoff_validation_blocks_actions_without_objective_areas",
         "test_generic_signoff_evidence_reference_blocks_production_gate",
         "test_missing_ai_checksum_scope_blocks_ux_walkthrough",
+        "test_signoff_evidence_requires_uat_walkthrough_script_reference",
+        "test_signoff_evidence_requires_source_governance_summary_reference",
         "test_delivery_status_requires_uat_walkthrough_script_in_manifest",
         "blocked_objective_areas",
         "blocker_summary_walkthrough",
@@ -5183,6 +5194,9 @@ def validate_delivery_objective_coverage() -> None:
         "controlled AI guidance evidence",
         "controlled AI limitations",
         "AI provider, prompt version, input/output checksum, record checksum and professional warnings",
+        "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+        "Official-source freshness monitoring result and governance summary reference",
+        "source governance summary",
     ):
         if required not in signoff_template_content:
             fail(f"China sign-off evidence template is missing {required}")
@@ -5194,6 +5208,8 @@ def validate_delivery_objective_coverage() -> None:
         "Evidence/filing/payment summary evidence ready",
         "Evidence, Filing and Payment Archive Summary Evidence",
         "Rule/source governance evidence ready",
+        "Official source governance summary ready",
+        "Official Source Governance Overview",
         "Rule And Source Governance Evidence",
         "Official Sources",
         "Released Rule Versions",

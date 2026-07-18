@@ -7,15 +7,15 @@ It is not a tax opinion.
 ## How To Use This Template
 
 Complete this template after generating the delivery status and sign-off action
-packet for the release candidate. For the current m144 evidence set, start from:
+packet for the release candidate. For the current m152 evidence set, start from:
 
-- `dist/cn_delivery_status_m144.json`
-- `dist/cn_delivery_status_m144.md`
-- `dist/cn_signoff_packet_m144.json`
-- `dist/cn_signoff_packet_m144.md`
-- `dist/cn_delivery_acceptance_m144_remote.json`
-- `dist/sdoo-cn-compliance-delivery-m144.bundle.json`
-- `dist/cn_delivery_manifest_m144_full.json`
+- `dist/cn_delivery_status_m152.json`
+- `dist/cn_delivery_status_m152.md`
+- `dist/cn_signoff_packet_m152.json`
+- `dist/cn_signoff_packet_m152.md`
+- `dist/cn_delivery_acceptance_m152_remote.json`
+- `dist/sdoo-cn-compliance-delivery-m152.bundle.json`
+- `dist/cn_delivery_manifest_m152_full.json`
 
 Use the Markdown files for reviewer walkthroughs and the JSON files for audit
 traceability. Do not copy placeholder text into the final sign-off evidence.
@@ -72,6 +72,9 @@ decision and include substantive limitation notes.
 - Runtime errors:
 - Objective coverage matrix included in manifest: yes / no
 - Business UAT checklist included in manifest: yes / no
+- Business UAT walkthrough script included in manifest: yes / no
+- Official source governance summary ready: true / false
+- Official source governance issue count reviewed: yes / no
 - Delivery status `business_uat_ready`: true / false
 - Delivery status `production_signoff_ready` before human evidence: false / unexpected true
 - Sign-off packet generated from the same source commit: yes / no
@@ -92,6 +95,7 @@ decision and include substantive limitation notes.
 - Controlled AI guidance checksum evidence complete: yes / no / not applicable
 - AI limitation and professional warning disclosure reviewed: yes / no / not applicable
 - Screens checked:
+- Completed UAT walkthrough script reference:
 - Blocker-summary walkthrough evidence:
 - Blocker-summary walkthrough decision: passed / passed with limitations / failed
 - Workbench next-action and limitation summary readable: yes / no
@@ -110,6 +114,11 @@ decision and include substantive limitation notes.
 - Official-source freshness reviewed: yes / no / not applicable
 - Local jurisdiction scope reviewed: yes / no / not applicable
 - Official-source freshness evidence reference:
+- Official source governance summary evidence reference:
+- Overdue official-source reviews:
+- Changed source monitor runs:
+- Failed source monitor runs:
+- Rule governance issues:
 - Local jurisdiction review evidence reference:
 - Rules not approved for production conclusions:
 

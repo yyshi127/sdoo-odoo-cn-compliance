@@ -614,22 +614,24 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
     evidence_notes = {
         "business_uat_decision": (
             "Completed UAT evidence for company CN Company and period 2026-06; "
-            "controlled AI guidance evidence reviewed."
+            "screen-by-screen walkthrough script and controlled AI guidance "
+            "evidence reviewed."
         ),
         "china_tax_professional_rule_signoff": (
             "Released rule official source packet reviewed by China tax professional."
         ),
         "official_source_freshness_review": (
-            "Official source freshness and local jurisdiction updates reviewed."
+            "Official source freshness, source governance summary, monitoring "
+            "results and local jurisdiction updates reviewed."
         ),
         "customer_scope_and_data_gap_review": (
             "External dataset coverage, evidence gap register, open risk list and "
             "controlled AI limitation register reviewed."
         ),
         "representative_ux_walkthrough": (
-            "Workbench, risk center, controlled AI guidance, filing/payment archive "
-            "and report screens reviewed; input/output checksum and record checksum "
-            "were visible."
+            "Screen-by-screen walkthrough script completed for workbench, risk "
+            "center, controlled AI guidance, filing/payment archive and report "
+            "screens; input/output checksum and record checksum were visible."
         ),
         "blocker_summary_walkthrough": (
             "Data readiness, filing/payment archive, report readiness and controlled "
@@ -714,7 +716,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "business_uat_decision: evidence_reference or notes must mention: "
-            "uat, company, period, controlled ai",
+            "walkthrough script, uat, company, period, controlled ai",
             result["blockers"],
         )
 
@@ -724,7 +726,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
         for item in evidence["decisions"]:
             if item["key"] == "representative_ux_walkthrough":
                 item["notes"] = (
-                    "Workbench, risk center, controlled AI guidance, "
+                    "Screen-by-screen walkthrough script completed for workbench, "
+                    "risk center, controlled AI guidance, "
                     "filing/payment archive and report screens reviewed."
                 )
 
@@ -734,6 +737,52 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "representative_ux_walkthrough: evidence_reference or notes must "
             "mention: input/output checksum, record checksum",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_uat_walkthrough_script_reference(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] in (
+                "business_uat_decision",
+                "representative_ux_walkthrough",
+            ):
+                item["notes"] = item["notes"].replace(
+                    "screen-by-screen walkthrough script",
+                    "screen evidence",
+                ).replace(
+                    "Screen-by-screen walkthrough script",
+                    "Screen evidence",
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: evidence_reference or notes must mention: "
+            "walkthrough script",
+            result["blockers"],
+        )
+        self.assertIn(
+            "representative_ux_walkthrough: evidence_reference or notes must "
+            "mention: walkthrough script",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_source_governance_summary_reference(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "official_source_freshness_review":
+                item["notes"] = "Official source freshness and local jurisdiction updates reviewed."
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "official_source_freshness_review: evidence_reference or notes must "
+            "mention: governance summary, monitoring",
             result["blockers"],
         )
 
