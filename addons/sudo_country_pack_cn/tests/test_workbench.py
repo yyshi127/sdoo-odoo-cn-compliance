@@ -468,6 +468,13 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "activate",
             self.profile.cn_workbench_next_best_action_label.lower(),
         )
+        self.assertIn("Next:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Conclusion:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Closed loop:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Risks:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Tasks:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Data:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Report:", self.profile.cn_workbench_action_summary)
         action = self.profile.action_cn_open_workbench_next_best_action()
         self.assertEqual(action["res_model"], "sudo.compliance.profile")
         self.assertEqual(action["res_id"], self.profile.id)

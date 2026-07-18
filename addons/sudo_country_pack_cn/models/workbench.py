@@ -245,6 +245,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="下一步动作",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_action_summary = fields.Char(
+        string="Workbench Action Summary",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_period_label = fields.Char(
         string="最新扫描期间",
         compute="_compute_cn_workbench",
@@ -575,6 +579,56 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="Next Best Action",
         compute="_compute_cn_workbench",
     )
+
+    def _cn_workbench_action_summary(self):
+        self.ensure_one()
+        parts = []
+        next_action = (
+            self.cn_workbench_next_best_action_label or self.cn_workbench_next_action
+        )
+        if next_action:
+            parts.append("Next: %s" % next_action)
+        if self.cn_workbench_conclusion_boundary_summary:
+            parts.append(
+                "Conclusion: %s" % self.cn_workbench_conclusion_boundary_summary
+            )
+        if self.cn_workbench_closed_loop_summary:
+            parts.append(
+                "Closed loop: %s (%s gaps) - %s"
+                % (
+                    self.cn_workbench_closed_loop_state or "unknown",
+                    self.cn_workbench_closed_loop_gap_count or 0,
+                    self.cn_workbench_closed_loop_summary,
+                )
+            )
+        parts.extend(
+            [
+                "Risks: %s high / %s total; %s pending review"
+                % (
+                    self.cn_workbench_high_risk_count or 0,
+                    self.cn_workbench_finding_count or 0,
+                    self.cn_workbench_pending_review_count or 0,
+                ),
+                "Tasks: %s open / %s overdue"
+                % (
+                    self.cn_workbench_open_task_count or 0,
+                    self.cn_workbench_overdue_task_count or 0,
+                ),
+                "Data: %s/%s controlled datasets ready"
+                % (
+                    self.cn_workbench_ready_dataset_count or 0,
+                    self.cn_workbench_dataset_count or 0,
+                ),
+                "Report: %s; Evidence: %s; Filing: %s; AI: %s"
+                % (
+                    self.cn_workbench_report_state or "unknown",
+                    self.cn_workbench_evidence_state or "unknown",
+                    self.cn_workbench_filing_archive_state or "unknown",
+                    self.cn_workbench_ai_guidance_state or "unknown",
+                ),
+            ]
+        )
+        return " | ".join(parts)
 
     def _compute_cn_workbench(self):
         today = fields.Date.context_today(self)
@@ -1149,6 +1203,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if profile.country_id.code != "CN":
                 profile.cn_workbench_status = False
                 profile.cn_workbench_next_action = False
+                profile.cn_workbench_action_summary = False
             elif profile.status != "active":
                 profile.cn_workbench_status = "setup_required"
                 profile.cn_workbench_next_action = _("先完善并启用中国合规档案")
@@ -1202,6 +1257,10 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_next_best_action_key,
                 profile.cn_workbench_next_best_action_label,
             ) = _next_best_action_values(profile)
+            if profile.country_id.code == "CN":
+                profile.cn_workbench_action_summary = (
+                    profile._cn_workbench_action_summary()
+                )
 
     def _cn_action(self, name, res_model, domain, context=None):
         self.ensure_one()

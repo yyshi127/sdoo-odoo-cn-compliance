@@ -45,6 +45,7 @@
                        decoration-muted="cn_workbench_conclusion_boundary_state == 'not_started'"/>
                 <field name="cn_workbench_conclusion_boundary_summary" optional="show"/>
                 <field name="cn_workbench_next_best_action_label" optional="show"/>
+                <field name="cn_workbench_action_summary" optional="show"/>
                 <field name="cn_workbench_data_state" widget="badge"
                        decoration-success="cn_workbench_data_state == 'ready'"
                        decoration-warning="cn_workbench_data_state == 'attention'"
@@ -84,6 +85,7 @@
                 <field name="cn_workbench_status"/>
                 <field name="cn_workbench_period_label"/>
                 <field name="cn_workbench_next_action"/>
+                <field name="cn_workbench_action_summary"/>
                 <field name="cn_workbench_currency_id"/>
                 <field name="cn_workbench_high_risk_count"/>
                 <field name="cn_workbench_finding_count"/>
@@ -181,6 +183,13 @@
 
                             <div class="mt-3 text-muted">
                                 <field name="cn_workbench_next_action"/>
+                            </div>
+
+                            <div class="mt-3 border rounded p-2">
+                                <div class="text-muted small">Action summary</div>
+                                <div class="fw-semibold">
+                                    <field name="cn_workbench_action_summary"/>
+                                </div>
                             </div>
 
                             <button type="object" name="action_cn_open_workbench_next_best_action"
