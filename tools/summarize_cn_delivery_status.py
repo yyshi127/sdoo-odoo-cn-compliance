@@ -13,6 +13,7 @@ PREVIEW_HEALTH_SCHEMA = "sdoo.cn.preview-health.v1"
 PREVIEW_MODULE_SCHEMA = "sdoo.cn.preview-module.v1"
 REAL_DATA_CLOSED_LOOP_SCHEMA = "sdoo.cn.real-data-closed-loop.v1"
 SIGNOFF_VALIDATION_SCHEMA = "sdoo.cn.signoff-validation.v1"
+OBJECTIVE_AUDIT_SCHEMA = "sdoo.cn.objective-completion-audit.v1"
 BUSINESS_UAT_PATH = Path("docs/CHINA_BUSINESS_UAT_CHECKLIST.md")
 UAT_WALKTHROUGH_PATH = Path("docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md")
 RELEASE_HANDOFF_PATH = Path("docs/CHINA_RELEASE_HANDOFF_CURRENT.md")
@@ -346,6 +347,7 @@ def _status(
     preview_health: dict[str, object] | None,
     preview_module: dict[str, object] | None,
     real_data_closed_loop: dict[str, object] | None,
+    objective_audit: dict[str, object] | None,
     signoff_validation: dict[str, object] | None,
     preview_url: str | None,
 ) -> dict[str, object]:
@@ -507,6 +509,17 @@ def _status(
     source_governance_summary = _source_governance_summary(
         real_data_closed_loop_summary
     )
+    objective_audit_summary = None
+    if objective_audit:
+        objective_audit_summary = {
+            "schema": objective_audit.get("schema"),
+            "version": objective_audit.get("version"),
+            "source_commit": objective_audit.get("source_commit"),
+            "preview_url": objective_audit.get("preview_url"),
+            "achieved": objective_audit.get("achieved") is True,
+            "state_counts": objective_audit.get("state_counts"),
+            "completion_blockers": objective_audit.get("completion_blockers"),
+        }
     signoff_validation_summary = None
     if signoff_validation:
         signoff_validation_summary = {
@@ -642,6 +655,7 @@ def _status(
         "real_data_closed_loop": real_data_closed_loop_summary,
         "tax_domain_coverage": tax_domain_coverage,
         "source_governance_summary": source_governance_summary,
+        "objective_audit": objective_audit_summary,
         "signoff_validation": signoff_validation_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
@@ -682,6 +696,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     signoff_validation_tool = status.get("signoff_validation_tool") or {}
     signoff_evidence_template = status.get("signoff_evidence_template") or {}
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
+    objective_audit = status.get("objective_audit") or {}
     signoff_validation = status.get("signoff_validation") or {}
     real_data_readiness = real_data_closed_loop.get("readiness") or {}
     sample_profiles = real_data_closed_loop.get("sample_profiles") or []
@@ -739,6 +754,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Real-data closed-loop checker in manifest: `{real_data_closed_loop_checker.get('included_in_manifest', False)}`",
         f"- Objective completion auditor: `{objective_audit_tool.get('path', '')}`",
         f"- Objective completion auditor in manifest: `{objective_audit_tool.get('included_in_manifest', False)}`",
+        f"- Objective completion audit achieved: `{objective_audit.get('achieved', False)}`",
+        f"- Objective completion audit state counts: `{objective_audit.get('state_counts', '')}`",
+        f"- Objective completion audit blockers: `{len(objective_audit.get('completion_blockers') or [])}`",
         f"- Sign-off packet generator: `{signoff_packet_tool.get('path', '')}`",
         f"- Sign-off packet generator in manifest: `{signoff_packet_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence renderer: `{signoff_evidence_renderer_tool.get('path', '')}`",
@@ -785,6 +803,13 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {area}"
             for area in signoff_validation.get("blocked_objective_areas", []) or []
+        ],
+        "",
+        "### Objective Completion Audit Blockers",
+        "",
+        *[
+            f"- {blocker}"
+            for blocker in objective_audit.get("completion_blockers", []) or []
         ],
         "",
         "## Tax Domain Coverage Overview",
@@ -1115,6 +1140,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-health", type=Path)
     parser.add_argument("--preview-module", type=Path)
     parser.add_argument("--real-data-closed-loop", type=Path)
+    parser.add_argument("--objective-audit", type=Path)
     parser.add_argument("--signoff-validation", type=Path)
     parser.add_argument("--preview-url")
     parser.add_argument("--json-output", type=Path)
@@ -1146,6 +1172,7 @@ def main() -> int:
         preview_health=_load(args.preview_health),
         preview_module=_load(args.preview_module),
         real_data_closed_loop=_load(args.real_data_closed_loop),
+        objective_audit=_load(args.objective_audit),
         signoff_validation=_load(args.signoff_validation),
         preview_url=args.preview_url,
     )

@@ -88,6 +88,17 @@ def status_payload() -> dict:
             "path": "tools/audit_cn_objective_completion.py",
             "included_in_manifest": True,
         },
+        "objective_audit": {
+            "schema": "sdoo.cn.objective-completion-audit.v1",
+            "version": "19.0.1.130.0",
+            "source_commit": "abc123",
+            "preview_url": "http://127.0.0.1:18070/web/login?db=test",
+            "achieved": False,
+            "state_counts": {"evidence_ready": 12, "blocked": 1, "not_ready": 0},
+            "completion_blockers": [
+                "business UAT decision must be recorded outside this automated status"
+            ],
+        },
         "source_governance_summary": {
             "ready": True,
             "source_count": 1,
@@ -613,6 +624,7 @@ def real_data_closed_loop_payload() -> dict:
 
 
 def delivery_status(signoff_validation: dict | None = None) -> dict:
+    objective_audit = status_payload()["objective_audit"]
     return SUMMARY._status(
         bundle_metadata=bundle_metadata_payload(),
         manifest=manifest_payload(),
@@ -620,6 +632,7 @@ def delivery_status(signoff_validation: dict | None = None) -> dict:
         preview_health=preview_health_payload(),
         preview_module=preview_module_payload(),
         real_data_closed_loop=real_data_closed_loop_payload(),
+        objective_audit=objective_audit,
         signoff_validation=signoff_validation,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
     )
@@ -633,6 +646,7 @@ def delivery_status_with_manifest(manifest: dict) -> dict:
         preview_health=preview_health_payload(),
         preview_module=preview_module_payload(),
         real_data_closed_loop=real_data_closed_loop_payload(),
+        objective_audit=status_payload()["objective_audit"],
         signoff_validation=None,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
     )
@@ -960,6 +974,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "tools/render_cn_signoff_evidence_template.py",
             automated["signoff_evidence_renderer_in_manifest"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_objective_completion_audit_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("objective_completion_audit_present", automated)
+        self.assertTrue(automated["objective_completion_audit_present"]["ready"])
+        self.assertIn(
+            "business UAT decision must be recorded",
+            automated["objective_completion_audit_present"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
@@ -1467,6 +1493,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Sign-off evidence renderer in manifest: `True`", content)
+        self.assertIn("Objective completion audit achieved: `False`", content)
+        self.assertIn("Objective completion audit blockers: `1`", content)
+        self.assertIn("### Objective Completion Audit Blockers", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))

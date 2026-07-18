@@ -56,6 +56,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     preview_module = status.get("preview_module") or {}
     uat_walkthrough = status.get("uat_walkthrough") or {}
     release_handoff = status.get("release_handoff") or {}
+    objective_audit = status.get("objective_audit") or {}
     real_data = status.get("real_data_closed_loop") or {}
     source_governance = status.get("source_governance_summary") or {}
     signoff_evidence_renderer_tool = status.get("signoff_evidence_renderer_tool") or {}
@@ -131,6 +132,20 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Version-aligned production sign-off evidence draft renderer is included in the delivery manifest",
             signoff_evidence_renderer_tool.get("included_in_manifest") is True,
             str(signoff_evidence_renderer_tool.get("path") or ""),
+        ),
+        _readiness_item(
+            "objective_completion_audit_present",
+            "Objective completion audit is attached and exposes evidence-ready versus blocked objective areas",
+            objective_audit.get("schema") == "sdoo.cn.objective-completion-audit.v1",
+            json.dumps(
+                {
+                    "achieved": objective_audit.get("achieved"),
+                    "state_counts": objective_audit.get("state_counts"),
+                    "completion_blockers": objective_audit.get("completion_blockers"),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
         ),
         _readiness_item(
             "workbench_summary_evidence",
