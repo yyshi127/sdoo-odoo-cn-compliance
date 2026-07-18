@@ -1504,6 +1504,30 @@ class TestChinaSignoffValidation(unittest.TestCase):
             set(required_actions["production_deployment_decision"]["addresses_blockers"]),
             set(readiness["production_signoff_blockers"]),
         )
+        matrix = {
+            item["blocker"]: item
+            for item in readiness["production_signoff_blocker_action_matrix"]
+        }
+        self.assertEqual(set(matrix), set(readiness["production_signoff_blockers"]))
+        self.assertTrue(all(item["covered"] for item in matrix.values()))
+        self.assertIn(
+            "business_uat_decision",
+            matrix[
+                "business UAT decision must be recorded outside this automated status"
+            ]["action_keys"],
+        )
+        self.assertIn(
+            "china_tax_professional_rule_signoff",
+            matrix[
+                "current official sources and released rules require professional sign-off evidence"
+            ]["action_keys"],
+        )
+        self.assertIn(
+            "customer_scope_and_data_gap_review",
+            matrix[
+                "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
+            ]["action_keys"],
+        )
 
     def test_delivery_status_surfaces_preview_readiness_blockers(self):
         preview_health = preview_health_payload()
@@ -1568,6 +1592,19 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 set(status_action["addresses_blockers"]),
                 set(packet_action["addresses_blockers"]),
             )
+
+    def test_delivery_status_markdown_lists_production_blocker_action_matrix(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("### Production Sign-off Blocker Action Matrix", content)
+        self.assertIn("business_uat_decision", content)
+        self.assertIn("china_tax_professional_rule_signoff", content)
+        self.assertIn("customer_scope_and_data_gap_review", content)
 
     def test_delivery_status_accepts_valid_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())

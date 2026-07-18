@@ -174,6 +174,27 @@ def _production_signoff_required_actions(blockers: list[str]) -> list[dict[str, 
     return list(actions_by_key.values())
 
 
+def _production_signoff_blocker_action_matrix(
+    blockers: list[str],
+    actions: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    matrix: list[dict[str, object]] = []
+    for blocker in blockers:
+        action_keys = [
+            str(action.get("key"))
+            for action in actions
+            if blocker in (action.get("addresses_blockers") or [])
+        ]
+        matrix.append(
+            {
+                "blocker": blocker,
+                "covered": bool(action_keys),
+                "action_keys": action_keys,
+            }
+        )
+    return matrix
+
+
 def _manifest_includes(
     manifest: dict[str, object] | None,
     path: Path,
@@ -805,6 +826,9 @@ def _status(
             )
         else:
             production_signoff_ready = not production_signoff_blockers
+    production_signoff_required_actions = _production_signoff_required_actions(
+        production_signoff_blockers
+    )
     return {
         "schema": STATUS_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -845,8 +869,12 @@ def _status(
             "business_uat_blockers": business_uat_blockers,
             "production_signoff_ready": production_signoff_ready,
             "production_signoff_blockers": production_signoff_blockers,
-            "production_signoff_required_actions": (
-                _production_signoff_required_actions(production_signoff_blockers)
+            "production_signoff_required_actions": production_signoff_required_actions,
+            "production_signoff_blocker_action_matrix": (
+                _production_signoff_blocker_action_matrix(
+                    production_signoff_blockers,
+                    production_signoff_required_actions,
+                )
             ),
             "source_control_clean": not _source_control_blockers(source_control),
             "source_control_blockers": _source_control_blockers(source_control),
@@ -998,6 +1026,20 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {blocker}"
             for blocker in readiness.get("production_signoff_blockers", [])
+        ],
+        "",
+        "### Production Sign-off Blocker Action Matrix",
+        "",
+        *[
+            (
+                f"- `{item.get('blocker')}` -> "
+                f"`{', '.join(item.get('action_keys') or [])}` "
+                f"(covered: `{item.get('covered', False)}`)"
+            )
+            for item in readiness.get(
+                "production_signoff_blocker_action_matrix", []
+            )
+            if isinstance(item, dict)
         ],
         "",
         "### Production Sign-off Required Human Actions",
