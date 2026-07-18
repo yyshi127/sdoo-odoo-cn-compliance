@@ -22,6 +22,9 @@ PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
 REAL_DATA_CLOSED_LOOP_TOOL_PATH = Path("tools/check_cn_real_data_closed_loop.py")
 SIGNOFF_PACKET_TOOL_PATH = Path("tools/generate_cn_signoff_packet.py")
 SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
+MOJIBAKE_MARKDOWN_PLACEHOLDER = (
+    "[unreadable preview-database text; inspect the JSON evidence by record id]"
+)
 
 
 def _manifest_includes(
@@ -42,6 +45,37 @@ def _load(path: Path | None) -> dict[str, object] | None:
     if not path:
         return None
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _cjk_count(text: str) -> int:
+    return sum("\u4e00" <= char <= "\u9fff" for char in text)
+
+
+def _looks_mojibake(text: object) -> bool:
+    if not isinstance(text, str):
+        return False
+    if "\ufffd" in text:
+        return True
+    cjk_count = _cjk_count(text)
+    return "?" in text and cjk_count >= 2
+
+
+def _markdown_text(value: object, fallback: str = MOJIBAKE_MARKDOWN_PLACEHOLDER) -> str:
+    if value is False or value is None:
+        return ""
+    text = str(value)
+    return fallback if _looks_mojibake(text) else text
+
+
+def _sample_heading(record: dict[str, object], *field_names: str, fallback: str) -> str:
+    for field_name in field_names:
+        value = record.get(field_name)
+        if value:
+            text = _markdown_text(value)
+            if text != MOJIBAKE_MARKDOWN_PLACEHOLDER:
+                return text
+    identifier = record.get("id")
+    return f"{fallback} #{identifier}" if identifier else fallback
 
 
 def _artifact_summary(payload: dict[str, object] | None) -> dict[str, object] | None:
@@ -599,17 +633,17 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
                 for profile in sample_profiles[:5]
                 if isinstance(profile, dict)
                 for line in (
-                    f"### {profile.get('name') or profile.get('company') or profile.get('id') or 'Compliance Profile'}",
+                    f"### {_sample_heading(profile, 'name', 'company', fallback='Compliance Profile')}",
                     "",
-                    f"- Company: `{profile.get('company', '')}`",
+                    f"- Company: `{_markdown_text(profile.get('company', ''))}`",
                     f"- Status: `{profile.get('status', '')}`",
-                    f"- Period: `{profile.get('period_label', '')}`",
-                    f"- Next action: `{profile.get('next_action', '')}`",
-                    f"- Action summary: {profile.get('action_summary', '')}",
-                    f"- Rule basis: `{profile.get('rule_basis_state', '')}` - {profile.get('rule_basis_summary', '')}",
-                    f"- Limitations: {profile.get('limitation_summary', '')}",
-                    f"- Uncertainty: {profile.get('uncertainty_summary', '')}",
-                    f"- Limitation next action: {profile.get('limitation_next_action', '')}",
+                    f"- Period: `{_markdown_text(profile.get('period_label', ''))}`",
+                    f"- Next action: `{_markdown_text(profile.get('next_action', ''))}`",
+                    f"- Action summary: {_markdown_text(profile.get('action_summary', ''))}",
+                    f"- Rule basis: `{profile.get('rule_basis_state', '')}` - {_markdown_text(profile.get('rule_basis_summary', ''))}",
+                    f"- Limitations: {_markdown_text(profile.get('limitation_summary', ''))}",
+                    f"- Uncertainty: {_markdown_text(profile.get('uncertainty_summary', ''))}",
+                    f"- Limitation next action: {_markdown_text(profile.get('limitation_next_action', ''))}",
                     "",
                 )
             ]
@@ -626,17 +660,17 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
                 for finding in sample_findings[:5]
                 if isinstance(finding, dict)
                 for line in (
-                    f"#### {finding.get('title') or finding.get('name') or finding.get('id') or 'Risk'}",
+                    f"#### {_sample_heading(finding, 'title', 'name', fallback='Risk')}",
                     "",
-                    f"- Company: `{finding.get('company', '')}`",
+                    f"- Company: `{_markdown_text(finding.get('company', ''))}`",
                     f"- Period: `{finding.get('period_label', '')}`",
                     f"- Risk level: `{finding.get('risk_level', '')}`",
                     f"- Result/review: `{finding.get('result', '')}` / `{finding.get('review_state', '')}`",
-                    f"- Tax impact: {finding.get('tax_impact', '')}",
+                    f"- Tax impact: {_markdown_text(finding.get('tax_impact', ''))}",
                     f"- Rule basis: `{finding.get('rule_basis_state', '')}` / `{finding.get('professional_state', '')}`",
                     f"- Evidence/closure: `{finding.get('evidence_state', '')}` / `{finding.get('closure_state', '')}`",
-                    f"- Next action: {finding.get('next_action', '')}",
-                    f"- Action summary: {finding.get('action_summary', '')}",
+                    f"- Next action: {_markdown_text(finding.get('next_action', ''))}",
+                    f"- Action summary: {_markdown_text(finding.get('action_summary', ''))}",
                     "",
                 )
             ]
@@ -651,15 +685,15 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
                 for task in sample_tasks[:5]
                 if isinstance(task, dict)
                 for line in (
-                    f"#### {task.get('name') or task.get('id') or 'Remediation Task'}",
+                    f"#### {_sample_heading(task, 'name', fallback='Remediation Task')}",
                     "",
-                    f"- Company: `{task.get('company', '')}`",
+                    f"- Company: `{_markdown_text(task.get('company', ''))}`",
                     f"- Risk level: `{task.get('risk_level', '')}`",
                     f"- State/verification: `{task.get('state', '')}` / `{task.get('verification_state', '')}`",
-                    f"- Assignee/due date: `{task.get('assignee', '')}` / `{task.get('due_date', '')}`",
+                    f"- Assignee/due date: `{_markdown_text(task.get('assignee', ''))}` / `{task.get('due_date', '')}`",
                     f"- Evidence/traceability: `{task.get('evidence_state', '')}` / `{task.get('traceability_state', '')}`",
-                    f"- Next action: {task.get('next_action', '')}",
-                    f"- Action summary: {task.get('action_summary', '')}",
+                    f"- Next action: {_markdown_text(task.get('next_action', ''))}",
+                    f"- Action summary: {_markdown_text(task.get('action_summary', ''))}",
                     "",
                 )
             ]
@@ -674,15 +708,15 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
                 for report in sample_reports[:5]
                 if isinstance(report, dict)
                 for line in (
-                    f"#### {report.get('name') or report.get('id') or 'Compliance Report'}",
+                    f"#### {_sample_heading(report, 'name', fallback='Compliance Report')}",
                     "",
-                    f"- Company: `{report.get('company', '')}`",
+                    f"- Company: `{_markdown_text(report.get('company', ''))}`",
                     f"- Period: `{report.get('period_start', '')}` to `{report.get('period_end', '')}`",
                     f"- State/conclusion: `{report.get('state', '')}` / `{report.get('conclusion_state', '')}`",
                     f"- Traceability/fact basis: `{report.get('traceability_state', '')}` / `{report.get('fact_basis_state', '')}`",
                     f"- Integrity: center `{report.get('center_integrity_state', '')}`, snapshot `{report.get('snapshot_integrity_state', '')}`, approval `{report.get('approval_integrity_state', '')}`, pdf `{report.get('pdf_integrity_state', '')}`",
-                    f"- Blockers: {report.get('blocker_summary', '')}",
-                    f"- Next action: {report.get('traceability_next_action') or report.get('center_next_action') or ''}",
+                    f"- Blockers: {_markdown_text(report.get('blocker_summary', ''))}",
+                    f"- Next action: {_markdown_text(report.get('traceability_next_action') or report.get('center_next_action') or '')}",
                     "",
                 )
             ]

@@ -273,6 +273,7 @@ def manifest_payload() -> dict:
     paths = [
         "docs/CHINA_BUSINESS_UAT_CHECKLIST.md",
         "docs/CHINA_DELIVERY_INDEX.md",
+        "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
         "docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",
         "tools/check_cn_preview_health.py",
@@ -1201,6 +1202,32 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Rule basis", content)
         self.assertIn("Limitations", content)
         self.assertIn("Uncertainty", content)
+
+    def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
+        self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
+        self.assertTrue(SUMMARY._looks_mojibake("中国合规" + "\ufffd" + "档案"))
+        self.assertTrue(SUMMARY._looks_mojibake("中国合规?档案"))
+        status = delivery_status()
+        status["real_data_closed_loop"]["sample_profiles"] = [
+            {
+                "id": 42,
+                "name": "中国合规档案",
+                "company": "中国公司",
+                "status": "active",
+                "period_label": "2026-06",
+                "next_action": "复核风险",
+                "action_summary": "中国合规?档案",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("### 中国合规档案", content)
+        self.assertIn("Company: `中国公司`", content)
+        self.assertIn(SUMMARY.MOJIBAKE_MARKDOWN_PLACEHOLDER, content)
 
     def test_delivery_status_markdown_lists_risk_task_report_summary_evidence(self):
         status = delivery_status()
