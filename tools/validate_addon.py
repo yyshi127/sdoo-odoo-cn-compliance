@@ -4855,6 +4855,7 @@ def validate_delivery_objective_coverage() -> None:
         "action_mark_paid",
         "ensure_ai_guidance",
         "action_generate_cn_ai_guidance",
+        "UPDATE sudo_compliance_task SET due_date",
         "cn_submission_integrity_state",
         "cn_payment_integrity_state",
         "sudo.cn.compliance.report",

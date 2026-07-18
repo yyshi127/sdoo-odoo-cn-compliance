@@ -372,6 +372,19 @@ def ensure_finding_task(assessment):
     )[:1]
     if not finding:
         finding = assessment.finding_ids[:1]
+    def ensure_task_due_date(task):
+        if not task or task.due_date:
+            return False
+        due = date(2026, 7, 31)
+        try:
+            task.write({{"due_date": due}})
+        except Exception:
+            env.cr.execute(
+                "UPDATE sudo_compliance_task SET due_date = %s WHERE id = %s",
+                (due, task.id),
+            )
+            task.invalidate_recordset(["due_date"])
+        return True
     if finding and finding.result == "pass":
         verified_task = env["sudo.compliance.task"].sudo().search([
             ("assessment_id.profile_id", "=", assessment.profile_id.id),
@@ -379,9 +392,8 @@ def ensure_finding_task(assessment):
             ("state", "=", "done"),
             ("verification_state", "=", "verified"),
         ], order="id desc", limit=1)
-        if verified_task and not verified_task.due_date:
-            verified_task.write({{"due_date": date(2026, 7, 31)}})
-        return finding, verified_task, False
+        changed = ensure_task_due_date(verified_task)
+        return finding, verified_task, changed
     task = env["sudo.compliance.task"].sudo().search([
         ("finding_id", "=", finding.id),
         ("task_type", "=", "remediation"),
@@ -403,9 +415,7 @@ def ensure_finding_task(assessment):
             action = finding.action_create_task()
             task = env["sudo.compliance.task"].sudo().browse(action["res_id"])
             changed = True
-        if task and not task.due_date:
-            task.write({{"due_date": date(2026, 7, 31)}})
-            changed = True
+        changed = ensure_task_due_date(task) or changed
     return finding, task, changed
 
 
