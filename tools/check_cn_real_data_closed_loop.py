@@ -175,6 +175,11 @@ active_profile_evidence_sample_domain = (
     if active_profile_ids
     else [("id", "=", 0)]
 )
+active_profile_ai_domain = (
+    [("finding_id.assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
 
 profiles = []
 if has_model("sudo.compliance.profile"):
@@ -351,6 +356,31 @@ for filing in sample_records(
         }}
     )
 
+sample_ai_guidance = []
+for analysis in sample_records(
+    "sudo.compliance.ai.analysis",
+    active_profile_ai_domain,
+    order="id desc",
+    limit=8,
+):
+    sample_ai_guidance.append(
+        {{
+            "id": analysis.id,
+            "name": safe_field(analysis, "display_name"),
+            "finding": safe_field(analysis, "finding_id"),
+            "provider_key": safe_field(analysis, "provider_key"),
+            "jurisdiction_code": safe_field(analysis, "jurisdiction_code"),
+            "state": safe_field(analysis, "state"),
+            "prompt_version": safe_field(analysis, "prompt_version"),
+            "model_name": safe_field(analysis, "model_name"),
+            "input_checksum": safe_field(analysis, "input_checksum"),
+            "output_checksum": safe_field(analysis, "output_checksum"),
+            "record_checksum": safe_field(analysis, "record_checksum"),
+            "source_warning": safe_field(analysis, "source_warning"),
+            "professional_warning": safe_field(analysis, "professional_warning"),
+        }}
+    )
+
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
     "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
@@ -396,6 +426,7 @@ objects = {{
     "vat_reconciliation_issues": count("sudo.cn.vat.period.reconciliation.issue"),
     "cit_reconciliation_issues": count("sudo.cn.cit.period.reconciliation.issue"),
     "iit_reconciliation_issues": count("sudo.cn.iit.period.reconciliation.issue"),
+    "active_profile_ai_guidance": count("sudo.compliance.ai.analysis", active_profile_ai_domain),
 }}
 objects["total_reconciliation_runs"] = sum(
     value or 0
@@ -525,6 +556,18 @@ readiness = {{
             for filing in sample_filing_archives
         )
     ),
+    "has_controlled_ai_guidance_evidence": bool(
+        any(
+            guidance.get("provider_key") == "sdoo_cn_controlled_guidance"
+            and guidance.get("jurisdiction_code") == "CN"
+            and guidance.get("prompt_version") == "cn-compliance-guidance-v1"
+            and guidance.get("state")
+            and guidance.get("input_checksum")
+            and guidance.get("output_checksum")
+            and guidance.get("record_checksum")
+            for guidance in sample_ai_guidance
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -557,6 +600,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_workbench_summary_evidence",
         "has_risk_task_report_summary_evidence",
         "has_evidence_filing_payment_summary_evidence",
+        "has_controlled_ai_guidance_evidence",
     )
 )
 
@@ -589,6 +633,7 @@ payload = {{
     "sample_reports": sample_reports,
     "sample_evidence": sample_evidence,
     "sample_filing_archives": sample_filing_archives,
+    "sample_ai_guidance": sample_ai_guidance,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}

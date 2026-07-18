@@ -381,6 +381,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     sample_reports = real_data_closed_loop.get("sample_reports") or []
     sample_evidence = real_data_closed_loop.get("sample_evidence") or []
     sample_filing_archives = real_data_closed_loop.get("sample_filing_archives") or []
+    sample_ai_guidance = real_data_closed_loop.get("sample_ai_guidance") or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -424,6 +425,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Workbench summary evidence ready: `{real_data_readiness.get('has_workbench_summary_evidence', False)}`",
         f"- Risk/task/report summary evidence ready: `{real_data_readiness.get('has_risk_task_report_summary_evidence', False)}`",
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
+        f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -556,6 +558,28 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             ]
             if isinstance(sample_reports, list) and sample_reports
             else ["- No sample report summary evidence was provided.", ""]
+        ),
+        "## Controlled AI Guidance Evidence",
+        "",
+        *(
+            [
+                line
+                for guidance in sample_ai_guidance[:5]
+                if isinstance(guidance, dict)
+                for line in (
+                    f"### {guidance.get('name') or guidance.get('id') or 'AI Guidance'}",
+                    "",
+                    f"- Finding: `{guidance.get('finding', '')}`",
+                    f"- Provider/state: `{guidance.get('provider_key', '')}` / `{guidance.get('state', '')}`",
+                    f"- Jurisdiction/prompt: `{guidance.get('jurisdiction_code', '')}` / `{guidance.get('prompt_version', '')}`",
+                    f"- Model: `{guidance.get('model_name', '')}`",
+                    f"- Source/professional warnings: `{guidance.get('source_warning', '')}` / `{guidance.get('professional_warning', '')}`",
+                    f"- Checksums present: input `{bool(guidance.get('input_checksum'))}`, output `{bool(guidance.get('output_checksum'))}`, record `{bool(guidance.get('record_checksum'))}`",
+                    "",
+                )
+            ]
+            if isinstance(sample_ai_guidance, list) and sample_ai_guidance
+            else ["- No sample controlled AI guidance evidence was provided.", ""]
         ),
         "## Evidence, Filing and Payment Archive Summary Evidence",
         "",

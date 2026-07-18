@@ -1023,6 +1023,20 @@ def ensure_report(assessment):
     return report, True
 
 
+def ensure_ai_guidance(finding):
+    if not finding:
+        return {{"analysis": None, "changed": False}}
+    analysis = env["sudo.compliance.ai.analysis"].sudo().search([
+        ("finding_id", "=", finding.id),
+        ("provider_key", "=", "sdoo_cn_controlled_guidance"),
+    ], order="id desc", limit=1)
+    if analysis:
+        return {{"analysis": analysis, "changed": False}}
+    action = finding.action_generate_cn_ai_guidance()
+    analysis = env["sudo.compliance.ai.analysis"].sudo().browse(action.get("res_id"))
+    return {{"analysis": analysis, "changed": True}}
+
+
 payload = {{
     "schema": "{SCHEMA}",
     "ok": False,
@@ -1051,12 +1065,16 @@ else:
             version.authority_source_ids[:1],
         )
         report, created_report = ensure_report(assessment)
+        ai_guidance = ensure_ai_guidance(finding)
         profile.invalidate_recordset()
         payload.update({{
             "ok": bool(
                 assessment
                 and finding
                 and report
+                and ai_guidance.get("analysis")
+                and ai_guidance["analysis"].input_checksum
+                and ai_guidance["analysis"].record_checksum
                 and archive.get("filing")
                 and archive["filing"].cn_submission_integrity_state == "verified"
                 and archive["filing"].cn_filing_center_evidence_state == "verified"
@@ -1081,6 +1099,7 @@ else:
                 or verification.get("changed")
                 or archive.get("changed")
                 or created_report
+                or ai_guidance.get("changed")
             ),
             "profile": {{
                 "id": profile.id,
@@ -1168,6 +1187,16 @@ else:
                 "state": report.state,
                 "conclusion_state": report.conclusion_state,
             }} if report else None,
+            "ai_guidance": {{
+                "id": ai_guidance["analysis"].id,
+                "provider_key": ai_guidance["analysis"].provider_key,
+                "state": ai_guidance["analysis"].state,
+                "prompt_version": ai_guidance["analysis"].prompt_version,
+                "model_name": ai_guidance["analysis"].model_name,
+                "input_checksum": ai_guidance["analysis"].input_checksum,
+                "output_checksum": ai_guidance["analysis"].output_checksum,
+                "record_checksum": ai_guidance["analysis"].record_checksum,
+            }} if ai_guidance.get("analysis") else None,
             "filing_archive": {{
                 "id": archive["filing"].id,
                 "name": archive["filing"].display_name,

@@ -67,6 +67,7 @@ def status_payload() -> dict:
                 "has_workbench_summary_evidence": True,
                 "has_risk_task_report_summary_evidence": True,
                 "has_evidence_filing_payment_summary_evidence": True,
+                "has_controlled_ai_guidance_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -156,6 +157,22 @@ def status_payload() -> dict:
                     "next_action": "Keep sealed filing and payment archive.",
                     "submission_checksum": "sub123",
                     "payment_checksum": "pay123",
+                }
+            ],
+            "sample_ai_guidance": [
+                {
+                    "name": "Controlled China AI guidance",
+                    "finding": "VAT filing mismatch",
+                    "provider_key": "sdoo_cn_controlled_guidance",
+                    "jurisdiction_code": "CN",
+                    "state": "fallback",
+                    "prompt_version": "cn-compliance-guidance-v1",
+                    "model_name": "sdoo-cn-guidance-fallback-v1",
+                    "source_warning": False,
+                    "professional_warning": False,
+                    "input_checksum": "input123",
+                    "output_checksum": "output123",
+                    "record_checksum": "record123",
                 }
             ],
         },
@@ -249,6 +266,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_workbench_summary_evidence": True,
             "has_risk_task_report_summary_evidence": True,
             "has_evidence_filing_payment_summary_evidence": True,
+            "has_controlled_ai_guidance_evidence": True,
         },
         "sample_profiles": [
             {
@@ -338,6 +356,22 @@ def real_data_closed_loop_payload() -> dict:
                 "next_action": "Keep sealed filing and payment archive.",
                 "submission_checksum": "sub123",
                 "payment_checksum": "pay123",
+            }
+        ],
+        "sample_ai_guidance": [
+            {
+                "name": "Controlled China AI guidance",
+                "finding": "VAT filing mismatch",
+                "provider_key": "sdoo_cn_controlled_guidance",
+                "jurisdiction_code": "CN",
+                "state": "fallback",
+                "prompt_version": "cn-compliance-guidance-v1",
+                "model_name": "sdoo-cn-guidance-fallback-v1",
+                "source_warning": False,
+                "professional_warning": False,
+                "input_checksum": "input123",
+                "output_checksum": "output123",
+                "record_checksum": "record123",
             }
         ],
     }
@@ -818,9 +852,12 @@ class TestChinaSignoffValidation(unittest.TestCase):
         result = VALIDATION._validate(packet, evidence)
 
         self.assertFalse(result["ok"])
-        self.assertIn(
-            "automated packet evidence is not ready: runtime_passed",
-            result["blockers"],
+        self.assertTrue(
+            any(
+                blocker.startswith("automated packet evidence is not ready:")
+                and "runtime_passed" in blocker
+                for blocker in result["blockers"]
+            )
         )
 
     def test_delivery_status_requires_signoff_validation_for_production_ready(self):

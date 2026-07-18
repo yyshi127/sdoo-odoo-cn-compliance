@@ -134,6 +134,16 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "controlled_ai_guidance_evidence",
+            "Controlled AI guidance exposes provider, prompt, warning and checksum evidence for representative findings",
+            real_data_readiness.get("has_controlled_ai_guidance_evidence") is True,
+            json.dumps(
+                real_data.get("sample_ai_guidance") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {
