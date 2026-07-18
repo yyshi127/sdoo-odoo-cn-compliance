@@ -156,6 +156,21 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence version does not match the packet version")
     if evidence.get("source_commit") != packet.get("source_commit"):
         blockers.append("sign-off evidence source commit does not match the packet")
+    production_blocker_coverage = packet.get("production_blocker_coverage") or {}
+    uncovered_production_blockers = [
+        str(blocker)
+        for blocker in production_blocker_coverage.get("uncovered_blockers") or []
+        if isinstance(blocker, str) and blocker.strip()
+    ]
+    if production_blocker_coverage.get("all_covered") is not True:
+        blockers.append(
+            "production sign-off blockers are not fully mapped to human actions: %s"
+            % (
+                ", ".join(uncovered_production_blockers)
+                if uncovered_production_blockers
+                else "coverage summary is missing or incomplete"
+            )
+        )
 
     raw_decisions = evidence.get("decisions")
     if not isinstance(raw_decisions, list):
@@ -309,6 +324,7 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "warnings": warnings,
         "blocked_objective_areas": blocked_objective_areas,
         "blocked_production_signoff_blockers": blocked_production_signoff_blockers,
+        "uncovered_production_signoff_blockers": uncovered_production_blockers,
         "action_results": action_results,
     }
 

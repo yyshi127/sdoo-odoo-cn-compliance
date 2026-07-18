@@ -50,6 +50,36 @@ def _missing_human_evidence(actions: list[dict[str, Any]]) -> list[dict[str, Any
     ]
 
 
+def _production_blocker_coverage(
+    blockers: list[str],
+    actions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    coverage = []
+    covered_blockers: set[str] = set()
+    for blocker in blockers:
+        action_keys = [
+            str(action.get("key"))
+            for action in actions
+            if blocker in (action.get("addresses_blockers") or [])
+        ]
+        if action_keys:
+            covered_blockers.add(blocker)
+        coverage.append(
+            {
+                "blocker": blocker,
+                "covered": bool(action_keys),
+                "action_keys": action_keys,
+            }
+        )
+    return {
+        "all_covered": len(covered_blockers) == len(blockers),
+        "uncovered_blockers": [
+            blocker for blocker in blockers if blocker not in covered_blockers
+        ],
+        "coverage": coverage,
+    }
+
+
 def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     readiness = status.get("readiness_gates") or {}
     source_control = status.get("source_control") or {}
@@ -338,6 +368,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             ],
         },
     ]
+    production_signoff_blockers = readiness.get("production_signoff_blockers") or []
     return {
         "schema": PACKET_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -350,7 +381,11 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         "production_actions": production_actions,
         "missing_human_evidence": _missing_human_evidence(production_actions),
         "business_uat_blockers": readiness.get("business_uat_blockers") or [],
-        "production_signoff_blockers": readiness.get("production_signoff_blockers") or [],
+        "production_signoff_blockers": production_signoff_blockers,
+        "production_blocker_coverage": _production_blocker_coverage(
+            production_signoff_blockers,
+            production_actions,
+        ),
     }
 
 
@@ -423,6 +458,19 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
     lines.extend(["", "## Production Sign-off Blockers", ""])
     blockers = packet.get("production_signoff_blockers") or []
     lines.extend([f"- {blocker}" for blocker in blockers] or ["- None"])
+    lines.extend(["", "## Production Blocker Coverage", ""])
+    coverage_summary = packet.get("production_blocker_coverage") or {}
+    lines.append(f"- All covered: `{coverage_summary.get('all_covered') is True}`")
+    for item in coverage_summary.get("coverage") or []:
+        lines.extend(
+            [
+                f"### {item.get('blocker')}",
+                "",
+                f"- Covered: `{item.get('covered') is True}`",
+                f"- Action keys: `{', '.join(item.get('action_keys') or [])}`",
+                "",
+            ]
+        )
     lines.extend(
         [
             "",

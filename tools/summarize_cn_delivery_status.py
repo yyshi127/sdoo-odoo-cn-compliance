@@ -536,6 +536,9 @@ def _status(
             "blocked_production_signoff_blockers": signoff_validation.get(
                 "blocked_production_signoff_blockers"
             ),
+            "uncovered_production_signoff_blockers": signoff_validation.get(
+                "uncovered_production_signoff_blockers"
+            ),
         }
     business_uat_blockers: list[str] = []
     if len(versions) > 1:

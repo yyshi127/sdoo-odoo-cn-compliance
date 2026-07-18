@@ -1081,6 +1081,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
             missing["blocker_summary_walkthrough"]["addresses_blockers"],
         )
+        coverage = packet["production_blocker_coverage"]
+        self.assertTrue(coverage["all_covered"])
+        self.assertEqual(coverage["uncovered_blockers"], [])
+        covered = {item["blocker"]: item for item in coverage["coverage"]}
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            covered,
+        )
+        self.assertIn(
+            "business_uat_decision",
+            covered[
+                "business UAT decision must be recorded outside this automated status"
+            ]["action_keys"],
+        )
 
     def test_signoff_packet_markdown_lists_missing_human_evidence(self):
         packet = PACKET._build_packet(status_payload())
@@ -1098,6 +1112,32 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Objective areas:", content)
         self.assertIn("Addresses blockers:", content)
         self.assertIn("blocker_summary_walkthrough", content)
+        self.assertIn("## Production Blocker Coverage", content)
+        self.assertIn("All covered: `True`", content)
+
+    def test_signoff_validation_blocks_unmapped_production_blockers(self):
+        packet = PACKET._build_packet(status_payload())
+        packet["production_signoff_blockers"].append(
+            "new production blocker without assigned owner"
+        )
+        packet["production_blocker_coverage"] = PACKET._production_blocker_coverage(
+            packet["production_signoff_blockers"],
+            packet["production_actions"],
+        )
+        evidence = complete_evidence(packet)
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "new production blocker without assigned owner",
+            result["uncovered_production_signoff_blockers"],
+        )
+        self.assertIn(
+            "production sign-off blockers are not fully mapped to human actions: "
+            "new production blocker without assigned owner",
+            result["blockers"],
+        )
 
     def test_signoff_packet_markdown_truncates_long_automated_evidence_only(self):
         packet = PACKET._build_packet(status_payload())
