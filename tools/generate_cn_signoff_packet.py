@@ -10,6 +10,7 @@ from typing import Any
 
 
 PACKET_SCHEMA = "sdoo.cn.signoff-packet.v1"
+MARKDOWN_EVIDENCE_LIMIT = 320
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -23,6 +24,16 @@ def _readiness_item(key: str, label: str, ready: bool, evidence: str) -> dict[st
         "ready": ready,
         "evidence": evidence,
     }
+
+
+def _markdown_evidence(evidence: Any) -> str:
+    text = "" if evidence is None else str(evidence)
+    if len(text) <= MARKDOWN_EVIDENCE_LIMIT:
+        return f"`{text}`"
+    return (
+        f"`{text[:MARKDOWN_EVIDENCE_LIMIT].rstrip()}...` "
+        "(truncated for readability; see the JSON packet for complete evidence)"
+    )
 
 
 def _missing_human_evidence(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -288,7 +299,7 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
                 f"### {item['label']}",
                 "",
                 f"- Status: `{status}`",
-                f"- Evidence: `{item['evidence']}`",
+                f"- Evidence: {_markdown_evidence(item['evidence'])}",
                 "",
             ]
         )

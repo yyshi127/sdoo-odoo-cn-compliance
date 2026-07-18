@@ -850,6 +850,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Objective areas:", content)
         self.assertIn("blocker_summary_walkthrough", content)
 
+    def test_signoff_packet_markdown_truncates_long_automated_evidence_only(self):
+        packet = PACKET._build_packet(status_payload())
+        automated = {
+            item["key"]: item for item in packet["automated_items"]
+        }
+        self.assertIn(
+            "VAT filing mismatch",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "packet.md"
+
+            PACKET._write_markdown(packet, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("truncated for readability", content)
+        self.assertIn("see the JSON packet for complete evidence", content)
+        self.assertNotIn("Correct VAT filing mismatch", content)
+
     def test_missing_representative_ux_walkthrough_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
