@@ -613,25 +613,31 @@ def _status(
         )
     elif signoff_validation_summary["schema"] != SIGNOFF_VALIDATION_SCHEMA:
         production_signoff_blockers.append("sign-off validation result schema is invalid")
-    elif signoff_validation_summary["version"] != version:
-        production_signoff_blockers.append("sign-off validation version does not match delivery version")
-    elif signoff_validation_summary["source_commit"] != (
-        source_control.get("commit") if isinstance(source_control, dict) else None
-    ):
-        production_signoff_blockers.append(
-            "sign-off validation source commit does not match delivery source commit"
-        )
-    elif signoff_validation_summary["preview_url"] != preview_url:
-        production_signoff_blockers.append(
-            "sign-off validation preview URL does not match delivery preview URL"
-        )
-    elif signoff_validation_summary["production_signoff_ready"] is not True:
-        blockers = signoff_validation_summary.get("blockers") or []
-        production_signoff_blockers.extend(
-            blockers if isinstance(blockers, list) else ["sign-off validation did not pass"]
-        )
     else:
-        production_signoff_ready = not production_signoff_blockers
+        signoff_binding_blockers: list[str] = []
+        if signoff_validation_summary["version"] != version:
+            signoff_binding_blockers.append(
+                "sign-off validation version does not match delivery version"
+            )
+        if signoff_validation_summary["source_commit"] != (
+            source_control.get("commit") if isinstance(source_control, dict) else None
+        ):
+            signoff_binding_blockers.append(
+                "sign-off validation source commit does not match delivery source commit"
+            )
+        if signoff_validation_summary["preview_url"] != preview_url:
+            signoff_binding_blockers.append(
+                "sign-off validation preview URL does not match delivery preview URL"
+            )
+        if signoff_binding_blockers:
+            production_signoff_blockers.extend(signoff_binding_blockers)
+        elif signoff_validation_summary["production_signoff_ready"] is not True:
+            blockers = signoff_validation_summary.get("blockers") or []
+            production_signoff_blockers.extend(
+                blockers if isinstance(blockers, list) else ["sign-off validation did not pass"]
+            )
+        else:
+            production_signoff_ready = not production_signoff_blockers
     return {
         "schema": STATUS_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
