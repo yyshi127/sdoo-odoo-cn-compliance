@@ -157,7 +157,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md",
         ROOT / "docs" / "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         ROOT / "docs" / "CHINA_DELIVERY_INDEX.md",
-        ROOT / "docs" / "CHINA_RELEASE_HANDOFF_M154.md",
+        ROOT / "docs" / "CHINA_RELEASE_HANDOFF_CURRENT.md",
         ROOT / "docs" / "CHINA_DELIVERY_M138_STATUS.md",
         ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
         ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",

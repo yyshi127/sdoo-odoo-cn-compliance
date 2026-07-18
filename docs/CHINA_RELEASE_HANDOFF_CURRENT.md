@@ -1,0 +1,184 @@
+# China Fiscal Compliance Pack Release Handoff
+
+This handoff is the reviewer-facing entry point for the current China fiscal
+compliance pack release candidate. It avoids pinning the document name to a
+single milestone number so the same instructions remain usable as the delivery
+bundle is rebuilt.
+
+## Current Release Evidence
+
+Delivery version: `19.0.1.130.0`
+
+Use the latest numbered files in `dist/` for the active release candidate:
+
+- delivery package: `dist/sdoo-cn-compliance-delivery-m*.tgz`
+- delivery metadata: `dist/sdoo-cn-compliance-delivery-m*.bundle.json`
+- delivery manifest: `dist/cn_delivery_manifest_m*_full.json`
+- local acceptance: `dist/cn_delivery_acceptance_m*_local.json`
+- remote acceptance: `dist/cn_delivery_acceptance_m*_remote.json`
+- delivery status: `dist/cn_delivery_status_m*.md`
+- sign-off packet: `dist/cn_signoff_packet_m*.md`
+
+Always confirm the exact source commit in the selected delivery status file:
+
+- `Source branch`
+- `Source commit`
+- `Source worktree dirty`
+- `Acceptance passed`
+- `Runtime passed`
+- `Business UAT ready`
+- `Production sign-off ready`
+
+For the last verified candidate before this handoff was generalized, the latest
+status file showed `business_uat_ready=true` and
+`production_signoff_ready=false`. That is the expected state before completed
+human sign-off evidence.
+
+## Remote Preview And Runtime Evidence
+
+- Remote host: `43.165.173.80`
+- Remote delivery directory: `/tmp/codex_cn_m31`
+- Preview database: `codex_cn_m31_demo_01`
+- Runtime database pattern: `codex_cn_m31_runtime_mNNN`
+- Preview URL pattern:
+  `http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01`
+- Odoo Python: `/opt/odoo/odoo19/odoo19-venv/bin/python`
+- Odoo server: `/opt/odoo/odoo19/odoo-server/odoo-bin`
+- Odoo config: `/tmp/codex_cn_m31/odoo-dev.conf`
+
+Do not store private keys, passwords, customer data, production database dumps or
+filestore backups in this repository or in the delivery bundle.
+
+## What Is Ready
+
+The release candidate can move to business UAT when the selected delivery
+status shows all of the following:
+
+- `Acceptance passed: True`
+- `Runtime passed: True`
+- `Source worktree dirty: False`
+- `Business UAT checklist in manifest: True`
+- `Business UAT walkthrough script in manifest: True`
+- `Objective coverage in manifest: True`
+- `Production sign-off template in manifest: True`
+- `Preview health ok: True`
+- `Preview module ok: True`
+- `Real-data closed-loop evidence ready: True`
+- `Official source governance summary ready: True`
+- `Business UAT ready: True`
+
+The sign-off packet should expose automated evidence for delivery integrity,
+runtime acceptance, preview health, real-data closed-loop evidence, UAT
+walkthrough script inclusion, workbench/risk/remediation/report/evidence
+summaries, official source governance, IIT payroll withholding scope and
+cross-border review scope.
+
+## What Is Not Yet Complete
+
+Production sign-off is intentionally blocked until all of the following are
+completed and validated:
+
+- representative business UAT;
+- completed `docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md`;
+- China tax professional review of released rules and official sources;
+- current official-source freshness and local jurisdiction review;
+- customer-specific accounting, external tax data, evidence gap and open risk
+  review;
+- final deploy, deploy-with-limitations, defer or reject decision;
+- validated machine-readable sign-off evidence generated from
+  `docs/samples/cn_signoff_evidence_template.json`.
+
+This release candidate is not a China tax opinion and does not certify any real
+taxpayer filing position.
+
+## Reproduce Local Acceptance
+
+Replace `mNNN` with the next delivery number for the current run:
+
+```bash
+python tools/run_cn_delivery_acceptance.py \
+  --profile full \
+  --write-manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --write-summary dist/cn_delivery_acceptance_mNNN_local.json
+
+python tools/build_cn_delivery_bundle.py \
+  --output dist/sdoo-cn-compliance-delivery-mNNN.tgz \
+  --metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json
+
+python tools/verify_cn_delivery_artifacts.py \
+  --bundle dist/sdoo-cn-compliance-delivery-mNNN.tgz \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_local.json
+```
+
+## Reproduce Remote Runtime Acceptance
+
+Upload the selected bundle to `/tmp/codex_cn_m31/dist/`, then run it in an
+isolated runtime database:
+
+```bash
+cd /tmp/codex_cn_m31
+tar -xzf dist/sdoo-cn-compliance-delivery-mNNN.tgz
+chown -R odoo:odoo /tmp/codex_cn_m31
+sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
+  tools/run_cn_delivery_acceptance.py \
+  --profile full \
+  --python-bin /opt/odoo/odoo19/odoo19-venv/bin/python \
+  --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
+  --config /tmp/codex_cn_m31/odoo-dev.conf \
+  --database codex_cn_m31_runtime_mNNN \
+  --install \
+  --http-port 18NNN \
+  --logfile dist/cn_delivery_runtime_mNNN_clean.log \
+  --write-summary dist/cn_delivery_acceptance_mNNN_remote.json
+```
+
+## Generate Status And Sign-Off Packet
+
+```bash
+sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
+  tools/summarize_cn_delivery_status.py \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --preview-health dist/cn_preview_health_m137.json \
+  --preview-module dist/cn_preview_module_m137.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
+  --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
+  --json-output dist/cn_delivery_status_mNNN.json \
+  --markdown-output dist/cn_delivery_status_mNNN.md
+
+sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
+  tools/generate_cn_signoff_packet.py \
+  --status dist/cn_delivery_status_mNNN.json \
+  --json-output dist/cn_signoff_packet_mNNN.json \
+  --markdown-output dist/cn_signoff_packet_mNNN.md \
+  --require-business-uat-ready
+```
+
+## Validate Completed Production Sign-Off
+
+After human reviewers complete real evidence, create a non-template evidence
+file from `docs/samples/cn_signoff_evidence_template.json` and run:
+
+```bash
+python tools/validate_cn_signoff_evidence.py \
+  --packet dist/cn_signoff_packet_mNNN.json \
+  --evidence dist/cn_signoff_evidence_completed.json \
+  --json-output dist/cn_signoff_validation_mNNN.json \
+  --require-production-signoff-ready
+```
+
+Then regenerate delivery status with `--signoff-validation`. Only a passed
+sign-off validation can make `production_signoff_ready=true`.
+
+## Next Best Work
+
+1. Run the UAT walkthrough with a business reviewer on representative data.
+2. Capture screenshots or recording references for workbench, risk center,
+   remediation tracker, AI guidance, filing/payment archive and reports.
+3. Have a China tax professional sign off released rules and official sources.
+4. Review current official-source freshness and local jurisdiction scope.
+5. Validate completed sign-off evidence and regenerate the final delivery
+   status with `--require-production-signoff-ready`.

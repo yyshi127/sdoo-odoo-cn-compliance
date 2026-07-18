@@ -4669,7 +4669,7 @@ def validate_delivery_objective_coverage() -> None:
         "## Command Index",
         "Release Candidate Is Ready For Business UAT When",
         "Release Candidate Is Ready For Production Sign-off When",
-        "docs/CHINA_RELEASE_HANDOFF_M154.md",
+        "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
         "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "tools/check_cn_preview_health.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
@@ -4677,16 +4677,15 @@ def validate_delivery_objective_coverage() -> None:
         if required not in delivery_index_content:
             fail(f"China delivery index is missing {required}")
 
-    handoff_path = REPOSITORY_ROOT / "docs" / "CHINA_RELEASE_HANDOFF_M154.md"
+    handoff_path = REPOSITORY_ROOT / "docs" / "CHINA_RELEASE_HANDOFF_CURRENT.md"
     if not handoff_path.is_file():
-        fail("China m154 release handoff must be documented")
+        fail("China current release handoff must be documented")
     handoff_content = handoff_path.read_text(encoding="utf-8")
     for required in (
-        "# China Fiscal Compliance Pack Release Handoff - m154",
+        "# China Fiscal Compliance Pack Release Handoff",
         "Delivery version: `19.0.1.130.0`",
-        "Source commit: `d8ad9dbe27c43c8132a93da97fc3a879c2afeea1`",
-        "dist/sdoo-cn-compliance-delivery-m154.tgz",
-        "codex_cn_m31_runtime_m154",
+        "dist/sdoo-cn-compliance-delivery-m*.tgz",
+        "codex_cn_m31_runtime_mNNN",
         "business_uat_ready=true",
         "production_signoff_ready=false",
         "CHINA_UAT_WALKTHROUGH_SCRIPT.md",
@@ -4696,7 +4695,7 @@ def validate_delivery_objective_coverage() -> None:
         "Next Best Work",
     ):
         if required not in handoff_content:
-            fail(f"China m154 release handoff is missing {required}")
+            fail(f"China current release handoff is missing {required}")
 
     blocker_visibility_path = (
         REPOSITORY_ROOT / "docs" / "MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md"
@@ -4980,7 +4979,7 @@ def validate_delivery_objective_coverage() -> None:
     ).read_text(encoding="utf-8")
     for required in (
         'ROOT / "docs" / "CHINA_DELIVERY_INDEX.md"',
-        'ROOT / "docs" / "CHINA_RELEASE_HANDOFF_M154.md"',
+        'ROOT / "docs" / "CHINA_RELEASE_HANDOFF_CURRENT.md"',
         'ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"',
         'ROOT / "docs" / "CHINA_UAT_WALKTHROUGH_SCRIPT.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',

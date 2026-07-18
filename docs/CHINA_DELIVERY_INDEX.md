@@ -8,8 +8,8 @@ This is the starting point for release handoff and acceptance of the
 1. `docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md`
    - Confirms how the product objective maps to software evidence and known
      production boundaries.
-2. `docs/CHINA_RELEASE_HANDOFF_M154.md`
-   - Gives the current m154 release candidate, artifact paths, remote runtime
+2. `docs/CHINA_RELEASE_HANDOFF_CURRENT.md`
+   - Gives the current release candidate, artifact paths, remote runtime
      evidence, reproduction commands, sign-off boundary and next-best work.
 3. `docs/DELIVERY_RUNBOOK_CN.md`
    - Explains how to install, upgrade, build and verify the delivery bundle.
