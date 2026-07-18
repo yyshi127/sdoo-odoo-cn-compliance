@@ -1026,6 +1026,13 @@ def ensure_report(assessment):
 def ensure_ai_guidance(finding):
     if not finding:
         return {{"analysis": None, "changed": False}}
+    if finding.result not in ("fail", "unknown", "error"):
+        finding = env["sudo.compliance.finding"].sudo().search([
+            ("assessment_id.profile_id", "=", finding.assessment_id.profile_id.id),
+            ("result", "in", ("fail", "unknown", "error")),
+        ], order="id desc", limit=1)
+    if not finding:
+        return {{"analysis": None, "changed": False}}
     analysis = env["sudo.compliance.ai.analysis"].sudo().search([
         ("finding_id", "=", finding.id),
         ("provider_key", "=", "sdoo_cn_controlled_guidance"),
