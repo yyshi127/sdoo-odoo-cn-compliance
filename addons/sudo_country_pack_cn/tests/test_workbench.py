@@ -468,6 +468,12 @@ class TestChinaComplianceWorkbench(TransactionCase):
         )
         self.assertIn("governance gaps", self.profile.cn_workbench_rule_basis_summary)
         self.assertTrue(self.profile.cn_workbench_rule_basis_next_action)
+        self.assertIn(
+            "controlled accounting/tax data",
+            self.profile.cn_workbench_limitation_summary,
+        )
+        self.assertIn("profile is not active", self.profile.cn_workbench_uncertainty_summary)
+        self.assertTrue(self.profile.cn_workbench_limitation_next_action)
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_gap_count, 1)
         self.assertIn("Activate", self.profile.cn_workbench_closed_loop_summary)
@@ -496,6 +502,8 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("Data:", self.profile.cn_workbench_action_summary)
         self.assertIn("Report:", self.profile.cn_workbench_action_summary)
         self.assertIn("Rule basis:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Limitations:", self.profile.cn_workbench_action_summary)
+        self.assertIn("Uncertainty:", self.profile.cn_workbench_action_summary)
         action = self.profile.action_cn_open_workbench_next_best_action()
         self.assertEqual(action["res_model"], "sudo.compliance.profile")
         self.assertEqual(action["res_id"], self.profile.id)

@@ -492,6 +492,18 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="范围/证据限制",
         compute="_compute_cn_workbench",
     )
+    cn_workbench_limitation_summary = fields.Char(
+        string="Limitations Summary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_uncertainty_summary = fields.Char(
+        string="Uncertainty Summary",
+        compute="_compute_cn_workbench",
+    )
+    cn_workbench_limitation_next_action = fields.Char(
+        string="Limitations Next Action",
+        compute="_compute_cn_workbench",
+    )
     cn_workbench_scan_state = fields.Selection(
         FLOW_STATES,
         string="扫描状态",
@@ -683,6 +695,11 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 % (
                     self.cn_workbench_rule_basis_state or "unknown",
                     self.cn_workbench_rule_basis_summary or "no summary",
+                ),
+                "Limitations: %s | Uncertainty: %s"
+                % (
+                    self.cn_workbench_limitation_summary or "none recorded",
+                    self.cn_workbench_uncertainty_summary or "none recorded",
                 ),
             ]
         )
@@ -1351,6 +1368,81 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                     "Seal submission and payment evidence for all controlled filing archives."
                 )
 
+            limitation_reasons = []
+            uncertainty_reasons = []
+            limitation_actions = []
+            if profile.status != "active":
+                uncertainty_reasons.append("profile is not active")
+                limitation_actions.append("Activate the China compliance profile.")
+            if profile.cn_workbench_rule_basis_state == "blocked":
+                limitation_reasons.append("rule basis is blocked")
+                uncertainty_reasons.append("official source freshness or monitor issue")
+                limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
+            elif profile.cn_workbench_rule_basis_state == "attention":
+                uncertainty_reasons.append("rule governance or professional sign-off gap")
+                limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
+            if profile.cn_workbench_data_state in ("blocked", "not_started"):
+                limitation_reasons.append("controlled accounting/tax data is not ready")
+                limitation_actions.append(profile.cn_workbench_data_next_action)
+            elif profile.cn_workbench_data_state == "attention":
+                uncertainty_reasons.append("some controlled datasets need review")
+                limitation_actions.append(profile.cn_workbench_data_next_action)
+            if profile.cn_workbench_obligation_state != "ready":
+                uncertainty_reasons.append("tax obligation applicability not fully reviewed")
+                limitation_actions.append(profile.cn_workbench_obligation_next_action)
+            if latest_assessment and "cn_jurisdiction_coverage_state" in latest_assessment._fields:
+                if latest_assessment.cn_jurisdiction_coverage_state in (
+                    "missing_assignment",
+                    "integrity_error",
+                    "limited",
+                ):
+                    limitation_reasons.append(
+                        "local jurisdiction coverage is %s"
+                        % latest_assessment.cn_jurisdiction_coverage_state
+                    )
+            if latest_report and latest_report.conclusion_state in (
+                "limited",
+                "limited_action_required",
+            ):
+                limitation_reasons.append(
+                    "latest report conclusion is %s" % latest_report.conclusion_state
+                )
+            if profile.cn_workbench_cross_border_state in ("blocked", "attention"):
+                uncertainty_reasons.append("cross-border or withholding facts need review")
+                limitation_actions.append(profile.cn_workbench_cross_border_next_action)
+            if profile.cn_workbench_ai_guidance_limited_count:
+                uncertainty_reasons.append("controlled AI guidance has limited inputs")
+                limitation_actions.append(profile.cn_workbench_ai_guidance_next_action)
+            if profile.cn_workbench_evidence_state in ("blocked", "attention"):
+                limitation_reasons.append("supporting evidence is not fully verified")
+                limitation_actions.append(
+                    "Verify supporting evidence before management sign-off."
+                )
+            if profile.cn_workbench_report_state in ("blocked", "attention"):
+                uncertainty_reasons.append("formal report package is not final")
+                limitation_actions.append(
+                    "Prepare the formal report with explicit limitations and uncertainty disclosure."
+                )
+            profile.cn_workbench_limitation_summary = (
+                "Explicit limitations: %s." % "; ".join(limitation_reasons[:6])
+                if limitation_reasons
+                else "No explicit conclusion limitation is currently recorded."
+            )
+            profile.cn_workbench_uncertainty_summary = (
+                "Uncertainty drivers: %s." % "; ".join(uncertainty_reasons[:6])
+                if uncertainty_reasons
+                else "No open uncertainty driver is currently recorded."
+            )
+            unique_actions = []
+            for action in limitation_actions:
+                if action and action not in unique_actions:
+                    unique_actions.append(action)
+            profile.cn_workbench_limitation_next_action = (
+                " ".join(unique_actions[:3])
+                if unique_actions
+                else "Keep limitations and uncertainty disclosures current before each report sign-off."
+            )
+
             if profile.country_id.code != "CN":
                 profile.cn_workbench_status = False
                 profile.cn_workbench_next_action = False
@@ -1364,6 +1456,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 profile.cn_workbench_rule_pending_professional_count = 0
                 profile.cn_workbench_source_review_overdue_count = 0
                 profile.cn_workbench_source_monitor_issue_count = 0
+                profile.cn_workbench_limitation_summary = False
+                profile.cn_workbench_uncertainty_summary = False
+                profile.cn_workbench_limitation_next_action = False
             elif profile.status != "active":
                 profile.cn_workbench_status = "setup_required"
                 profile.cn_workbench_next_action = _("先完善并启用中国合规档案")
