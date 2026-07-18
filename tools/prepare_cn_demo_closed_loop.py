@@ -848,6 +848,114 @@ def ensure_remediation_verification(profile, source_run, task):
     }}
 
 
+def verified_filing_evidence(profile, filing, suffix, evidence_type):
+    evidence = env["sudo.compliance.evidence"].sudo().search([
+        ("filing_id", "=", filing.id),
+        ("evidence_type", "=", evidence_type),
+        ("external_reference", "=", "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/" + suffix),
+    ], limit=1)
+    changed = False
+    if not evidence:
+        evidence = env["sudo.compliance.evidence"].with_company(
+            profile.company_id
+        ).sudo().create({{
+            "name": "CODEX-DEMO VAT filing/payment archive evidence " + suffix,
+            "company_id": profile.company_id.id,
+            "filing_id": filing.id,
+            "evidence_type": evidence_type,
+            "external_reference": "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/" + suffix,
+            "evidence_date": "2026-07-12",
+            "issuer": "CODEX-DEMO controlled tax authority evidence issuer",
+        }})
+        changed = True
+    if getattr(evidence, "state", False) == "draft":
+        evidence.action_submit()
+        changed = True
+    if getattr(evidence, "state", False) == "submitted":
+        evidence.write({{
+            "review_notes": (
+                "CODEX-DEMO ONLY: verified against the controlled VAT filing "
+                "or payment source record before sealing the archive."
+            )
+        }})
+        evidence.action_verify()
+        changed = True
+    return evidence, changed
+
+
+def ensure_filing_archive(profile, run, source):
+    if not run:
+        return {{"filing": None, "changed": False, "error": "no VAT run"}}
+    run.invalidate_recordset()
+    filing = env["sudo.compliance.filing"].sudo().search([
+        ("cn_vat_reconciliation_run_id", "=", run.id),
+    ], limit=1)
+    changed = False
+    obligation = profile.obligation_ids.filtered(lambda item: item.code == "CN-VAT")[:1]
+    if obligation and source:
+        obligation.write({{
+            "applicability": "applicable",
+            "effective_from": obligation.effective_from or "2026-01-01",
+            "authority_source_id": source.id,
+            "justification": (
+                "CODEX-DEMO ONLY: VAT obligation confirmed for the controlled "
+                "filing/payment archive walkthrough; not a production taxpayer conclusion."
+            ),
+        }})
+    if not filing:
+        action = run.action_open_cn_filing_archive()
+        defaults = {{
+            key.removeprefix("default_"): value
+            for key, value in action["context"].items()
+            if key.startswith("default_")
+        }}
+        defaults.update({{
+            "due_date": "2026-07-15",
+            "authority_source_id": source.id if source else False,
+            "due_date_basis": (
+                "CODEX-DEMO ONLY: due date manually confirmed for the controlled "
+                "VAT filing/payment archive walkthrough; do not use as production law."
+            ),
+        }})
+        filing = env["sudo.compliance.filing"].with_company(
+            profile.company_id
+        ).sudo().create(defaults)
+        changed = True
+    receipt, receipt_changed = verified_filing_evidence(
+        profile,
+        filing,
+        "RECEIPT-%s" % run.id,
+        "filing_receipt",
+    )
+    changed = changed or receipt_changed
+    if filing.state == "draft":
+        filing.action_prepare()
+        changed = True
+    if filing.state == "ready":
+        filing.action_submit()
+        changed = True
+    filing.invalidate_recordset()
+    payment_evidence = None
+    if filing.payment_required:
+        payment_evidence, payment_changed = verified_filing_evidence(
+            profile,
+            filing,
+            "PAYMENT-%s" % run.id,
+            "payment_proof",
+        )
+        changed = changed or payment_changed
+        if filing.payment_state in ("not_paid", "partial"):
+            filing.action_mark_paid()
+            changed = True
+    filing.invalidate_recordset()
+    return {{
+        "filing": filing,
+        "changed": changed,
+        "receipt_evidence": receipt,
+        "payment_evidence": payment_evidence,
+    }}
+
+
 def ensure_report(assessment):
     report = env["sudo.cn.compliance.report"].sudo().search([
         ("assessment_id", "=", assessment.id),
@@ -901,6 +1009,12 @@ else:
         assessment, created_assessment = ensure_assessment(run)
         finding, task, changed_task = ensure_finding_task(assessment)
         verification = ensure_remediation_verification(profile, run, task)
+        archive_run = verification.get("replacement_run") or run
+        archive = ensure_filing_archive(
+            profile,
+            archive_run,
+            version.authority_source_ids[:1],
+        )
         report, created_report = ensure_report(assessment)
         profile.invalidate_recordset()
         payload.update({{
@@ -908,6 +1022,13 @@ else:
                 assessment
                 and finding
                 and report
+                and archive.get("filing")
+                and archive["filing"].cn_submission_integrity_state == "verified"
+                and archive["filing"].cn_filing_center_evidence_state == "verified"
+                and (
+                    not archive["filing"].payment_required
+                    or archive["filing"].cn_payment_integrity_state == "verified"
+                )
                 and (
                     finding.result == "pass"
                     or (
@@ -923,6 +1044,7 @@ else:
                 or created_assessment
                 or changed_task
                 or verification.get("changed")
+                or archive.get("changed")
                 or created_report
             ),
             "profile": {{
@@ -1011,12 +1133,22 @@ else:
                 "state": report.state,
                 "conclusion_state": report.conclusion_state,
             }} if report else None,
+            "filing_archive": {{
+                "id": archive["filing"].id,
+                "name": archive["filing"].display_name,
+                "state": archive["filing"].state,
+                "payment_state": archive["filing"].payment_state,
+                "submission_integrity_state": archive["filing"].cn_submission_integrity_state,
+                "payment_integrity_state": archive["filing"].cn_payment_integrity_state,
+                "evidence_state": archive["filing"].cn_filing_center_evidence_state,
+            }} if archive.get("filing") else None,
             "counts": {{
                 "assessments": env["sudo.compliance.assessment"].sudo().search_count([("profile_id", "=", profile.id)]),
                 "findings": env["sudo.compliance.finding"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "tasks": env["sudo.compliance.task"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "reports": env["sudo.cn.compliance.report"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
                 "evidence": env["sudo.compliance.evidence"].sudo().search_count([("task_id.assessment_id.profile_id", "=", profile.id)]),
+                "filing_archives": env["sudo.compliance.filing"].sudo().search_count([("profile_id", "=", profile.id)]),
             }},
         }})
         if payload["ok"]:

@@ -4684,6 +4684,11 @@ def validate_delivery_objective_coverage() -> None:
         "action_run_now",
         "action_require_correction",
         "action_create_task",
+        "ensure_filing_archive",
+        "action_open_cn_filing_archive",
+        "action_mark_paid",
+        "cn_submission_integrity_state",
+        "cn_payment_integrity_state",
         "sudo.cn.compliance.report",
         "China demo closed loop ready",
     ):
