@@ -2887,6 +2887,87 @@ def validate_formal_compliance_report() -> None:
     view_content = (
         ADDON_ROOT / "views" / "compliance_report_views.xml"
     ).read_text(encoding="utf-8")
+    report_view_root = ElementTree.parse(
+        ADDON_ROOT / "views" / "compliance_report_views.xml"
+    ).getroot()
+
+    def report_view_field_names(record_id: str) -> set[str]:
+        arch = report_view_root.find(
+            f".//record[@id='{record_id}']/field[@name='arch']"
+        )
+        if arch is None:
+            fail(f"formal report UX view contract is missing record {record_id}")
+        return {
+            element.attrib["name"]
+            for element in arch.iter("field")
+            if element.attrib.get("name")
+        }
+
+    report_list_fields = report_view_field_names(
+        "view_cn_formal_compliance_report_list"
+    )
+    report_kanban_fields = report_view_field_names(
+        "view_cn_formal_compliance_report_kanban"
+    )
+    report_form_fields = report_view_field_names(
+        "view_cn_formal_compliance_report_form"
+    )
+    required_report_summary_fields = {
+        "cn_report_center_stage",
+        "cn_report_center_next_action",
+        "cn_report_blocker_summary",
+        "cn_report_traceability_state",
+        "cn_report_traceability_gap_count",
+        "cn_report_fact_basis_state",
+        "fact_snapshot_count",
+        "fact_issue_count",
+        "critical_count",
+        "high_count",
+        "finding_closure_blocked_count",
+        "finding_closure_action_required_count",
+        "open_task_count",
+        "remediation_pending_verification_count",
+        "conclusion_state",
+        "state",
+        "reviewer_id",
+        "cn_report_center_integrity_state",
+    }
+    for record_id, fields in (
+        ("view_cn_formal_compliance_report_list", report_list_fields),
+        ("view_cn_formal_compliance_report_kanban", report_kanban_fields),
+    ):
+        missing = required_report_summary_fields - fields
+        if missing:
+            fail(
+                "formal report summary views must expose clear stage, conclusion, "
+                "fact basis, traceability, risk counts, remediation counts, "
+                f"reviewer and next action fields in {record_id}: {sorted(missing)}"
+            )
+    required_report_form_fields = required_report_summary_fields | {
+        "assessment_id",
+        "profile_id",
+        "company_id",
+        "period_start",
+        "period_end",
+        "executive_summary",
+        "scope_statement",
+        "limitation_statement",
+        "management_response",
+        "tax_impact_pending_count",
+        "reviewed_underpayment_amount",
+        "reviewed_overpayment_amount",
+        "reviewed_timing_amount",
+        "snapshot_checksum",
+        "approval_checksum",
+        "issued_pdf_sha256",
+    }
+    missing_form_fields = required_report_form_fields - report_form_fields
+    if missing_form_fields:
+        fail(
+            "formal report form must expose scope, summary, limitations, tax "
+            "impact, traceability, audit hashes and next action fields: "
+            f"{sorted(missing_form_fields)}"
+        )
     for required in (
         'id="view_cn_formal_compliance_report_kanban"',
         'id="view_cn_formal_compliance_report_list"',

@@ -71,6 +71,7 @@
                 <field name="evidence_count"/>
                 <field name="verified_evidence_count"/>
                 <field name="state"/>
+                <field name="reviewer_id"/>
                 <field name="issued_at"/>
                 <templates>
                     <t t-name="kanban-box">
@@ -189,6 +190,8 @@
                                     来源评估
                                 </button>
                                 <span class="text-muted small">
+                                    <field name="reviewer_id"/>
+                                    <span> 路 </span>
                                     <field name="issued_at"/>
                                 </span>
                             </div>
@@ -379,6 +382,19 @@
 
                     <group string="报告快照概览" col="4"
                            invisible="state == 'draft'">
+                        <group string="Report center">
+                            <field name="cn_report_center_stage" widget="badge"
+                                   decoration-success="cn_report_center_stage == 'issued'"
+                                   decoration-info="cn_report_center_stage in ('draft', 'approval')"
+                                   decoration-muted="cn_report_center_stage in ('withdrawn', 'superseded')"/>
+                            <field name="cn_report_center_integrity_state" widget="badge"
+                                   decoration-success="cn_report_center_integrity_state == 'verified'"
+                                   decoration-warning="cn_report_center_integrity_state == 'warning'"
+                                   decoration-danger="cn_report_center_integrity_state == 'blocked'"
+                                   decoration-muted="cn_report_center_integrity_state == 'unsealed'"/>
+                            <field name="cn_report_center_next_action"/>
+                            <field name="cn_report_blocker_summary"/>
+                        </group>
                         <group>
                             <field name="finding_count"/>
                             <field name="critical_count"
