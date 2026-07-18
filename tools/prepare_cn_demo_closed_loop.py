@@ -931,6 +931,11 @@ def ensure_filing_archive(profile, run, source):
     if filing.state == "draft":
         filing.action_prepare()
         changed = True
+        filing.invalidate_recordset()
+    if filing.state == "preparing":
+        filing.action_ready()
+        changed = True
+        filing.invalidate_recordset()
     if filing.state == "ready":
         filing.action_submit()
         changed = True
