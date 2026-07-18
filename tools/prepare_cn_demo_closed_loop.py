@@ -1063,11 +1063,25 @@ def ensure_iit_accounting_scope(profile, accounts):
                 "payable and individual income tax payable accounts for the "
                 "2026-06 controlled IIT walkthrough."
             ),
+            "separation_exception_reason": (
+                "CODEX-DEMO ONLY: development UAT automation creates and verifies "
+                "this controlled IIT scope in one repeatable script; production "
+                "must use independent preparer and reviewer users."
+            ),
             "line_ids": [
                 (0, 0, {{"account_id": accounts["payroll_expense"].id, "role": "payroll_expense"}}),
                 (0, 0, {{"account_id": accounts["employee_payable"].id, "role": "employee_payable"}}),
                 (0, 0, {{"account_id": accounts["iit_payable"].id, "role": "iit_payable"}}),
             ],
+        }})
+        changed = True
+    elif not scope.separation_exception_reason:
+        scope.write({{
+            "separation_exception_reason": (
+                "CODEX-DEMO ONLY: development UAT automation creates and verifies "
+                "this controlled IIT scope in one repeatable script; production "
+                "must use independent preparer and reviewer users."
+            )
         }})
         changed = True
     if not scope.evidence_attachment_ids:
