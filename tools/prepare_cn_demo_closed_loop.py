@@ -909,25 +909,42 @@ def ensure_filing_archive(profile, run, source):
                 "filing/payment archive walkthrough; not a production taxpayer conclusion."
             ),
         }})
+    action = run.action_open_cn_filing_archive()
+    defaults = {{
+        key.removeprefix("default_"): value
+        for key, value in action["context"].items()
+        if key.startswith("default_")
+    }}
+    defaults.update({{
+        "due_date": "2026-07-15",
+        "authority_source_id": source.id if source else False,
+        "due_date_basis": (
+            "CODEX-DEMO ONLY: due date manually confirmed for the controlled "
+            "VAT filing/payment archive walkthrough; do not use as production law."
+        ),
+    }})
     if not filing:
-        action = run.action_open_cn_filing_archive()
-        defaults = {{
-            key.removeprefix("default_"): value
-            for key, value in action["context"].items()
-            if key.startswith("default_")
-        }}
-        defaults.update({{
-            "due_date": "2026-07-15",
-            "authority_source_id": source.id if source else False,
-            "due_date_basis": (
-                "CODEX-DEMO ONLY: due date manually confirmed for the controlled "
-                "VAT filing/payment archive walkthrough; do not use as production law."
-            ),
-        }})
         filing = env["sudo.compliance.filing"].with_company(
             profile.company_id
         ).sudo().create(defaults)
         changed = True
+    else:
+        backfill_values = {{}}
+        for field_name in (
+            "due_date",
+            "due_date_basis",
+            "authority_source_id",
+            "submission_date",
+            "submission_reference",
+            "payment_date",
+            "payment_reference",
+        ):
+            if field_name in filing._fields and not filing[field_name] and defaults.get(field_name):
+                backfill_values[field_name] = defaults[field_name]
+        if backfill_values:
+            filing.write(backfill_values)
+            changed = True
+            filing.invalidate_recordset()
     receipt, receipt_changed = verified_filing_evidence(
         profile,
         filing,
@@ -948,7 +965,12 @@ def ensure_filing_archive(profile, run, source):
         changed = True
     filing.invalidate_recordset()
     payment_evidence = None
-    if filing.payment_required:
+    payment_needed = (
+        filing.payment_required
+        or filing.payment_state in ("pending", "not_paid", "partial")
+        or filing.cn_payment_integrity_state == "unsealed"
+    )
+    if payment_needed:
         payment_evidence, payment_changed = verified_filing_evidence(
             profile,
             filing,
@@ -956,7 +978,8 @@ def ensure_filing_archive(profile, run, source):
             "payment_proof",
         )
         changed = changed or payment_changed
-        if filing.payment_state in ("not_paid", "partial"):
+        filing.invalidate_recordset()
+        if filing.payment_state in ("pending", "not_paid", "partial"):
             filing.action_mark_paid()
             changed = True
     filing.invalidate_recordset()
