@@ -73,6 +73,105 @@ def _runtime_summary(summary: dict[str, object] | None) -> dict[str, object] | N
     }
 
 
+def _tax_domain_coverage(real_data_closed_loop: dict[str, object] | None) -> dict[str, dict[str, object]]:
+    real_data = real_data_closed_loop or {}
+    objects = real_data.get("objects") if isinstance(real_data.get("objects"), dict) else {}
+    readiness = (
+        real_data.get("readiness")
+        if isinstance(real_data.get("readiness"), dict)
+        else {}
+    )
+    sample_filing_archives = real_data.get("sample_filing_archives") or []
+    vat_filing_archives = [
+        item
+        for item in sample_filing_archives
+        if isinstance(item, dict)
+        and str(item.get("kind") or "").lower() in ("vat", "cn_vat", "vat_return")
+    ]
+    return {
+        "vat": {
+            "label": "VAT invoice / filing / payment",
+            "ready": bool(
+                (objects.get("vat_reconciliation_runs") or 0) > 0
+                and (objects.get("vat_filing_records") or 0) > 0
+                and (objects.get("tax_payment_records") or 0) > 0
+                and bool(vat_filing_archives)
+            ),
+            "run_count": objects.get("vat_reconciliation_runs") or 0,
+            "record_count": objects.get("vat_filing_records") or 0,
+            "payment_record_count": objects.get("tax_payment_records") or 0,
+            "evidence": "VAT reconciliation plus filing/payment archive sample",
+            "boundary": "Representative UAT scope; production still requires current official rule sign-off and customer data completeness review.",
+        },
+        "cit": {
+            "label": "CIT accounting / filing",
+            "ready": bool(
+                (objects.get("cit_reconciliation_runs") or 0) > 0
+                and (objects.get("cit_filing_records") or 0) > 0
+            ),
+            "run_count": objects.get("cit_reconciliation_runs") or 0,
+            "record_count": objects.get("cit_filing_records") or 0,
+            "payment_record_count": None,
+            "evidence": "CIT reconciliation and filing records",
+            "boundary": "CIT data contract and reconciliation exist; representative remote demo evidence may still be thinner than VAT/IIT.",
+        },
+        "iit": {
+            "label": "IIT payroll / withholding / payment",
+            "ready": readiness.get("has_iit_payroll_withholding_scope_evidence")
+            is True,
+            "run_count": objects.get("active_profile_iit_reconciliation_runs") or 0,
+            "record_count": objects.get("iit_withholding_records") or 0,
+            "payroll_record_count": objects.get("payroll_summary_records") or 0,
+            "payment_record_count": objects.get("tax_payment_records") or 0,
+            "evidence": "Aligned IIT reconciliation with payroll, withholding filing, payment and checksum evidence",
+            "boundary": "Demo uses controlled aggregate/pseudonymous payroll records; production requires lawful payroll and withholding exports.",
+        },
+        "cross_border": {
+            "label": "Cross-border and withholding review",
+            "ready": readiness.get("has_cross_border_review_scope_evidence")
+            is True,
+            "run_count": None,
+            "record_count": objects.get("active_profile_cross_border_transactions") or 0,
+            "payment_record_count": None,
+            "evidence": "Reviewed cross-border transaction with evidence, withholding consideration and snapshot checksum",
+            "boundary": "Fact-specific review remains required for contracts, payments, source rules and treaty analysis.",
+        },
+    }
+
+
+def _tax_domain_markdown_lines(
+    tax_domain_coverage: object,
+) -> list[str]:
+    if not isinstance(tax_domain_coverage, dict) or not tax_domain_coverage:
+        return ["- No tax domain coverage summary was provided.", ""]
+    lines: list[str] = []
+    for key, domain in tax_domain_coverage.items():
+        if not isinstance(domain, dict):
+            continue
+        lines.extend(
+            [
+                f"### {domain.get('label') or key}",
+                "",
+                f"- Ready: `{domain.get('ready', False)}`",
+                f"- Runs: `{domain.get('run_count', '')}`",
+                f"- Records: `{domain.get('record_count', '')}`",
+            ]
+        )
+        if "payroll_record_count" in domain:
+            lines.append(
+                f"- Payroll records: `{domain.get('payroll_record_count', '')}`"
+            )
+        lines.extend(
+            [
+                f"- Payment records: `{domain.get('payment_record_count', '')}`",
+                f"- Evidence: {domain.get('evidence', '')}",
+                f"- Boundary: {domain.get('boundary', '')}",
+                "",
+            ]
+        )
+    return lines or ["- No tax domain coverage summary was provided.", ""]
+
+
 def _source_control_blockers(source_control: object) -> list[str]:
     if not isinstance(source_control, dict):
         return ["source control evidence is missing"]
@@ -229,6 +328,7 @@ def _status(
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
+    tax_domain_coverage = _tax_domain_coverage(real_data_closed_loop_summary)
     signoff_validation_summary = None
     if signoff_validation:
         signoff_validation_summary = {
@@ -352,6 +452,7 @@ def _status(
         "preview_health": preview_health_summary,
         "preview_module": preview_module_summary,
         "real_data_closed_loop": real_data_closed_loop_summary,
+        "tax_domain_coverage": tax_domain_coverage,
         "signoff_validation": signoff_validation_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
@@ -404,6 +505,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         "sample_cross_border_transactions"
     ) or []
     readiness = status.get("readiness_gates") or {}
+    tax_domain_coverage = status.get("tax_domain_coverage") or {}
     lines = [
         "# China Delivery Status",
         "",
@@ -478,6 +580,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             for area in signoff_validation.get("blocked_objective_areas", []) or []
         ],
         "",
+        "## Tax Domain Coverage Overview",
+        "",
+        *_tax_domain_markdown_lines(tax_domain_coverage),
         "## Artifacts",
         "",
         f"- Bundle version: `{bundle.get('version', '')}`",

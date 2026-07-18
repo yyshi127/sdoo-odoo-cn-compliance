@@ -62,6 +62,17 @@ def status_payload() -> dict:
         "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
         "real_data_closed_loop": {
             "ok": True,
+            "objects": {
+                "vat_reconciliation_runs": 1,
+                "vat_filing_records": 1,
+                "tax_payment_records": 2,
+                "cit_reconciliation_runs": 0,
+                "cit_filing_records": 0,
+                "active_profile_iit_reconciliation_runs": 1,
+                "iit_withholding_records": 1,
+                "payroll_summary_records": 1,
+                "active_profile_cross_border_transactions": 1,
+            },
             "readiness": {
                 "closed_loop_evidence_ready": True,
                 "has_workbench_summary_evidence": True,
@@ -339,6 +350,17 @@ def real_data_closed_loop_payload() -> dict:
         "database": "test",
         "expected_version": "19.0.1.130.0",
         "ok": True,
+        "objects": {
+            "vat_reconciliation_runs": 1,
+            "vat_filing_records": 1,
+            "tax_payment_records": 2,
+            "cit_reconciliation_runs": 0,
+            "cit_filing_records": 0,
+            "active_profile_iit_reconciliation_runs": 1,
+            "iit_withholding_records": 1,
+            "payroll_summary_records": 1,
+            "active_profile_cross_border_transactions": 1,
+        },
         "readiness": {
             "demo_ready": True,
             "closed_loop_evidence_ready": True,
@@ -1246,6 +1268,29 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("## Cross-Border Review Scope Evidence", content)
         self.assertIn("2026-06 service fee cross-border review", content)
         self.assertIn("Withholding considered", content)
+
+    def test_delivery_status_lists_tax_domain_coverage_overview(self):
+        status = delivery_status()
+
+        coverage = status["tax_domain_coverage"]
+
+        self.assertTrue(coverage["vat"]["ready"])
+        self.assertFalse(coverage["cit"]["ready"])
+        self.assertTrue(coverage["iit"]["ready"])
+        self.assertTrue(coverage["cross_border"]["ready"])
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Tax Domain Coverage Overview", content)
+        self.assertIn("VAT invoice / filing / payment", content)
+        self.assertIn("CIT accounting / filing", content)
+        self.assertIn("IIT payroll / withholding / payment", content)
+        self.assertIn("Cross-border and withholding review", content)
+        self.assertIn("Representative UAT scope", content)
+        self.assertIn("Fact-specific review remains required", content)
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())
