@@ -96,6 +96,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else {}
     upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
+    upgrade_runtime = status.get("upgrade_runtime") or {}
 
     automated_items = [
         _readiness_item(
@@ -139,6 +140,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Current China compliance release includes the module manifest, static validator and current post-migration script in the delivery manifest",
             upgrade_migration_chain.get("ready") is True,
             json.dumps(upgrade_migration_chain, ensure_ascii=False, sort_keys=True),
+        ),
+        _readiness_item(
+            "upgrade_runtime_evidence",
+            "Current China compliance release passed an Odoo module update run using -u sudo_country_pack_cn",
+            status.get("upgrade_runtime_passed") is True,
+            json.dumps(upgrade_runtime, ensure_ascii=False, sort_keys=True),
         ),
         _readiness_item(
             "multi_company_security_contract_evidence",

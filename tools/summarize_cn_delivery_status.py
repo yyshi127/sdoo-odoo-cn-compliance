@@ -336,6 +336,7 @@ def _runtime_summary(summary: dict[str, object] | None) -> dict[str, object] | N
     return {
         "requested": runtime.get("requested"),
         "database": runtime.get("database"),
+        "install": runtime.get("install"),
         "http_port": runtime.get("http_port"),
         "log": log if isinstance(log, dict) else None,
     }
@@ -595,6 +596,7 @@ def _status(
     preview_health: dict[str, object] | None,
     preview_module: dict[str, object] | None,
     real_data_closed_loop: dict[str, object] | None,
+    upgrade_summary: dict[str, object] | None,
     objective_audit: dict[str, object] | None,
     signoff_validation: dict[str, object] | None,
     preview_url: str | None,
@@ -616,6 +618,19 @@ def _status(
         isinstance(runtime_log, dict)
         and runtime_log.get("failed") == 0
         and runtime_log.get("errors") == 0
+    )
+    upgrade_runtime = _runtime_summary(upgrade_summary)
+    upgrade_runtime_log = (
+        upgrade_runtime.get("log") if isinstance(upgrade_runtime, dict) else None
+    )
+    upgrade_runtime_passed = (
+        upgrade_summary is not None
+        and upgrade_summary.get("result") == "passed"
+        and upgrade_summary.get("version") == version
+        and isinstance(upgrade_runtime_log, dict)
+        and upgrade_runtime_log.get("failed") == 0
+        and upgrade_runtime_log.get("errors") == 0
+        and upgrade_runtime.get("install") is False
     )
     artifact_result = summary.get("result") if summary else None
     source_control = bundle_metadata.get("source_control") if bundle_metadata else None
@@ -817,6 +832,8 @@ def _status(
         business_uat_blockers.append("source worktree was dirty when delivery was built")
     if not runtime_passed:
         business_uat_blockers.append("Odoo runtime tests did not pass")
+    if not upgrade_runtime_passed:
+        business_uat_blockers.append("Odoo upgrade runtime tests did not pass")
     for label, evidence in (
         ("delivery index", delivery_index),
         ("objective coverage", objective_coverage),
@@ -929,6 +946,7 @@ def _status(
         "aggregate_consistent": len(aggregate_values) <= 1,
         "acceptance_passed": artifact_result == "passed",
         "runtime_passed": runtime_passed,
+        "upgrade_runtime_passed": upgrade_runtime_passed,
         "version": version,
         "preview_url": preview_url,
         "source_control": source_control,
@@ -977,7 +995,9 @@ def _status(
         "bundle_metadata": _artifact_summary(bundle_metadata),
         "manifest": _artifact_summary(manifest),
         "acceptance_summary": _artifact_summary(summary),
+        "upgrade_acceptance_summary": _artifact_summary(upgrade_summary),
         "runtime": runtime,
+        "upgrade_runtime": upgrade_runtime,
     }
 
 
@@ -987,6 +1007,10 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     acceptance = status.get("acceptance_summary") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else None
+    upgrade_runtime = status.get("upgrade_runtime") or {}
+    upgrade_runtime_log = (
+        upgrade_runtime.get("log") if isinstance(upgrade_runtime, dict) else None
+    )
     source_control = status.get("source_control") or {}
     business_uat = status.get("business_uat") or {}
     uat_walkthrough = status.get("uat_walkthrough") or {}
@@ -1034,6 +1058,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Aggregate consistent: `{status['aggregate_consistent']}`",
         f"- Acceptance passed: `{status['acceptance_passed']}`",
         f"- Runtime passed: `{status['runtime_passed']}`",
+        f"- Upgrade runtime passed: `{status.get('upgrade_runtime_passed', False)}`",
         f"- Preview URL: `{status.get('preview_url') or ''}`",
         f"- Source branch: `{source_control.get('branch', '')}`",
         f"- Source commit: `{source_control.get('commit', '')}`",
@@ -1523,7 +1548,14 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         "## Runtime",
         "",
         f"- Database: `{runtime.get('database', '') if isinstance(runtime, dict) else ''}`",
+        f"- Install mode: `{runtime.get('install', '') if isinstance(runtime, dict) else ''}`",
         f"- Log: `{runtime_log or ''}`",
+        "",
+        "## Upgrade Runtime",
+        "",
+        f"- Database: `{upgrade_runtime.get('database', '') if isinstance(upgrade_runtime, dict) else ''}`",
+        f"- Install mode: `{upgrade_runtime.get('install', '') if isinstance(upgrade_runtime, dict) else ''}`",
+        f"- Log: `{upgrade_runtime_log or ''}`",
         "",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1535,6 +1567,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--bundle-metadata", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--summary", type=Path)
+    parser.add_argument("--upgrade-summary", type=Path)
     parser.add_argument("--preview-health", type=Path)
     parser.add_argument("--preview-module", type=Path)
     parser.add_argument("--real-data-closed-loop", type=Path)
@@ -1570,6 +1603,7 @@ def main() -> int:
         preview_health=_load(args.preview_health),
         preview_module=_load(args.preview_module),
         real_data_closed_loop=_load(args.real_data_closed_loop),
+        upgrade_summary=_load(args.upgrade_summary),
         objective_audit=_load(args.objective_audit),
         signoff_validation=_load(args.signoff_validation),
         preview_url=args.preview_url,

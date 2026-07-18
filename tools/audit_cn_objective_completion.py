@@ -93,12 +93,14 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
             _state(
                 _ready(status.get("acceptance_passed"))
                 and _ready(status.get("runtime_passed"))
+                and _ready(status.get("upgrade_runtime_passed"))
                 and _ready(preview_module.get("ok"))
                 and _ready(upgrade_migration_chain.get("ready"))
             ),
             [
                 f"acceptance_passed={status.get('acceptance_passed')}",
                 f"runtime_passed={status.get('runtime_passed')}",
+                f"upgrade_runtime_passed={status.get('upgrade_runtime_passed')}",
                 f"preview_module_ok={preview_module.get('ok')}",
                 f"upgrade_migration_chain={upgrade_migration_chain.get('ready')}",
                 f"current_migration={upgrade_migration_chain.get('current_migration')}",

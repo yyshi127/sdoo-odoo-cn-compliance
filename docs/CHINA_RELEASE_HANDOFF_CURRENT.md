@@ -144,6 +144,7 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
   --preview-health dist/cn_preview_health_m137.json \
   --preview-module dist/cn_preview_module_m137.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
@@ -178,6 +179,7 @@ python tools/build_cn_signoff_evidence_chain.py \
   --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
   --preview-health dist/cn_preview_health_m137.json \
   --preview-module dist/cn_preview_module_m137.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \

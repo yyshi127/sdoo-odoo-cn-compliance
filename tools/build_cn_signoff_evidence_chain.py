@@ -70,6 +70,7 @@ def _status(
         preview_health=inputs.get("preview_health"),
         preview_module=inputs.get("preview_module"),
         real_data_closed_loop=inputs.get("real_data_closed_loop"),
+        upgrade_summary=inputs.get("upgrade_summary"),
         objective_audit=objective_audit,
         signoff_validation=signoff_validation,
         preview_url=inputs.get("preview_url"),
@@ -173,6 +174,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--bundle-metadata", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
+    parser.add_argument("--upgrade-summary", type=Path, required=True)
     parser.add_argument("--preview-health", type=Path, required=True)
     parser.add_argument("--preview-module", type=Path, required=True)
     parser.add_argument("--real-data-closed-loop", type=Path, required=True)
@@ -195,6 +197,7 @@ def main() -> int:
         "bundle_metadata": _load(args.bundle_metadata),
         "manifest": _load(args.manifest),
         "summary": _load(args.summary),
+        "upgrade_summary": _load(args.upgrade_summary),
         "preview_health": _load(args.preview_health),
         "preview_module": _load(args.preview_module),
         "real_data_closed_loop": _load(args.real_data_closed_loop),

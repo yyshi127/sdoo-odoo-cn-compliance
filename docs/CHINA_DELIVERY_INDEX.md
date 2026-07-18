@@ -71,6 +71,7 @@ python tools/summarize_cn_delivery_status.py \
   --bundle-metadata dist/sdoo-cn-compliance-delivery.bundle.json \
   --manifest dist/cn_delivery_manifest.json \
   --summary dist/cn_delivery_acceptance_summary.json \
+  --upgrade-summary dist/cn_delivery_acceptance_upgrade_summary.json \
   --preview-health dist/cn_preview_health.json \
   --preview-module dist/cn_preview_module.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop.json \
@@ -107,6 +108,7 @@ python tools/build_cn_signoff_evidence_chain.py \
   --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
   --preview-health dist/cn_preview_health_mNNN.json \
   --preview-module dist/cn_preview_module_mNNN.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \

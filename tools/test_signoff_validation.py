@@ -54,6 +54,7 @@ def status_payload() -> dict:
         "version_consistent": True,
         "acceptance_passed": True,
         "runtime_passed": True,
+        "upgrade_runtime_passed": True,
         "preview_url": "http://127.0.0.1:18070/web/login?db=test",
         "source_control": {
             "inside_worktree": True,
@@ -70,6 +71,13 @@ def status_payload() -> dict:
             ],
         },
         "runtime": {"log": {"failed": 0, "errors": 0}},
+        "upgrade_runtime": {
+            "requested": True,
+            "database": "test",
+            "install": False,
+            "http_port": 18071,
+            "log": {"failed": 0, "errors": 0},
+        },
         "preview_health": {"ok": True, "url": "http://127.0.0.1:18070/web/login?db=test"},
         "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
         "upgrade_migration_chain": {
@@ -458,6 +466,21 @@ def summary_payload() -> dict:
     }
 
 
+def upgrade_summary_payload() -> dict:
+    return {
+        "schema": "sdoo.cn.delivery-acceptance-summary.v1",
+        "version": "19.0.1.130.0",
+        "result": "passed",
+        "runtime": {
+            "requested": True,
+            "database": "test",
+            "install": False,
+            "http_port": 18071,
+            "log": {"failed": 0, "errors": 0},
+        },
+    }
+
+
 def preview_health_payload() -> dict:
     return {
         "schema": SUMMARY.PREVIEW_HEALTH_SCHEMA,
@@ -745,6 +768,7 @@ def delivery_status(signoff_validation: dict | None = None) -> dict:
         preview_health=preview_health_payload(),
         preview_module=preview_module_payload(),
         real_data_closed_loop=real_data_closed_loop_payload(),
+        upgrade_summary=upgrade_summary_payload(),
         objective_audit=objective_audit,
         signoff_validation=signoff_validation,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
@@ -756,6 +780,7 @@ def delivery_inputs() -> dict:
         "bundle_metadata": bundle_metadata_payload(),
         "manifest": manifest_payload(),
         "summary": summary_payload(),
+        "upgrade_summary": upgrade_summary_payload(),
         "preview_health": preview_health_payload(),
         "preview_module": preview_module_payload(),
         "real_data_closed_loop": real_data_closed_loop_payload(),
@@ -771,6 +796,7 @@ def delivery_status_with_manifest(manifest: dict) -> dict:
         preview_health=preview_health_payload(),
         preview_module=preview_module_payload(),
         real_data_closed_loop=real_data_closed_loop_payload(),
+        upgrade_summary=upgrade_summary_payload(),
         objective_audit=status_payload()["objective_audit"],
         signoff_validation=None,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
@@ -1096,6 +1122,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["installable_upgradeable_odoo19"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_upgrade_runtime_is_missing(self):
+        status = delivery_status()
+        status["upgrade_runtime_passed"] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["installable_upgradeable_odoo19"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "upgrade_runtime_passed=False",
+            items["installable_upgradeable_odoo19"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1346,6 +1388,16 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "tools/validate_addon.py",
             automated["upgrade_migration_chain_evidence"]["evidence"],
         )
+
+    def test_signoff_packet_surfaces_upgrade_runtime_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("upgrade_runtime_evidence", automated)
+        self.assertTrue(automated["upgrade_runtime_evidence"]["ready"])
+        self.assertIn('"install": false', automated["upgrade_runtime_evidence"]["evidence"])
+        self.assertIn('"failed": 0', automated["upgrade_runtime_evidence"]["evidence"])
 
     def test_signoff_packet_blocks_when_multi_company_security_contract_is_missing(self):
         payload = status_payload()
@@ -2056,6 +2108,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             preview_health=preview_health,
             preview_module=preview_module_payload(),
             real_data_closed_loop=real_data_closed_loop_payload(),
+            upgrade_summary=upgrade_summary_payload(),
             objective_audit=status_payload()["objective_audit"],
             signoff_validation=None,
             preview_url="http://127.0.0.1:18070/web/login?db=test",
@@ -2415,6 +2468,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertIn("tools/validate_addon.py", content)
 
+    def test_delivery_status_markdown_lists_upgrade_runtime_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("Upgrade runtime passed: `True`", content)
+        self.assertIn("## Upgrade Runtime", content)
+        self.assertIn("Install mode: `False`", content)
+
     def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
         status = delivery_status()
         with tempfile.TemporaryDirectory() as directory:
@@ -2528,6 +2593,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             preview_health=preview_health_payload(),
             preview_module=preview_module_payload(),
             real_data_closed_loop=real_data,
+            upgrade_summary=upgrade_summary_payload(),
             objective_audit=status_payload()["objective_audit"],
             signoff_validation=None,
             preview_url="http://127.0.0.1:18070/web/login?db=test",
@@ -2729,6 +2795,28 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertFalse(
             status["upgrade_migration_chain"]["current_migration_included"],
+        )
+
+    def test_delivery_status_requires_upgrade_runtime_summary(self):
+        status = SUMMARY._status(
+            bundle_metadata=bundle_metadata_payload(),
+            manifest=manifest_payload(),
+            summary=summary_payload(),
+            preview_health=preview_health_payload(),
+            preview_module=preview_module_payload(),
+            real_data_closed_loop=real_data_closed_loop_payload(),
+            upgrade_summary=None,
+            objective_audit=status_payload()["objective_audit"],
+            signoff_validation=None,
+            preview_url="http://127.0.0.1:18070/web/login?db=test",
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(status["upgrade_runtime_passed"])
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertIn(
+            "Odoo upgrade runtime tests did not pass",
+            readiness["business_uat_blockers"],
         )
 
 
