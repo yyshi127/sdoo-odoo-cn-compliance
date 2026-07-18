@@ -4991,6 +4991,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "tools" / "prepare_cn_demo_profile.py"',
         'ROOT / "tools" / "prepare_cn_demo_closed_loop.py"',
         'ROOT / "tools" / "generate_cn_signoff_packet.py"',
+        'ROOT / "tools" / "render_cn_signoff_evidence_template.py"',
         'ROOT / "tools" / "validate_cn_signoff_evidence.py"',
         'ROOT / "tools" / "test_signoff_validation.py"',
         '"summarize_cn_delivery_status.py"',
@@ -5023,6 +5024,8 @@ def validate_delivery_objective_coverage() -> None:
         "sample_profiles",
         "SIGNOFF_PACKET_TOOL_PATH",
         "signoff_packet_tool",
+        "SIGNOFF_EVIDENCE_RENDERER_TOOL_PATH",
+        "signoff_evidence_renderer_tool",
         "SIGNOFF_VALIDATION_TOOL_PATH",
         "signoff_validation_tool",
         "SIGNOFF_EVIDENCE_TEMPLATE_PATH",
@@ -5036,6 +5039,7 @@ def validate_delivery_objective_coverage() -> None:
         "Preview health checker in manifest",
         "Real-data closed-loop checker in manifest",
         "Sign-off packet generator in manifest",
+        "Sign-off evidence renderer in manifest",
         "Sign-off evidence validator in manifest",
         "Sign-off evidence template in manifest",
         "Delivery index in manifest",
@@ -5135,6 +5139,8 @@ def validate_delivery_objective_coverage() -> None:
         "Current release handoff is included in the delivery manifest",
         "signoff_evidence_template_in_manifest",
         "Machine-readable production sign-off evidence template is included in the delivery manifest",
+        "signoff_evidence_renderer_in_manifest",
+        "Version-aligned production sign-off evidence draft renderer is included in the delivery manifest",
         "workbench_summary_evidence",
         "has_workbench_summary_evidence",
         "risk_task_report_summary_evidence",
@@ -5164,6 +5170,21 @@ def validate_delivery_objective_coverage() -> None:
     signoff_validation_tool_content = (
         REPOSITORY_ROOT / "tools" / "validate_cn_signoff_evidence.py"
     ).read_text(encoding="utf-8")
+    signoff_renderer_tool_content = (
+        REPOSITORY_ROOT / "tools" / "render_cn_signoff_evidence_template.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "render_template",
+        "PACKET_SCHEMA",
+        "EVIDENCE_SCHEMA",
+        "source_commit",
+        "production_actions",
+        "acceptable_decisions",
+        "objective_areas",
+        "placeholder_notice",
+    ):
+        if required not in signoff_renderer_tool_content:
+            fail(f"China sign-off evidence renderer is missing {required}")
     for required in (
         '"preview_url": packet.get("preview_url")',
         "sign-off evidence decisions must be a list",
@@ -5199,6 +5220,7 @@ def validate_delivery_objective_coverage() -> None:
         "test_signoff_packet_surfaces_uat_walkthrough_script_manifest_evidence",
         "test_signoff_packet_surfaces_current_release_handoff_manifest_evidence",
         "test_signoff_packet_surfaces_signoff_evidence_template_manifest_evidence",
+        "test_signoff_packet_surfaces_signoff_evidence_renderer_manifest_evidence",
         "test_signoff_packet_surfaces_workbench_summary_automated_evidence",
         "test_signoff_packet_surfaces_risk_task_report_summary_evidence",
         "test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence",
@@ -5208,6 +5230,9 @@ def validate_delivery_objective_coverage() -> None:
         "test_delivery_status_markdown_lists_uat_walkthrough_script",
         "test_delivery_status_requires_current_release_handoff_in_manifest",
         "test_delivery_status_requires_signoff_evidence_template_in_manifest",
+        "test_delivery_status_requires_signoff_evidence_renderer_in_manifest",
+        "test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit",
+        "test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders",
         "test_delivery_status_markdown_lists_risk_task_report_summary_evidence",
         "test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence",
         "test_delivery_status_markdown_lists_official_source_governance_overview",

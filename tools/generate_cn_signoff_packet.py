@@ -58,6 +58,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     release_handoff = status.get("release_handoff") or {}
     real_data = status.get("real_data_closed_loop") or {}
     source_governance = status.get("source_governance_summary") or {}
+    signoff_evidence_renderer_tool = status.get("signoff_evidence_renderer_tool") or {}
     signoff_evidence_template = status.get("signoff_evidence_template") or {}
     real_data_readiness = real_data.get("readiness") or {}
     runtime = status.get("runtime") or {}
@@ -124,6 +125,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Machine-readable production sign-off evidence template is included in the delivery manifest",
             signoff_evidence_template.get("included_in_manifest") is True,
             str(signoff_evidence_template.get("path") or ""),
+        ),
+        _readiness_item(
+            "signoff_evidence_renderer_in_manifest",
+            "Version-aligned production sign-off evidence draft renderer is included in the delivery manifest",
+            signoff_evidence_renderer_tool.get("included_in_manifest") is True,
+            str(signoff_evidence_renderer_tool.get("path") or ""),
         ),
         _readiness_item(
             "workbench_summary_evidence",

@@ -30,6 +30,10 @@ SUMMARY = load_tool(
     "cn_delivery_status",
     REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py",
 )
+RENDER_EVIDENCE = load_tool(
+    "cn_render_signoff_evidence",
+    REPOSITORY_ROOT / "tools" / "render_cn_signoff_evidence_template.py",
+)
 ADDON_VALIDATION = load_tool(
     "cn_addon_validation",
     REPOSITORY_ROOT / "tools" / "validate_addon.py",
@@ -70,6 +74,10 @@ def status_payload() -> dict:
         },
         "signoff_evidence_template": {
             "path": "docs/samples/cn_signoff_evidence_template.json",
+            "included_in_manifest": True,
+        },
+        "signoff_evidence_renderer_tool": {
+            "path": "tools/render_cn_signoff_evidence_template.py",
             "included_in_manifest": True,
         },
         "source_governance_summary": {
@@ -316,6 +324,7 @@ def manifest_payload() -> dict:
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
         "tools/generate_cn_signoff_packet.py",
+        "tools/render_cn_signoff_evidence_template.py",
         "tools/validate_cn_signoff_evidence.py",
     ]
     return {
@@ -714,6 +723,37 @@ class TestChinaSignoffValidation(unittest.TestCase):
         for item in result["action_results"]:
             self.assertGreaterEqual(len(item["objective_areas"]), 1)
 
+    def test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit(self):
+        packet = PACKET._build_packet(status_payload())
+
+        draft = RENDER_EVIDENCE.render_template(packet)
+
+        self.assertEqual(draft["schema"], VALIDATION.EVIDENCE_SCHEMA)
+        self.assertEqual(draft["version"], packet["version"])
+        self.assertEqual(draft["source_commit"], packet["source_commit"])
+        self.assertEqual(
+            [item["key"] for item in draft["decisions"]],
+            [item["key"] for item in packet["production_actions"]],
+        )
+        self.assertIn("placeholder", draft["placeholder_notice"].lower())
+        self.assertIn("objective_areas", draft["decisions"][0])
+
+    def test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders(self):
+        packet = PACKET._build_packet(status_payload())
+        draft = RENDER_EVIDENCE.render_template(packet)
+
+        result = VALIDATION._validate(packet, draft)
+
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "business_uat_decision: reviewer is missing or still a template placeholder",
+            result["blockers"],
+        )
+        self.assertIn(
+            "representative business UAT",
+            result["blocked_objective_areas"],
+        )
+
     def test_generic_signoff_evidence_reference_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
@@ -880,6 +920,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "docs/samples/cn_signoff_evidence_template.json",
             automated["signoff_evidence_template_in_manifest"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_signoff_evidence_renderer_manifest_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("signoff_evidence_renderer_in_manifest", automated)
+        self.assertTrue(automated["signoff_evidence_renderer_in_manifest"]["ready"])
+        self.assertIn(
+            "tools/render_cn_signoff_evidence_template.py",
+            automated["signoff_evidence_renderer_in_manifest"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
@@ -1382,6 +1434,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Sign-off evidence template in manifest: `True`", content)
+        self.assertIn(
+            "Sign-off evidence renderer: `tools/render_cn_signoff_evidence_template.py`",
+            content,
+        )
+        self.assertIn("Sign-off evidence renderer in manifest: `True`", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
@@ -1587,6 +1644,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertFalse(
             status["signoff_evidence_template"]["included_in_manifest"],
+        )
+
+    def test_delivery_status_requires_signoff_evidence_renderer_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/render_cn_signoff_evidence_template.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off evidence renderer is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["signoff_evidence_renderer_tool"]["included_in_manifest"],
         )
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
