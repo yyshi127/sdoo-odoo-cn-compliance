@@ -184,6 +184,16 @@ active_profile_ai_domain = (
     if active_profile_ids
     else [("id", "=", 0)]
 )
+active_profile_iit_reconciliation_domain = (
+    [("profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
+active_profile_cross_border_domain = (
+    [("profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
 cn_source_domain = (
     [("country_id.code", "=", "CN")]
     if has_model("sudo.compliance.authority.source")
@@ -482,6 +492,77 @@ for run in sample_records(
         }}
     )
 
+sample_iit_reconciliation_runs = []
+for run in sample_records(
+    "sudo.cn.iit.period.reconciliation.run",
+    active_profile_iit_reconciliation_domain,
+    order="period_end desc, id desc",
+    limit=8,
+):
+    sample_iit_reconciliation_runs.append(
+        {{
+            "id": run.id,
+            "name": safe_field(run, "display_name"),
+            "company": safe_field(run, "company_id"),
+            "profile": safe_field(run, "profile_id"),
+            "period_start": str(safe_field(run, "period_start") or ""),
+            "period_end": str(safe_field(run, "period_end") or ""),
+            "state": safe_field(run, "state"),
+            "conclusion_state": safe_field(run, "conclusion_state"),
+            "result_summary": safe_field(run, "result_summary"),
+            "accounting_source_state": safe_field(run, "accounting_source_state"),
+            "payroll_source_state": safe_field(run, "payroll_source_state"),
+            "filing_source_state": safe_field(run, "filing_source_state"),
+            "payment_source_state": safe_field(run, "payment_source_state"),
+            "payroll_record_count": safe_field(run, "payroll_record_count"),
+            "filing_record_count": safe_field(run, "filing_record_count"),
+            "payment_record_count": safe_field(run, "payment_record_count"),
+            "payroll_person_count": safe_field(run, "payroll_person_count"),
+            "payroll_gross_income_amount": safe_field(run, "payroll_gross_income_amount"),
+            "payroll_withheld_iit_amount": safe_field(run, "payroll_withheld_iit_amount"),
+            "issue_count": safe_field(run, "issue_count"),
+            "blocking_issue_count": safe_field(run, "blocking_issue_count"),
+            "difference_issue_count": safe_field(run, "difference_issue_count"),
+            "result_integrity_state": safe_field(run, "result_integrity_state"),
+            "result_checksum": safe_field(run, "result_checksum"),
+            "payroll_snapshot_checksum": safe_field(run, "payroll_snapshot_checksum"),
+            "filing_snapshot_checksum": safe_field(run, "filing_snapshot_checksum"),
+            "payment_snapshot_checksum": safe_field(run, "payment_snapshot_checksum"),
+        }}
+    )
+
+sample_cross_border_transactions = []
+for transaction in sample_records(
+    "sudo.cn.cross.border.transaction",
+    active_profile_cross_border_domain,
+    order="transaction_date desc, id desc",
+    limit=8,
+):
+    sample_cross_border_transactions.append(
+        {{
+            "id": transaction.id,
+            "name": safe_field(transaction, "display_name"),
+            "company": safe_field(transaction, "company_id"),
+            "profile": safe_field(transaction, "profile_id"),
+            "period_start": str(safe_field(transaction, "period_start") or ""),
+            "period_end": str(safe_field(transaction, "period_end") or ""),
+            "transaction_date": str(safe_field(transaction, "transaction_date") or ""),
+            "transaction_type": safe_field(transaction, "transaction_type"),
+            "counterparty": safe_field(transaction, "counterparty_name"),
+            "counterparty_country": safe_field(transaction, "counterparty_country_id"),
+            "amount": safe_field(transaction, "amount"),
+            "related_party": safe_field(transaction, "related_party"),
+            "withholding_considered": safe_field(transaction, "withholding_considered"),
+            "state": safe_field(transaction, "state"),
+            "readiness_state": safe_field(transaction, "cn_cross_border_readiness_state"),
+            "next_action": safe_field(transaction, "cn_cross_border_next_action"),
+            "snapshot_checksum": safe_field(transaction, "snapshot_checksum"),
+            "evidence_count": len(transaction.evidence_attachment_ids)
+            if "evidence_attachment_ids" in transaction._fields
+            else 0,
+        }}
+    )
+
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
     "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
@@ -519,6 +600,7 @@ objects = {{
     "vat_filing_records": count("sudo.cn.vat.filing.record"),
     "cit_filing_records": count("sudo.cn.cit.filing.record"),
     "iit_withholding_records": count("sudo.cn.iit.withholding.record"),
+    "payroll_summary_records": count("sudo.cn.payroll.summary.record"),
     "tax_payment_records": count("sudo.cn.tax.payment.record"),
     "vat_reconciliation_runs": count("sudo.cn.vat.period.reconciliation.run"),
     "cit_reconciliation_runs": count("sudo.cn.cit.period.reconciliation.run"),
@@ -532,6 +614,14 @@ objects = {{
     "cn_valid_authority_sources": count("sudo.compliance.authority.source", cn_valid_source_domain),
     "cn_active_rule_versions": count("sudo.compliance.rule.version", cn_active_rule_domain),
     "cn_source_monitor_runs": count("sudo.cn.authority.source.monitor.run"),
+    "active_profile_iit_reconciliation_runs": count(
+        "sudo.cn.iit.period.reconciliation.run",
+        active_profile_iit_reconciliation_domain,
+    ),
+    "active_profile_cross_border_transactions": count(
+        "sudo.cn.cross.border.transaction",
+        active_profile_cross_border_domain,
+    ),
 }}
 objects["total_reconciliation_runs"] = sum(
     value or 0
@@ -717,6 +807,38 @@ readiness = {{
             for version in sample_rule_versions
         )
     ),
+    "has_iit_payroll_withholding_scope_evidence": bool(
+        any(
+            run.get("state") == "succeeded"
+            and has_text(run.get("period_start"))
+            and has_text(run.get("period_end"))
+            and run.get("accounting_source_state") == "available"
+            and run.get("payroll_source_state") == "available"
+            and run.get("filing_source_state") == "available"
+            and run.get("payment_source_state") == "available"
+            and has_text(run.get("result_summary"))
+            and has_text(run.get("result_checksum"))
+            and run.get("result_integrity_state") == "verified"
+            and (run.get("payroll_record_count") or 0) > 0
+            and (run.get("filing_record_count") or 0) > 0
+            and has_text(run.get("payroll_snapshot_checksum"))
+            and has_text(run.get("filing_snapshot_checksum"))
+            for run in sample_iit_reconciliation_runs
+        )
+    ),
+    "has_cross_border_review_scope_evidence": bool(
+        any(
+            has_text(transaction.get("period_start"))
+            and has_text(transaction.get("period_end"))
+            and has_text(transaction.get("transaction_type"))
+            and has_text(transaction.get("counterparty_country"))
+            and transaction.get("withholding_considered") in (True, "True", "true", 1)
+            and transaction.get("readiness_state") == "reviewed"
+            and has_text(transaction.get("snapshot_checksum"))
+            and (transaction.get("evidence_count") or 0) > 0
+            for transaction in sample_cross_border_transactions
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -787,6 +909,8 @@ payload = {{
     "sample_authority_sources": sample_authority_sources,
     "sample_rule_versions": sample_rule_versions,
     "sample_source_monitor_runs": sample_source_monitor_runs,
+    "sample_iit_reconciliation_runs": sample_iit_reconciliation_runs,
+    "sample_cross_border_transactions": sample_cross_border_transactions,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}

@@ -158,6 +158,27 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "iit_payroll_withholding_scope_evidence",
+            "IIT payroll withholding reconciliation exposes representative payroll, filing, payment, integrity and result evidence",
+            real_data_readiness.get("has_iit_payroll_withholding_scope_evidence")
+            is True,
+            json.dumps(
+                real_data.get("sample_iit_reconciliation_runs") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
+            "cross_border_review_scope_evidence",
+            "Cross-border register exposes representative reviewed transaction facts, withholding consideration, evidence and checksum",
+            real_data_readiness.get("has_cross_border_review_scope_evidence") is True,
+            json.dumps(
+                real_data.get("sample_cross_border_transactions") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {

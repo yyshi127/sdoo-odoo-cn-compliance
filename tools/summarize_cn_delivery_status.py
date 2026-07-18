@@ -220,6 +220,12 @@ def _status(
             "sample_source_monitor_runs": real_data_closed_loop.get(
                 "sample_source_monitor_runs"
             ),
+            "sample_iit_reconciliation_runs": real_data_closed_loop.get(
+                "sample_iit_reconciliation_runs"
+            ),
+            "sample_cross_border_transactions": real_data_closed_loop.get(
+                "sample_cross_border_transactions"
+            ),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -393,6 +399,10 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     sample_sources = real_data_closed_loop.get("sample_authority_sources") or []
     sample_rule_versions = real_data_closed_loop.get("sample_rule_versions") or []
     sample_monitor_runs = real_data_closed_loop.get("sample_source_monitor_runs") or []
+    sample_iit_runs = real_data_closed_loop.get("sample_iit_reconciliation_runs") or []
+    sample_cross_border_transactions = real_data_closed_loop.get(
+        "sample_cross_border_transactions"
+    ) or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -438,6 +448,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",
+        f"- IIT payroll withholding scope evidence ready: `{real_data_readiness.get('has_iit_payroll_withholding_scope_evidence', False)}`",
+        f"- Cross-border review scope evidence ready: `{real_data_readiness.get('has_cross_border_review_scope_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -707,6 +719,55 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             ]
             if isinstance(sample_filing_archives, list) and sample_filing_archives
             else ["- No sample filing/payment archive summary was provided.", ""]
+        ),
+        "## IIT Payroll Withholding Scope Evidence",
+        "",
+        *(
+            [
+                line
+                for run in sample_iit_runs[:5]
+                if isinstance(run, dict)
+                for line in (
+                    f"### {run.get('name') or run.get('id') or 'IIT Reconciliation Run'}",
+                    "",
+                    f"- Company/profile: `{run.get('company', '')}` / `{run.get('profile', '')}`",
+                    f"- Period: `{run.get('period_start', '')}` to `{run.get('period_end', '')}`",
+                    f"- State/conclusion: `{run.get('state', '')}` / `{run.get('conclusion_state', '')}`",
+                    f"- Source states: accounting `{run.get('accounting_source_state', '')}`, payroll `{run.get('payroll_source_state', '')}`, filing `{run.get('filing_source_state', '')}`, payment `{run.get('payment_source_state', '')}`",
+                    f"- Counts: payroll `{run.get('payroll_record_count', 0)}`, filing `{run.get('filing_record_count', 0)}`, payment `{run.get('payment_record_count', 0)}`, issues `{run.get('issue_count', 0)}`",
+                    f"- Payroll persons/gross/withheld IIT: `{run.get('payroll_person_count', '')}` / `{run.get('payroll_gross_income_amount', '')}` / `{run.get('payroll_withheld_iit_amount', '')}`",
+                    f"- Result integrity/checksum: `{run.get('result_integrity_state', '')}` / `{run.get('result_checksum', '')}`",
+                    f"- Summary: {run.get('result_summary', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_iit_runs, list) and sample_iit_runs
+            else ["- No representative IIT payroll withholding reconciliation sample was provided; this objective area remains a visible coverage gap for business UAT.", ""]
+        ),
+        "## Cross-Border Review Scope Evidence",
+        "",
+        *(
+            [
+                line
+                for transaction in sample_cross_border_transactions[:5]
+                if isinstance(transaction, dict)
+                for line in (
+                    f"### {transaction.get('name') or transaction.get('id') or 'Cross-Border Transaction'}",
+                    "",
+                    f"- Company/profile: `{transaction.get('company', '')}` / `{transaction.get('profile', '')}`",
+                    f"- Period/date: `{transaction.get('period_start', '')}` to `{transaction.get('period_end', '')}` / `{transaction.get('transaction_date', '')}`",
+                    f"- Type/counterparty: `{transaction.get('transaction_type', '')}` / `{transaction.get('counterparty', '')}` `{transaction.get('counterparty_country', '')}`",
+                    f"- Amount/related party: `{transaction.get('amount', '')}` / `{transaction.get('related_party', '')}`",
+                    f"- State/readiness: `{transaction.get('state', '')}` / `{transaction.get('readiness_state', '')}`",
+                    f"- Withholding considered: `{transaction.get('withholding_considered', '')}`",
+                    f"- Evidence/checksum: `{transaction.get('evidence_count', 0)}` / `{transaction.get('snapshot_checksum', '')}`",
+                    f"- Next action: {transaction.get('next_action', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_cross_border_transactions, list)
+            and sample_cross_border_transactions
+            else ["- No representative reviewed cross-border transaction sample was provided; this objective area remains a visible coverage gap for business UAT.", ""]
         ),
         "## Runtime",
         "",

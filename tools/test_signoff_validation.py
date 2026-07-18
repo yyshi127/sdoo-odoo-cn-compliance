@@ -69,6 +69,8 @@ def status_payload() -> dict:
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
                 "has_rule_source_governance_evidence": True,
+                "has_iit_payroll_withholding_scope_evidence": True,
+                "has_cross_border_review_scope_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -203,6 +205,55 @@ def status_payload() -> dict:
                 }
             ],
             "sample_source_monitor_runs": [],
+            "sample_iit_reconciliation_runs": [
+                {
+                    "name": "CN IIT payroll withholding June run",
+                    "company": "CN Company",
+                    "profile": "CN Demo",
+                    "period_start": "2026-06-01",
+                    "period_end": "2026-06-30",
+                    "state": "succeeded",
+                    "conclusion_state": "aligned",
+                    "result_summary": "Payroll, withholding filing and payment are aligned.",
+                    "accounting_source_state": "available",
+                    "payroll_source_state": "available",
+                    "filing_source_state": "available",
+                    "payment_source_state": "available",
+                    "payroll_record_count": 1,
+                    "filing_record_count": 1,
+                    "payment_record_count": 1,
+                    "payroll_person_count": 12,
+                    "payroll_gross_income_amount": 120000.0,
+                    "payroll_withheld_iit_amount": 8600.0,
+                    "issue_count": 0,
+                    "result_integrity_state": "verified",
+                    "result_checksum": "iitresult123",
+                    "payroll_snapshot_checksum": "payrollsnap123",
+                    "filing_snapshot_checksum": "iitfilingsnap123",
+                    "payment_snapshot_checksum": "iitpaysnap123",
+                }
+            ],
+            "sample_cross_border_transactions": [
+                {
+                    "name": "2026-06 service fee cross-border review",
+                    "company": "CN Company",
+                    "profile": "CN Demo",
+                    "period_start": "2026-06-01",
+                    "period_end": "2026-06-30",
+                    "transaction_date": "2026-06-18",
+                    "transaction_type": "service_fee",
+                    "counterparty": "US Service Provider",
+                    "counterparty_country": "United States",
+                    "amount": 12000.0,
+                    "related_party": True,
+                    "withholding_considered": True,
+                    "state": "reviewed",
+                    "readiness_state": "reviewed",
+                    "next_action": "Use this reviewed fact in scans and report limitations.",
+                    "snapshot_checksum": "crossbordersnap123",
+                    "evidence_count": 1,
+                }
+            ],
         },
     }
 
@@ -296,6 +347,8 @@ def real_data_closed_loop_payload() -> dict:
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
             "has_rule_source_governance_evidence": True,
+            "has_iit_payroll_withholding_scope_evidence": True,
+            "has_cross_border_review_scope_evidence": True,
         },
         "sample_profiles": [
             {
@@ -430,6 +483,55 @@ def real_data_closed_loop_payload() -> dict:
             }
         ],
         "sample_source_monitor_runs": [],
+        "sample_iit_reconciliation_runs": [
+            {
+                "name": "CN IIT payroll withholding June run",
+                "company": "CN Company",
+                "profile": "CN Demo",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "state": "succeeded",
+                "conclusion_state": "aligned",
+                "result_summary": "Payroll, withholding filing and payment are aligned.",
+                "accounting_source_state": "available",
+                "payroll_source_state": "available",
+                "filing_source_state": "available",
+                "payment_source_state": "available",
+                "payroll_record_count": 1,
+                "filing_record_count": 1,
+                "payment_record_count": 1,
+                "payroll_person_count": 12,
+                "payroll_gross_income_amount": 120000.0,
+                "payroll_withheld_iit_amount": 8600.0,
+                "issue_count": 0,
+                "result_integrity_state": "verified",
+                "result_checksum": "iitresult123",
+                "payroll_snapshot_checksum": "payrollsnap123",
+                "filing_snapshot_checksum": "iitfilingsnap123",
+                "payment_snapshot_checksum": "iitpaysnap123",
+            }
+        ],
+        "sample_cross_border_transactions": [
+            {
+                "name": "2026-06 service fee cross-border review",
+                "company": "CN Company",
+                "profile": "CN Demo",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "transaction_date": "2026-06-18",
+                "transaction_type": "service_fee",
+                "counterparty": "US Service Provider",
+                "counterparty_country": "United States",
+                "amount": 12000.0,
+                "related_party": True,
+                "withholding_considered": True,
+                "state": "reviewed",
+                "readiness_state": "reviewed",
+                "next_action": "Use this reviewed fact in scans and report limitations.",
+                "snapshot_checksum": "crossbordersnap123",
+                "evidence_count": 1,
+            }
+        ],
     }
 
 
@@ -670,6 +772,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "VAT June archive",
             automated["evidence_filing_payment_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_iit_and_cross_border_scope_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("iit_payroll_withholding_scope_evidence", automated)
+        self.assertTrue(automated["iit_payroll_withholding_scope_evidence"]["ready"])
+        self.assertIn(
+            "CN IIT payroll withholding June run",
+            automated["iit_payroll_withholding_scope_evidence"]["evidence"],
+        )
+        self.assertIn("cross_border_review_scope_evidence", automated)
+        self.assertTrue(automated["cross_border_review_scope_evidence"]["ready"])
+        self.assertIn(
+            "2026-06 service fee cross-border review",
+            automated["cross_border_review_scope_evidence"]["evidence"],
         )
 
     def test_signoff_packet_lists_missing_human_evidence(self):
@@ -1109,6 +1229,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)
         self.assertIn("No source monitor run sample was provided", content)
+
+    def test_delivery_status_markdown_lists_iit_and_cross_border_scope_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("IIT payroll withholding scope evidence ready: `True`", content)
+        self.assertIn("Cross-border review scope evidence ready: `True`", content)
+        self.assertIn("## IIT Payroll Withholding Scope Evidence", content)
+        self.assertIn("CN IIT payroll withholding June run", content)
+        self.assertIn("Source states", content)
+        self.assertIn("## Cross-Border Review Scope Evidence", content)
+        self.assertIn("2026-06 service fee cross-border review", content)
+        self.assertIn("Withholding considered", content)
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())
