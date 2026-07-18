@@ -1420,6 +1420,272 @@ def ensure_cross_border_demo_scope(profile):
     return {{"transaction": transaction, "changed": changed}}
 
 
+def ensure_cit_accounting_scope(profile):
+    Scope = env["sudo.cn.cit.accounting.scope"].sudo().with_company(profile.company_id)
+    scope = Scope.search([
+        ("profile_id", "=", profile.id),
+        ("source_reference", "=", "CODEX-DEMO/CN/CIT-SCOPE/2026-06"),
+    ], order="id desc", limit=1)
+    changed = False
+    if not scope:
+        scope = Scope.create({{
+            "profile_id": profile.id,
+            "valid_from": "2026-01-01",
+            "valid_to": "2026-12-31",
+            "source_reference": "CODEX-DEMO/CN/CIT-SCOPE/2026-06",
+            "scope_note": (
+                "CODEX-DEMO ONLY: controlled accounting profit scope for the "
+                "2026-06 CIT walkthrough. It includes all current Odoo P&L "
+                "accounts and therefore reflects the demo ledger state."
+            ),
+            "separation_exception_reason": (
+                "CODEX-DEMO ONLY: development UAT automation creates and verifies "
+                "this controlled CIT scope in one repeatable script; production "
+                "must use independent preparer and reviewer users."
+            ),
+        }})
+        changed = True
+    elif not scope.separation_exception_reason:
+        scope.write({{
+            "separation_exception_reason": (
+                "CODEX-DEMO ONLY: development UAT automation creates and verifies "
+                "this controlled CIT scope in one repeatable script; production "
+                "must use independent preparer and reviewer users."
+            )
+        }})
+        changed = True
+    if not scope.evidence_attachment_ids:
+        evidence = attachment(
+            "CODEX-DEMO-cn-cit-accounting-scope-2026-06.pdf",
+            b"CODEX DEMO ONLY - China CIT accounting profit scope evidence",
+        )
+        evidence.sudo().write({{"res_model": scope._name, "res_id": scope.id}})
+        scope.write({{"evidence_attachment_ids": command_set(evidence.ids)}})
+        changed = True
+    if scope.state == "draft":
+        before = len(scope.line_ids)
+        scope.action_populate_from_chart()
+        scope.invalidate_recordset()
+        changed = changed or len(scope.line_ids) != before
+        scope.action_verify()
+        changed = True
+    return scope, changed
+
+
+def ensure_cit_ledger(profile):
+    company = profile.company_id
+    revenue, changed_revenue = ensure_account(
+        company,
+        "60019991",
+        "CODEX-DEMO CIT revenue",
+        "income",
+    )
+    expense, changed_expense = ensure_account(
+        company,
+        "66029992",
+        "CODEX-DEMO CIT expense",
+        "expense",
+    )
+    clearing, changed_clearing = ensure_account(
+        company,
+        "19999992",
+        "CODEX-DEMO CIT clearing",
+        "asset_current",
+    )
+    journal, changed_journal = misc_journal(company)
+    Move = env["account.move"].sudo().with_company(company)
+    changed = changed_revenue or changed_expense or changed_clearing or changed_journal
+    if not Move.search_count([
+        ("company_id", "=", company.id),
+        ("ref", "=", "CODEX-DEMO-CN-CIT-BOOK-PROFIT-2026-06"),
+        ("state", "=", "posted"),
+    ]):
+        move = Move.create({{
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": "2026-06-30",
+            "ref": "CODEX-DEMO-CN-CIT-BOOK-PROFIT-2026-06",
+            "line_ids": [
+                (0, 0, {{"name": "CODEX-DEMO CIT revenue counterparty", "account_id": clearing.id, "debit": 1000.0}}),
+                (0, 0, {{"name": "CODEX-DEMO CIT revenue", "account_id": revenue.id, "credit": 1000.0}}),
+                (0, 0, {{"name": "CODEX-DEMO CIT expense", "account_id": expense.id, "debit": 400.0}}),
+                (0, 0, {{"name": "CODEX-DEMO CIT expense counterparty", "account_id": clearing.id, "credit": 400.0}}),
+            ],
+        }})
+        move.action_post()
+        changed = True
+    return changed
+
+
+def cit_accounting_profit_from_scope(profile, scope):
+    company = profile.company_id
+    MoveLine = env["account.move.line"].sudo().with_company(company)
+    increase = 0.0
+    decrease = 0.0
+    for line in scope.line_ids:
+        account = line.account_id
+        totals = MoveLine.read_group(
+            [
+                ("company_id", "=", company.id),
+                ("date", ">=", "2026-06-01"),
+                ("date", "<=", "2026-06-30"),
+                ("account_id", "=", account.id),
+                ("parent_state", "=", "posted"),
+            ],
+            ["debit:sum", "credit:sum"],
+            [],
+        )
+        debit = totals[0].get("debit") or 0.0 if totals else 0.0
+        credit = totals[0].get("credit") or 0.0 if totals else 0.0
+        if line.role == "profit_increase":
+            increase += credit - debit
+        else:
+            decrease += debit - credit
+    profit = company.currency_id.round(increase - decrease)
+    return profit
+
+
+def cit_filing_record(profile, accounting_profit):
+    taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
+    adjustment_increase = 100.0
+    adjustment_decrease = 50.0
+    taxable_income = profile.company_id.currency_id.round(
+        accounting_profit + adjustment_increase - adjustment_decrease
+    )
+    tax_payable = profile.company_id.currency_id.round(taxable_income * 0.25)
+    prepaid = profile.company_id.currency_id.round(max(tax_payable - 12.5, 0.0))
+    payable = profile.company_id.currency_id.round(tax_payable - prepaid)
+    return {{
+        "source_record_key": "CODEX-DEMO-CIT-FILING-2026-06",
+        "taxpayer_name": profile.company_id.name,
+        "taxpayer_id": taxpayer_id,
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "currency_code": profile.company_id.currency_id.name or "CNY",
+        "tax_year": 2026,
+        "return_period_type": "quarterly_prepayment",
+        "return_type_code": "CIT-QUARTERLY",
+        "return_status": "accepted",
+        "submitted_at": "2026-07-12T09:00:00+08:00",
+        "submission_reference": "CODEX-DEMO-CIT-ACK-2026-06",
+        "revision_number": 0,
+        "accounting_profit_amount": "%.2f" % accounting_profit,
+        "adjustment_increase_amount": "%.2f" % adjustment_increase,
+        "adjustment_decrease_amount": "%.2f" % adjustment_decrease,
+        "taxable_income_amount": "%.2f" % taxable_income,
+        "tax_payable_amount": "%.2f" % tax_payable,
+        "tax_relief_amount": "0.00",
+        "tax_credit_amount": "0.00",
+        "prepaid_tax_amount": "%.2f" % prepaid,
+        "payable_amount": "%.2f" % payable,
+        "refundable_amount": "0.00",
+        "lines": [],
+    }}
+
+
+def cit_payment_record(profile, amount=12.5):
+    taxpayer_id = profile.company_id.partner_id.vat or "91310000CODEXDEMO01"
+    return {{
+        "source_record_key": "CODEX-DEMO-CIT-PAYMENT-2026-06",
+        "taxpayer_name": profile.company_id.name,
+        "taxpayer_id": taxpayer_id,
+        "tax_type_code": "CIT",
+        "period_start": "2026-06-01",
+        "period_end": "2026-06-30",
+        "payment_date": "2026-07-15",
+        "payment_reference": "CODEX-DEMO-CIT-PAY-REF-2026-06",
+        "payment_status": "succeeded",
+        "currency_code": profile.company_id.currency_id.name or "CNY",
+        "amount": "%.2f" % amount,
+        "principal_amount": "%.2f" % amount,
+        "interest_amount": "0.00",
+        "penalty_amount": "0.00",
+        "payer_account_masked": "CODEX-DEMO ****5678",
+        "receipt_reference": "CODEX-DEMO-CIT-PAY-ACK-2026-06",
+    }}
+
+
+def ensure_cit_tax_record(profile, dataset_type, record):
+    model_by_type = {{
+        "cit_filing": "sudo.cn.cit.filing.record",
+        "tax_payment": "sudo.cn.tax.payment.record",
+    }}
+    if env[model_by_type[dataset_type]].sudo().search_count([
+        ("source_record_key", "=", record["source_record_key"]),
+    ]):
+        return False
+    contract = {{
+        "schema": "sdoo.cn.tax-data.v1",
+        "dataset_type": dataset_type,
+        "source_schema": "CODEX-DEMO-" + dataset_type,
+        "source_schema_version": "2026.1",
+        "record_count": 1,
+        "records": [record],
+    }}
+    attachment_record = dataset_attachment(
+        "CODEX-DEMO-cit-%s-2026-06.json" % dataset_type,
+        contract,
+    )
+    dataset = create_external_dataset(
+        profile,
+        dataset_type,
+        "CIT-" + dataset_type.upper() + "-2026-06",
+        attachment_record,
+        1,
+    )
+    parse_run = env["sudo.cn.tax.data.parse.run"].sudo().with_company(
+        profile.company_id
+    )._start_for_dataset(dataset, attachment_record)
+    parse_run._process_json_attachment()
+    return True
+
+
+def ensure_cit_demo_scope(profile):
+    changed_ledger = ensure_cit_ledger(profile)
+    scope, changed_scope = ensure_cit_accounting_scope(profile)
+    accounting_profit = cit_accounting_profit_from_scope(profile, scope)
+    changed_records = False
+    changed_records = ensure_cit_tax_record(
+        profile,
+        "cit_filing",
+        cit_filing_record(profile, accounting_profit),
+    ) or changed_records
+    changed_records = ensure_cit_tax_record(
+        profile,
+        "tax_payment",
+        cit_payment_record(profile),
+    ) or changed_records
+    existing = env["sudo.cn.cit.period.reconciliation.run"].sudo().search([
+        ("profile_id", "=", profile.id),
+        ("period_start", "=", "2026-06-01"),
+        ("period_end", "=", "2026-06-30"),
+        ("state", "=", "succeeded"),
+        ("conclusion_state", "=", "aligned"),
+    ], order="id desc", limit=1)
+    if existing:
+        return {{
+            "run": existing,
+            "scope": scope,
+            "changed": bool(changed_ledger or changed_scope or changed_records),
+        }}
+    run = env["sudo.cn.cit.period.reconciliation.run"].sudo().with_company(
+        profile.company_id
+    ).enqueue(
+        profile,
+        "2026-06-01",
+        "2026-06-30",
+        "quarterly_prepayment",
+        "CIT",
+    )
+    run._process()
+    run.invalidate_recordset()
+    return {{
+        "run": run,
+        "scope": scope,
+        "changed": True,
+    }}
+
+
 def ensure_report(assessment):
     report = env["sudo.cn.compliance.report"].sudo().search([
         ("assessment_id", "=", assessment.id),
@@ -1502,6 +1768,7 @@ else:
         )
         iit_scope = ensure_iit_demo_scope(profile)
         cross_border = ensure_cross_border_demo_scope(profile)
+        cit_scope = ensure_cit_demo_scope(profile)
         report, created_report = ensure_report(assessment)
         ai_guidance = ensure_ai_guidance(finding)
         profile.invalidate_recordset()
@@ -1536,6 +1803,10 @@ else:
                 and cross_border["transaction"].state == "reviewed"
                 and cross_border["transaction"].cn_cross_border_readiness_state == "reviewed"
                 and cross_border["transaction"].snapshot_checksum
+                and cit_scope.get("run")
+                and cit_scope["run"].state == "succeeded"
+                and cit_scope["run"].conclusion_state == "aligned"
+                and cit_scope["run"].result_integrity_state == "verified"
             ),
             "changed": bool(
                 created_run
@@ -1546,6 +1817,7 @@ else:
                 or archive.get("changed")
                 or iit_scope.get("changed")
                 or cross_border.get("changed")
+                or cit_scope.get("changed")
                 or created_report
                 or ai_guidance.get("changed")
             ),
@@ -1675,6 +1947,17 @@ else:
                 "evidence_count": len(cross_border["transaction"].evidence_attachment_ids),
                 "snapshot_checksum": cross_border["transaction"].snapshot_checksum,
             }} if cross_border.get("transaction") else None,
+            "cit_scope": {{
+                "run_id": cit_scope["run"].id,
+                "run_name": cit_scope["run"].display_name,
+                "state": cit_scope["run"].state,
+                "conclusion_state": cit_scope["run"].conclusion_state,
+                "result_integrity_state": cit_scope["run"].result_integrity_state,
+                "filing_record_id": cit_scope["run"].filing_record_id.id or None,
+                "payment_record_count": cit_scope["run"].payment_record_count,
+                "issue_count": cit_scope["run"].issue_count,
+                "result_checksum": cit_scope["run"].result_checksum,
+            }} if cit_scope.get("run") else None,
             "counts": {{
                 "assessments": env["sudo.compliance.assessment"].sudo().search_count([("profile_id", "=", profile.id)]),
                 "findings": env["sudo.compliance.finding"].sudo().search_count([("assessment_id.profile_id", "=", profile.id)]),
@@ -1684,6 +1967,7 @@ else:
                 "filing_archives": env["sudo.compliance.filing"].sudo().search_count([("profile_id", "=", profile.id)]),
                 "iit_reconciliation_runs": env["sudo.cn.iit.period.reconciliation.run"].sudo().search_count([("profile_id", "=", profile.id)]),
                 "cross_border_transactions": env["sudo.cn.cross.border.transaction"].sudo().search_count([("profile_id", "=", profile.id)]),
+                "cit_reconciliation_runs": env["sudo.cn.cit.period.reconciliation.run"].sudo().search_count([("profile_id", "=", profile.id)]),
             }},
         }})
         if payload["ok"]:
