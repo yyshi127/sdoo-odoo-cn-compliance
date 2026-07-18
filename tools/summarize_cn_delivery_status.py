@@ -1016,6 +1016,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Risk/task/report summary evidence ready: `{real_data_readiness.get('has_risk_task_report_summary_evidence', False)}`",
         f"- Risk finding visibility evidence ready: `{real_data_readiness.get('has_risk_finding_visibility_evidence', False)}`",
         f"- Remediation task visibility evidence ready: `{real_data_readiness.get('has_remediation_task_visibility_evidence', False)}`",
+        f"- Remediation verification rescan evidence ready: `{real_data_readiness.get('has_remediation_verification_rescan_evidence', False)}`",
         f"- Report visibility evidence ready: `{real_data_readiness.get('has_report_visibility_evidence', False)}`",
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",

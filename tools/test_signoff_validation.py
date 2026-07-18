@@ -143,6 +143,7 @@ def status_payload() -> dict:
                 "has_risk_task_report_summary_evidence": True,
                 "has_risk_finding_visibility_evidence": True,
                 "has_remediation_task_visibility_evidence": True,
+                "has_remediation_verification_rescan_evidence": True,
                 "has_report_visibility_evidence": True,
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
@@ -172,6 +173,7 @@ def status_payload() -> dict:
                     "professional_state": "approved",
                     "evidence_state": "verified",
                     "closure_state": "action_required",
+                    "closure_summary": "Blocked before sign-off: human review.",
                     "next_action": "Review remediation and rescan.",
                     "action_summary": "High risk; owner must verify remediation.",
                 }
@@ -186,6 +188,9 @@ def status_payload() -> dict:
                     "assignee": "Reviewer",
                     "due_date": "2026-07-31",
                     "evidence_state": "verified",
+                    "evidence_count": 1,
+                    "verified_evidence_count": 1,
+                    "rescan_stage": "verified",
                     "traceability_state": "complete",
                     "next_action": "Keep evidence sealed.",
                     "action_summary": "Verified remediation task with evidence.",
@@ -442,6 +447,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_risk_task_report_summary_evidence": True,
             "has_risk_finding_visibility_evidence": True,
             "has_remediation_task_visibility_evidence": True,
+            "has_remediation_verification_rescan_evidence": True,
             "has_report_visibility_evidence": True,
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
@@ -471,6 +477,7 @@ def real_data_closed_loop_payload() -> dict:
                 "professional_state": "approved",
                 "evidence_state": "verified",
                 "closure_state": "action_required",
+                "closure_summary": "Blocked before sign-off: human review.",
                 "next_action": "Review remediation and rescan.",
                 "action_summary": "High risk; owner must verify remediation.",
             }
@@ -485,6 +492,9 @@ def real_data_closed_loop_payload() -> dict:
                 "assignee": "Reviewer",
                 "due_date": "2026-07-31",
                 "evidence_state": "verified",
+                "evidence_count": 1,
+                "verified_evidence_count": 1,
+                "rescan_stage": "verified",
                 "traceability_state": "complete",
                 "next_action": "Keep evidence sealed.",
                 "action_summary": "Verified remediation task with evidence.",
@@ -885,6 +895,27 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["risk_remediation_report_visibility"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_remediation_rescan_evidence_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "closed_loop_evidence_ready"
+        ] = False
+        status["real_data_closed_loop"]["readiness"][
+            "has_remediation_verification_rescan_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["real_odoo_accounting_business_data_basis"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "remediation_verification_rescan=False",
+            items["real_odoo_accounting_business_data_basis"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1151,6 +1182,35 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_remediation_verification_rescan_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("remediation_verification_rescan_evidence", automated)
+        self.assertTrue(automated["remediation_verification_rescan_evidence"]["ready"])
+        self.assertIn(
+            '"rescan_stage": "verified"',
+            automated["remediation_verification_rescan_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"verified_evidence_count": 1',
+            automated["remediation_verification_rescan_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_remediation_rescan_evidence_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_remediation_verification_rescan_evidence"
+        ] = False
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(
+            automated["remediation_verification_rescan_evidence"]["ready"]
+        )
+
     def test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1310,7 +1370,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
         self.assertIn("truncated for readability", content)
         self.assertIn("see the JSON packet for complete evidence", content)
-        self.assertNotIn("Correct VAT filing mismatch", content)
+        self.assertIn(
+            "Remediation closure has verified evidence and a verification rescan result",
+            content,
+        )
 
     def test_missing_representative_ux_walkthrough_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
@@ -1949,6 +2012,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Risk/task/report summary evidence ready: `True`", content)
         self.assertIn("Risk finding visibility evidence ready: `True`", content)
         self.assertIn("Remediation task visibility evidence ready: `True`", content)
+        self.assertIn(
+            "Remediation verification rescan evidence ready: `True`",
+            content,
+        )
         self.assertIn("Report visibility evidence ready: `True`", content)
         self.assertIn("VAT filing mismatch", content)
         self.assertIn("Correct VAT filing mismatch", content)

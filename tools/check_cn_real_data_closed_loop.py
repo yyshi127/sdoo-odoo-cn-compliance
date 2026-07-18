@@ -300,6 +300,9 @@ for task in sample_records(
             "next_action": safe_field(task, "cn_remediation_next_action"),
             "responsibility_summary": safe_field(task, "cn_remediation_responsibility_summary"),
             "evidence_state": safe_field(task, "cn_remediation_evidence_state"),
+            "evidence_count": safe_field(task, "cn_remediation_evidence_count"),
+            "verified_evidence_count": safe_field(task, "cn_remediation_verified_evidence_count"),
+            "rescan_stage": safe_field(task, "cn_remediation_rescan_stage"),
             "traceability_state": safe_field(task, "cn_remediation_traceability_state"),
         }}
     )
@@ -658,6 +661,7 @@ risk_finding_visibility_evidence = bool(
         and has_text(finding.get("tax_impact"))
         and has_text(finding.get("evidence_state"))
         and has_text(finding.get("closure_state"))
+        and has_text(finding.get("closure_summary"))
         and has_text(finding.get("next_action"))
         and has_text(finding.get("action_summary"))
         for finding in sample_findings
@@ -674,6 +678,17 @@ remediation_task_visibility_evidence = bool(
         and has_text(task.get("traceability_state"))
         and has_text(task.get("next_action"))
         and has_text(task.get("action_summary"))
+        for task in sample_tasks
+    )
+)
+remediation_verification_rescan_evidence = bool(
+    any(
+        task.get("state") == "done"
+        and task.get("verification_state") in ("verified", "not_required")
+        and has_text(task.get("verification_assessment"))
+        and task.get("evidence_state") == "verified"
+        and (task.get("verified_evidence_count") or 0) > 0
+        and task.get("rescan_stage") in ("verified", "not_required")
         for task in sample_tasks
     )
 )
@@ -763,6 +778,7 @@ readiness = {{
     ),
     "has_risk_finding_visibility_evidence": risk_finding_visibility_evidence,
     "has_remediation_task_visibility_evidence": remediation_task_visibility_evidence,
+    "has_remediation_verification_rescan_evidence": remediation_verification_rescan_evidence,
     "has_report_visibility_evidence": report_visibility_evidence,
     "has_risk_task_report_summary_evidence": bool(
         risk_finding_visibility_evidence
@@ -883,6 +899,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_active_profile_report_activity",
         "has_workbench_summary_evidence",
         "has_risk_task_report_summary_evidence",
+        "has_remediation_verification_rescan_evidence",
         "has_evidence_filing_payment_summary_evidence",
         "has_controlled_ai_guidance_evidence",
         "has_rule_source_governance_evidence",

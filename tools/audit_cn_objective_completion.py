@@ -120,6 +120,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
             _state(_ready(real_data_readiness.get("closed_loop_evidence_ready"))),
             [
                 f"closed_loop_evidence_ready={real_data_readiness.get('closed_loop_evidence_ready')}",
+                f"remediation_verification_rescan={real_data_readiness.get('has_remediation_verification_rescan_evidence')}",
                 f"database={real_data.get('database')}",
             ],
         ),

@@ -220,6 +220,17 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             ),
         ),
         _readiness_item(
+            "remediation_verification_rescan_evidence",
+            "Remediation closure has verified evidence and a verification rescan result",
+            real_data_readiness.get("has_remediation_verification_rescan_evidence")
+            is True,
+            json.dumps(
+                real_data.get("sample_remediation_tasks") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
             "evidence_filing_payment_summary_evidence",
             "Evidence center and filing/payment archives expose verified evidence, integrity and next-action summaries",
             real_data_readiness.get("has_evidence_filing_payment_summary_evidence")
