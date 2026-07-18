@@ -68,6 +68,7 @@ def status_payload() -> dict:
                 "has_risk_task_report_summary_evidence": True,
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
+                "has_rule_source_governance_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -175,6 +176,33 @@ def status_payload() -> dict:
                     "record_checksum": "record123",
                 }
             ],
+            "sample_authority_sources": [
+                {
+                    "name": "CODEX-DEMO China VAT source",
+                    "status": "valid",
+                    "snapshot_kind": "official_web_capture",
+                    "content_hash": "sourcehash123",
+                    "snapshot_attachment": "source.html",
+                    "next_review_date": "2027-07-15",
+                    "last_monitor_state": "never",
+                    "next_monitor_date": "2026-08-01",
+                }
+            ],
+            "sample_rule_versions": [
+                {
+                    "name": "CN VAT Demo Rule / 2026.1",
+                    "state": "active",
+                    "release_state": "active",
+                    "professional_review_state": "approved",
+                    "professional_ready": True,
+                    "test_state": "passed",
+                    "checksum": "rulehash123",
+                    "source_count": 1,
+                    "source_names": ["CODEX-DEMO China VAT source"],
+                    "next_review_date": "2027-07-15",
+                }
+            ],
+            "sample_source_monitor_runs": [],
         },
     }
 
@@ -267,6 +295,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_risk_task_report_summary_evidence": True,
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
+            "has_rule_source_governance_evidence": True,
         },
         "sample_profiles": [
             {
@@ -374,6 +403,33 @@ def real_data_closed_loop_payload() -> dict:
                 "record_checksum": "record123",
             }
         ],
+        "sample_authority_sources": [
+            {
+                "name": "CODEX-DEMO China VAT source",
+                "status": "valid",
+                "snapshot_kind": "official_web_capture",
+                "content_hash": "sourcehash123",
+                "snapshot_attachment": "source.html",
+                "next_review_date": "2027-07-15",
+                "last_monitor_state": "never",
+                "next_monitor_date": "2026-08-01",
+            }
+        ],
+        "sample_rule_versions": [
+            {
+                "name": "CN VAT Demo Rule / 2026.1",
+                "state": "active",
+                "release_state": "active",
+                "professional_review_state": "approved",
+                "professional_ready": True,
+                "test_state": "passed",
+                "checksum": "rulehash123",
+                "source_count": 1,
+                "source_names": ["CODEX-DEMO China VAT source"],
+                "next_review_date": "2027-07-15",
+            }
+        ],
+        "sample_source_monitor_runs": [],
     }
 
 
@@ -1038,6 +1094,21 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("VAT June archive", content)
         self.assertIn("Submission/payment integrity", content)
         self.assertIn("Checksums present", content)
+
+    def test_delivery_status_markdown_lists_rule_source_governance_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Rule And Source Governance Evidence", content)
+        self.assertIn("Rule/source governance evidence ready: `True`", content)
+        self.assertIn("CODEX-DEMO China VAT source", content)
+        self.assertIn("CN VAT Demo Rule / 2026.1", content)
+        self.assertIn("Professional review", content)
+        self.assertIn("No source monitor run sample was provided", content)
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())

@@ -212,6 +212,14 @@ def _status(
             "sample_filing_archives": real_data_closed_loop.get(
                 "sample_filing_archives"
             ),
+            "sample_ai_guidance": real_data_closed_loop.get("sample_ai_guidance"),
+            "sample_authority_sources": real_data_closed_loop.get(
+                "sample_authority_sources"
+            ),
+            "sample_rule_versions": real_data_closed_loop.get("sample_rule_versions"),
+            "sample_source_monitor_runs": real_data_closed_loop.get(
+                "sample_source_monitor_runs"
+            ),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -382,6 +390,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     sample_evidence = real_data_closed_loop.get("sample_evidence") or []
     sample_filing_archives = real_data_closed_loop.get("sample_filing_archives") or []
     sample_ai_guidance = real_data_closed_loop.get("sample_ai_guidance") or []
+    sample_sources = real_data_closed_loop.get("sample_authority_sources") or []
+    sample_rule_versions = real_data_closed_loop.get("sample_rule_versions") or []
+    sample_monitor_runs = real_data_closed_loop.get("sample_source_monitor_runs") or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -426,6 +437,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Risk/task/report summary evidence ready: `{real_data_readiness.get('has_risk_task_report_summary_evidence', False)}`",
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
+        f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -581,6 +593,71 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             ]
             if isinstance(sample_ai_guidance, list) and sample_ai_guidance
             else ["- No sample controlled AI guidance evidence was provided.", ""]
+        ),
+        "## Rule And Source Governance Evidence",
+        "",
+        "### Official Sources",
+        "",
+        *(
+            [
+                line
+                for source in sample_sources[:5]
+                if isinstance(source, dict)
+                for line in (
+                    f"#### {source.get('name') or source.get('id') or 'Authority Source'}",
+                    "",
+                    f"- Status/snapshot: `{source.get('status', '')}` / `{source.get('snapshot_kind', '')}`",
+                    f"- Content hash: `{source.get('content_hash', '')}`",
+                    f"- Snapshot attachment: `{source.get('snapshot_attachment', '')}`",
+                    f"- Next review date: `{source.get('next_review_date', '')}`",
+                    f"- Monitor: `{source.get('last_monitor_state', '')}` / next `{source.get('next_monitor_date', '')}`",
+                    "",
+                )
+            ]
+            if isinstance(sample_sources, list) and sample_sources
+            else ["- No official source governance sample was provided.", ""]
+        ),
+        "### Released Rule Versions",
+        "",
+        *(
+            [
+                line
+                for version in sample_rule_versions[:5]
+                if isinstance(version, dict)
+                for line in (
+                    f"#### {version.get('name') or version.get('id') or 'Rule Version'}",
+                    "",
+                    f"- State/release: `{version.get('state', '')}` / `{version.get('release_state', '')}`",
+                    f"- Professional review: `{version.get('professional_review_state', '')}` / ready `{version.get('professional_ready', '')}`",
+                    f"- Test/checksum: `{version.get('test_state', '')}` / `{version.get('checksum', '')}`",
+                    f"- Sources: `{version.get('source_count', 0)}` - {', '.join(version.get('source_names') or [])}",
+                    f"- Next review date: `{version.get('next_review_date', '')}`",
+                    "",
+                )
+            ]
+            if isinstance(sample_rule_versions, list) and sample_rule_versions
+            else ["- No released rule governance sample was provided.", ""]
+        ),
+        "### Source Monitor Runs",
+        "",
+        *(
+            [
+                line
+                for run in sample_monitor_runs[:5]
+                if isinstance(run, dict)
+                for line in (
+                    f"#### {run.get('name') or run.get('id') or 'Monitor Run'}",
+                    "",
+                    f"- Source/state: `{run.get('source', '')}` / `{run.get('state', '')}`",
+                    f"- Integrity/checksum: `{run.get('result_integrity_state', '')}` / `{run.get('result_checksum', '')}`",
+                    f"- Source snapshot: `{run.get('source_snapshot_checksum', '')}`",
+                    f"- Impact snapshot: `{run.get('impact_snapshot_checksum', '')}`",
+                    f"- Summary: {run.get('result_summary', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_monitor_runs, list) and sample_monitor_runs
+            else ["- No source monitor run sample was provided; next review dates remain the freshness control for this handoff.", ""]
         ),
         "## Evidence, Filing and Payment Archive Summary Evidence",
         "",

@@ -184,6 +184,19 @@ active_profile_ai_domain = (
     if active_profile_ids
     else [("id", "=", 0)]
 )
+cn_source_domain = (
+    [("country_id.code", "=", "CN")]
+    if has_model("sudo.compliance.authority.source")
+    and "country_id" in env["sudo.compliance.authority.source"]._fields
+    else [("id", "=", 0)]
+)
+cn_valid_source_domain = cn_source_domain + [("status", "=", "valid")]
+cn_active_rule_domain = (
+    [("rule_id.country_id.code", "=", "CN"), ("state", "=", "active")]
+    if has_model("sudo.compliance.rule.version")
+    and "rule_id" in env["sudo.compliance.rule.version"]._fields
+    else [("id", "=", 0)]
+)
 
 profiles = []
 if has_model("sudo.compliance.profile"):
@@ -392,6 +405,83 @@ for analysis in sample_records(
         }}
     )
 
+sample_authority_sources = []
+for source in sample_records(
+    "sudo.compliance.authority.source",
+    cn_valid_source_domain,
+    order="next_review_date desc, id desc",
+    limit=8,
+):
+    sample_authority_sources.append(
+        {{
+            "id": source.id,
+            "name": safe_field(source, "display_name"),
+            "country": safe_field(source, "country_id"),
+            "status": safe_field(source, "status"),
+            "snapshot_kind": safe_field(source, "snapshot_kind"),
+            "content_hash": safe_field(source, "content_hash"),
+            "snapshot_attachment": safe_field(source, "snapshot_attachment_id"),
+            "next_review_date": str(safe_field(source, "next_review_date") or ""),
+            "monitor_enabled": safe_field(source, "cn_monitor_enabled"),
+            "next_monitor_date": str(safe_field(source, "cn_next_monitor_date") or ""),
+            "last_monitor_state": safe_field(source, "cn_last_monitor_state"),
+            "latest_monitor_run": safe_field(source, "cn_latest_monitor_run_id"),
+        }}
+    )
+
+sample_rule_versions = []
+for version in sample_records(
+    "sudo.compliance.rule.version",
+    cn_active_rule_domain,
+    order="next_review_date desc, id desc",
+    limit=8,
+):
+    sample_rule_versions.append(
+        {{
+            "id": version.id,
+            "name": safe_field(version, "display_name"),
+            "rule": safe_field(version, "rule_id"),
+            "version": safe_field(version, "version"),
+            "state": safe_field(version, "state"),
+            "release_state": safe_field(version, "cn_release_state"),
+            "professional_review_state": safe_field(version, "professional_review_state"),
+            "professional_ready": safe_field(version, "cn_professional_review_ready"),
+            "professional_blockers": safe_field(version, "cn_professional_review_blockers"),
+            "test_state": safe_field(version, "test_state"),
+            "checksum": safe_field(version, "checksum"),
+            "next_review_date": str(safe_field(version, "next_review_date") or ""),
+            "source_count": len(version.authority_source_ids)
+            if "authority_source_ids" in version._fields
+            else 0,
+            "source_names": version.authority_source_ids.mapped("display_name")
+            if "authority_source_ids" in version._fields
+            else [],
+        }}
+    )
+
+sample_source_monitor_runs = []
+for run in sample_records(
+    "sudo.cn.authority.source.monitor.run",
+    [],
+    order="requested_at desc, id desc",
+    limit=8,
+):
+    sample_source_monitor_runs.append(
+        {{
+            "id": run.id,
+            "name": safe_field(run, "display_name"),
+            "source": safe_field(run, "source_id"),
+            "state": safe_field(run, "state"),
+            "request_kind": safe_field(run, "request_kind"),
+            "completed_at": str(safe_field(run, "completed_at") or ""),
+            "result_integrity_state": safe_field(run, "result_integrity_state"),
+            "source_snapshot_checksum": safe_field(run, "source_snapshot_checksum"),
+            "impact_snapshot_checksum": safe_field(run, "impact_snapshot_checksum"),
+            "result_checksum": safe_field(run, "result_checksum"),
+            "result_summary": safe_field(run, "result_summary"),
+        }}
+    )
+
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
     "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
@@ -438,6 +528,10 @@ objects = {{
     "cit_reconciliation_issues": count("sudo.cn.cit.period.reconciliation.issue"),
     "iit_reconciliation_issues": count("sudo.cn.iit.period.reconciliation.issue"),
     "active_profile_ai_guidance": count("sudo.compliance.ai.analysis", active_profile_ai_domain),
+    "cn_authority_sources": count("sudo.compliance.authority.source", cn_source_domain),
+    "cn_valid_authority_sources": count("sudo.compliance.authority.source", cn_valid_source_domain),
+    "cn_active_rule_versions": count("sudo.compliance.rule.version", cn_active_rule_domain),
+    "cn_source_monitor_runs": count("sudo.cn.authority.source.monitor.run"),
 }}
 objects["total_reconciliation_runs"] = sum(
     value or 0
@@ -602,6 +696,27 @@ readiness = {{
             for guidance in sample_ai_guidance
         )
     ),
+    "has_rule_source_governance_evidence": bool(
+        any(
+            source.get("status") == "valid"
+            and has_text(source.get("content_hash"))
+            and has_text(source.get("snapshot_attachment"))
+            and source.get("snapshot_kind") in ("official_document", "official_web_capture")
+            and has_text(source.get("next_review_date"))
+            for source in sample_authority_sources
+        )
+        and any(
+            version.get("state") == "active"
+            and version.get("release_state") == "active"
+            and version.get("professional_review_state") == "approved"
+            and version.get("professional_ready") in (True, "True", "true", 1)
+            and version.get("test_state") == "passed"
+            and has_text(version.get("checksum"))
+            and has_text(version.get("next_review_date"))
+            and (version.get("source_count") or 0) > 0
+            for version in sample_rule_versions
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -635,6 +750,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_risk_task_report_summary_evidence",
         "has_evidence_filing_payment_summary_evidence",
         "has_controlled_ai_guidance_evidence",
+        "has_rule_source_governance_evidence",
     )
 )
 
@@ -668,6 +784,9 @@ payload = {{
     "sample_evidence": sample_evidence,
     "sample_filing_archives": sample_filing_archives,
     "sample_ai_guidance": sample_ai_guidance,
+    "sample_authority_sources": sample_authority_sources,
+    "sample_rule_versions": sample_rule_versions,
+    "sample_source_monitor_runs": sample_source_monitor_runs,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}

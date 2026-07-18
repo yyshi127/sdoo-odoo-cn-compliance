@@ -144,6 +144,20 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "rule_source_governance_evidence",
+            "Released China rules expose governed official sources, freshness review dates, professional sign-off and rule checksums",
+            real_data_readiness.get("has_rule_source_governance_evidence") is True,
+            json.dumps(
+                {
+                    "authority_sources": real_data.get("sample_authority_sources") or [],
+                    "rule_versions": real_data.get("sample_rule_versions") or [],
+                    "source_monitor_runs": real_data.get("sample_source_monitor_runs") or [],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {
