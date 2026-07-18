@@ -701,6 +701,9 @@ def _status(
             "reviewer_view_contracts": real_data_closed_loop.get(
                 "reviewer_view_contracts"
             ),
+            "multi_company_security_contracts": real_data_closed_loop.get(
+                "multi_company_security_contracts"
+            ),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -1036,6 +1039,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Open high-risk review evidence ready: `{real_data_readiness.get('has_open_high_risk_review_evidence', False)}`",
         f"- IIT payroll withholding scope evidence ready: `{real_data_readiness.get('has_iit_payroll_withholding_scope_evidence', False)}`",
         f"- Cross-border review scope evidence ready: `{real_data_readiness.get('has_cross_border_review_scope_evidence', False)}`",
+        f"- Multi-company security contract evidence ready: `{real_data_readiness.get('has_multi_company_security_contract_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Preview ready: `{readiness.get('preview_ready', False)}`",

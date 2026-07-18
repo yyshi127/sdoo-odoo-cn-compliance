@@ -158,6 +158,7 @@ def status_payload() -> dict:
                 "has_open_high_risk_review_evidence": True,
                 "has_iit_payroll_withholding_scope_evidence": True,
                 "has_cross_border_review_scope_evidence": True,
+                "has_multi_company_security_contract_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -230,6 +231,22 @@ def status_payload() -> dict:
                         "risk_level",
                         "cn_risk_period_label",
                         "cn_risk_next_action",
+                    ],
+                }
+            ],
+            "multi_company_security_contracts": [
+                {
+                    "model": "sudo.cn.external.dataset",
+                    "ready": True,
+                    "rule_count": 1,
+                    "rules": [
+                        {
+                            "name": "China external datasets: allowed companies",
+                            "domain": "[('company_id', 'in', company_ids)]",
+                            "groups": [
+                                "sudo_global_finance.group_compliance_user"
+                            ],
+                        }
                     ],
                 }
             ],
@@ -482,6 +499,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_open_high_risk_review_evidence": True,
             "has_iit_payroll_withholding_scope_evidence": True,
             "has_cross_border_review_scope_evidence": True,
+            "has_multi_company_security_contract_evidence": True,
         },
         "sample_profiles": [
             {
@@ -554,6 +572,22 @@ def real_data_closed_loop_payload() -> dict:
                     "risk_level",
                     "cn_risk_period_label",
                     "cn_risk_next_action",
+                ],
+            }
+        ],
+        "multi_company_security_contracts": [
+            {
+                "model": "sudo.cn.external.dataset",
+                "ready": True,
+                "rule_count": 1,
+                "rules": [
+                    {
+                        "name": "China external datasets: allowed companies",
+                        "domain": "[('company_id', 'in', company_ids)]",
+                        "groups": [
+                            "sudo_global_finance.group_compliance_user"
+                        ],
+                    }
                 ],
             }
         ],
@@ -1010,6 +1044,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["risk_remediation_report_visibility"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_multi_company_security_contract_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_multi_company_security_contract_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["native_odoo_multi_company_security"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "multi_company_security=False",
+            items["native_odoo_multi_company_security"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1020,7 +1072,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(audit["achieved"])
         self.assertEqual(
             audit["state_counts"],
-            {"evidence_ready": 14, "blocked": 0, "not_ready": 0},
+            {"evidence_ready": 15, "blocked": 0, "not_ready": 0},
         )
         items = {item["key"]: item for item in audit["items"]}
         self.assertEqual(
@@ -1227,6 +1279,45 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "business UAT decision must be recorded",
             automated["objective_completion_audit_present"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_multi_company_security_contract_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("multi_company_security_contract_evidence", automated)
+        self.assertTrue(automated["multi_company_security_contract_evidence"]["ready"])
+        self.assertIn(
+            "sudo.cn.external.dataset",
+            automated["multi_company_security_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "company_ids",
+            automated["multi_company_security_contract_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_multi_company_security_contract_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_multi_company_security_contract_evidence"
+        ] = False
+        payload["real_data_closed_loop"]["multi_company_security_contracts"] = [
+            {
+                "model": "sudo.cn.external.dataset",
+                "ready": False,
+                "rule_count": 0,
+                "rules": [],
+            }
+        ]
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["multi_company_security_contract_evidence"]["ready"])
+        self.assertIn(
+            '"ready": false',
+            automated["multi_company_security_contract_evidence"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
@@ -2022,7 +2113,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertEqual(
             chain["objective_audit"]["state_counts"],
-            {"evidence_ready": 13, "blocked": 1, "not_ready": 0},
+            {"evidence_ready": 14, "blocked": 1, "not_ready": 0},
         )
 
     def test_signoff_chain_accepts_completed_human_evidence(self):
@@ -2234,6 +2325,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(contracts[0]["missing"], [])
         self.assertIn("cn_risk_next_action", contracts[0]["required_fields"])
 
+    def test_delivery_status_preserves_multi_company_security_contract_details(self):
+        status = delivery_status()
+
+        contracts = status["real_data_closed_loop"][
+            "multi_company_security_contracts"
+        ]
+
+        self.assertEqual(contracts[0]["model"], "sudo.cn.external.dataset")
+        self.assertTrue(contracts[0]["ready"])
+        self.assertEqual(contracts[0]["rule_count"], 1)
+        self.assertIn("company_ids", contracts[0]["rules"][0]["domain"])
+
     def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
         status = delivery_status()
         with tempfile.TemporaryDirectory() as directory:
@@ -2272,6 +2375,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("CODEX-DEMO China VAT source", content)
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)
+        self.assertIn("Multi-company security contract evidence ready: `True`", content)
         self.assertIn("No source monitor run sample was provided", content)
 
     def test_delivery_status_markdown_lists_official_source_governance_overview(self):

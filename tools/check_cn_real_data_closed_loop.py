@@ -105,6 +105,33 @@ def view_field_contract(xml_id, required_fields):
     }}
 
 
+def company_rule_contract(model_name):
+    model_record = env["ir.model"].sudo().search([("model", "=", model_name)], limit=1)
+    rules = env["ir.rule"].sudo().search([("model_id", "=", model_record.id), ("active", "=", True)])
+    matches = []
+    for rule in rules:
+        domain = str(rule.domain_force or "")
+        group_external_ids = rule.groups.get_external_id()
+        groups = [
+            group_external_ids.get(group.id) or group.display_name
+            for group in rule.groups
+        ]
+        if "company_id" in domain and "company_ids" in domain:
+            matches.append(
+                {{
+                    "name": rule.name,
+                    "domain": domain,
+                    "groups": groups,
+                }}
+            )
+    return {{
+        "model": model_name,
+        "ready": bool(model_record and matches),
+        "rule_count": len(matches),
+        "rules": matches,
+    }}
+
+
 module = env["ir.module.module"].sudo().search(
     [("name", "=", "sudo_country_pack_cn")], limit=1
 )
@@ -722,6 +749,21 @@ reviewer_view_contracts = [
     ),
 ]
 
+multi_company_security_contracts = [
+    company_rule_contract(model_name)
+    for model_name in (
+        "sudo.cn.external.dataset",
+        "sudo.cn.einvoice.document",
+        "sudo.cn.tax.payment.record",
+        "sudo.cn.vat.period.reconciliation.run",
+        "sudo.cn.cit.period.reconciliation.run",
+        "sudo.cn.iit.period.reconciliation.run",
+        "sudo.cn.tax.impact.case",
+        "sudo.cn.compliance.report",
+        "sudo.cn.cross.border.transaction",
+    )
+]
+
 accounting = {{
     "companies": count("res.company"),
     "partners": count("res.partner"),
@@ -1001,6 +1043,10 @@ readiness = {{
         reviewer_view_contracts
         and all(contract.get("ready") for contract in reviewer_view_contracts)
     ),
+    "has_multi_company_security_contract_evidence": bool(
+        multi_company_security_contracts
+        and all(contract.get("ready") for contract in multi_company_security_contracts)
+    ),
     "has_iit_payroll_withholding_scope_evidence": bool(
         any(
             run.get("state") == "succeeded"
@@ -1107,6 +1153,7 @@ payload = {{
     "sample_iit_reconciliation_runs": sample_iit_reconciliation_runs,
     "sample_cross_border_transactions": sample_cross_border_transactions,
     "reviewer_view_contracts": reviewer_view_contracts,
+    "multi_company_security_contracts": multi_company_security_contracts,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}

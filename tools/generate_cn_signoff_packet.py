@@ -134,6 +134,17 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             str(preview_module.get("module_installed_version") or ""),
         ),
         _readiness_item(
+            "multi_company_security_contract_evidence",
+            "Installed China compliance models expose company-scoped record rules for native Odoo multi-company isolation",
+            real_data_readiness.get("has_multi_company_security_contract_evidence")
+            is True,
+            json.dumps(
+                real_data.get("multi_company_security_contracts") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
             "real_data_closed_loop",
             "Representative database has accounting, external data, risk/remediation and verified evidence activity",
             real_data.get("ok") is True
