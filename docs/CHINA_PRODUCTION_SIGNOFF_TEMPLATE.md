@@ -4,6 +4,48 @@ Use this template after automated delivery acceptance and business UAT are
 complete. It records the decision to deploy, defer or reject a release candidate.
 It is not a tax opinion.
 
+## How To Use This Template
+
+Complete this template after generating the delivery status and sign-off action
+packet for the release candidate. For the current m144 evidence set, start from:
+
+- `dist/cn_delivery_status_m144.json`
+- `dist/cn_delivery_status_m144.md`
+- `dist/cn_signoff_packet_m144.json`
+- `dist/cn_signoff_packet_m144.md`
+- `dist/cn_delivery_acceptance_m144_remote.json`
+- `dist/sdoo-cn-compliance-delivery-m144.bundle.json`
+- `dist/cn_delivery_manifest_m144_full.json`
+
+Use the Markdown files for reviewer walkthroughs and the JSON files for audit
+traceability. Do not copy placeholder text into the final sign-off evidence.
+Every reviewer, date, decision and evidence reference must point to a real
+record such as a completed checklist, meeting minutes, signed review packet,
+screenshot set, recording, ticket, audit workpaper or release approval.
+
+Choose `defer` or `reject` instead of `deploy` when any of the following is
+true:
+
+- Automated delivery status is not `business_uat_ready=true`.
+- Odoo runtime acceptance did not pass on a clean runtime database.
+- The preview database module version does not match the release package.
+- Business UAT has not explicitly accepted the release.
+- China tax professional rule/source sign-off is missing for rules used in
+  formal conclusions.
+- Official-source freshness or local jurisdiction scope was not reviewed for the
+  target period.
+- Customer-specific accounting, external tax data, evidence, open risk or
+  remediation gaps remain unresolved and are not formally accepted as
+  limitations.
+- Risk center, remediation tracker, controlled AI guidance, filing/payment
+  archive or report pages are not readable enough for the intended users.
+- Rollback owner, rollback trigger or go-live monitoring owner is missing.
+
+If the decision is `deploy with limitations`, list every limitation with a
+specific owner, due date, monitoring action and customer-facing boundary
+statement. The machine-readable sign-off evidence must use a matching limitation
+decision and include substantive limitation notes.
+
 ## Release Candidate
 
 - Delivery version:
@@ -15,6 +57,10 @@ It is not a tax opinion.
 - Target Odoo version:
 - Target database or staging database:
 - Review date:
+- Sign-off action packet path:
+- Sign-off evidence JSON path:
+- Release owner:
+- Rollback owner:
 
 ## Automated Evidence
 
@@ -26,6 +72,10 @@ It is not a tax opinion.
 - Runtime errors:
 - Objective coverage matrix included in manifest: yes / no
 - Business UAT checklist included in manifest: yes / no
+- Delivery status `business_uat_ready`: true / false
+- Delivery status `production_signoff_ready` before human evidence: false / unexpected true
+- Sign-off packet generated from the same source commit: yes / no
+- All automated evidence paths archived: yes / no
 
 ## Business UAT Result
 
@@ -44,6 +94,11 @@ It is not a tax opinion.
 - Screens checked:
 - Blocker-summary walkthrough evidence:
 - Blocker-summary walkthrough decision: passed / passed with limitations / failed
+- Workbench next-action and limitation summary readable: yes / no
+- Risk center risk level, reason, impact amount and next action readable: yes / no
+- Remediation tracker owner, due date, status and rescan state readable: yes / no
+- Report center/report readiness blockers readable: yes / no
+- Filing/payment archive integrity and evidence status readable: yes / no
 - Open usability issues:
 
 ## Rule And Source Governance
@@ -54,6 +109,9 @@ It is not a tax opinion.
 - Candidate/draft rules still excluded from formal conclusions: yes / no
 - Official-source freshness reviewed: yes / no / not applicable
 - Local jurisdiction scope reviewed: yes / no / not applicable
+- Official-source freshness evidence reference:
+- Local jurisdiction review evidence reference:
+- Rules not approved for production conclusions:
 
 ## Data And Scope Limitations
 
@@ -65,6 +123,9 @@ It is not a tax opinion.
 - Evidence gaps:
 - Controlled AI limitations or excluded findings:
 - Known conclusion limitations:
+- External tax/invoice/payment data acquisition basis reviewed: yes / no / not applicable
+- Data sufficiency reviewer:
+- Customer-facing limitation statement:
 
 ## Risk And Remediation Status
 
@@ -81,6 +142,8 @@ It is not a tax opinion.
 - Remediation blockers reviewed: yes / no / not applicable
 - Report blockers reviewed: yes / no / not applicable
 - Report readiness blockers reviewed: yes / no / not applicable
+- Accepted unresolved risks or limitations:
+- Risks requiring pre-go-live remediation:
 
 ## Deployment Decision
 
@@ -90,6 +153,9 @@ It is not a tax opinion.
 - Rollback owner:
 - Rollback trigger:
 - Approval names and dates:
+- Deployment window:
+- Post-go-live evidence retention location:
+- Customer communication owner:
 
 ## Boundary Statement
 
