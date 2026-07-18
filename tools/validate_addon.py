@@ -5055,6 +5055,8 @@ def validate_delivery_objective_coverage() -> None:
         "_valid_iso_date",
         "blocked_objective_areas",
         "objective_areas are missing from the sign-off packet",
+        "ACTION_EVIDENCE_REQUIREMENTS",
+        "evidence_reference or notes must mention",
     ):
         if required not in signoff_validation_tool_content:
             fail(f"China sign-off validation binding is missing {required}")
@@ -5078,6 +5080,8 @@ def validate_delivery_objective_coverage() -> None:
         "test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence",
         "test_missing_blocker_summary_walkthrough_blocks_production_gate",
         "test_signoff_validation_blocks_actions_without_objective_areas",
+        "test_generic_signoff_evidence_reference_blocks_production_gate",
+        "test_missing_ai_checksum_scope_blocks_ux_walkthrough",
         "blocked_objective_areas",
         "blocker_summary_walkthrough",
     ):

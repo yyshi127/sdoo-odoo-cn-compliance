@@ -404,6 +404,35 @@ def delivery_status_with_manifest(manifest: dict) -> dict:
 
 
 def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict:
+    evidence_notes = {
+        "business_uat_decision": (
+            "Completed UAT evidence for company CN Company and period 2026-06; "
+            "controlled AI guidance evidence reviewed."
+        ),
+        "china_tax_professional_rule_signoff": (
+            "Released rule official source packet reviewed by China tax professional."
+        ),
+        "official_source_freshness_review": (
+            "Official source freshness and local jurisdiction updates reviewed."
+        ),
+        "customer_scope_and_data_gap_review": (
+            "External dataset coverage, evidence gap register, open risk list and "
+            "controlled AI limitation register reviewed."
+        ),
+        "representative_ux_walkthrough": (
+            "Workbench, risk center, controlled AI guidance, filing/payment archive "
+            "and report screens reviewed; input/output checksum and record checksum "
+            "were visible."
+        ),
+        "blocker_summary_walkthrough": (
+            "Data readiness, filing/payment archive, report readiness and controlled "
+            "AI guidance disclosure blocker summaries reviewed."
+        ),
+        "production_deployment_decision": (
+            "Production sign-off template completed with deployment decision and "
+            "rollback owner."
+        ),
+    }
     decisions = []
     for action in packet["production_actions"]:
         decisions.append(
@@ -417,6 +446,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
                 "reviewer": "Alice Zhang",
                 "date": "2026-07-17",
                 "evidence_reference": "SGN-2026-07-17-UAT-001",
+                "notes": evidence_notes[action["key"]],
             }
         )
     return {
@@ -464,6 +494,41 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(result["blocked_objective_areas"], [])
         for item in result["action_results"]:
             self.assertGreaterEqual(len(item["objective_areas"]), 1)
+
+    def test_generic_signoff_evidence_reference_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            item["evidence_reference"] = "SGN-2026-07-17-GENERIC"
+            item["notes"] = "Generic approval record without required evidence scope."
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: evidence_reference or notes must mention: "
+            "uat, company, period, controlled ai",
+            result["blockers"],
+        )
+
+    def test_missing_ai_checksum_scope_blocks_ux_walkthrough(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "representative_ux_walkthrough":
+                item["notes"] = (
+                    "Workbench, risk center, controlled AI guidance, "
+                    "filing/payment archive and report screens reviewed."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "representative_ux_walkthrough: evidence_reference or notes must "
+            "mention: input/output checksum, record checksum",
+            result["blockers"],
+        )
 
     def test_signoff_packet_requires_representative_ux_walkthrough(self):
         packet = PACKET._build_packet(status_payload())

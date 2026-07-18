@@ -31,6 +31,50 @@ PLACEHOLDER_TEXTS = {
     "uncontrolled evidence reference",
 }
 
+ACTION_EVIDENCE_REQUIREMENTS = {
+    "business_uat_decision": (
+        ("uat", ("uat", "user acceptance", "用户验收", "业务验收")),
+        ("company", ("company", "公司")),
+        ("period", ("period", "期间")),
+        ("controlled ai", ("controlled ai", "受控 ai", "受控AI")),
+    ),
+    "china_tax_professional_rule_signoff": (
+        ("released rule", ("released rule", "已发布规则", "正式规则")),
+        ("official source", ("official source", "官方来源", "官方依据")),
+        ("professional", ("professional", "专业人员", "税务专业")),
+    ),
+    "official_source_freshness_review": (
+        ("official source", ("official source", "官方来源", "官方依据")),
+        ("freshness", ("freshness", "时效", "更新")),
+        ("local jurisdiction", ("local jurisdiction", "地方", "属地")),
+    ),
+    "customer_scope_and_data_gap_review": (
+        ("external dataset", ("external dataset", "外部数据", "监管数据")),
+        ("evidence gap", ("evidence gap", "证据缺口")),
+        ("open risk", ("open risk", "未关闭风险", "开放风险")),
+        ("controlled ai limitation", ("controlled ai limitation", "受控 ai 限制", "受控AI限制")),
+    ),
+    "representative_ux_walkthrough": (
+        ("workbench", ("workbench", "工作台", "总览")),
+        ("risk center", ("risk center", "风险中心")),
+        ("controlled ai guidance", ("controlled ai guidance", "受控 ai 引导", "受控AI引导")),
+        ("filing/payment archive", ("filing/payment archive", "申报缴款档案", "申报/缴款档案")),
+        ("input/output checksum", ("input/output checksum", "输入输出校验", "输入/输出校验")),
+        ("record checksum", ("record checksum", "记录校验")),
+    ),
+    "blocker_summary_walkthrough": (
+        ("data readiness", ("data readiness", "数据就绪")),
+        ("filing/payment archive", ("filing/payment archive", "申报缴款档案", "申报/缴款档案")),
+        ("report readiness", ("report readiness", "报告就绪")),
+        ("controlled ai guidance disclosure", ("controlled ai guidance disclosure", "受控 ai 披露", "受控AI披露")),
+    ),
+    "production_deployment_decision": (
+        ("production sign-off", ("production sign-off", "生产签核", "上线签核")),
+        ("deployment decision", ("deployment decision", "部署决策", "上线决策")),
+        ("rollback", ("rollback", "回滚")),
+    ),
+}
+
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -65,6 +109,23 @@ def _valid_limitations(value: Any) -> list[str]:
         if isinstance(item, str) and len(item.strip()) >= 20:
             limitations.append(item.strip())
     return limitations
+
+
+def _evidence_text(item: dict[str, Any]) -> str:
+    return " ".join(
+        str(item.get(field) or "")
+        for field in ("evidence_reference", "notes")
+    ).lower()
+
+
+def _missing_action_keywords(key: Any, item: dict[str, Any]) -> list[str]:
+    requirements = ACTION_EVIDENCE_REQUIREMENTS.get(str(key), ())
+    evidence_text = _evidence_text(item)
+    return [
+        label
+        for label, aliases in requirements
+        if not any(alias.lower() in evidence_text for alias in aliases)
+    ]
 
 
 def _decision_map(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -161,6 +222,12 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
             ):
                 item_blockers.append(
                     "evidence_reference is missing or still a template placeholder"
+                )
+            missing_keywords = _missing_action_keywords(key, item)
+            if missing_keywords:
+                item_blockers.append(
+                    "evidence_reference or notes must mention: %s"
+                    % ", ".join(missing_keywords)
                 )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))
