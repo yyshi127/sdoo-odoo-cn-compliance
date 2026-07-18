@@ -208,6 +208,10 @@ def _status(
                 "sample_remediation_tasks"
             ),
             "sample_reports": real_data_closed_loop.get("sample_reports"),
+            "sample_evidence": real_data_closed_loop.get("sample_evidence"),
+            "sample_filing_archives": real_data_closed_loop.get(
+                "sample_filing_archives"
+            ),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -375,6 +379,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     sample_findings = real_data_closed_loop.get("sample_findings") or []
     sample_tasks = real_data_closed_loop.get("sample_remediation_tasks") or []
     sample_reports = real_data_closed_loop.get("sample_reports") or []
+    sample_evidence = real_data_closed_loop.get("sample_evidence") or []
+    sample_filing_archives = real_data_closed_loop.get("sample_filing_archives") or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -417,6 +423,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
         f"- Workbench summary evidence ready: `{real_data_readiness.get('has_workbench_summary_evidence', False)}`",
         f"- Risk/task/report summary evidence ready: `{real_data_readiness.get('has_risk_task_report_summary_evidence', False)}`",
+        f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -549,6 +556,55 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             ]
             if isinstance(sample_reports, list) and sample_reports
             else ["- No sample report summary evidence was provided.", ""]
+        ),
+        "## Evidence, Filing and Payment Archive Summary Evidence",
+        "",
+        "### Sample Evidence",
+        "",
+        *(
+            [
+                line
+                for evidence in sample_evidence[:5]
+                if isinstance(evidence, dict)
+                for line in (
+                    f"#### {evidence.get('name') or evidence.get('id') or 'Evidence'}",
+                    "",
+                    f"- Company: `{evidence.get('company', '')}`",
+                    f"- State: `{evidence.get('state', '')}`",
+                    f"- Source: {evidence.get('source_summary', '')}",
+                    f"- Blockers: {evidence.get('blocker_summary', '')}",
+                    f"- Verified by/at: `{evidence.get('verified_by', '')}` / `{evidence.get('verified_at', '')}`",
+                    f"- Checksum present: `{bool(evidence.get('document_checksum'))}`",
+                    "",
+                )
+            ]
+            if isinstance(sample_evidence, list) and sample_evidence
+            else ["- No sample evidence summary was provided.", ""]
+        ),
+        "### Sample Filing and Payment Archives",
+        "",
+        *(
+            [
+                line
+                for filing in sample_filing_archives[:5]
+                if isinstance(filing, dict)
+                for line in (
+                    f"#### {filing.get('name') or filing.get('id') or 'Filing Archive'}",
+                    "",
+                    f"- Company: `{filing.get('company', '')}`",
+                    f"- Kind/period: `{filing.get('kind', '')}` / `{filing.get('period_label', '')}`",
+                    f"- State/payment: `{filing.get('state', '')}` / `{filing.get('payment_state', '')}`",
+                    f"- Due date: `{filing.get('due_date', '')}`",
+                    f"- Submission/payment integrity: `{filing.get('submission_integrity_state', '')}` / `{filing.get('payment_integrity_state', '')}`",
+                    f"- Evidence: `{filing.get('evidence_state', '')}` ({filing.get('verified_evidence_count', 0)}/{filing.get('evidence_count', 0)})",
+                    f"- Blockers: {filing.get('blocker_summary', '')}",
+                    f"- Next action: {filing.get('next_action', '')}",
+                    f"- Checksums present: submission `{bool(filing.get('submission_checksum'))}`, payment `{bool(filing.get('payment_checksum'))}`",
+                    "",
+                )
+            ]
+            if isinstance(sample_filing_archives, list) and sample_filing_archives
+            else ["- No sample filing/payment archive summary was provided.", ""]
         ),
         "## Runtime",
         "",

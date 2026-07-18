@@ -66,6 +66,7 @@ def status_payload() -> dict:
                 "closed_loop_evidence_ready": True,
                 "has_workbench_summary_evidence": True,
                 "has_risk_task_report_summary_evidence": True,
+                "has_evidence_filing_payment_summary_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -123,6 +124,38 @@ def status_payload() -> dict:
                     "approval_integrity_state": "verified",
                     "pdf_integrity_state": "verified",
                     "traceability_next_action": "Archive issued report evidence.",
+                }
+            ],
+            "sample_evidence": [
+                {
+                    "name": "VAT payment receipt",
+                    "company": "CN Company",
+                    "state": "verified",
+                    "source_summary": "Filing: VAT June archive",
+                    "blocker_summary": "No blocker: evidence is verified and traceable.",
+                    "verified_by": "Reviewer",
+                    "verified_at": "2026-07-18 10:00:00",
+                    "document_checksum": "abc123",
+                }
+            ],
+            "sample_filing_archives": [
+                {
+                    "name": "VAT June archive",
+                    "company": "CN Company",
+                    "kind": "vat",
+                    "period_label": "2026-06-01 to 2026-06-30",
+                    "state": "accepted",
+                    "payment_state": "paid",
+                    "due_date": "2026-07-15",
+                    "submission_integrity_state": "verified",
+                    "payment_integrity_state": "verified",
+                    "evidence_state": "verified",
+                    "evidence_count": 2,
+                    "verified_evidence_count": 2,
+                    "blocker_summary": "No blocker: filing, payment and evidence archive are traceable.",
+                    "next_action": "Keep sealed filing and payment archive.",
+                    "submission_checksum": "sub123",
+                    "payment_checksum": "pay123",
                 }
             ],
         },
@@ -215,6 +248,7 @@ def real_data_closed_loop_payload() -> dict:
             "closed_loop_evidence_ready": True,
             "has_workbench_summary_evidence": True,
             "has_risk_task_report_summary_evidence": True,
+            "has_evidence_filing_payment_summary_evidence": True,
         },
         "sample_profiles": [
             {
@@ -272,6 +306,38 @@ def real_data_closed_loop_payload() -> dict:
                 "approval_integrity_state": "verified",
                 "pdf_integrity_state": "verified",
                 "traceability_next_action": "Archive issued report evidence.",
+            }
+        ],
+        "sample_evidence": [
+            {
+                "name": "VAT payment receipt",
+                "company": "CN Company",
+                "state": "verified",
+                "source_summary": "Filing: VAT June archive",
+                "blocker_summary": "No blocker: evidence is verified and traceable.",
+                "verified_by": "Reviewer",
+                "verified_at": "2026-07-18 10:00:00",
+                "document_checksum": "abc123",
+            }
+        ],
+        "sample_filing_archives": [
+            {
+                "name": "VAT June archive",
+                "company": "CN Company",
+                "kind": "vat",
+                "period_label": "2026-06-01 to 2026-06-30",
+                "state": "accepted",
+                "payment_state": "paid",
+                "due_date": "2026-07-15",
+                "submission_integrity_state": "verified",
+                "payment_integrity_state": "verified",
+                "evidence_state": "verified",
+                "evidence_count": 2,
+                "verified_evidence_count": 2,
+                "blocker_summary": "No blocker: filing, payment and evidence archive are traceable.",
+                "next_action": "Keep sealed filing and payment archive.",
+                "submission_checksum": "sub123",
+                "payment_checksum": "pay123",
             }
         ],
     }
@@ -433,6 +499,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "CN Compliance Report",
             automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("evidence_filing_payment_summary_evidence", automated)
+        self.assertTrue(automated["evidence_filing_payment_summary_evidence"]["ready"])
+        self.assertIn(
+            "VAT payment receipt",
+            automated["evidence_filing_payment_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "VAT June archive",
+            automated["evidence_filing_payment_summary_evidence"]["evidence"],
         )
 
     def test_signoff_packet_lists_missing_human_evidence(self):
@@ -836,6 +918,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Risk level", content)
         self.assertIn("State/verification", content)
         self.assertIn("State/conclusion", content)
+
+    def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Evidence, Filing and Payment Archive Summary Evidence", content)
+        self.assertIn(
+            "Evidence/filing/payment summary evidence ready: `True`",
+            content,
+        )
+        self.assertIn("VAT payment receipt", content)
+        self.assertIn("VAT June archive", content)
+        self.assertIn("Submission/payment integrity", content)
+        self.assertIn("Checksums present", content)
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())

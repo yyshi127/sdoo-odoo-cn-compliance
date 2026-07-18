@@ -118,6 +118,22 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "evidence_filing_payment_summary_evidence",
+            "Evidence center and filing/payment archives expose verified evidence, integrity and next-action summaries",
+            real_data_readiness.get("has_evidence_filing_payment_summary_evidence")
+            is True,
+            json.dumps(
+                {
+                    "evidence": real_data.get("sample_evidence") or [],
+                    "filing_archives": (
+                        real_data.get("sample_filing_archives") or []
+                    ),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {

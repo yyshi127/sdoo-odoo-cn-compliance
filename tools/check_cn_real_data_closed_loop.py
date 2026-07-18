@@ -152,8 +152,26 @@ active_profile_report_domain = (
     if active_profile_ids
     else [("id", "=", 0)]
 )
+active_profile_filing_domain = (
+    [("profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
 active_profile_evidence_domain = (
     [("task_id.assessment_id.profile_id", "in", active_profile_ids)]
+    if active_profile_ids
+    else [("id", "=", 0)]
+)
+active_profile_evidence_sample_domain = (
+    [
+        "|",
+        "|",
+        "|",
+        ("assessment_id.profile_id", "in", active_profile_ids),
+        ("finding_id.assessment_id.profile_id", "in", active_profile_ids),
+        ("task_id.assessment_id.profile_id", "in", active_profile_ids),
+        ("filing_id.profile_id", "in", active_profile_ids),
+    ]
     if active_profile_ids
     else [("id", "=", 0)]
 )
@@ -276,6 +294,63 @@ for report in sample_records(
         }}
     )
 
+sample_evidence = []
+for evidence in sample_records(
+    "sudo.compliance.evidence",
+    active_profile_evidence_sample_domain,
+    order="state desc, id asc",
+    limit=8,
+):
+    sample_evidence.append(
+        {{
+            "id": evidence.id,
+            "name": safe_field(evidence, "display_name"),
+            "company": safe_field(evidence, "company_id"),
+            "state": safe_field(evidence, "state"),
+            "source_summary": safe_field(evidence, "cn_evidence_source_summary"),
+            "blocker_summary": safe_field(evidence, "cn_evidence_blocker_summary"),
+            "assessment": safe_field(evidence, "assessment_id"),
+            "finding": safe_field(evidence, "finding_id"),
+            "task": safe_field(evidence, "task_id"),
+            "filing": safe_field(evidence, "filing_id"),
+            "document_checksum": safe_field(evidence, "document_checksum"),
+            "verified_by": safe_field(evidence, "verified_by_id"),
+            "verified_at": str(safe_field(evidence, "verified_at") or ""),
+        }}
+    )
+
+sample_filing_archives = []
+for filing in sample_records(
+    "sudo.compliance.filing",
+    active_profile_filing_domain,
+    order="period_end desc, id desc",
+    limit=8,
+):
+    sample_filing_archives.append(
+        {{
+            "id": filing.id,
+            "name": safe_field(filing, "display_name"),
+            "company": safe_field(filing, "company_id"),
+            "profile": safe_field(filing, "profile_id"),
+            "kind": safe_field(filing, "cn_filing_center_kind"),
+            "period_label": safe_field(filing, "cn_filing_center_period_label"),
+            "period_start": str(safe_field(filing, "period_start") or ""),
+            "period_end": str(safe_field(filing, "period_end") or ""),
+            "state": safe_field(filing, "state"),
+            "payment_state": safe_field(filing, "payment_state"),
+            "due_date": str(safe_field(filing, "due_date") or ""),
+            "submission_integrity_state": safe_field(filing, "cn_submission_integrity_state"),
+            "payment_integrity_state": safe_field(filing, "cn_payment_integrity_state"),
+            "evidence_state": safe_field(filing, "cn_filing_center_evidence_state"),
+            "evidence_count": safe_field(filing, "cn_filing_center_evidence_count"),
+            "verified_evidence_count": safe_field(filing, "cn_filing_center_verified_evidence_count"),
+            "next_action": safe_field(filing, "cn_filing_center_next_action"),
+            "blocker_summary": safe_field(filing, "cn_filing_center_blocker_summary"),
+            "submission_checksum": safe_field(filing, "cn_submission_checksum"),
+            "payment_checksum": safe_field(filing, "cn_payment_checksum"),
+        }}
+    )
+
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
     "active_cn_profiles": count("sudo.compliance.profile", profile_status_domain),
@@ -300,6 +375,7 @@ objects = {{
         ],
     ) if has_model("sudo.compliance.task") else None,
     "active_profile_formal_reports": count("sudo.cn.compliance.report", active_profile_report_domain),
+    "active_profile_filing_archives": count("sudo.compliance.filing", active_profile_filing_domain),
     "evidence": count("sudo.compliance.evidence"),
     "active_profile_evidence": count("sudo.compliance.evidence", active_profile_evidence_domain),
     "active_profile_verified_evidence": count(
@@ -431,6 +507,24 @@ readiness = {{
             for report in sample_reports
         )
     ),
+    "has_evidence_filing_payment_summary_evidence": bool(
+        any(
+            evidence.get("state") == "verified"
+            and evidence.get("source_summary")
+            and evidence.get("blocker_summary")
+            and evidence.get("document_checksum")
+            for evidence in sample_evidence
+        )
+        and any(
+            filing.get("state")
+            and filing.get("payment_state")
+            and filing.get("submission_integrity_state")
+            and filing.get("payment_integrity_state")
+            and filing.get("evidence_state") == "verified"
+            and filing.get("next_action")
+            for filing in sample_filing_archives
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -462,6 +556,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_active_profile_report_activity",
         "has_workbench_summary_evidence",
         "has_risk_task_report_summary_evidence",
+        "has_evidence_filing_payment_summary_evidence",
     )
 )
 
@@ -492,6 +587,8 @@ payload = {{
     "sample_findings": sample_findings,
     "sample_remediation_tasks": sample_tasks,
     "sample_reports": sample_reports,
+    "sample_evidence": sample_evidence,
+    "sample_filing_archives": sample_filing_archives,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}
