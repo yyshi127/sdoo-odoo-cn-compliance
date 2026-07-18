@@ -1493,9 +1493,14 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("business_uat_decision", required_actions)
         self.assertIn("china_tax_professional_rule_signoff", required_actions)
         self.assertIn("customer_scope_and_data_gap_review", required_actions)
+        self.assertIn("production_deployment_decision", required_actions)
         self.assertIn(
             "business UAT decision must be recorded outside this automated status",
             required_actions["business_uat_decision"]["addresses_blockers"],
+        )
+        self.assertEqual(
+            set(required_actions["production_deployment_decision"]["addresses_blockers"]),
+            set(readiness["production_signoff_blockers"]),
         )
 
     def test_delivery_status_accepts_valid_signoff_validation(self):
@@ -1611,6 +1616,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("business_uat_decision", content)
         self.assertIn("china_tax_professional_rule_signoff", content)
         self.assertIn("customer_scope_and_data_gap_review", content)
+        self.assertIn("production_deployment_decision", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))

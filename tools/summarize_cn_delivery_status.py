@@ -52,6 +52,11 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "owner": "business_reviewer",
             "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages.",
         },
+        {
+            "key": "production_deployment_decision",
+            "owner": "release_owner",
+            "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+        },
     ],
     "current official sources and released rules require professional sign-off evidence": [
         {
@@ -64,6 +69,11 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "owner": "rule_governance_owner",
             "required_evidence": "Current official-source monitoring results and local jurisdiction updates reviewed for the target period.",
         },
+        {
+            "key": "production_deployment_decision",
+            "owner": "release_owner",
+            "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+        },
     ],
     "customer-specific data gaps, evidence gaps and open critical risks must be reviewed": [
         {
@@ -75,6 +85,11 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
             "key": "blocker_summary_walkthrough",
             "owner": "business_reviewer",
             "required_evidence": "Completed blocker summary walkthrough for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness.",
+        },
+        {
+            "key": "production_deployment_decision",
+            "owner": "release_owner",
+            "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
         },
     ],
 }
