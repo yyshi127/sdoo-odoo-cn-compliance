@@ -4636,6 +4636,10 @@ def validate_delivery_objective_coverage() -> None:
         "has_reconciliation_activity",
         "closed_loop_evidence_ready",
         "has_workbench_summary_evidence",
+        "has_risk_task_report_summary_evidence",
+        "sample_findings",
+        "sample_remediation_tasks",
+        "sample_reports",
         "cn_workbench_action_summary",
         "cn_workbench_rule_basis_summary",
         "cn_workbench_limitation_summary",
@@ -4850,6 +4854,8 @@ def validate_delivery_objective_coverage() -> None:
         "blocker_summary_walkthrough",
         "workbench_summary_evidence",
         "has_workbench_summary_evidence",
+        "risk_task_report_summary_evidence",
+        "has_risk_task_report_summary_evidence",
         "workbench action/rule-basis/limitation summaries",
         "data readiness, evidence, filing/payment archive, remediation, report center and report readiness blocker summaries",
         "missing_human_evidence",
@@ -4891,7 +4897,9 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "test_signoff_packet_requires_blocker_summary_walkthrough",
         "test_signoff_packet_surfaces_workbench_summary_automated_evidence",
+        "test_signoff_packet_surfaces_risk_task_report_summary_evidence",
         "test_delivery_status_markdown_lists_workbench_summary_evidence",
+        "test_delivery_status_markdown_lists_risk_task_report_summary_evidence",
         "test_missing_blocker_summary_walkthrough_blocks_production_gate",
         "test_signoff_validation_blocks_actions_without_objective_areas",
         "blocked_objective_areas",
@@ -4904,11 +4912,16 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "Workbench Summary Evidence",
         "Workbench summary evidence ready",
+        "Risk/task/report summary evidence ready",
+        "Risk, Remediation and Report Summary Evidence",
         "Action summary",
         "Rule basis",
         "Limitations",
         "Uncertainty",
         "sample_profiles",
+        "sample_findings",
+        "sample_remediation_tasks",
+        "sample_reports",
     ):
         if required not in delivery_status_tool_content:
             fail(f"China delivery status workbench summary evidence is missing {required}")

@@ -65,6 +65,7 @@ def status_payload() -> dict:
             "readiness": {
                 "closed_loop_evidence_ready": True,
                 "has_workbench_summary_evidence": True,
+                "has_risk_task_report_summary_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -73,6 +74,55 @@ def status_payload() -> dict:
                     "rule_basis_summary": "Rules are current.",
                     "limitation_summary": "No explicit conclusion limitation is currently recorded.",
                     "uncertainty_summary": "No open uncertainty driver is currently recorded.",
+                }
+            ],
+            "sample_findings": [
+                {
+                    "title": "VAT filing mismatch",
+                    "company": "CN Company",
+                    "period_label": "2026-06",
+                    "risk_level": "high",
+                    "result": "fail",
+                    "review_state": "correction_required",
+                    "tax_impact": "Reviewed underpayment 100.00",
+                    "rule_basis_state": "ready",
+                    "professional_state": "approved",
+                    "evidence_state": "verified",
+                    "closure_state": "action_required",
+                    "next_action": "Review remediation and rescan.",
+                    "action_summary": "High risk; owner must verify remediation.",
+                }
+            ],
+            "sample_remediation_tasks": [
+                {
+                    "name": "Correct VAT filing mismatch",
+                    "company": "CN Company",
+                    "risk_level": "high",
+                    "state": "done",
+                    "verification_state": "verified",
+                    "assignee": "Reviewer",
+                    "due_date": "2026-07-31",
+                    "evidence_state": "verified",
+                    "traceability_state": "complete",
+                    "next_action": "Keep evidence sealed.",
+                    "action_summary": "Verified remediation task with evidence.",
+                }
+            ],
+            "sample_reports": [
+                {
+                    "name": "CN Compliance Report",
+                    "company": "CN Company",
+                    "period_start": "2026-06-01",
+                    "period_end": "2026-06-30",
+                    "state": "issued",
+                    "conclusion_state": "action_required",
+                    "traceability_state": "complete",
+                    "fact_basis_state": "ready",
+                    "center_integrity_state": "complete",
+                    "snapshot_integrity_state": "verified",
+                    "approval_integrity_state": "verified",
+                    "pdf_integrity_state": "verified",
+                    "traceability_next_action": "Archive issued report evidence.",
                 }
             ],
         },
@@ -164,6 +214,7 @@ def real_data_closed_loop_payload() -> dict:
             "demo_ready": True,
             "closed_loop_evidence_ready": True,
             "has_workbench_summary_evidence": True,
+            "has_risk_task_report_summary_evidence": True,
         },
         "sample_profiles": [
             {
@@ -172,6 +223,55 @@ def real_data_closed_loop_payload() -> dict:
                 "rule_basis_summary": "Rules are current.",
                 "limitation_summary": "No explicit conclusion limitation is currently recorded.",
                 "uncertainty_summary": "No open uncertainty driver is currently recorded.",
+            }
+        ],
+        "sample_findings": [
+            {
+                "title": "VAT filing mismatch",
+                "company": "CN Company",
+                "period_label": "2026-06",
+                "risk_level": "high",
+                "result": "fail",
+                "review_state": "correction_required",
+                "tax_impact": "Reviewed underpayment 100.00",
+                "rule_basis_state": "ready",
+                "professional_state": "approved",
+                "evidence_state": "verified",
+                "closure_state": "action_required",
+                "next_action": "Review remediation and rescan.",
+                "action_summary": "High risk; owner must verify remediation.",
+            }
+        ],
+        "sample_remediation_tasks": [
+            {
+                "name": "Correct VAT filing mismatch",
+                "company": "CN Company",
+                "risk_level": "high",
+                "state": "done",
+                "verification_state": "verified",
+                "assignee": "Reviewer",
+                "due_date": "2026-07-31",
+                "evidence_state": "verified",
+                "traceability_state": "complete",
+                "next_action": "Keep evidence sealed.",
+                "action_summary": "Verified remediation task with evidence.",
+            }
+        ],
+        "sample_reports": [
+            {
+                "name": "CN Compliance Report",
+                "company": "CN Company",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "state": "issued",
+                "conclusion_state": "action_required",
+                "traceability_state": "complete",
+                "fact_basis_state": "ready",
+                "center_integrity_state": "complete",
+                "snapshot_integrity_state": "verified",
+                "approval_integrity_state": "verified",
+                "pdf_integrity_state": "verified",
+                "traceability_next_action": "Archive issued report evidence.",
             }
         ],
     }
@@ -313,6 +413,26 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "limitation_summary",
             automated["workbench_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("risk_task_report_summary_evidence", automated)
+        self.assertTrue(automated["risk_task_report_summary_evidence"]["ready"])
+        self.assertIn(
+            "VAT filing mismatch",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "Correct VAT filing mismatch",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "CN Compliance Report",
+            automated["risk_task_report_summary_evidence"]["evidence"],
         )
 
     def test_signoff_packet_lists_missing_human_evidence(self):
@@ -699,6 +819,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Rule basis", content)
         self.assertIn("Limitations", content)
         self.assertIn("Uncertainty", content)
+
+    def test_delivery_status_markdown_lists_risk_task_report_summary_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Risk, Remediation and Report Summary Evidence", content)
+        self.assertIn("Risk/task/report summary evidence ready: `True`", content)
+        self.assertIn("VAT filing mismatch", content)
+        self.assertIn("Correct VAT filing mismatch", content)
+        self.assertIn("CN Compliance Report", content)
+        self.assertIn("Risk level", content)
+        self.assertIn("State/verification", content)
+        self.assertIn("State/conclusion", content)
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())

@@ -102,6 +102,22 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 sort_keys=True,
             ),
         ),
+        _readiness_item(
+            "risk_task_report_summary_evidence",
+            "Risk center, remediation tracker and report center expose representative summary evidence for UAT review",
+            real_data_readiness.get("has_risk_task_report_summary_evidence") is True,
+            json.dumps(
+                {
+                    "findings": real_data.get("sample_findings") or [],
+                    "remediation_tasks": (
+                        real_data.get("sample_remediation_tasks") or []
+                    ),
+                    "reports": real_data.get("sample_reports") or [],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
     ]
     production_actions = [
         {

@@ -79,6 +79,12 @@ def safe_field(record, field_name):
     return value
 
 
+def sample_records(model_name, domain, order="id asc", limit=5):
+    if not has_model(model_name):
+        return []
+    return env[model_name].sudo().search(domain or [], order=order, limit=limit)
+
+
 module = env["ir.module.module"].sudo().search(
     [("name", "=", "sudo_country_pack_cn")], limit=1
 )
@@ -180,6 +186,95 @@ if has_model("sudo.compliance.profile"):
                 "limitation_next_action": safe_field(profile, "cn_workbench_limitation_next_action"),
             }}
         )
+
+sample_findings = []
+for finding in sample_records(
+    "sudo.compliance.finding",
+    active_profile_finding_domain,
+    order="risk_level desc, id asc",
+    limit=8,
+):
+    task = safe_field(finding, "current_task_id")
+    sample_findings.append(
+        {{
+            "id": finding.id,
+            "name": safe_field(finding, "display_name"),
+            "company": safe_field(finding, "company_id"),
+            "assessment": safe_field(finding, "assessment_id"),
+            "period_label": safe_field(finding, "cn_risk_period_label"),
+            "risk_level": safe_field(finding, "risk_level"),
+            "result": safe_field(finding, "result"),
+            "review_state": safe_field(finding, "review_state"),
+            "title": safe_field(finding, "title"),
+            "reason": safe_field(finding, "message"),
+            "action_summary": safe_field(finding, "cn_risk_action_summary"),
+            "next_action": safe_field(finding, "cn_risk_next_action"),
+            "tax_impact": safe_field(finding, "cn_tax_impact_summary"),
+            "rule_basis_state": safe_field(finding, "cn_risk_rule_basis_state"),
+            "rule_release_state": safe_field(finding, "cn_risk_rule_release_state"),
+            "professional_state": safe_field(finding, "cn_risk_rule_professional_state"),
+            "data_basis_state": safe_field(finding, "cn_risk_data_basis_state"),
+            "evidence_state": safe_field(finding, "cn_risk_evidence_state"),
+            "closure_state": safe_field(finding, "cn_closure_state"),
+            "closure_summary": safe_field(finding, "cn_closure_summary"),
+            "current_task": task.display_name if hasattr(task, "display_name") else None,
+        }}
+    )
+
+sample_tasks = []
+for task in sample_records(
+    "sudo.compliance.task",
+    active_profile_task_domain + [("task_type", "=", "remediation")],
+    order="due_date asc, id asc",
+    limit=8,
+):
+    sample_tasks.append(
+        {{
+            "id": task.id,
+            "name": safe_field(task, "name"),
+            "company": safe_field(task, "company_id"),
+            "assessment": safe_field(task, "assessment_id"),
+            "finding": safe_field(task, "finding_id"),
+            "risk_level": safe_field(task, "risk_level"),
+            "state": safe_field(task, "state"),
+            "assignee": safe_field(task, "assignee_id"),
+            "due_date": str(safe_field(task, "due_date") or ""),
+            "verification_state": safe_field(task, "verification_state"),
+            "verification_assessment": safe_field(task, "verification_assessment_id"),
+            "action_summary": safe_field(task, "cn_remediation_action_summary"),
+            "next_action": safe_field(task, "cn_remediation_next_action"),
+            "responsibility_summary": safe_field(task, "cn_remediation_responsibility_summary"),
+            "evidence_state": safe_field(task, "cn_remediation_evidence_state"),
+            "traceability_state": safe_field(task, "cn_remediation_traceability_state"),
+        }}
+    )
+
+sample_reports = []
+for report in sample_records(
+    "sudo.cn.compliance.report",
+    active_profile_report_domain,
+    order="id desc",
+    limit=8,
+):
+    sample_reports.append(
+        {{
+            "id": report.id,
+            "name": safe_field(report, "display_name"),
+            "company": safe_field(report, "company_id"),
+            "assessment": safe_field(report, "assessment_id"),
+            "period_start": str(safe_field(report, "period_start") or ""),
+            "period_end": str(safe_field(report, "period_end") or ""),
+            "state": safe_field(report, "state"),
+            "conclusion_state": safe_field(report, "conclusion_state"),
+            "traceability_state": safe_field(report, "cn_report_traceability_state"),
+            "traceability_next_action": safe_field(report, "cn_report_traceability_next_action"),
+            "fact_basis_state": safe_field(report, "cn_report_fact_basis_state"),
+            "center_integrity_state": safe_field(report, "cn_report_center_integrity_state"),
+            "snapshot_integrity_state": safe_field(report, "snapshot_integrity_state"),
+            "approval_integrity_state": safe_field(report, "approval_integrity_state"),
+            "pdf_integrity_state": safe_field(report, "pdf_integrity_state"),
+        }}
+    )
 
 objects = {{
     "cn_profiles": count("sudo.compliance.profile", profile_dom),
@@ -316,6 +411,26 @@ readiness = {{
             if profile.get("status") == "active"
         )
     ),
+    "has_risk_task_report_summary_evidence": bool(
+        any(
+            finding.get("risk_level") and finding.get("action_summary")
+            for finding in sample_findings
+        )
+        and any(
+            task.get("state")
+            and task.get("verification_state")
+            and task.get("action_summary")
+            for task in sample_tasks
+        )
+        and any(
+            report.get("state")
+            and (
+                report.get("conclusion_state")
+                or report.get("traceability_next_action")
+            )
+            for report in sample_reports
+        )
+    ),
 }}
 readiness["setup_demo_ready"] = all(
     readiness[key]
@@ -346,6 +461,7 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_active_profile_verified_evidence",
         "has_active_profile_report_activity",
         "has_workbench_summary_evidence",
+        "has_risk_task_report_summary_evidence",
     )
 )
 
@@ -373,6 +489,9 @@ payload = {{
         "external_dataset_state": selection_count("sudo.cn.external.dataset", "state"),
     }},
     "sample_profiles": profiles,
+    "sample_findings": sample_findings,
+    "sample_remediation_tasks": sample_tasks,
+    "sample_reports": sample_reports,
     "readiness": readiness,
     "ok": readiness["demo_ready"],
 }}

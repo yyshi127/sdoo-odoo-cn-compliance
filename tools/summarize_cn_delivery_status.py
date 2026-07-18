@@ -203,6 +203,11 @@ def _status(
             "accounting": real_data_closed_loop.get("accounting"),
             "objects": real_data_closed_loop.get("objects"),
             "sample_profiles": real_data_closed_loop.get("sample_profiles"),
+            "sample_findings": real_data_closed_loop.get("sample_findings"),
+            "sample_remediation_tasks": real_data_closed_loop.get(
+                "sample_remediation_tasks"
+            ),
+            "sample_reports": real_data_closed_loop.get("sample_reports"),
             "readiness": readiness if isinstance(readiness, dict) else None,
             "error": real_data_closed_loop.get("error"),
         }
@@ -367,6 +372,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     signoff_validation = status.get("signoff_validation") or {}
     real_data_readiness = real_data_closed_loop.get("readiness") or {}
     sample_profiles = real_data_closed_loop.get("sample_profiles") or []
+    sample_findings = real_data_closed_loop.get("sample_findings") or []
+    sample_tasks = real_data_closed_loop.get("sample_remediation_tasks") or []
+    sample_reports = real_data_closed_loop.get("sample_reports") or []
     readiness = status.get("readiness_gates") or {}
     lines = [
         "# China Delivery Status",
@@ -408,6 +416,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",
         f"- Workbench summary evidence ready: `{real_data_readiness.get('has_workbench_summary_evidence', False)}`",
+        f"- Risk/task/report summary evidence ready: `{real_data_readiness.get('has_risk_task_report_summary_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
@@ -468,6 +477,78 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
             ]
             if isinstance(sample_profiles, list) and sample_profiles
             else ["- No sample profile workbench summary evidence was provided.", ""]
+        ),
+        "## Risk, Remediation and Report Summary Evidence",
+        "",
+        "### Sample Risks",
+        "",
+        *(
+            [
+                line
+                for finding in sample_findings[:5]
+                if isinstance(finding, dict)
+                for line in (
+                    f"#### {finding.get('title') or finding.get('name') or finding.get('id') or 'Risk'}",
+                    "",
+                    f"- Company: `{finding.get('company', '')}`",
+                    f"- Period: `{finding.get('period_label', '')}`",
+                    f"- Risk level: `{finding.get('risk_level', '')}`",
+                    f"- Result/review: `{finding.get('result', '')}` / `{finding.get('review_state', '')}`",
+                    f"- Tax impact: {finding.get('tax_impact', '')}",
+                    f"- Rule basis: `{finding.get('rule_basis_state', '')}` / `{finding.get('professional_state', '')}`",
+                    f"- Evidence/closure: `{finding.get('evidence_state', '')}` / `{finding.get('closure_state', '')}`",
+                    f"- Next action: {finding.get('next_action', '')}",
+                    f"- Action summary: {finding.get('action_summary', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_findings, list) and sample_findings
+            else ["- No sample risk summary evidence was provided.", ""]
+        ),
+        "### Sample Remediation Tasks",
+        "",
+        *(
+            [
+                line
+                for task in sample_tasks[:5]
+                if isinstance(task, dict)
+                for line in (
+                    f"#### {task.get('name') or task.get('id') or 'Remediation Task'}",
+                    "",
+                    f"- Company: `{task.get('company', '')}`",
+                    f"- Risk level: `{task.get('risk_level', '')}`",
+                    f"- State/verification: `{task.get('state', '')}` / `{task.get('verification_state', '')}`",
+                    f"- Assignee/due date: `{task.get('assignee', '')}` / `{task.get('due_date', '')}`",
+                    f"- Evidence/traceability: `{task.get('evidence_state', '')}` / `{task.get('traceability_state', '')}`",
+                    f"- Next action: {task.get('next_action', '')}",
+                    f"- Action summary: {task.get('action_summary', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_tasks, list) and sample_tasks
+            else ["- No sample remediation summary evidence was provided.", ""]
+        ),
+        "### Sample Reports",
+        "",
+        *(
+            [
+                line
+                for report in sample_reports[:5]
+                if isinstance(report, dict)
+                for line in (
+                    f"#### {report.get('name') or report.get('id') or 'Compliance Report'}",
+                    "",
+                    f"- Company: `{report.get('company', '')}`",
+                    f"- Period: `{report.get('period_start', '')}` to `{report.get('period_end', '')}`",
+                    f"- State/conclusion: `{report.get('state', '')}` / `{report.get('conclusion_state', '')}`",
+                    f"- Traceability/fact basis: `{report.get('traceability_state', '')}` / `{report.get('fact_basis_state', '')}`",
+                    f"- Integrity: center `{report.get('center_integrity_state', '')}`, snapshot `{report.get('snapshot_integrity_state', '')}`, approval `{report.get('approval_integrity_state', '')}`, pdf `{report.get('pdf_integrity_state', '')}`",
+                    f"- Next action: {report.get('traceability_next_action', '')}",
+                    "",
+                )
+            ]
+            if isinstance(sample_reports, list) and sample_reports
+            else ["- No sample report summary evidence was provided.", ""]
         ),
         "## Runtime",
         "",
