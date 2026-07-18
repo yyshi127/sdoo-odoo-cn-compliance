@@ -457,6 +457,30 @@ def _source_governance_summary(
     }
 
 
+def _compliance_scope_blockers(
+    tax_domain_coverage: object,
+    source_governance_summary: object,
+) -> list[str]:
+    blockers: list[str] = []
+    if not isinstance(tax_domain_coverage, dict) or not tax_domain_coverage:
+        blockers.append("tax domain coverage summary was not provided")
+    else:
+        for key, domain in tax_domain_coverage.items():
+            if not isinstance(domain, dict) or domain.get("ready") is not True:
+                label = (
+                    domain.get("label")
+                    if isinstance(domain, dict) and domain.get("label")
+                    else key
+                )
+                blockers.append(f"{label} coverage is not ready")
+    if (
+        not isinstance(source_governance_summary, dict)
+        or source_governance_summary.get("ready") is not True
+    ):
+        blockers.append("official source governance summary is not ready")
+    return blockers
+
+
 def _source_control_blockers(source_control: object) -> list[str]:
     if not isinstance(source_control, dict):
         return ["source control evidence is missing"]
@@ -642,6 +666,10 @@ def _status(
     source_governance_summary = _source_governance_summary(
         real_data_closed_loop_summary
     )
+    compliance_scope_blockers = _compliance_scope_blockers(
+        tax_domain_coverage,
+        source_governance_summary,
+    )
     objective_audit_summary = None
     if objective_audit:
         objective_audit_summary = {
@@ -811,6 +839,8 @@ def _status(
         "readiness_gates": {
             "preview_ready": not preview_readiness_blockers,
             "preview_readiness_blockers": preview_readiness_blockers,
+            "compliance_scope_ready": not compliance_scope_blockers,
+            "compliance_scope_blockers": compliance_scope_blockers,
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
             "production_signoff_ready": production_signoff_ready,
@@ -936,6 +966,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
         f"- Preview ready: `{readiness.get('preview_ready', False)}`",
+        f"- Compliance scope ready: `{readiness.get('compliance_scope_ready', False)}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
@@ -946,6 +977,13 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {blocker}"
             for blocker in readiness.get("preview_readiness_blockers", [])
+        ],
+        "",
+        "### Compliance Scope Blockers",
+        "",
+        *[
+            f"- {blocker}"
+            for blocker in readiness.get("compliance_scope_blockers", [])
         ],
         "",
         "### Business UAT Blockers",

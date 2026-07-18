@@ -1797,17 +1797,23 @@ class TestChinaSignoffValidation(unittest.TestCase):
         status = delivery_status()
 
         coverage = status["tax_domain_coverage"]
+        readiness = status["readiness_gates"]
 
         self.assertTrue(coverage["vat"]["ready"])
         self.assertTrue(coverage["cit"]["ready"])
         self.assertTrue(coverage["iit"]["ready"])
         self.assertTrue(coverage["cross_border"]["ready"])
+        self.assertTrue(status["source_governance_summary"]["ready"])
+        self.assertTrue(readiness["compliance_scope_ready"])
+        self.assertEqual(readiness["compliance_scope_blockers"], [])
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "status.md"
 
             SUMMARY._write_markdown(status, output)
 
             content = output.read_text(encoding="utf-8")
+        self.assertIn("Compliance scope ready: `True`", content)
+        self.assertIn("### Compliance Scope Blockers", content)
         self.assertIn("## Tax Domain Coverage Overview", content)
         self.assertIn("VAT invoice / filing / payment", content)
         self.assertIn("CIT accounting / filing", content)
@@ -1815,6 +1821,29 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Cross-border and withholding review", content)
         self.assertIn("Representative UAT scope", content)
         self.assertIn("Fact-specific review remains required", content)
+
+    def test_delivery_status_surfaces_compliance_scope_blockers(self):
+        real_data = real_data_closed_loop_payload()
+        real_data["readiness"]["has_iit_payroll_withholding_scope_evidence"] = False
+
+        status = SUMMARY._status(
+            bundle_metadata=bundle_metadata_payload(),
+            manifest=manifest_payload(),
+            summary=summary_payload(),
+            preview_health=preview_health_payload(),
+            preview_module=preview_module_payload(),
+            real_data_closed_loop=real_data,
+            objective_audit=status_payload()["objective_audit"],
+            signoff_validation=None,
+            preview_url="http://127.0.0.1:18070/web/login?db=test",
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["compliance_scope_ready"])
+        self.assertIn(
+            "IIT payroll / withholding / payment coverage is not ready",
+            readiness["compliance_scope_blockers"],
+        )
 
     def test_delivery_status_rejects_mismatched_signoff_validation_version(self):
         packet = PACKET._build_packet(status_payload())
