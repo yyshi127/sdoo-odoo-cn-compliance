@@ -1480,6 +1480,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
         status = delivery_status()
 
         readiness = status["readiness_gates"]
+        self.assertTrue(readiness["preview_ready"])
+        self.assertEqual(readiness["preview_readiness_blockers"], [])
         self.assertTrue(readiness["business_uat_ready"])
         self.assertFalse(readiness["production_signoff_ready"])
         self.assertIn(
@@ -1501,6 +1503,34 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(
             set(required_actions["production_deployment_decision"]["addresses_blockers"]),
             set(readiness["production_signoff_blockers"]),
+        )
+
+    def test_delivery_status_surfaces_preview_readiness_blockers(self):
+        preview_health = preview_health_payload()
+        preview_health["ok"] = False
+        preview_health["status_code"] = 500
+
+        status = SUMMARY._status(
+            bundle_metadata=bundle_metadata_payload(),
+            manifest=manifest_payload(),
+            summary=summary_payload(),
+            preview_health=preview_health,
+            preview_module=preview_module_payload(),
+            real_data_closed_loop=real_data_closed_loop_payload(),
+            objective_audit=status_payload()["objective_audit"],
+            signoff_validation=None,
+            preview_url="http://127.0.0.1:18070/web/login?db=test",
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["preview_ready"])
+        self.assertEqual(
+            readiness["preview_readiness_blockers"],
+            ["preview health check did not pass"],
+        )
+        self.assertIn(
+            "preview health check did not pass",
+            readiness["business_uat_blockers"],
         )
 
     def test_delivery_status_required_actions_match_signoff_packet_evidence(self):

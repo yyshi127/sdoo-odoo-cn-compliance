@@ -734,6 +734,12 @@ def _status(
         readiness = real_data_closed_loop_summary.get("readiness") or {}
         if not isinstance(readiness, dict) or readiness.get("demo_ready") is not True:
             business_uat_blockers.append("real-data demo readiness check did not pass")
+    preview_readiness_blockers = [
+        blocker
+        for blocker in business_uat_blockers
+        if blocker.startswith("preview ")
+        or blocker.startswith("real-data ")
+    ]
     production_signoff_blockers = list(business_uat_blockers)
     production_signoff_ready = False
     if not signoff_validation_summary:
@@ -803,6 +809,8 @@ def _status(
         "objective_audit": objective_audit_summary,
         "signoff_validation": signoff_validation_summary,
         "readiness_gates": {
+            "preview_ready": not preview_readiness_blockers,
+            "preview_readiness_blockers": preview_readiness_blockers,
             "business_uat_ready": not business_uat_blockers,
             "business_uat_blockers": business_uat_blockers,
             "production_signoff_ready": production_signoff_ready,
@@ -927,10 +935,18 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Cross-border review scope evidence ready: `{real_data_readiness.get('has_cross_border_review_scope_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
         f"- Sign-off deployment decision: `{signoff_validation.get('deployment_decision', '')}`",
+        f"- Preview ready: `{readiness.get('preview_ready', False)}`",
         f"- Business UAT ready: `{readiness.get('business_uat_ready', False)}`",
         f"- Production sign-off ready: `{readiness.get('production_signoff_ready', False)}`",
         "",
         "## Readiness Gates",
+        "",
+        "### Preview Readiness Blockers",
+        "",
+        *[
+            f"- {blocker}"
+            for blocker in readiness.get("preview_readiness_blockers", [])
+        ],
         "",
         "### Business UAT Blockers",
         "",
