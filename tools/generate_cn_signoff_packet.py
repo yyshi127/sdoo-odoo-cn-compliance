@@ -56,6 +56,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     preview_module = status.get("preview_module") or {}
     uat_walkthrough = status.get("uat_walkthrough") or {}
     real_data = status.get("real_data_closed_loop") or {}
+    source_governance = status.get("source_governance_summary") or {}
     real_data_readiness = real_data.get("readiness") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else {}
@@ -175,6 +176,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 ensure_ascii=False,
                 sort_keys=True,
             ),
+        ),
+        _readiness_item(
+            "official_source_governance_summary",
+            "Official source governance summary exposes freshness, monitoring and rule sign-off issue counts",
+            source_governance.get("ready") is True,
+            json.dumps(source_governance, ensure_ascii=False, sort_keys=True),
         ),
         _readiness_item(
             "iit_payroll_withholding_scope_evidence",

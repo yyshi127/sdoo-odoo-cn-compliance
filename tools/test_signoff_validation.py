@@ -64,6 +64,27 @@ def status_payload() -> dict:
             "path": "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
             "included_in_manifest": True,
         },
+        "source_governance_summary": {
+            "ready": True,
+            "source_count": 1,
+            "sample_source_count": 1,
+            "valid_source_count": 1,
+            "active_rule_version_count": 1,
+            "sample_rule_version_count": 1,
+            "monitor_run_count": 0,
+            "overdue_source_count": 0,
+            "changed_monitor_run_count": 0,
+            "failed_monitor_run_count": 0,
+            "unapproved_rule_version_count": 0,
+            "latest_sample_source": "CODEX-DEMO China VAT source",
+            "latest_sample_source_next_review_date": "2027-07-15",
+            "latest_monitor_state": "never",
+            "boundary": (
+                "Automated evidence summarizes packaged source governance only; "
+                "production still requires current official-source review and "
+                "China tax professional sign-off."
+            ),
+        },
         "real_data_closed_loop": {
             "ok": True,
             "objects": {
@@ -832,6 +853,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["cross_border_review_scope_evidence"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_official_source_governance_summary(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("official_source_governance_summary", automated)
+        self.assertTrue(automated["official_source_governance_summary"]["ready"])
+        self.assertIn(
+            "CODEX-DEMO China VAT source",
+            automated["official_source_governance_summary"]["evidence"],
+        )
+        self.assertIn(
+            "overdue_source_count",
+            automated["official_source_governance_summary"]["evidence"],
+        )
+
     def test_signoff_packet_lists_missing_human_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1328,6 +1365,21 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)
         self.assertIn("No source monitor run sample was provided", content)
+
+    def test_delivery_status_markdown_lists_official_source_governance_overview(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("## Official Source Governance Overview", content)
+        self.assertIn("Official source governance summary ready: `True`", content)
+        self.assertIn("Overdue source samples: `0`", content)
+        self.assertIn("Changed monitor run samples: `0`", content)
+        self.assertIn("Rule governance issue samples: `0`", content)
+        self.assertIn("CODEX-DEMO China VAT source", content)
 
     def test_delivery_status_markdown_lists_iit_and_cross_border_scope_evidence(self):
         status = delivery_status()

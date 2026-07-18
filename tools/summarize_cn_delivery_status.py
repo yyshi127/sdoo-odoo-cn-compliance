@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 
@@ -207,6 +207,101 @@ def _tax_domain_markdown_lines(
     return lines or ["- No tax domain coverage summary was provided.", ""]
 
 
+def _parse_date(value: object) -> date | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError:
+        return None
+
+
+def _source_governance_summary(
+    real_data_closed_loop: dict[str, object] | None,
+) -> dict[str, object]:
+    real_data = real_data_closed_loop or {}
+    readiness = (
+        real_data.get("readiness")
+        if isinstance(real_data.get("readiness"), dict)
+        else {}
+    )
+    objects = real_data.get("objects") if isinstance(real_data.get("objects"), dict) else {}
+    sources = [
+        source
+        for source in real_data.get("sample_authority_sources") or []
+        if isinstance(source, dict)
+    ]
+    rule_versions = [
+        version
+        for version in real_data.get("sample_rule_versions") or []
+        if isinstance(version, dict)
+    ]
+    monitor_runs = [
+        run
+        for run in real_data.get("sample_source_monitor_runs") or []
+        if isinstance(run, dict)
+    ]
+    today = datetime.now(timezone.utc).date()
+    overdue_sources = [
+        source
+        for source in sources
+        if (review_date := _parse_date(source.get("next_review_date")))
+        and review_date < today
+    ]
+    changed_monitor_runs = [
+        run for run in monitor_runs if run.get("state") == "changed"
+    ]
+    failed_monitor_runs = [
+        run for run in monitor_runs if run.get("state") == "failed"
+    ]
+    unapproved_rule_versions = [
+        version
+        for version in rule_versions
+        if version.get("professional_review_state") != "approved"
+        or version.get("release_state") not in ("active", "ready_to_activate")
+        or not version.get("checksum")
+        or not version.get("source_count")
+    ]
+    issue_count = (
+        len(overdue_sources)
+        + len(changed_monitor_runs)
+        + len(failed_monitor_runs)
+        + len(unapproved_rule_versions)
+    )
+    return {
+        "ready": bool(
+            readiness.get("has_rule_source_governance_evidence") is True
+            and sources
+            and rule_versions
+            and issue_count == 0
+        ),
+        "source_count": objects.get("cn_authority_sources") or len(sources),
+        "sample_source_count": len(sources),
+        "valid_source_count": objects.get("cn_valid_authority_sources"),
+        "active_rule_version_count": objects.get("cn_active_rule_versions"),
+        "sample_rule_version_count": len(rule_versions),
+        "monitor_run_count": objects.get("cn_source_monitor_runs") or len(monitor_runs),
+        "overdue_source_count": len(overdue_sources),
+        "changed_monitor_run_count": len(changed_monitor_runs),
+        "failed_monitor_run_count": len(failed_monitor_runs),
+        "unapproved_rule_version_count": len(unapproved_rule_versions),
+        "latest_sample_source": sources[0].get("name") if sources else "",
+        "latest_sample_source_next_review_date": (
+            sources[0].get("next_review_date") if sources else ""
+        ),
+        "latest_monitor_state": (
+            monitor_runs[0].get("state")
+            if monitor_runs
+            else (sources[0].get("last_monitor_state") if sources else "")
+        ),
+        "boundary": (
+            "Automated evidence summarizes packaged source governance only; "
+            "production still requires current official-source review and "
+            "China tax professional sign-off."
+        ),
+    }
+
+
 def _source_control_blockers(source_control: object) -> list[str]:
     if not isinstance(source_control, dict):
         return ["source control evidence is missing"]
@@ -368,6 +463,9 @@ def _status(
             "error": real_data_closed_loop.get("error"),
         }
     tax_domain_coverage = _tax_domain_coverage(real_data_closed_loop_summary)
+    source_governance_summary = _source_governance_summary(
+        real_data_closed_loop_summary
+    )
     signoff_validation_summary = None
     if signoff_validation:
         signoff_validation_summary = {
@@ -494,6 +592,7 @@ def _status(
         "preview_module": preview_module_summary,
         "real_data_closed_loop": real_data_closed_loop_summary,
         "tax_domain_coverage": tax_domain_coverage,
+        "source_governance_summary": source_governance_summary,
         "signoff_validation": signoff_validation_summary,
         "readiness_gates": {
             "business_uat_ready": not business_uat_blockers,
@@ -548,6 +647,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     ) or []
     readiness = status.get("readiness_gates") or {}
     tax_domain_coverage = status.get("tax_domain_coverage") or {}
+    source_governance = status.get("source_governance_summary") or {}
     lines = [
         "# China Delivery Status",
         "",
@@ -594,6 +694,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",
+        f"- Official source governance summary ready: `{source_governance.get('ready', False)}`",
+        f"- Official source governance issues: `{source_governance.get('overdue_source_count', 0)} overdue source(s), {source_governance.get('changed_monitor_run_count', 0)} changed monitor run(s), {source_governance.get('failed_monitor_run_count', 0)} failed monitor run(s), {source_governance.get('unapproved_rule_version_count', 0)} rule governance issue(s)`",
         f"- IIT payroll withholding scope evidence ready: `{real_data_readiness.get('has_iit_payroll_withholding_scope_evidence', False)}`",
         f"- Cross-border review scope evidence ready: `{real_data_readiness.get('has_cross_border_review_scope_evidence', False)}`",
         f"- Sign-off validation ok: `{signoff_validation.get('ok', False)}`",
@@ -627,6 +729,22 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         "## Tax Domain Coverage Overview",
         "",
         *_tax_domain_markdown_lines(tax_domain_coverage),
+        "## Official Source Governance Overview",
+        "",
+        f"- Ready: `{source_governance.get('ready', False)}`",
+        f"- Source records: `{source_governance.get('source_count', '')}`",
+        f"- Valid source records: `{source_governance.get('valid_source_count', '')}`",
+        f"- Active rule versions: `{source_governance.get('active_rule_version_count', '')}`",
+        f"- Monitor runs: `{source_governance.get('monitor_run_count', '')}`",
+        f"- Overdue source samples: `{source_governance.get('overdue_source_count', 0)}`",
+        f"- Changed monitor run samples: `{source_governance.get('changed_monitor_run_count', 0)}`",
+        f"- Failed monitor run samples: `{source_governance.get('failed_monitor_run_count', 0)}`",
+        f"- Rule governance issue samples: `{source_governance.get('unapproved_rule_version_count', 0)}`",
+        f"- Latest sample source: `{_markdown_text(source_governance.get('latest_sample_source', ''))}`",
+        f"- Latest sample source next review date: `{source_governance.get('latest_sample_source_next_review_date', '')}`",
+        f"- Latest monitor state: `{source_governance.get('latest_monitor_state', '')}`",
+        f"- Boundary: {source_governance.get('boundary', '')}",
+        "",
         "## Artifacts",
         "",
         f"- Bundle version: `{bundle.get('version', '')}`",
