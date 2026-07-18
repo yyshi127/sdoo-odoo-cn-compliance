@@ -1105,6 +1105,13 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "business UAT decision must be recorded outside this automated status"
             ]["action_keys"],
         )
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertIn("production_blocker_coverage_complete", automated)
+        self.assertTrue(automated["production_blocker_coverage_complete"]["ready"])
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            automated["production_blocker_coverage_complete"]["evidence"],
+        )
 
     def test_signoff_packet_markdown_lists_missing_human_evidence(self):
         packet = PACKET._build_packet(status_payload())
@@ -1122,6 +1129,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Objective areas:", content)
         self.assertIn("Addresses blockers:", content)
         self.assertIn("blocker_summary_walkthrough", content)
+        self.assertIn(
+            "Every production sign-off blocker is mapped to at least one human sign-off action",
+            content,
+        )
         self.assertIn("## Production Blocker Coverage", content)
         self.assertIn("All covered: `True`", content)
 

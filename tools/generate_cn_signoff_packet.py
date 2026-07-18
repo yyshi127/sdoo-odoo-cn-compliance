@@ -369,6 +369,22 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         },
     ]
     production_signoff_blockers = readiness.get("production_signoff_blockers") or []
+    production_blocker_coverage = _production_blocker_coverage(
+        production_signoff_blockers,
+        production_actions,
+    )
+    automated_items.append(
+        _readiness_item(
+            "production_blocker_coverage_complete",
+            "Every production sign-off blocker is mapped to at least one human sign-off action",
+            production_blocker_coverage.get("all_covered") is True,
+            json.dumps(
+                production_blocker_coverage,
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        )
+    )
     return {
         "schema": PACKET_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -382,10 +398,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         "missing_human_evidence": _missing_human_evidence(production_actions),
         "business_uat_blockers": readiness.get("business_uat_blockers") or [],
         "production_signoff_blockers": production_signoff_blockers,
-        "production_blocker_coverage": _production_blocker_coverage(
-            production_signoff_blockers,
-            production_actions,
-        ),
+        "production_blocker_coverage": production_blocker_coverage,
     }
 
 
