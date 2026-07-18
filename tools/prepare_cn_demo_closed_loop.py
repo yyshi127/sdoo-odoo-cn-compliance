@@ -893,9 +893,16 @@ def ensure_filing_archive(profile, run, source):
     changed = False
     obligation = profile.obligation_ids.filtered(lambda item: item.code == "CN-VAT")[:1]
     if obligation and source:
+        effective_from = obligation.effective_from
+        if not effective_from or effective_from > run.period_start:
+            effective_from = "2026-01-01"
+        effective_to = obligation.effective_to
+        if effective_to and effective_to < run.period_end:
+            effective_to = False
         obligation.write({{
             "applicability": "applicable",
-            "effective_from": obligation.effective_from or "2026-01-01",
+            "effective_from": effective_from,
+            "effective_to": effective_to,
             "authority_source_id": source.id,
             "justification": (
                 "CODEX-DEMO ONLY: VAT obligation confirmed for the controlled "
