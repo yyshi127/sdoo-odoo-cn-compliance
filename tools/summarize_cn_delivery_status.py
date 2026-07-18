@@ -24,6 +24,7 @@ PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
 REAL_DATA_CLOSED_LOOP_TOOL_PATH = Path("tools/check_cn_real_data_closed_loop.py")
 SIGNOFF_PACKET_TOOL_PATH = Path("tools/generate_cn_signoff_packet.py")
 SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
+SIGNOFF_EVIDENCE_TEMPLATE_PATH = Path("docs/samples/cn_signoff_evidence_template.json")
 MOJIBAKE_MARKDOWN_PLACEHOLDER = (
     "[unreadable preview-database text; inspect the JSON evidence by record id]"
 )
@@ -414,6 +415,12 @@ def _status(
             manifest, SIGNOFF_VALIDATION_TOOL_PATH
         ),
     }
+    signoff_evidence_template = {
+        "path": SIGNOFF_EVIDENCE_TEMPLATE_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(
+            manifest, SIGNOFF_EVIDENCE_TEMPLATE_PATH
+        ),
+    }
     preview_health_summary = None
     if preview_health:
         preview_health_summary = {
@@ -525,6 +532,7 @@ def _status(
         ("real-data closed-loop checker", real_data_closed_loop_checker),
         ("production sign-off packet generator", signoff_packet_tool),
         ("production sign-off evidence validator", signoff_validation_tool),
+        ("production sign-off evidence template", signoff_evidence_template),
     ):
         if not evidence["included_in_manifest"]:
             business_uat_blockers.append(f"{label} is not included in the manifest")
@@ -612,6 +620,7 @@ def _status(
         "real_data_closed_loop_checker": real_data_closed_loop_checker,
         "signoff_packet_tool": signoff_packet_tool,
         "signoff_validation_tool": signoff_validation_tool,
+        "signoff_evidence_template": signoff_evidence_template,
         "preview_health": preview_health_summary,
         "preview_module": preview_module_summary,
         "real_data_closed_loop": real_data_closed_loop_summary,
@@ -653,6 +662,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     real_data_closed_loop_checker = status.get("real_data_closed_loop_checker") or {}
     signoff_packet_tool = status.get("signoff_packet_tool") or {}
     signoff_validation_tool = status.get("signoff_validation_tool") or {}
+    signoff_evidence_template = status.get("signoff_evidence_template") or {}
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
     signoff_validation = status.get("signoff_validation") or {}
     real_data_readiness = real_data_closed_loop.get("readiness") or {}
@@ -713,6 +723,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Sign-off packet generator in manifest: `{signoff_packet_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence validator: `{signoff_validation_tool.get('path', '')}`",
         f"- Sign-off evidence validator in manifest: `{signoff_validation_tool.get('included_in_manifest', False)}`",
+        f"- Sign-off evidence template: `{signoff_evidence_template.get('path', '')}`",
+        f"- Sign-off evidence template in manifest: `{signoff_evidence_template.get('included_in_manifest', False)}`",
         f"- Real-data setup demo ready: `{real_data_readiness.get('setup_demo_ready', False)}`",
         f"- Real-data demo ready: `{real_data_readiness.get('demo_ready', False)}`",
         f"- Real-data closed-loop evidence ready: `{real_data_readiness.get('closed_loop_evidence_ready', False)}`",

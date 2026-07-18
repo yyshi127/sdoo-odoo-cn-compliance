@@ -58,6 +58,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     release_handoff = status.get("release_handoff") or {}
     real_data = status.get("real_data_closed_loop") or {}
     source_governance = status.get("source_governance_summary") or {}
+    signoff_evidence_template = status.get("signoff_evidence_template") or {}
     real_data_readiness = real_data.get("readiness") or {}
     runtime = status.get("runtime") or {}
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else {}
@@ -117,6 +118,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Current release handoff is included in the delivery manifest",
             release_handoff.get("included_in_manifest") is True,
             str(release_handoff.get("path") or ""),
+        ),
+        _readiness_item(
+            "signoff_evidence_template_in_manifest",
+            "Machine-readable production sign-off evidence template is included in the delivery manifest",
+            signoff_evidence_template.get("included_in_manifest") is True,
+            str(signoff_evidence_template.get("path") or ""),
         ),
         _readiness_item(
             "workbench_summary_evidence",

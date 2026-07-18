@@ -68,6 +68,10 @@ def status_payload() -> dict:
             "path": "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
             "included_in_manifest": True,
         },
+        "signoff_evidence_template": {
+            "path": "docs/samples/cn_signoff_evidence_template.json",
+            "included_in_manifest": True,
+        },
         "source_governance_summary": {
             "ready": True,
             "source_count": 1,
@@ -307,6 +311,7 @@ def manifest_payload() -> dict:
         "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
         "docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",
+        "docs/samples/cn_signoff_evidence_template.json",
         "tools/check_cn_preview_health.py",
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
@@ -865,6 +870,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["current_release_handoff_in_manifest"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_signoff_evidence_template_manifest_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("signoff_evidence_template_in_manifest", automated)
+        self.assertTrue(automated["signoff_evidence_template_in_manifest"]["ready"])
+        self.assertIn(
+            "docs/samples/cn_signoff_evidence_template.json",
+            automated["signoff_evidence_template_in_manifest"]["evidence"],
+        )
+
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1360,6 +1377,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content,
         )
         self.assertIn("Current release handoff in manifest: `True`", content)
+        self.assertIn(
+            "Sign-off evidence template: `docs/samples/cn_signoff_evidence_template.json`",
+            content,
+        )
+        self.assertIn("Sign-off evidence template in manifest: `True`", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
@@ -1549,6 +1571,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertFalse(
             status["signoff_validation_tool"]["included_in_manifest"],
+        )
+
+    def test_delivery_status_requires_signoff_evidence_template_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("docs/samples/cn_signoff_evidence_template.json")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off evidence template is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["signoff_evidence_template"]["included_in_manifest"],
         )
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
