@@ -148,6 +148,9 @@ def status_payload() -> dict:
                 "has_evidence_filing_payment_summary_evidence": True,
                 "has_controlled_ai_guidance_evidence": True,
                 "has_rule_source_governance_evidence": True,
+                "has_official_source_freshness_evidence": True,
+                "has_rule_professional_signoff_evidence": True,
+                "has_rule_checksum_traceability_evidence": True,
                 "has_iit_payroll_withholding_scope_evidence": True,
                 "has_cross_border_review_scope_evidence": True,
             },
@@ -452,6 +455,9 @@ def real_data_closed_loop_payload() -> dict:
             "has_evidence_filing_payment_summary_evidence": True,
             "has_controlled_ai_guidance_evidence": True,
             "has_rule_source_governance_evidence": True,
+            "has_official_source_freshness_evidence": True,
+            "has_rule_professional_signoff_evidence": True,
+            "has_rule_checksum_traceability_evidence": True,
             "has_iit_payroll_withholding_scope_evidence": True,
             "has_cross_border_review_scope_evidence": True,
         },
@@ -916,6 +922,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["real_odoo_accounting_business_data_basis"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_rule_governance_detail_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_rule_professional_signoff_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["source_governed_versioned_rules"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "rule_professional_signoff=False",
+            items["source_governed_versioned_rules"]["evidence"],
+        )
+
     def test_objective_audit_is_achieved_after_valid_production_signoff(self):
         packet = PACKET._build_packet(status_payload())
         validation = VALIDATION._validate(packet, complete_evidence(packet))
@@ -1209,6 +1233,40 @@ class TestChinaSignoffValidation(unittest.TestCase):
         automated = {item["key"]: item for item in packet["automated_items"]}
         self.assertFalse(
             automated["remediation_verification_rescan_evidence"]["ready"]
+        )
+
+    def test_signoff_packet_surfaces_rule_governance_detail_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertTrue(automated["rule_source_governance_evidence"]["ready"])
+        self.assertIn(
+            '"official_source_freshness": true',
+            automated["rule_source_governance_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"rule_professional_signoff": true',
+            automated["rule_source_governance_evidence"]["evidence"],
+        )
+        self.assertIn(
+            '"rule_checksum_traceability": true',
+            automated["rule_source_governance_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_rule_governance_detail_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_rule_professional_signoff_evidence"
+        ] = False
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["rule_source_governance_evidence"]["ready"])
+        self.assertIn(
+            '"rule_professional_signoff": false',
+            automated["rule_source_governance_evidence"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_evidence_filing_payment_summary_evidence(self):
@@ -2052,6 +2110,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
         self.assertIn("## Rule And Source Governance Evidence", content)
         self.assertIn("Rule/source governance evidence ready: `True`", content)
+        self.assertIn("Official source freshness evidence ready: `True`", content)
+        self.assertIn("Rule professional sign-off evidence ready: `True`", content)
+        self.assertIn("Rule checksum traceability evidence ready: `True`", content)
         self.assertIn("CODEX-DEMO China VAT source", content)
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)

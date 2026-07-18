@@ -259,9 +259,26 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         _readiness_item(
             "rule_source_governance_evidence",
             "Released China rules expose governed official sources, freshness review dates, professional sign-off and rule checksums",
-            real_data_readiness.get("has_rule_source_governance_evidence") is True,
+            real_data_readiness.get("has_rule_source_governance_evidence") is True
+            and real_data_readiness.get("has_official_source_freshness_evidence")
+            is True
+            and real_data_readiness.get("has_rule_professional_signoff_evidence")
+            is True
+            and real_data_readiness.get("has_rule_checksum_traceability_evidence")
+            is True,
             json.dumps(
                 {
+                    "governance": {
+                        "official_source_freshness": real_data_readiness.get(
+                            "has_official_source_freshness_evidence"
+                        ),
+                        "rule_professional_signoff": real_data_readiness.get(
+                            "has_rule_professional_signoff_evidence"
+                        ),
+                        "rule_checksum_traceability": real_data_readiness.get(
+                            "has_rule_checksum_traceability_evidence"
+                        ),
+                    },
                     "authority_sources": real_data.get("sample_authority_sources") or [],
                     "rule_versions": real_data.get("sample_rule_versions") or [],
                     "source_monitor_runs": real_data.get("sample_source_monitor_runs") or [],

@@ -139,11 +139,19 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
         _item(
             "source_governed_versioned_rules",
             "Source-governed, versioned and professionally signable China rules",
-            _state(_ready(source_governance.get("ready"))),
+            _state(
+                _ready(source_governance.get("ready"))
+                and _ready(real_data_readiness.get("has_official_source_freshness_evidence"))
+                and _ready(real_data_readiness.get("has_rule_professional_signoff_evidence"))
+                and _ready(real_data_readiness.get("has_rule_checksum_traceability_evidence"))
+            ),
             [
                 f"source_governance_ready={source_governance.get('ready')}",
                 f"source_records={source_governance.get('source_count')}",
                 f"active_rule_versions={source_governance.get('active_rule_version_count')}",
+                f"official_source_freshness={real_data_readiness.get('has_official_source_freshness_evidence')}",
+                f"rule_professional_signoff={real_data_readiness.get('has_rule_professional_signoff_evidence')}",
+                f"rule_checksum_traceability={real_data_readiness.get('has_rule_checksum_traceability_evidence')}",
             ],
         ),
         _item(

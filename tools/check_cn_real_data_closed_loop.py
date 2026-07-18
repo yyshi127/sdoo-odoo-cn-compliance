@@ -692,6 +692,35 @@ remediation_verification_rescan_evidence = bool(
         for task in sample_tasks
     )
 )
+official_source_freshness_evidence = bool(
+    any(
+        source.get("status") == "valid"
+        and has_text(source.get("content_hash"))
+        and has_text(source.get("snapshot_attachment"))
+        and source.get("snapshot_kind") in ("official_document", "official_web_capture")
+        and has_text(source.get("next_review_date"))
+        for source in sample_authority_sources
+    )
+)
+rule_professional_signoff_evidence = bool(
+    any(
+        version.get("state") == "active"
+        and version.get("release_state") == "active"
+        and version.get("professional_review_state") == "approved"
+        and version.get("professional_ready") in (True, "True", "true", 1)
+        and version.get("test_state") == "passed"
+        and (version.get("source_count") or 0) > 0
+        for version in sample_rule_versions
+    )
+)
+rule_checksum_traceability_evidence = bool(
+    any(
+        has_text(version.get("checksum"))
+        and has_text(version.get("next_review_date"))
+        and (version.get("source_count") or 0) > 0
+        for version in sample_rule_versions
+    )
+)
 report_visibility_evidence = bool(
     any(
         has_text(report.get("period_start"))
@@ -815,26 +844,13 @@ readiness = {{
             for guidance in sample_ai_guidance
         )
     ),
+    "has_official_source_freshness_evidence": official_source_freshness_evidence,
+    "has_rule_professional_signoff_evidence": rule_professional_signoff_evidence,
+    "has_rule_checksum_traceability_evidence": rule_checksum_traceability_evidence,
     "has_rule_source_governance_evidence": bool(
-        any(
-            source.get("status") == "valid"
-            and has_text(source.get("content_hash"))
-            and has_text(source.get("snapshot_attachment"))
-            and source.get("snapshot_kind") in ("official_document", "official_web_capture")
-            and has_text(source.get("next_review_date"))
-            for source in sample_authority_sources
-        )
-        and any(
-            version.get("state") == "active"
-            and version.get("release_state") == "active"
-            and version.get("professional_review_state") == "approved"
-            and version.get("professional_ready") in (True, "True", "true", 1)
-            and version.get("test_state") == "passed"
-            and has_text(version.get("checksum"))
-            and has_text(version.get("next_review_date"))
-            and (version.get("source_count") or 0) > 0
-            for version in sample_rule_versions
-        )
+        official_source_freshness_evidence
+        and rule_professional_signoff_evidence
+        and rule_checksum_traceability_evidence
     ),
     "has_iit_payroll_withholding_scope_evidence": bool(
         any(
