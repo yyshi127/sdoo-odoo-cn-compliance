@@ -5283,6 +5283,7 @@ def validate_delivery_objective_coverage() -> None:
         "test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit",
         "test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders",
         "test_objective_audit_marks_production_signoff_blocker",
+        "test_objective_audit_is_achieved_after_valid_production_signoff",
         "test_delivery_status_requires_objective_auditor_in_manifest",
         "test_delivery_status_markdown_lists_risk_task_report_summary_evidence",
         "test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence",

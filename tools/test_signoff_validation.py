@@ -126,8 +126,8 @@ def status_payload() -> dict:
                 "vat_reconciliation_runs": 1,
                 "vat_filing_records": 1,
                 "tax_payment_records": 2,
-                "cit_reconciliation_runs": 0,
-                "cit_filing_records": 0,
+                "cit_reconciliation_runs": 1,
+                "cit_filing_records": 1,
                 "active_profile_iit_reconciliation_runs": 1,
                 "iit_withholding_records": 1,
                 "payroll_summary_records": 1,
@@ -420,8 +420,8 @@ def real_data_closed_loop_payload() -> dict:
             "vat_reconciliation_runs": 1,
             "vat_filing_records": 1,
             "tax_payment_records": 2,
-            "cit_reconciliation_runs": 0,
-            "cit_filing_records": 0,
+            "cit_reconciliation_runs": 1,
+            "cit_filing_records": 1,
             "active_profile_iit_reconciliation_runs": 1,
             "iit_withholding_records": 1,
             "payroll_summary_records": 1,
@@ -805,6 +805,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertGreaterEqual(audit["state_counts"]["evidence_ready"], 1)
         self.assertGreaterEqual(audit["state_counts"]["blocked"], 1)
+
+    def test_objective_audit_is_achieved_after_valid_production_signoff(self):
+        packet = PACKET._build_packet(status_payload())
+        validation = VALIDATION._validate(packet, complete_evidence(packet))
+        status = delivery_status(validation)
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        self.assertTrue(audit["achieved"])
+        self.assertEqual(
+            audit["state_counts"],
+            {"evidence_ready": 13, "blocked": 0, "not_ready": 0},
+        )
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["production_signoff_gate"]["state"],
+            "evidence_ready",
+        )
+        self.assertEqual(audit["completion_blockers"], [])
 
     def test_generic_signoff_evidence_reference_blocks_production_gate(self):
         packet = PACKET._build_packet(status_payload())
@@ -1692,7 +1711,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         coverage = status["tax_domain_coverage"]
 
         self.assertTrue(coverage["vat"]["ready"])
-        self.assertFalse(coverage["cit"]["ready"])
+        self.assertTrue(coverage["cit"]["ready"])
         self.assertTrue(coverage["iit"]["ready"])
         self.assertTrue(coverage["cross_border"]["ready"])
         with tempfile.TemporaryDirectory() as directory:
