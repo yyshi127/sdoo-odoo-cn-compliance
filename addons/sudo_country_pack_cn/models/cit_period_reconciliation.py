@@ -944,6 +944,13 @@ class SudoChinaCitPeriodReconciliationRun(models.Model):
             and dataset.current_tax_data_parse_run_id
             and dataset.current_tax_data_parse_run_id.state == "succeeded"
         )
+        candidates = candidates.filtered(
+            lambda dataset: dataset.current_tax_data_parse_run_id.tax_payment_record_ids.filtered(
+                lambda record: record.tax_type_code == self.cit_tax_type_code
+                and record.period_start == self.period_start
+                and record.period_end == self.period_end
+            )
+        )
         if not candidates:
             self._add_issue(
                 issues,

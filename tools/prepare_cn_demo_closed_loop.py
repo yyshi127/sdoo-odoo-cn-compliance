@@ -1956,6 +1956,27 @@ else:
                 "filing_record_id": cit_scope["run"].filing_record_id.id or None,
                 "payment_record_count": cit_scope["run"].payment_record_count,
                 "issue_count": cit_scope["run"].issue_count,
+                "blocking_issue_count": cit_scope["run"].blocking_issue_count,
+                "difference_issue_count": cit_scope["run"].difference_issue_count,
+                "warning_issue_count": cit_scope["run"].warning_issue_count,
+                "issues": [
+                    {{
+                        "sequence": issue.sequence,
+                        "code": issue.code,
+                        "severity": issue.severity,
+                        "issue_kind": issue.issue_kind,
+                        "source_area": issue.source_area,
+                        "description": issue.description,
+                        "action_hint": issue.action_hint,
+                        "affected_record_count": issue.affected_record_count,
+                        "left_label": issue.left_label,
+                        "left_amount": issue.left_amount,
+                        "right_label": issue.right_label,
+                        "right_amount": issue.right_amount,
+                        "difference_amount": issue.difference_amount,
+                    }}
+                    for issue in cit_scope["run"].issue_ids.sorted("sequence")
+                ],
                 "result_checksum": cit_scope["run"].result_checksum,
             }} if cit_scope.get("run") else None,
             "counts": {{
