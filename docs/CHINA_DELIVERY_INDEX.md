@@ -100,7 +100,28 @@ acceptance summary.
 Use `--require-source-control-clean` for formal release packaging when the
 handoff must fail unless branch, commit and a clean worktree are recorded.
 
-Generate the human sign-off action packet from a delivery status JSON:
+Build the ordered sign-off evidence chain from the current delivery evidence:
+
+```bash
+python tools/build_cn_signoff_evidence_chain.py \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --preview-health dist/cn_preview_health_mNNN.json \
+  --preview-module dist/cn_preview_module_mNNN.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
+  --preview-url http://127.0.0.1:8069/web/login?db=target_database \
+  --output-prefix dist/cn_delivery_mNNN_chain
+```
+
+Use `tools/build_cn_signoff_evidence_chain.py` as the preferred release
+command. It builds the initial status, bootstrap sign-off validation,
+objective completion audit, final sign-off packet and final status in the
+correct order so the final packet contains objective-audit evidence and the
+final status keeps the current production blocker action list.
+
+The lower-level commands remain available when a reviewer needs to inspect one
+step at a time:
 
 ```bash
 python tools/generate_cn_signoff_packet.py \
@@ -141,9 +162,9 @@ python tools/validate_cn_signoff_evidence.py \
   --require-production-signoff-ready
 ```
 
-After validation passes, include `--signoff-validation
-dist/cn_signoff_validation.json` when running `tools/summarize_cn_delivery_status.py`.
-Only then can the automated status report `production_signoff_ready=true`.
+After validation passes, rerun `tools/build_cn_signoff_evidence_chain.py` with
+`--completed-evidence dist/cn_signoff_evidence_completed.json`. Only then can
+the automated status report `production_signoff_ready=true`.
 Use `tools/render_cn_signoff_evidence_template.py` as the preferred starting
 point for the machine-readable evidence file because it copies the current
 packet version, source commit and action keys into the draft. Replace the

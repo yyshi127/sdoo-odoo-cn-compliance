@@ -317,3 +317,32 @@ Use this audit after each status refresh to see which parts of the final
 objective are backed by current evidence and which remain blocked by human UAT,
 professional sign-off, official-source freshness review or customer-specific
 data/risk review.
+
+## Ordered Sign-Off Evidence Chain
+
+For release evidence, prefer the ordered chain builder instead of manually
+running status, packet, validation and objective-audit commands out of order:
+
+```bash
+python tools/build_cn_signoff_evidence_chain.py \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --preview-health dist/cn_preview_health_mNNN.json \
+  --preview-module dist/cn_preview_module_mNNN.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
+  --preview-url http://127.0.0.1:8069/web/login?db=target_database \
+  --output-prefix dist/cn_delivery_mNNN_chain
+```
+
+The builder creates a bootstrap validation only to bind production blockers to
+the sign-off packet, generates the objective completion audit, then renders and
+validates the final sign-off packet that already contains objective-audit
+evidence. With placeholder evidence, the final validation must remain blocked.
+After signed human evidence is available, rerun the same command with:
+
+```bash
+  --completed-evidence dist/cn_signoff_evidence_completed.json
+```
+
+Only the final chain status should be used as production-readiness evidence.

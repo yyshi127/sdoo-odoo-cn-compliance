@@ -38,6 +38,10 @@ RENDER_EVIDENCE = load_tool(
     "cn_render_signoff_evidence",
     REPOSITORY_ROOT / "tools" / "render_cn_signoff_evidence_template.py",
 )
+SIGNOFF_CHAIN = load_tool(
+    "cn_signoff_chain",
+    REPOSITORY_ROOT / "tools" / "build_cn_signoff_evidence_chain.py",
+)
 ADDON_VALIDATION = load_tool(
     "cn_addon_validation",
     REPOSITORY_ROOT / "tools" / "validate_addon.py",
@@ -343,6 +347,7 @@ def manifest_payload() -> dict:
         "tools/check_cn_preview_module.py",
         "tools/check_cn_real_data_closed_loop.py",
         "tools/audit_cn_objective_completion.py",
+        "tools/build_cn_signoff_evidence_chain.py",
         "tools/generate_cn_signoff_packet.py",
         "tools/render_cn_signoff_evidence_template.py",
         "tools/validate_cn_signoff_evidence.py",
@@ -636,6 +641,18 @@ def delivery_status(signoff_validation: dict | None = None) -> dict:
         signoff_validation=signoff_validation,
         preview_url="http://127.0.0.1:18070/web/login?db=test",
     )
+
+
+def delivery_inputs() -> dict:
+    return {
+        "bundle_metadata": bundle_metadata_payload(),
+        "manifest": manifest_payload(),
+        "summary": summary_payload(),
+        "preview_health": preview_health_payload(),
+        "preview_module": preview_module_payload(),
+        "real_data_closed_loop": real_data_closed_loop_payload(),
+        "preview_url": "http://127.0.0.1:18070/web/login?db=test",
+    }
 
 
 def delivery_status_with_manifest(manifest: dict) -> dict:
@@ -1669,6 +1686,49 @@ class TestChinaSignoffValidation(unittest.TestCase):
             ]
         )
 
+    def test_signoff_chain_final_packet_includes_objective_audit(self):
+        chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
+
+        final_packet_items = {
+            item["key"]: item
+            for item in chain["final_packet"]["automated_items"]
+        }
+        final_validation = chain["final_validation"]
+        final_readiness = chain["final_status"]["readiness_gates"]
+
+        self.assertTrue(
+            final_packet_items["objective_completion_audit_present"]["ready"]
+        )
+        self.assertFalse(final_validation["ok"])
+        self.assertNotIn(
+            "automated packet evidence is not ready: objective_completion_audit_present",
+            final_validation["blockers"],
+        )
+        self.assertFalse(final_readiness["production_signoff_ready"])
+        self.assertEqual(
+            len(final_readiness["production_signoff_required_actions"]),
+            7,
+        )
+        self.assertEqual(
+            chain["objective_audit"]["state_counts"],
+            {"evidence_ready": 12, "blocked": 1, "not_ready": 0},
+        )
+
+    def test_signoff_chain_accepts_completed_human_evidence(self):
+        initial_chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
+        completed_evidence = complete_evidence(initial_chain["final_packet"])
+
+        chain = SIGNOFF_CHAIN.build_chain(
+            delivery_inputs(),
+            completed_evidence=completed_evidence,
+        )
+
+        self.assertTrue(chain["final_validation"]["ok"])
+        self.assertTrue(
+            chain["final_status"]["readiness_gates"]["production_signoff_ready"]
+        )
+        self.assertTrue(chain["objective_audit"]["achieved"])
+
     def test_delivery_status_keeps_required_actions_for_incomplete_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
@@ -2089,6 +2149,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["business_uat_blockers"],
         )
         self.assertFalse(status["objective_audit_tool"]["included_in_manifest"])
+
+    def test_delivery_status_requires_signoff_chain_builder_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/build_cn_signoff_evidence_chain.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off evidence chain builder is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(status["signoff_chain_tool"]["included_in_manifest"])
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
         status = delivery_status_with_manifest(

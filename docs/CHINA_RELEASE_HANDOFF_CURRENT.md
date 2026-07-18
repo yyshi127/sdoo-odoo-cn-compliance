@@ -136,11 +136,11 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --write-summary dist/cn_delivery_acceptance_mNNN_remote.json
 ```
 
-## Generate Status And Sign-Off Packet
+## Generate Ordered Status And Sign-Off Chain
 
 ```bash
 sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
-  tools/summarize_cn_delivery_status.py \
+  tools/build_cn_signoff_evidence_chain.py \
   --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
@@ -148,50 +148,45 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --preview-module dist/cn_preview_module_m137.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
   --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
-  --json-output dist/cn_delivery_status_mNNN.json \
-  --markdown-output dist/cn_delivery_status_mNNN.md
-
-sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
-  tools/generate_cn_signoff_packet.py \
-  --status dist/cn_delivery_status_mNNN.json \
-  --json-output dist/cn_signoff_packet_mNNN.json \
-  --markdown-output dist/cn_signoff_packet_mNNN.md \
-  --require-business-uat-ready
-
-sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
-  tools/audit_cn_objective_completion.py \
-  --status dist/cn_delivery_status_mNNN.json \
-  --json-output dist/cn_objective_completion_audit_mNNN.json \
-  --markdown-output dist/cn_objective_completion_audit_mNNN.md
+  --output-prefix dist/cn_delivery_mNNN_chain
 ```
+
+This is the preferred release command. It creates the initial status,
+bootstrap validation, objective completion audit, final sign-off packet, final
+evidence draft, final validation and final status in the correct order.
+The chain output names correspond to the prior handoff artifacts:
+`cn_objective_completion_audit_mNNN.json`,
+`cn_signoff_packet_mNNN.json` and `cn_signoff_evidence_draft_mNNN.json`.
+For one-step troubleshooting, the underlying tools are still
+`tools/summarize_cn_delivery_status.py`, `tools/generate_cn_signoff_packet.py`,
+`tools/audit_cn_objective_completion.py`,
+`tools/render_cn_signoff_evidence_template.py` and
+`tools/validate_cn_signoff_evidence.py`.
 
 ## Validate Completed Production Sign-Off
 
-After generating the sign-off packet, render a version-aligned evidence draft:
-
-```bash
-python tools/render_cn_signoff_evidence_template.py \
-  --packet dist/cn_signoff_packet_mNNN.json \
-  --json-output dist/cn_signoff_evidence_draft_mNNN.json
-```
-
-The rendered draft copies the release version, source commit and production
-action keys from the packet. It is intentionally not valid for production while
-reviewer, date, evidence reference and notes placeholders remain.
+The rendered draft from the chain copies the release version, source commit and
+production action keys from the final packet. It is intentionally not valid for
+production while reviewer, date, evidence reference and notes placeholders
+remain.
 
 After human reviewers complete real evidence, create a non-template completed
-evidence file from the rendered draft and run:
+evidence file from the rendered draft and rerun the ordered chain:
 
 ```bash
-python tools/validate_cn_signoff_evidence.py \
-  --packet dist/cn_signoff_packet_mNNN.json \
-  --evidence dist/cn_signoff_evidence_completed.json \
-  --json-output dist/cn_signoff_validation_mNNN.json \
-  --require-production-signoff-ready
+python tools/build_cn_signoff_evidence_chain.py \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --preview-health dist/cn_preview_health_m137.json \
+  --preview-module dist/cn_preview_module_m137.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
+  --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
+  --completed-evidence dist/cn_signoff_evidence_completed.json \
+  --output-prefix dist/cn_delivery_mNNN_signed_chain
 ```
 
-Then regenerate delivery status with `--signoff-validation`. Only a passed
-sign-off validation can make `production_signoff_ready=true`.
+Only a passed final chain validation can make `production_signoff_ready=true`.
 
 ## Next Best Work
 
