@@ -40,6 +40,67 @@ MOJIBAKE_MARKER_CHARS = frozenset(
     "鐧昏笉"
 )
 
+PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
+    "business UAT decision must be recorded outside this automated status": [
+        {
+            "key": "business_uat_decision",
+            "owner": "business_reviewer",
+            "required_evidence": "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md and docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md.",
+        },
+        {
+            "key": "representative_ux_walkthrough",
+            "owner": "business_reviewer",
+            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages.",
+        },
+    ],
+    "current official sources and released rules require professional sign-off evidence": [
+        {
+            "key": "china_tax_professional_rule_signoff",
+            "owner": "china_tax_professional",
+            "required_evidence": "Signed rule/source review packet for all released rules used in formal conclusions.",
+        },
+        {
+            "key": "official_source_freshness_review",
+            "owner": "rule_governance_owner",
+            "required_evidence": "Current official-source monitoring results and local jurisdiction updates reviewed for the target period.",
+        },
+    ],
+    "customer-specific data gaps, evidence gaps and open critical risks must be reviewed": [
+        {
+            "key": "customer_scope_and_data_gap_review",
+            "owner": "implementation_owner",
+            "required_evidence": "Customer-specific accounting periods, external datasets, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
+        },
+        {
+            "key": "blocker_summary_walkthrough",
+            "owner": "business_reviewer",
+            "required_evidence": "Completed blocker summary walkthrough for data readiness, evidence, filing/payment archive, remediation, controlled AI guidance, report center and report readiness.",
+        },
+    ],
+}
+
+
+def _production_signoff_required_actions(blockers: list[str]) -> list[dict[str, object]]:
+    actions_by_key: dict[str, dict[str, object]] = {}
+    for blocker in blockers:
+        for action in PRODUCTION_SIGNOFF_BLOCKER_ACTIONS.get(blocker, []):
+            key = str(action.get("key") or "")
+            if not key:
+                continue
+            entry = actions_by_key.setdefault(
+                key,
+                {
+                    "key": key,
+                    "owner": action.get("owner"),
+                    "required_evidence": action.get("required_evidence"),
+                    "addresses_blockers": [],
+                },
+            )
+            addresses = entry["addresses_blockers"]
+            if isinstance(addresses, list) and blocker not in addresses:
+                addresses.append(blocker)
+    return list(actions_by_key.values())
+
 
 def _manifest_includes(
     manifest: dict[str, object] | None,
@@ -674,6 +735,9 @@ def _status(
             "business_uat_blockers": business_uat_blockers,
             "production_signoff_ready": production_signoff_ready,
             "production_signoff_blockers": production_signoff_blockers,
+            "production_signoff_required_actions": (
+                _production_signoff_required_actions(production_signoff_blockers)
+            ),
             "source_control_clean": not _source_control_blockers(source_control),
             "source_control_blockers": _source_control_blockers(source_control),
         },
@@ -808,6 +872,17 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {blocker}"
             for blocker in readiness.get("production_signoff_blockers", [])
+        ],
+        "",
+        "### Production Sign-off Required Human Actions",
+        "",
+        *[
+            (
+                f"- `{action.get('key')}` owner=`{action.get('owner')}` "
+                f"evidence=`{action.get('required_evidence')}` "
+                f"addresses=`{'; '.join(action.get('addresses_blockers') or [])}`"
+            )
+            for action in readiness.get("production_signoff_required_actions", [])
         ],
         "",
         "### Production Blocked Objective Areas",

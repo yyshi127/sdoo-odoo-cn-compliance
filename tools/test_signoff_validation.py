@@ -1486,6 +1486,17 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "business UAT decision must be recorded outside this automated status",
             readiness["production_signoff_blockers"],
         )
+        required_actions = {
+            action["key"]: action
+            for action in readiness["production_signoff_required_actions"]
+        }
+        self.assertIn("business_uat_decision", required_actions)
+        self.assertIn("china_tax_professional_rule_signoff", required_actions)
+        self.assertIn("customer_scope_and_data_gap_review", required_actions)
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            required_actions["business_uat_decision"]["addresses_blockers"],
+        )
 
     def test_delivery_status_accepts_valid_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
@@ -1543,6 +1554,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("### Production Blocked Objective Areas", content)
         self.assertIn("limitations and uncertainty visibility", content)
         self.assertIn("### Production Blocked Sign-off Blockers", content)
+        self.assertIn("### Production Sign-off Required Human Actions", content)
         self.assertIn(
             "customer-specific data gaps, evidence gaps and open critical risks must be reviewed",
             content,
@@ -1595,6 +1607,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Objective completion audit achieved: `False`", content)
         self.assertIn("Objective completion audit blockers: `1`", content)
         self.assertIn("### Objective Completion Audit Blockers", content)
+        self.assertIn("### Production Sign-off Required Human Actions", content)
+        self.assertIn("business_uat_decision", content)
+        self.assertIn("china_tax_professional_rule_signoff", content)
+        self.assertIn("customer_scope_and_data_gap_review", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))

@@ -5280,6 +5280,8 @@ def validate_delivery_objective_coverage() -> None:
         "test_delivery_status_requires_current_release_handoff_in_manifest",
         "test_delivery_status_requires_signoff_evidence_template_in_manifest",
         "test_delivery_status_requires_signoff_evidence_renderer_in_manifest",
+        "production_signoff_required_actions",
+        "Production Sign-off Required Human Actions",
         "test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit",
         "test_rendered_signoff_evidence_draft_cannot_pass_with_placeholders",
         "test_objective_audit_marks_production_signoff_blocker",
