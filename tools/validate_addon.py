@@ -4064,7 +4064,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         }
 
     risk_list_fields = view_field_names("view_cn_risk_center_finding_list")
+    risk_kanban_fields = view_field_names("view_cn_risk_center_finding_kanban")
     remediation_list_fields = view_field_names("view_cn_remediation_tracker_task_list")
+    remediation_kanban_fields = view_field_names(
+        "view_cn_remediation_tracker_task_kanban"
+    )
     required_risk_list_fields = {
         "risk_level",
         "result",
@@ -4087,6 +4091,35 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail(
             "China risk center list must expose clear risk, cause, impact, "
             f"period, owner, due date, status and next action fields: {sorted(missing_risk_fields)}"
+        )
+    required_risk_kanban_fields = {
+        "risk_level",
+        "result",
+        "review_state",
+        "title",
+        "cn_risk_period_label",
+        "cn_closure_state",
+        "cn_closure_summary",
+        "cn_risk_next_action",
+        "cn_risk_action_summary",
+        "cn_risk_remediation_urgency",
+        "cn_risk_responsibility_summary",
+        "task_assignee_id",
+        "task_due_date",
+        "task_state",
+        "task_verification_state",
+        "cn_risk_data_basis_state",
+        "cn_reconciliation_risk_state",
+        "cn_tax_impact_state",
+        "cn_tax_impact_reviewed_underpayment_amount",
+        "cn_tax_impact_summary",
+    }
+    missing_risk_kanban_fields = required_risk_kanban_fields - risk_kanban_fields
+    if missing_risk_kanban_fields:
+        fail(
+            "China risk center kanban must expose scannable risk, data basis, "
+            "impact, owner, due date, closure and next action fields: "
+            f"{sorted(missing_risk_kanban_fields)}"
         )
     required_remediation_list_fields = {
         "risk_level",
@@ -4114,6 +4147,37 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             "China remediation tracker list must expose clear risk, impact, "
             "period, owner, due date, status, rescan and next action fields: "
             f"{sorted(missing_remediation_fields)}"
+        )
+    required_remediation_kanban_fields = {
+        "risk_level",
+        "priority",
+        "assignee_id",
+        "due_date",
+        "state",
+        "verification_state",
+        "cn_remediation_period_label",
+        "cn_remediation_urgency",
+        "cn_remediation_responsibility_summary",
+        "cn_remediation_next_action",
+        "cn_remediation_action_summary",
+        "cn_remediation_blocker_summary",
+        "cn_remediation_progress",
+        "cn_remediation_summary",
+        "cn_remediation_rescan_stage",
+        "cn_remediation_evidence_state",
+        "cn_remediation_data_basis_state",
+        "cn_remediation_tax_impact_state",
+        "cn_remediation_tax_impact_reviewed_underpayment_amount",
+        "cn_remediation_tax_impact_summary",
+    }
+    missing_remediation_kanban_fields = (
+        required_remediation_kanban_fields - remediation_kanban_fields
+    )
+    if missing_remediation_kanban_fields:
+        fail(
+            "China remediation tracker kanban must expose scannable risk, "
+            "impact, owner, due date, blocker, evidence, rescan and next action fields: "
+            f"{sorted(missing_remediation_kanban_fields)}"
         )
     for required in (
         '_inherit = "sudo.compliance.finding"',
