@@ -81,7 +81,7 @@
       "addresses_blockers": [
         "business UAT decision must be recorded outside this automated status"
       ],
-      "notes": "Screen-by-screen walkthrough script completed; risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable on representative desktop and laptop screen sizes."
+      "notes": "Screen-by-screen walkthrough script completed in Chrome browser; desktop viewport and smaller laptop viewport evidence showed risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable."
     },
     {
       "key": "blocker_summary_walkthrough",
