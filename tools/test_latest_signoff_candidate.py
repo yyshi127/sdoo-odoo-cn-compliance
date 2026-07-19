@@ -186,6 +186,67 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_rejects_signoff_packet_bundle_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                20,
+                commit="abc",
+                aggregate=_sha("manifest20"),
+                packet_bundle_sha256=_sha("wrong-bundle"),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertTrue(
+                any(
+                    error.startswith("sign-off packet bundle SHA-256 mismatch")
+                    for error in result["checked_candidates"][0]["errors"]
+                )
+            )
+
+    def test_rejects_action_checklist_manifest_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                21,
+                commit="abc",
+                aggregate=_sha("manifest21"),
+                actions_manifest_aggregate_sha256=_sha("wrong-manifest"),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertTrue(
+                any(
+                    error.startswith("action checklist manifest aggregate SHA-256 mismatch")
+                    for error in result["checked_candidates"][0]["errors"]
+                )
+            )
+
+    def test_rejects_action_checklist_hash_binding_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                22,
+                commit="abc",
+                aggregate=_sha("manifest22"),
+                action_bundle_binding_ok=False,
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "action checklist packet binding bundle_sha256_matches_status is not true",
+                result["checked_candidates"][0]["errors"],
+            )
+
     def test_rejects_missing_reviewer_action_checklist_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             dist = Path(temp)
@@ -333,6 +394,12 @@ def _candidate(
     omit: str | None = None,
     omit_summary_manifest: bool = False,
     action_binding_ok: bool = True,
+    action_bundle_binding_ok: bool = True,
+    action_manifest_binding_ok: bool = True,
+    packet_bundle_sha256: str | None = None,
+    packet_manifest_aggregate_sha256: str | None = None,
+    actions_bundle_sha256: str | None = None,
+    actions_manifest_aggregate_sha256: str | None = None,
     action_markdown: str = (
         "# checklist\n\n"
         "### business_uat_decision\n\n"
@@ -372,9 +439,10 @@ def _candidate(
         "source_control": source_control,
         "file_count": 1,
         "aggregate_sha256": aggregate,
-        "bundle_sha256": f"bundle-{tag}",
+        "bundle_sha256": _sha(f"bundle-{tag}"),
         "files": [],
     }
+    bundle_sha256 = bundle["bundle_sha256"]
     acceptance = {
         "schema": "sdoo.cn.delivery-acceptance-summary.v1",
         "addon": "sudo_country_pack_cn",
@@ -409,6 +477,8 @@ def _candidate(
         "version": "19.0.1.130.0",
         "source_commit": packet_commit or commit,
         "preview_database": packet_preview_database,
+        "bundle_sha256": packet_bundle_sha256 or bundle_sha256,
+        "manifest_aggregate_sha256": packet_manifest_aggregate_sha256 or aggregate,
     }
     actions = {
         "schema": "sdoo.cn.production-signoff-actions.v1",
@@ -416,6 +486,8 @@ def _candidate(
         "source_commit": commit,
         "preview_url": None,
         "preview_database": actions_preview_database,
+        "bundle_sha256": actions_bundle_sha256 or bundle_sha256,
+        "manifest_aggregate_sha256": actions_manifest_aggregate_sha256 or aggregate,
         "production_signoff_ready": False,
         "action_count": 1,
         "actions": [
@@ -434,6 +506,8 @@ def _candidate(
             "schema_ok": True,
             "version_matches_status": True,
             "source_commit_matches_status": True,
+            "bundle_sha256_matches_status": action_bundle_binding_ok,
+            "manifest_aggregate_sha256_matches_status": action_manifest_binding_ok,
             "preview_url_matches_status": True,
             "preview_database_matches_status": True,
             "action_keys_match": action_binding_ok,
@@ -467,6 +541,10 @@ def _candidate(
             path.write_bytes(payload)
         else:
             _write(path, payload)
+
+
+def _sha(seed: str) -> str:
+    return (seed.encode("utf-8").hex() * 64)[:64]
 
 
 if __name__ == "__main__":

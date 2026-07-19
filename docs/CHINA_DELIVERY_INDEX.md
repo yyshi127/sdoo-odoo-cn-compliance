@@ -120,7 +120,8 @@ that the matching bundle, manifest, remote acceptance, upgrade acceptance,
 preview, real-data, sign-off packet, production sign-off action checklist JSON,
 reviewer-facing action checklist Markdown and objective audit files exist. It
 then verifies that the machine-readable evidence agrees on the release version,
-source commit, manifest aggregate hash and packet-binding checks, and that the
+source commit, bundle SHA-256, manifest aggregate hash and packet-binding
+checks, including the packet/action-list hash bindings, and that the
 reviewer-facing Markdown checklist contains every required action key exported
 by the JSON checklist, with reviewer, decision, date, evidence reference and
 notes fields plus owner, acceptable decision and required-evidence fields in

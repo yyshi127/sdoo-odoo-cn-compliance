@@ -5496,6 +5496,12 @@ def validate_delivery_objective_coverage() -> None:
         'preview_database = status.get("preview_database")',
         "status preview database is missing",
         "preview database mismatch",
+        "sign-off packet bundle SHA-256 mismatch",
+        "sign-off packet manifest aggregate SHA-256 mismatch",
+        "action checklist bundle SHA-256 mismatch",
+        "action checklist manifest aggregate SHA-256 mismatch",
+        "bundle_sha256_matches_status",
+        "manifest_aggregate_sha256_matches_status",
         "preview_database_matches_status",
         "Preview database",
     ):

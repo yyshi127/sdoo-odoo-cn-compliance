@@ -3220,8 +3220,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "source_control": source_control,
             "file_count": 1,
             "aggregate_sha256": aggregate,
-            "bundle_sha256": "bundle",
+            "bundle_sha256": "b" * 64,
         }
+        bundle_sha256 = bundle["bundle_sha256"]
         acceptance = {
             "version": "19.0.1.130.0",
             "result": "passed",
@@ -3243,6 +3244,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "version": "19.0.1.130.0",
             "source_commit": commit,
             "preview_database": "test",
+            "bundle_sha256": bundle_sha256,
+            "manifest_aggregate_sha256": aggregate,
             "production_signoff_ready": False,
             "action_count": 1,
             "actions": [
@@ -3261,6 +3264,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "schema_ok": True,
                 "version_matches_status": True,
                 "source_commit_matches_status": True,
+                "bundle_sha256_matches_status": True,
+                "manifest_aggregate_sha256_matches_status": True,
                 "preview_url_matches_status": True,
                 "preview_database_matches_status": True,
                 "action_keys_match": True,
@@ -3280,6 +3285,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "version": "19.0.1.130.0",
                 "source_commit": commit,
                 "preview_database": "test",
+                "bundle_sha256": bundle_sha256,
+                "manifest_aggregate_sha256": aggregate,
             },
             f"cn_delivery_{tag}_chain_production_signoff_actions.json": actions,
             f"cn_delivery_{tag}_chain_production_signoff_actions.md": (

@@ -216,6 +216,31 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         errors.append(
             f"bundle metadata aggregate mismatch: {bundle_aggregate!r} != {aggregate!r}"
         )
+    bundle_sha256 = bundle_metadata.get("bundle_sha256")
+    packet_bundle_sha256 = packet.get("bundle_sha256")
+    if packet_bundle_sha256 != bundle_sha256:
+        errors.append(
+            "sign-off packet bundle SHA-256 mismatch: "
+            f"{packet_bundle_sha256!r} != {bundle_sha256!r}"
+        )
+    packet_manifest_aggregate = packet.get("manifest_aggregate_sha256")
+    if packet_manifest_aggregate != aggregate:
+        errors.append(
+            "sign-off packet manifest aggregate SHA-256 mismatch: "
+            f"{packet_manifest_aggregate!r} != {aggregate!r}"
+        )
+    actions_bundle_sha256 = actions.get("bundle_sha256")
+    if actions_bundle_sha256 != bundle_sha256:
+        errors.append(
+            "action checklist bundle SHA-256 mismatch: "
+            f"{actions_bundle_sha256!r} != {bundle_sha256!r}"
+        )
+    actions_manifest_aggregate = actions.get("manifest_aggregate_sha256")
+    if actions_manifest_aggregate != aggregate:
+        errors.append(
+            "action checklist manifest aggregate SHA-256 mismatch: "
+            f"{actions_manifest_aggregate!r} != {aggregate!r}"
+        )
 
     for label, payload in (
         ("remote acceptance", remote_acceptance),
@@ -318,6 +343,8 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
             "schema_ok",
             "version_matches_status",
             "source_commit_matches_status",
+            "bundle_sha256_matches_status",
+            "manifest_aggregate_sha256_matches_status",
             "preview_url_matches_status",
             "preview_database_matches_status",
             "action_keys_match",
