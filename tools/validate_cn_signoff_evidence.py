@@ -46,8 +46,11 @@ ACTION_EVIDENCE_REQUIREMENTS = {
     ),
     "china_tax_professional_rule_signoff": (
         ("released rule", ("released rule", "已发布规则", "正式规则")),
+        ("rule version", ("rule version", "rule versions", "规则版本")),
         ("official source", ("official source", "官方来源", "官方依据")),
-        ("professional", ("professional", "专业人员", "税务专业")),
+        ("professional qualification", ("professional qualification", "qualified professional", "专业资质", "执业资格")),
+        ("sign-off evidence reference", ("sign-off evidence reference", "signoff evidence reference", "签核证据", "签署证据")),
+        ("rule checksum", ("rule checksum", "rule hash", "规则校验", "规则哈希", "SHA-256", "sha256")),
     ),
     "official_source_freshness_review": (
         ("governance summary", ("governance summary", "source governance")),
@@ -301,6 +304,11 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 item_blockers.append(
                     "evidence_reference or notes must include at least one "
                     "64-character SHA-256 monitor result checksum"
+                )
+            if key == "china_tax_professional_rule_signoff" and not _has_sha256_text(item):
+                item_blockers.append(
+                    "evidence_reference or notes must include at least one "
+                    "64-character SHA-256 released rule checksum"
                 )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))

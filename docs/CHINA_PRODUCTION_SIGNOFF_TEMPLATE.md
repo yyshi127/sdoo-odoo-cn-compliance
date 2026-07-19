@@ -119,6 +119,9 @@ decision and include substantive limitation notes.
 - Released rules reviewed for official source governance: yes / no / not applicable
 - Rule versions requiring China tax professional sign-off:
 - Rule versions signed off:
+- China tax professional qualification reviewed:
+- Professional sign-off evidence reference:
+- Released rule checksum evidence reviewed (64-character SHA-256):
 - Candidate/draft rules still excluded from formal conclusions: yes / no
 - Official-source freshness reviewed: yes / no / not applicable
 - Local jurisdiction scope reviewed: yes / no / not applicable

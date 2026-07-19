@@ -451,7 +451,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "china_tax_professional_rule_signoff",
             "owner": "china_tax_professional",
-            "required_evidence": "Signed rule/source review packet for all released rules used in formal conclusions.",
+            "required_evidence": (
+                "Signed rule/source review packet for all released rules used in formal "
+                "conclusions, including released rule versions, official source references, "
+                "professional qualification, sign-off evidence reference and 64-character "
+                "SHA-256 released rule checksum."
+            ),
             "acceptable_decisions": ["approved", "approved_with_limitations"],
             "objective_areas": [
                 "source-governed China rules",

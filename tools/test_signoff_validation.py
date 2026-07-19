@@ -1065,7 +1065,11 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
             "evidence reviewed."
         ),
         "china_tax_professional_rule_signoff": (
-            "Released rule official source packet reviewed by China tax professional."
+            "Released rule versions 19.0.1.130.0 official source packet reviewed "
+            "by China tax professional with professional qualification recorded; "
+            "sign-off evidence reference CN-TAX-SIGNOFF-2026-001 and released "
+            "rule checksum "
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789."
         ),
         "official_source_freshness_review": (
             "Official source freshness, source governance summary, monitoring "
@@ -1729,6 +1733,31 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "official_source_freshness_review: evidence_reference or notes must "
             "include at least one 64-character SHA-256 monitor result checksum",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_professional_rule_signoff_specifics(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "china_tax_professional_rule_signoff":
+                item["notes"] = (
+                    "Released rule official source packet reviewed by China tax "
+                    "professional."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "china_tax_professional_rule_signoff: evidence_reference or notes "
+            "must mention: rule version, professional qualification, "
+            "sign-off evidence reference, rule checksum",
+            result["blockers"],
+        )
+        self.assertIn(
+            "china_tax_professional_rule_signoff: evidence_reference or notes "
+            "must include at least one 64-character SHA-256 released rule checksum",
             result["blockers"],
         )
 

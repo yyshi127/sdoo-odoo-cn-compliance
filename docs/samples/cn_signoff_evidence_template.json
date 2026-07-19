@@ -30,7 +30,7 @@
       "decision": "approved",
       "reviewer": "China tax professional name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Rule/source review packet reference",
+      "evidence_reference": "Rule/source review packet reference with sign-off evidence reference, professional qualification and released rule checksum",
       "objective_areas": [
         "source-governed China rules",
         "professional tax-rule sign-off"
@@ -38,7 +38,7 @@
       "addresses_blockers": [
         "current official sources and released rules require professional sign-off evidence"
       ],
-      "notes": "Released rules and official sources reviewed for the target period."
+      "notes": "Released rule versions, official sources, professional qualification, sign-off evidence reference and 64-character SHA-256 released rule checksum reviewed for the target period."
     },
     {
       "key": "official_source_freshness_review",
