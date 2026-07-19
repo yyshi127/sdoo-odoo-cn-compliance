@@ -15,6 +15,9 @@ DIST = REPOSITORY_ROOT / "dist"
 SCHEMA = "sdoo.cn.latest-signoff-candidate.v1"
 STATUS_PATTERN = re.compile(r"^cn_delivery_m(?P<number>\d+)_chain_status\.json$")
 REVIEWER_ACTION_MARKDOWN_FIELDS = (
+    "- Owner:",
+    "- Acceptable decisions:",
+    "- Required evidence:",
     "- Reviewer:",
     "- Decision:",
     "- Date:",

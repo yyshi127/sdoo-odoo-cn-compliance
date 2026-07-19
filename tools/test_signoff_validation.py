@@ -2829,6 +2829,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             f"cn_delivery_{tag}_chain_production_signoff_actions.md": (
                 b"# checklist\n\n"
                 b"### business_uat_decision\n\n"
+                b"- Owner: `business_reviewer`\n"
+                b"- Acceptable decisions: `accepted`\n"
+                b"- Required evidence: Completed checklist.\n"
                 b"- Reviewer:\n"
                 b"- Decision:\n"
                 b"- Date:\n"

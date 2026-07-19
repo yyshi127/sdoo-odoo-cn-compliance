@@ -147,6 +147,9 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 action_markdown=(
                     "# checklist\n\n"
                     "### business_uat_decision\n\n"
+                    "- Owner: `business_reviewer`\n"
+                    "- Acceptable decisions: `accepted`\n"
+                    "- Required evidence: Completed checklist.\n"
                     "- Reviewer:\n"
                     "- Decision:\n"
                 ),
@@ -158,6 +161,34 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertIn(
                 "reviewer action checklist markdown incomplete sections: "
                 "business_uat_decision missing - Date:, - Evidence reference:, - Notes:",
+                result["checked_candidates"][0]["errors"],
+            )
+
+    def test_rejects_reviewer_action_checklist_without_owner_or_evidence_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                15,
+                commit="abc",
+                aggregate="hash15",
+                action_markdown=(
+                    "# checklist\n\n"
+                    "### business_uat_decision\n\n"
+                    "- Reviewer:\n"
+                    "- Decision:\n"
+                    "- Date:\n"
+                    "- Evidence reference:\n"
+                    "- Notes:\n"
+                ),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist markdown incomplete sections: "
+                "business_uat_decision missing - Owner:, - Acceptable decisions:, - Required evidence:",
                 result["checked_candidates"][0]["errors"],
             )
 
@@ -175,6 +206,9 @@ def _candidate(
     action_markdown: str = (
         "# checklist\n\n"
         "### business_uat_decision\n\n"
+        "- Owner: `business_reviewer`\n"
+        "- Acceptable decisions: `accepted`\n"
+        "- Required evidence: Completed checklist.\n"
         "- Reviewer:\n"
         "- Decision:\n"
         "- Date:\n"
