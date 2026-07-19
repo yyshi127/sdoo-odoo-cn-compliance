@@ -30,6 +30,7 @@ class CandidatePaths:
     status: Path
     signoff_packet: Path
     production_signoff_actions: Path
+    production_signoff_actions_markdown: Path
     objective_audit: Path
 
 
@@ -54,6 +55,8 @@ def _candidate_paths(dist_dir: Path, number: int) -> CandidatePaths:
         signoff_packet=dist_dir / f"cn_delivery_{tag}_chain_signoff_packet.json",
         production_signoff_actions=dist_dir
         / f"cn_delivery_{tag}_chain_production_signoff_actions.json",
+        production_signoff_actions_markdown=dist_dir
+        / f"cn_delivery_{tag}_chain_production_signoff_actions.md",
         objective_audit=dist_dir / f"cn_delivery_{tag}_chain_objective_audit.json",
     )
 

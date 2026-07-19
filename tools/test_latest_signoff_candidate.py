@@ -90,6 +90,33 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_rejects_missing_reviewer_action_checklist_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                12,
+                commit="abc",
+                aggregate="hash12",
+                omit="production_signoff_actions_markdown",
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "candidate evidence set is incomplete",
+                result["checked_candidates"][0]["errors"],
+            )
+            self.assertTrue(
+                any(
+                    missing.endswith(
+                        "cn_delivery_m12_chain_production_signoff_actions.md"
+                    )
+                    for missing in result["checked_candidates"][0]["missing_files"]
+                )
+            )
+
 
 def _candidate(
     dist: Path,
@@ -194,6 +221,7 @@ def _candidate(
         "status": status,
         "signoff_packet": packet,
         "production_signoff_actions": actions,
+        "production_signoff_actions_markdown": b"# checklist\n",
         "objective_audit": audit,
     }
     for field, payload in payloads.items():
