@@ -1195,6 +1195,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",
         f"- Official source freshness evidence ready: `{real_data_readiness.get('has_official_source_freshness_evidence', False)}`",
+        f"- Official source monitor-run evidence ready: `{real_data_readiness.get('has_official_source_monitor_run_evidence', False)}`",
         f"- Rule professional sign-off evidence ready: `{real_data_readiness.get('has_rule_professional_signoff_evidence', False)}`",
         f"- Rule checksum traceability evidence ready: `{real_data_readiness.get('has_rule_checksum_traceability_evidence', False)}`",
         f"- Official source governance summary ready: `{source_governance.get('ready', False)}`",

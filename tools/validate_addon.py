@@ -5939,6 +5939,7 @@ def validate_delivery_objective_coverage() -> None:
         "Evidence/filing/payment summary evidence ready",
         "Evidence, Filing and Payment Archive Summary Evidence",
         "Rule/source governance evidence ready",
+        "Official source monitor-run evidence ready",
         "Official source governance summary ready",
         "Official Source Governance Overview",
         "Rule And Source Governance Evidence",

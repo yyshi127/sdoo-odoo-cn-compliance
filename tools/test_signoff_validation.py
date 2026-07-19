@@ -1392,6 +1392,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["source_governed_versioned_rules"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_source_monitor_run_evidence_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_official_source_monitor_run_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["source_governed_versioned_rules"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "official_source_monitor_run=False",
+            items["source_governed_versioned_rules"]["evidence"],
+        )
+
     def test_objective_audit_blocks_when_customer_scope_gap_review_is_missing(self):
         status = delivery_status()
         status["real_data_closed_loop"]["readiness"][
@@ -3434,6 +3452,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("## Rule And Source Governance Evidence", content)
         self.assertIn("Rule/source governance evidence ready: `True`", content)
         self.assertIn("Official source freshness evidence ready: `True`", content)
+        self.assertIn("Official source monitor-run evidence ready: `True`", content)
         self.assertIn("Rule professional sign-off evidence ready: `True`", content)
         self.assertIn("Rule checksum traceability evidence ready: `True`", content)
         self.assertIn("Customer scope/gap review evidence ready: `True`", content)
