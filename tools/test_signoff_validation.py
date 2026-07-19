@@ -54,6 +54,9 @@ ADDON_VALIDATION = load_tool(
     REPOSITORY_ROOT / "tools" / "validate_addon.py",
 )
 
+BUNDLE_SHA256 = "1" * 64
+MANIFEST_AGGREGATE_SHA256 = "2" * 64
+
 
 def status_payload() -> dict:
     return {
@@ -69,6 +72,12 @@ def status_payload() -> dict:
             "branch": "main",
             "commit": "abc123",
             "dirty": False,
+        },
+        "bundle_metadata": {
+            "bundle_sha256": BUNDLE_SHA256,
+        },
+        "manifest": {
+            "aggregate_sha256": MANIFEST_AGGREGATE_SHA256,
         },
         "readiness_gates": {
             "business_uat_ready": True,
@@ -554,7 +563,7 @@ def manifest_payload() -> dict:
     return {
         "schema": "sdoo.cn.delivery-manifest.v1",
         "version": "19.0.1.130.0",
-        "aggregate_sha256": "aggregate",
+        "aggregate_sha256": MANIFEST_AGGREGATE_SHA256,
         "files": [{"path": path} for path in paths],
     }
 
@@ -571,8 +580,8 @@ def bundle_metadata_payload() -> dict:
     return {
         "schema": "sdoo.cn.delivery-bundle.v1",
         "version": "19.0.1.130.0",
-        "aggregate_sha256": "aggregate",
-        "bundle_sha256": "bundle",
+        "aggregate_sha256": MANIFEST_AGGREGATE_SHA256,
+        "bundle_sha256": BUNDLE_SHA256,
         "source_control": {
             "inside_worktree": True,
             "branch": "main",
@@ -1101,9 +1110,9 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "production_deployment_decision": (
             "Production sign-off template completed with deployment decision, "
             "delivery version 19.0.1.130.0, source commit abc123, bundle SHA-256 "
-            "1111111111111111111111111111111111111111111111111111111111111111, "
+            f"{BUNDLE_SHA256}, "
             "manifest aggregate hash "
-            "2222222222222222222222222222222222222222222222222222222222222222, "
+            f"{MANIFEST_AGGREGATE_SHA256}, "
             "target database test, target company scope CN Company, "
             "backup/restore proof reference, rollback trigger, rollback owner, "
             "deployment window and go-live monitoring owner."
@@ -1129,6 +1138,8 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "schema": VALIDATION.EVIDENCE_SCHEMA,
         "version": packet["version"],
         "source_commit": packet["source_commit"],
+        "bundle_sha256": packet["bundle_sha256"],
+        "manifest_aggregate_sha256": packet["manifest_aggregate_sha256"],
         "preview_url": packet["preview_url"],
         "preview_database": packet["preview_database"],
         "production_blocker_coverage": packet["production_blocker_coverage"],
@@ -1224,6 +1235,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(result["deployment_decision"], "deploy")
         self.assertEqual(result["blockers"], [])
         self.assertEqual(result["blocked_objective_areas"], [])
+        self.assertEqual(packet["bundle_sha256"], BUNDLE_SHA256)
+        self.assertEqual(packet["manifest_aggregate_sha256"], MANIFEST_AGGREGATE_SHA256)
         coverage_items = packet["production_blocker_coverage"]["coverage"]
         self.assertEqual(
             result["production_blocker_coverage_binding"],
@@ -1265,6 +1278,32 @@ class TestChinaSignoffValidation(unittest.TestCase):
             result["blockers"],
         )
 
+    def test_signoff_evidence_requires_current_delivery_hashes(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "production_deployment_decision":
+                item["notes"] = item["notes"].replace(BUNDLE_SHA256, "3" * 64)
+                item["notes"] = item["notes"].replace(
+                    MANIFEST_AGGREGATE_SHA256,
+                    "4" * 64,
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "production_deployment_decision: evidence_reference or notes must "
+            f"include the current delivery bundle SHA-256: {BUNDLE_SHA256}",
+            result["blockers"],
+        )
+        self.assertIn(
+            "production_deployment_decision: evidence_reference or notes must "
+            "include the current manifest aggregate SHA-256: "
+            f"{MANIFEST_AGGREGATE_SHA256}",
+            result["blockers"],
+        )
+
     def test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1273,6 +1312,11 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(draft["schema"], VALIDATION.EVIDENCE_SCHEMA)
         self.assertEqual(draft["version"], packet["version"])
         self.assertEqual(draft["source_commit"], packet["source_commit"])
+        self.assertEqual(draft["bundle_sha256"], packet["bundle_sha256"])
+        self.assertEqual(
+            draft["manifest_aggregate_sha256"],
+            packet["manifest_aggregate_sha256"],
+        )
         self.assertEqual(draft["preview_url"], packet["preview_url"])
         self.assertEqual(draft["preview_database"], packet["preview_database"])
         self.assertEqual(
@@ -2673,6 +2717,32 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "sign-off evidence source commit does not match the packet",
+            result["blockers"],
+        )
+
+    def test_bundle_hash_mismatch_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["bundle_sha256"] = "3" * 64
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "sign-off evidence bundle SHA-256 does not match the packet",
+            result["blockers"],
+        )
+
+    def test_manifest_hash_mismatch_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["manifest_aggregate_sha256"] = "4" * 64
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "sign-off evidence manifest aggregate SHA-256 does not match the packet",
             result["blockers"],
         )
 

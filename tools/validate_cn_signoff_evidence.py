@@ -32,6 +32,8 @@ PLACEHOLDER_TEXTS = {
     "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
     "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
     "replace-with-signoff-packet-source-commit",
+    "replace-with-signoff-packet-bundle-sha256",
+    "replace-with-signoff-packet-manifest-aggregate-sha256",
     "controlled evidence reference",
     "uncontrolled evidence reference",
 }
@@ -206,6 +208,14 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence version does not match the packet version")
     if evidence.get("source_commit") != packet.get("source_commit"):
         blockers.append("sign-off evidence source commit does not match the packet")
+    if evidence.get("bundle_sha256") != packet.get("bundle_sha256"):
+        blockers.append("sign-off evidence bundle SHA-256 does not match the packet")
+    if evidence.get("manifest_aggregate_sha256") != packet.get(
+        "manifest_aggregate_sha256"
+    ):
+        blockers.append(
+            "sign-off evidence manifest aggregate SHA-256 does not match the packet"
+        )
     if evidence.get("preview_url") != packet.get("preview_url"):
         blockers.append("sign-off evidence preview URL does not match the packet")
     if evidence.get("preview_database") != packet.get("preview_database"):
@@ -339,6 +349,19 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                     "64-character SHA-256 values for the delivery bundle and "
                     "manifest aggregate"
                 )
+            if key == "production_deployment_decision":
+                raw_evidence_text = _raw_evidence_text(item)
+                for packet_field, label in (
+                    ("bundle_sha256", "delivery bundle SHA-256"),
+                    ("manifest_aggregate_sha256", "manifest aggregate SHA-256"),
+                ):
+                    packet_hash = packet.get(packet_field)
+                    if isinstance(packet_hash, str) and packet_hash.strip():
+                        if packet_hash not in raw_evidence_text:
+                            item_blockers.append(
+                                f"evidence_reference or notes must include the "
+                                f"current {label}: {packet_hash}"
+                            )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))
             if key == "production_deployment_decision":
@@ -397,6 +420,8 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "version": packet.get("version"),
         "source_commit": packet.get("source_commit"),
+        "bundle_sha256": packet.get("bundle_sha256"),
+        "manifest_aggregate_sha256": packet.get("manifest_aggregate_sha256"),
         "preview_url": packet.get("preview_url"),
         "preview_database": packet.get("preview_database"),
         "ok": not blockers,

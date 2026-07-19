@@ -2,9 +2,11 @@
   "schema": "sdoo.cn.signoff-evidence.v1",
   "version": "19.0.1.130.0",
   "source_commit": "replace-with-signoff-packet-source-commit",
+  "bundle_sha256": "replace-with-signoff-packet-bundle-sha256",
+  "manifest_aggregate_sha256": "replace-with-signoff-packet-manifest-aggregate-sha256",
   "preview_url": "replace-with-signoff-packet-preview-url",
   "preview_database": "replace-with-signoff-packet-preview-database",
-  "placeholder_notice": "This file is a template. Replace every reviewer, date, source_commit and evidence_reference placeholder before validation. Dates must use ISO format YYYY-MM-DD.",
+  "placeholder_notice": "This file is a template. Replace every reviewer, date, source_commit, bundle_sha256, manifest_aggregate_sha256 and evidence_reference placeholder before validation. Dates must use ISO format YYYY-MM-DD.",
   "limitations": [
     "Record every business, professional, source, data, UX or deployment limitation here whenever any decision is accepted_with_limitations, approved_with_limitations, current_with_documented_limitations, limitations_documented, passed_with_limitations or deploy_with_limitations. Each limitation must be a substantive text entry of at least 20 characters."
   ],

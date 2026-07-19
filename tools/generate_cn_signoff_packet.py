@@ -98,6 +98,10 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     runtime_log = runtime.get("log") if isinstance(runtime, dict) else {}
     upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
     upgrade_runtime = status.get("upgrade_runtime") or {}
+    bundle_metadata = status.get("bundle_metadata") or {}
+    manifest = status.get("manifest") or {}
+    bundle_sha256 = bundle_metadata.get("bundle_sha256")
+    manifest_aggregate_sha256 = manifest.get("aggregate_sha256")
 
     automated_items = [
         _readiness_item(
@@ -580,6 +584,8 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         "preview_url": status.get("preview_url"),
         "preview_database": status.get("preview_database"),
         "source_commit": source_control.get("commit"),
+        "bundle_sha256": bundle_sha256,
+        "manifest_aggregate_sha256": manifest_aggregate_sha256,
         "business_uat_ready": readiness.get("business_uat_ready") is True,
         "production_signoff_ready": False,
         "automated_items": automated_items,
@@ -597,6 +603,8 @@ def _write_markdown(packet: dict[str, Any], path: Path) -> None:
         "",
         f"- Version: `{packet.get('version') or ''}`",
         f"- Source commit: `{packet.get('source_commit') or ''}`",
+        f"- Bundle SHA-256: `{packet.get('bundle_sha256') or ''}`",
+        f"- Manifest aggregate SHA-256: `{packet.get('manifest_aggregate_sha256') or ''}`",
         f"- Preview URL: `{packet.get('preview_url') or ''}`",
         f"- Preview database: `{packet.get('preview_database') or ''}`",
         f"- Business UAT ready: `{packet.get('business_uat_ready')}`",

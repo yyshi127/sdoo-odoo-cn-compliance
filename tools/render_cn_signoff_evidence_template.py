@@ -66,6 +66,8 @@ def render_template(packet: dict[str, Any]) -> dict[str, Any]:
         "schema": EVIDENCE_SCHEMA,
         "version": packet.get("version"),
         "source_commit": packet.get("source_commit"),
+        "bundle_sha256": packet.get("bundle_sha256"),
+        "manifest_aggregate_sha256": packet.get("manifest_aggregate_sha256"),
         "preview_url": packet.get("preview_url"),
         "preview_database": packet.get("preview_database"),
         "generated_from_packet_at_utc": (

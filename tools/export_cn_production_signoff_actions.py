@@ -53,6 +53,8 @@ def _packet_binding(
             "schema_ok": False,
             "version_matches_status": False,
             "source_commit_matches_status": False,
+            "bundle_sha256_matches_status": False,
+            "manifest_aggregate_sha256_matches_status": False,
             "preview_url_matches_status": False,
             "preview_database_matches_status": False,
             "action_keys_match": False,
@@ -60,6 +62,8 @@ def _packet_binding(
             "extra_packet_action_keys": [],
         }
     status_commit = (status.get("source_control") or {}).get("commit")
+    bundle = status.get("bundle_metadata") or {}
+    manifest = status.get("manifest") or {}
     action_keys = {_action_key(action) for action in actions if _action_key(action)}
     packet_keys = {
         _action_key(action)
@@ -71,6 +75,12 @@ def _packet_binding(
         "schema_ok": packet.get("schema") == PACKET_SCHEMA,
         "version_matches_status": packet.get("version") == status.get("version"),
         "source_commit_matches_status": packet.get("source_commit") == status_commit,
+        "bundle_sha256_matches_status": packet.get("bundle_sha256")
+        == bundle.get("bundle_sha256"),
+        "manifest_aggregate_sha256_matches_status": packet.get(
+            "manifest_aggregate_sha256"
+        )
+        == manifest.get("aggregate_sha256"),
         "preview_url_matches_status": packet.get("preview_url")
         == status.get("preview_url"),
         "preview_database_matches_status": packet.get("preview_database")
@@ -96,6 +106,8 @@ def export_actions(
         ]
     )
     source_control = status.get("source_control") or {}
+    bundle = status.get("bundle_metadata") or {}
+    manifest = status.get("manifest") or {}
     return {
         "schema": ACTIONS_SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc)
@@ -103,6 +115,8 @@ def export_actions(
         .isoformat(),
         "version": status.get("version"),
         "source_commit": source_control.get("commit"),
+        "bundle_sha256": bundle.get("bundle_sha256"),
+        "manifest_aggregate_sha256": manifest.get("aggregate_sha256"),
         "source_branch": source_control.get("branch"),
         "source_control_clean": readiness.get("source_control_clean") is True,
         "preview_url": status.get("preview_url"),
@@ -128,6 +142,8 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"- Version: `{payload.get('version') or ''}`",
         f"- Source branch: `{payload.get('source_branch') or ''}`",
         f"- Source commit: `{payload.get('source_commit') or ''}`",
+        f"- Bundle SHA-256: `{payload.get('bundle_sha256') or ''}`",
+        f"- Manifest aggregate SHA-256: `{payload.get('manifest_aggregate_sha256') or ''}`",
         f"- Source control clean: `{payload.get('source_control_clean')}`",
         f"- Preview URL: `{payload.get('preview_url') or ''}`",
         f"- Preview database: `{payload.get('preview_database') or ''}`",
@@ -166,6 +182,8 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         "schema_ok",
         "version_matches_status",
         "source_commit_matches_status",
+        "bundle_sha256_matches_status",
+        "manifest_aggregate_sha256_matches_status",
         "preview_url_matches_status",
         "action_keys_match",
     ):
