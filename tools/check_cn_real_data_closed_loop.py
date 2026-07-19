@@ -105,6 +105,29 @@ def view_field_contract(xml_id, required_fields):
     }}
 
 
+def view_ux_contract(xml_id, required_fields, required_snippets):
+    view = env.ref("sudo_country_pack_cn." + xml_id, raise_if_not_found=False)
+    arch = str(view.arch_db or "") if view else ""
+    missing_fields = [
+        field
+        for field in required_fields
+        if ('name="' + field + '"') not in arch and ("name='" + field + "'") not in arch
+    ]
+    missing_snippets = [
+        snippet
+        for snippet in required_snippets
+        if snippet not in arch
+    ]
+    return {{
+        "xml_id": xml_id,
+        "ready": bool(view and not missing_fields and not missing_snippets),
+        "missing_fields": missing_fields,
+        "missing_snippets": missing_snippets,
+        "required_fields": required_fields,
+        "required_snippets": required_snippets,
+    }}
+
+
 def menu_action_contract(menu_xml_id, action_xml_id, res_model, required_groups):
     menu = env.ref("sudo_country_pack_cn." + menu_xml_id, raise_if_not_found=False)
     action = env.ref("sudo_country_pack_cn." + action_xml_id, raise_if_not_found=False)
@@ -782,6 +805,121 @@ reviewer_view_contracts = [
     ),
 ]
 
+ux_view_clarity_contracts = [
+    view_ux_contract(
+        "view_cn_compliance_workbench_kanban",
+        [
+            "cn_workbench_status",
+            "cn_workbench_period_label",
+            "cn_workbench_next_action",
+            "cn_workbench_action_summary",
+            "cn_workbench_high_risk_count",
+            "cn_workbench_open_task_count",
+            "cn_workbench_overdue_task_count",
+            "cn_workbench_underpayment_amount",
+            "cn_workbench_limitation_summary",
+            "cn_workbench_uncertainty_summary",
+        ],
+        [
+            'widget="badge"',
+            "border-start border-4",
+            "action_cn_open_workbench_next_best_action",
+            "action_cn_open_workbench_findings",
+            "action_cn_open_workbench_tasks",
+            "action_cn_open_workbench_tax_impacts",
+            "btn btn-primary",
+        ],
+    ),
+    view_ux_contract(
+        "view_cn_risk_center_finding_kanban",
+        [
+            "risk_level",
+            "cn_risk_period_label",
+            "cn_risk_next_action",
+            "cn_risk_action_summary",
+            "cn_tax_impact_reviewed_underpayment_amount",
+            "task_assignee_id",
+            "task_due_date",
+            "cn_risk_evidence_state",
+            "cn_traceability_state",
+        ],
+        [
+            'widget="badge"',
+            "border-start border-4",
+            'decoration-danger="risk_level',
+            "Tax impact",
+            "cn_risk_responsibility_summary",
+        ],
+    ),
+    view_ux_contract(
+        "view_cn_remediation_tracker_task_kanban",
+        [
+            "risk_level",
+            "assignee_id",
+            "due_date",
+            "cn_remediation_next_action",
+            "cn_remediation_action_summary",
+            "cn_remediation_blocker_summary",
+            "cn_remediation_progress",
+            "cn_remediation_evidence_state",
+            "cn_remediation_rescan_stage",
+            "cn_remediation_tax_impact_summary",
+        ],
+        [
+            'widget="badge"',
+            "border-start border-4",
+            "Action summary",
+            "Blockers",
+            "Tax impact",
+        ],
+    ),
+    view_ux_contract(
+        "view_cn_report_readiness_kanban",
+        [
+            "cn_report_readiness_state",
+            "cn_report_next_action",
+            "cn_report_action_summary",
+            "cn_report_readiness_blocker_summary",
+            "cn_report_rescan_state",
+            "cn_report_filing_archive_state",
+            "cn_report_ai_guidance_state",
+            "cn_data_basis_state",
+            "cn_accounting_basis_state",
+        ],
+        [
+            'widget="badge"',
+            "border-start border-4",
+            "Report Blockers",
+            "Verification rescan gate",
+            "Filing/payment archive gate",
+            "Controlled AI guidance gate",
+        ],
+    ),
+    view_ux_contract(
+        "view_cn_formal_compliance_report_kanban",
+        [
+            "cn_report_center_stage",
+            "cn_report_center_next_action",
+            "cn_report_blocker_summary",
+            "conclusion_state",
+            "cn_report_traceability_state",
+            "cn_report_fact_basis_state",
+            "critical_count",
+            "high_count",
+            "open_task_count",
+            "verified_evidence_count",
+        ],
+        [
+            'widget="badge"',
+            "border-start border-4",
+            "Blockers",
+            "Traceability",
+            "Fact basis",
+            "action_cn_open_report_findings",
+        ],
+    ),
+]
+
 menu_action_contracts = [
     menu_action_contract(
         "menu_cn_compliance_workbench",
@@ -1127,6 +1265,10 @@ readiness = {{
         reviewer_view_contracts
         and all(contract.get("ready") for contract in reviewer_view_contracts)
     ),
+    "has_ux_view_clarity_contract_evidence": bool(
+        ux_view_clarity_contracts
+        and all(contract.get("ready") for contract in ux_view_clarity_contracts)
+    ),
     "has_menu_action_contract_evidence": bool(
         menu_action_contracts
         and all(contract.get("ready") for contract in menu_action_contracts)
@@ -1241,6 +1383,7 @@ payload = {{
     "sample_iit_reconciliation_runs": sample_iit_reconciliation_runs,
     "sample_cross_border_transactions": sample_cross_border_transactions,
     "reviewer_view_contracts": reviewer_view_contracts,
+    "ux_view_clarity_contracts": ux_view_clarity_contracts,
     "menu_action_contracts": menu_action_contracts,
     "multi_company_security_contracts": multi_company_security_contracts,
     "readiness": readiness,

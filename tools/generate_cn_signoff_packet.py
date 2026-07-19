@@ -238,7 +238,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             and real_data_readiness.get("has_remediation_task_visibility_evidence")
             is True
             and real_data_readiness.get("has_report_visibility_evidence") is True
-            and real_data_readiness.get("has_reviewer_view_contract_evidence") is True,
+            and real_data_readiness.get("has_reviewer_view_contract_evidence") is True
+            and real_data_readiness.get("has_ux_view_clarity_contract_evidence")
+            is True,
             json.dumps(
                 {
                     "visibility": {
@@ -254,8 +256,15 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                         "reviewer_view_contract": real_data_readiness.get(
                             "has_reviewer_view_contract_evidence"
                         ),
+                        "ux_view_clarity_contract": real_data_readiness.get(
+                            "has_ux_view_clarity_contract_evidence"
+                        ),
                     },
                     "reviewer_view_contracts": real_data.get("reviewer_view_contracts")
+                    or [],
+                    "ux_view_clarity_contracts": real_data.get(
+                        "ux_view_clarity_contracts"
+                    )
                     or [],
                     "findings": real_data.get("sample_findings") or [],
                     "remediation_tasks": (
@@ -263,6 +272,16 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                     ),
                     "reports": real_data.get("sample_reports") or [],
                 },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
+            "ux_view_clarity_contract_evidence",
+            "Core review pages expose status badges, risk coloring, key amounts, owners, deadlines, blockers and next actions",
+            real_data_readiness.get("has_ux_view_clarity_contract_evidence") is True,
+            json.dumps(
+                real_data.get("ux_view_clarity_contracts") or [],
                 ensure_ascii=False,
                 sort_keys=True,
             ),

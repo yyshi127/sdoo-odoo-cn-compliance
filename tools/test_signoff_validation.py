@@ -187,6 +187,7 @@ def status_payload() -> dict:
                 "has_cross_border_review_scope_evidence": True,
                 "has_multi_company_security_contract_evidence": True,
                 "has_menu_action_contract_evidence": True,
+                "has_ux_view_clarity_contract_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -259,6 +260,26 @@ def status_payload() -> dict:
                         "risk_level",
                         "cn_risk_period_label",
                         "cn_risk_next_action",
+                    ],
+                }
+            ],
+            "ux_view_clarity_contracts": [
+                {
+                    "xml_id": "view_cn_risk_center_finding_kanban",
+                    "ready": True,
+                    "missing_fields": [],
+                    "missing_snippets": [],
+                    "required_fields": [
+                        "risk_level",
+                        "cn_risk_next_action",
+                        "cn_tax_impact_reviewed_underpayment_amount",
+                        "task_assignee_id",
+                        "task_due_date",
+                    ],
+                    "required_snippets": [
+                        'widget="badge"',
+                        "border-start border-4",
+                        "Tax impact",
                     ],
                 }
             ],
@@ -559,6 +580,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_cross_border_review_scope_evidence": True,
             "has_multi_company_security_contract_evidence": True,
             "has_menu_action_contract_evidence": True,
+            "has_ux_view_clarity_contract_evidence": True,
         },
         "sample_profiles": [
             {
@@ -631,6 +653,26 @@ def real_data_closed_loop_payload() -> dict:
                     "risk_level",
                     "cn_risk_period_label",
                     "cn_risk_next_action",
+                ],
+            }
+        ],
+        "ux_view_clarity_contracts": [
+            {
+                "xml_id": "view_cn_risk_center_finding_kanban",
+                "ready": True,
+                "missing_fields": [],
+                "missing_snippets": [],
+                "required_fields": [
+                    "risk_level",
+                    "cn_risk_next_action",
+                    "cn_tax_impact_reviewed_underpayment_amount",
+                    "task_assignee_id",
+                    "task_due_date",
+                ],
+                "required_snippets": [
+                    'widget="badge"',
+                    "border-start border-4",
+                    "Tax impact",
                 ],
             }
         ],
@@ -1117,6 +1159,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["risk_remediation_report_visibility"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_ux_view_clarity_contract_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_ux_view_clarity_contract_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["risk_remediation_report_visibility"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "ux_view_clarity_contract=False",
+            items["risk_remediation_report_visibility"]["evidence"],
+        )
+
     def test_objective_audit_blocks_when_multi_company_security_contract_is_missing(self):
         status = delivery_status()
         status["real_data_closed_loop"]["readiness"][
@@ -1563,8 +1623,32 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
         self.assertIn(
+            '"ux_view_clarity_contract": true',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
             "view_cn_risk_center_finding_list",
             automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "view_cn_risk_center_finding_kanban",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_ux_view_clarity_contract_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("ux_view_clarity_contract_evidence", automated)
+        self.assertTrue(automated["ux_view_clarity_contract_evidence"]["ready"])
+        self.assertIn(
+            "view_cn_risk_center_finding_kanban",
+            automated["ux_view_clarity_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "border-start border-4",
+            automated["ux_view_clarity_contract_evidence"]["evidence"],
         )
 
     def test_signoff_packet_blocks_when_risk_visibility_evidence_is_incomplete(self):
@@ -1580,6 +1664,36 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             '"remediation_task": false',
             automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_ux_view_clarity_contract_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_ux_view_clarity_contract_evidence"
+        ] = False
+        payload["real_data_closed_loop"]["ux_view_clarity_contracts"] = [
+            {
+                "xml_id": "view_cn_risk_center_finding_kanban",
+                "ready": False,
+                "missing_fields": ["cn_risk_next_action"],
+                "missing_snippets": ["border-start border-4"],
+                "required_fields": ["risk_level", "cn_risk_next_action"],
+                "required_snippets": ['widget="badge"', "border-start border-4"],
+            }
+        ]
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["ux_view_clarity_contract_evidence"]["ready"])
+        self.assertFalse(automated["risk_task_report_summary_evidence"]["ready"])
+        self.assertIn(
+            '"ux_view_clarity_contract": false',
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "missing_snippets",
+            automated["ux_view_clarity_contract_evidence"]["evidence"],
         )
 
     def test_signoff_packet_blocks_when_reviewer_view_contract_is_missing(self):
@@ -2532,6 +2646,27 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertEqual(contracts[0]["missing"], [])
         self.assertIn("cn_risk_next_action", contracts[0]["required_fields"])
+
+    def test_delivery_status_preserves_ux_view_clarity_contract_details(self):
+        status = delivery_status()
+
+        contracts = status["real_data_closed_loop"]["ux_view_clarity_contracts"]
+
+        self.assertEqual(contracts[0]["xml_id"], "view_cn_risk_center_finding_kanban")
+        self.assertTrue(contracts[0]["ready"])
+        self.assertEqual(contracts[0]["missing_fields"], [])
+        self.assertIn("task_due_date", contracts[0]["required_fields"])
+        self.assertIn("border-start border-4", contracts[0]["required_snippets"])
+
+    def test_delivery_status_markdown_lists_ux_view_clarity_contract_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("UX view clarity contract evidence ready: `True`", content)
 
     def test_delivery_status_preserves_multi_company_security_contract_details(self):
         status = delivery_status()
