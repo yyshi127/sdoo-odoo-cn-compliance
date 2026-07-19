@@ -45,7 +45,7 @@
       "decision": "current",
       "reviewer": "Rule governance owner name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Official-source freshness monitoring result and governance summary reference",
+      "evidence_reference": "Official-source freshness monitoring result, latest monitor run integrity/checksum, changed or failed run disposition, local jurisdiction review and governance summary reference",
       "objective_areas": [
         "official-source freshness",
         "national and local rule currency"
@@ -53,7 +53,7 @@
       "addresses_blockers": [
         "current official sources and released rules require professional sign-off evidence"
       ],
-      "notes": "Official source freshness, source governance summary, monitoring results and local jurisdiction changes reviewed."
+      "notes": "Official source freshness, source governance summary, latest monitor run state/completion time, result integrity state, result checksum, changed/failed run disposition and local jurisdiction changes reviewed."
     },
     {
       "key": "customer_scope_and_data_gap_review",

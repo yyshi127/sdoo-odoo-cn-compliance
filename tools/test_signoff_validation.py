@@ -1069,7 +1069,9 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         ),
         "official_source_freshness_review": (
             "Official source freshness, source governance summary, monitoring "
-            "results and local jurisdiction updates reviewed."
+            "results, latest monitor run state/completion time, result integrity "
+            "state, result checksum, changed or failed run disposition and local "
+            "jurisdiction updates reviewed."
         ),
         "customer_scope_and_data_gap_review": (
             "External dataset coverage, evidence gap register, open risk list and "
@@ -1678,7 +1680,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "official_source_freshness_review: evidence_reference or notes must "
-            "mention: governance summary, monitoring",
+            "mention: governance summary, monitoring, latest monitor run, "
+            "result integrity, result checksum, changed/failed disposition",
             result["blockers"],
         )
 

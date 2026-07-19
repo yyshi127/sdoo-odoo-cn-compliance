@@ -124,9 +124,14 @@ decision and include substantive limitation notes.
 - Local jurisdiction scope reviewed: yes / no / not applicable
 - Official-source freshness evidence reference:
 - Official source governance summary evidence reference:
+- Latest official-source monitor run reviewed:
+- Latest monitor run state and completion time:
+- Latest monitor result integrity state:
+- Latest monitor result checksum:
 - Overdue official-source reviews:
 - Changed source monitor runs:
 - Failed source monitor runs:
+- Changed or failed monitor run disposition:
 - Rule governance issues:
 - Local jurisdiction review evidence reference:
 - Rules not approved for production conclusions:

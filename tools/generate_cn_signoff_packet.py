@@ -464,7 +464,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "official_source_freshness_review",
             "owner": "rule_governance_owner",
-            "required_evidence": "Current official-source monitoring results and any local jurisdiction updates reviewed for the target period.",
+            "required_evidence": (
+                "Current official-source monitoring results, latest monitor run "
+                "state/completion time, result integrity state, result checksum, "
+                "changed or failed run disposition and any local jurisdiction "
+                "updates reviewed for the target period."
+            ),
             "acceptable_decisions": ["current", "current_with_documented_limitations"],
             "objective_areas": [
                 "official-source freshness",

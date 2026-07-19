@@ -25,6 +25,7 @@ PLACEHOLDER_TEXTS = {
     "Rule/source review packet reference",
     "Official-source freshness monitoring result reference",
     "Official-source freshness monitoring result and governance summary reference",
+    "Official-source freshness monitoring result, latest monitor run integrity/checksum, changed or failed run disposition, local jurisdiction review and governance summary reference",
     "Customer data, evidence gap and open risk review reference",
     "Screenshots or recording reference for workbench, risk center, remediation tracking and compliance report walkthrough",
     "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
@@ -49,6 +50,10 @@ ACTION_EVIDENCE_REQUIREMENTS = {
     "official_source_freshness_review": (
         ("governance summary", ("governance summary", "source governance")),
         ("monitoring", ("monitoring", "monitor")),
+        ("latest monitor run", ("latest monitor run", "monitor run", "latest run")),
+        ("result integrity", ("result integrity", "integrity state", "verified")),
+        ("result checksum", ("result checksum", "checksum", "SHA-256", "sha256")),
+        ("changed/failed disposition", ("changed or failed", "changed/failed", "disposition", "failed run")),
         ("official source", ("official source", "官方来源", "官方依据")),
         ("freshness", ("freshness", "时效", "更新")),
         ("local jurisdiction", ("local jurisdiction", "地方", "属地")),
