@@ -264,6 +264,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
         "version": status.get("version"),
         "source_commit": (status.get("source_control") or {}).get("commit"),
         "preview_url": status.get("preview_url"),
+        "preview_database": status.get("preview_database"),
         "achieved": achieved,
         "state_counts": {
             state: sum(1 for item in items if item["state"] == state)
@@ -286,6 +287,7 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"- Version: `{payload.get('version')}`",
         f"- Source commit: `{payload.get('source_commit')}`",
         f"- Preview URL: `{payload.get('preview_url')}`",
+        f"- Preview database: `{payload.get('preview_database')}`",
         f"- Achieved: `{payload.get('achieved')}`",
         f"- State counts: `{payload.get('state_counts')}`",
         "",

@@ -1213,6 +1213,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         audit = OBJECTIVE_AUDIT.audit(status)
 
         self.assertEqual(audit["schema"], OBJECTIVE_AUDIT.AUDIT_SCHEMA)
+        self.assertEqual(audit["preview_database"], "test")
         self.assertFalse(audit["achieved"])
         items = {item["key"]: item for item in audit["items"]}
         self.assertEqual(

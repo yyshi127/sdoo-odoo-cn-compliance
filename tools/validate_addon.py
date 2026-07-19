@@ -5676,6 +5676,7 @@ def validate_delivery_objective_coverage() -> None:
         "tax_domain_coverage",
         "production_blocker_coverage_binding",
         "coverage_evidence_matches_packet",
+        "preview_database",
         "upgrade_migration_chain",
         "upgrade_runtime_passed",
         "has_ux_view_clarity_contract_evidence",
