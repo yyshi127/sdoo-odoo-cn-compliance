@@ -275,7 +275,22 @@ def status_payload() -> dict:
                         "cn_risk_period_label",
                         "cn_risk_next_action",
                     ],
-                }
+                },
+                {
+                    "xml_id": "view_cn_remediation_tracker_task_list",
+                    "ready": True,
+                    "missing": [],
+                    "required_fields": [
+                        "risk_level",
+                        "assignee_id",
+                        "due_date",
+                        "cn_remediation_next_action",
+                        "cn_remediation_action_summary",
+                        "state",
+                        "verification_state",
+                        "cn_remediation_rescan_stage",
+                    ],
+                },
             ],
             "ux_view_clarity_contracts": [
                 {
@@ -295,7 +310,32 @@ def status_payload() -> dict:
                         "border-start border-4",
                         "Tax impact",
                     ],
-                }
+                },
+                {
+                    "xml_id": "view_cn_remediation_tracker_task_kanban",
+                    "ready": True,
+                    "missing_fields": [],
+                    "missing_snippets": [],
+                    "required_fields": [
+                        "risk_level",
+                        "assignee_id",
+                        "due_date",
+                        "cn_remediation_next_action",
+                        "cn_remediation_action_summary",
+                        "cn_remediation_blocker_summary",
+                        "cn_remediation_progress",
+                        "cn_remediation_evidence_state",
+                        "cn_remediation_rescan_stage",
+                        "cn_remediation_tax_impact_summary",
+                    ],
+                    "required_snippets": [
+                        'widget="badge"',
+                        "border-start border-4",
+                        "Action summary",
+                        "Blockers",
+                        "Tax impact",
+                    ],
+                },
             ],
             "multi_company_security_contracts": [
                 {
@@ -691,7 +731,22 @@ def real_data_closed_loop_payload() -> dict:
                     "cn_risk_period_label",
                     "cn_risk_next_action",
                 ],
-            }
+            },
+            {
+                "xml_id": "view_cn_remediation_tracker_task_list",
+                "ready": True,
+                "missing": [],
+                "required_fields": [
+                    "risk_level",
+                    "assignee_id",
+                    "due_date",
+                    "cn_remediation_next_action",
+                    "cn_remediation_action_summary",
+                    "state",
+                    "verification_state",
+                    "cn_remediation_rescan_stage",
+                ],
+            },
         ],
         "ux_view_clarity_contracts": [
             {
@@ -711,7 +766,32 @@ def real_data_closed_loop_payload() -> dict:
                     "border-start border-4",
                     "Tax impact",
                 ],
-            }
+            },
+            {
+                "xml_id": "view_cn_remediation_tracker_task_kanban",
+                "ready": True,
+                "missing_fields": [],
+                "missing_snippets": [],
+                "required_fields": [
+                    "risk_level",
+                    "assignee_id",
+                    "due_date",
+                    "cn_remediation_next_action",
+                    "cn_remediation_action_summary",
+                    "cn_remediation_blocker_summary",
+                    "cn_remediation_progress",
+                    "cn_remediation_evidence_state",
+                    "cn_remediation_rescan_stage",
+                    "cn_remediation_tax_impact_summary",
+                ],
+                "required_snippets": [
+                    'widget="badge"',
+                    "border-start border-4",
+                    "Action summary",
+                    "Blockers",
+                    "Tax impact",
+                ],
+            },
         ],
         "multi_company_security_contracts": [
             {
@@ -1880,6 +1960,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "view_cn_risk_center_finding_kanban",
             automated["risk_task_report_summary_evidence"]["evidence"],
         )
+        self.assertIn(
+            "view_cn_remediation_tracker_task_list",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "view_cn_remediation_tracker_task_kanban",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "cn_remediation_blocker_summary",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "cn_remediation_tax_impact_summary",
+            automated["risk_task_report_summary_evidence"]["evidence"],
+        )
 
     def test_signoff_packet_surfaces_ux_view_clarity_contract_evidence(self):
         packet = PACKET._build_packet(status_payload())
@@ -1893,7 +1989,15 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["ux_view_clarity_contract_evidence"]["evidence"],
         )
         self.assertIn(
+            "view_cn_remediation_tracker_task_kanban",
+            automated["ux_view_clarity_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
             "border-start border-4",
+            automated["ux_view_clarity_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "cn_remediation_next_action",
             automated["ux_view_clarity_contract_evidence"]["evidence"],
         )
 
@@ -3123,6 +3227,13 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertEqual(contracts[0]["missing"], [])
         self.assertIn("cn_risk_next_action", contracts[0]["required_fields"])
+        self.assertEqual(
+            contracts[1]["xml_id"],
+            "view_cn_remediation_tracker_task_list",
+        )
+        self.assertEqual(contracts[1]["missing"], [])
+        self.assertIn("cn_remediation_next_action", contracts[1]["required_fields"])
+        self.assertIn("cn_remediation_rescan_stage", contracts[1]["required_fields"])
 
     def test_delivery_status_preserves_ux_view_clarity_contract_details(self):
         status = delivery_status()
@@ -3134,6 +3245,14 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(contracts[0]["missing_fields"], [])
         self.assertIn("task_due_date", contracts[0]["required_fields"])
         self.assertIn("border-start border-4", contracts[0]["required_snippets"])
+        self.assertEqual(
+            contracts[1]["xml_id"],
+            "view_cn_remediation_tracker_task_kanban",
+        )
+        self.assertTrue(contracts[1]["ready"])
+        self.assertEqual(contracts[1]["missing_fields"], [])
+        self.assertIn("cn_remediation_blocker_summary", contracts[1]["required_fields"])
+        self.assertIn("Tax impact", contracts[1]["required_snippets"])
 
     def test_delivery_status_markdown_lists_ux_view_clarity_contract_evidence(self):
         status = delivery_status()
