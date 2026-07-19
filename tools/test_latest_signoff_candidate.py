@@ -33,6 +33,22 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["selected"]["production_signoff_blockers"],
                 ["business UAT decision must be recorded outside this automated status"],
             )
+            self.assertEqual(
+                set(result["selected"]["evidence_sha256"]),
+                {
+                    "status",
+                    "signoff_packet",
+                    "production_signoff_actions",
+                    "production_signoff_actions_markdown",
+                    "objective_audit",
+                },
+            )
+            self.assertTrue(
+                all(
+                    len(value) == 64
+                    for value in result["selected"]["evidence_sha256"].values()
+                )
+            )
 
     def test_markdown_summary_points_reviewers_to_actions_and_blockers(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -46,6 +62,8 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
             self.assertIn("Production sign-off action checklist:", content)
             self.assertIn("cn_delivery_m17_chain_production_signoff_actions.md", content)
+            self.assertIn("## Evidence SHA-256", content)
+            self.assertIn("`production_signoff_actions_markdown`", content)
             self.assertIn("## Required Action Keys", content)
             self.assertIn("`business_uat_decision`", content)
             self.assertIn("## Production Sign-off Blockers", content)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -51,6 +52,14 @@ class CandidatePaths:
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _candidate_paths(dist_dir: Path, number: int) -> CandidatePaths:
@@ -317,6 +326,16 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         for blocker in readiness.get("production_signoff_blockers") or []
         if blocker
     ]
+    evidence_sha256 = {
+        field: _sha256(getattr(paths, field))
+        for field in (
+            "status",
+            "signoff_packet",
+            "production_signoff_actions",
+            "production_signoff_actions_markdown",
+            "objective_audit",
+        )
+    }
     return {
         "candidate": f"m{paths.number}",
         "ok": not errors,
@@ -334,6 +353,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
             str(action.get("key")) for action in required_actions if action.get("key")
         ],
         "production_signoff_blockers": production_blockers,
+        "evidence_sha256": evidence_sha256,
         "paths": {
             field: getattr(paths, field).as_posix()
             for field in paths.__dataclass_fields__
@@ -398,6 +418,13 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 f"- Required human actions: `{selected.get('production_required_action_count')}`",
                 f"- Production sign-off action checklist: `{selected.get('paths', {}).get('production_signoff_actions_markdown')}`",
                 f"- Sign-off packet: `{selected.get('paths', {}).get('signoff_packet')}`",
+                "",
+                "## Evidence SHA-256",
+                "",
+                *[
+                    f"- `{label}`: `{digest}`"
+                    for label, digest in (selected.get("evidence_sha256") or {}).items()
+                ],
                 "",
                 "## Required Action Keys",
                 "",
