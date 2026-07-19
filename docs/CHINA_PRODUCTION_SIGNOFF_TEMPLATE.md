@@ -127,7 +127,7 @@ decision and include substantive limitation notes.
 - Latest official-source monitor run reviewed:
 - Latest monitor run state and completion time:
 - Latest monitor result integrity state:
-- Latest monitor result checksum:
+- Latest monitor result checksum (64-character SHA-256):
 - Overdue official-source reviews:
 - Changed source monitor runs:
 - Failed source monitor runs:

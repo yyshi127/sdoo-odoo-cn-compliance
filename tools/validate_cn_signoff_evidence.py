@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ from typing import Any
 VALIDATION_SCHEMA = "sdoo.cn.signoff-validation.v1"
 EVIDENCE_SCHEMA = "sdoo.cn.signoff-evidence.v1"
 PACKET_SCHEMA = "sdoo.cn.signoff-packet.v1"
+SHA256_RE = re.compile(r"\b[a-fA-F0-9]{64}\b")
 PLACEHOLDER_TEXTS = {
     "YYYY-MM-DD",
     "Reviewer",
@@ -130,6 +132,17 @@ def _evidence_text(item: dict[str, Any]) -> str:
         str(item.get(field) or "")
         for field in ("evidence_reference", "notes")
     ).lower()
+
+
+def _raw_evidence_text(item: dict[str, Any]) -> str:
+    return " ".join(
+        str(item.get(field) or "")
+        for field in ("evidence_reference", "notes")
+    )
+
+
+def _has_sha256_text(item: dict[str, Any]) -> bool:
+    return bool(SHA256_RE.search(_raw_evidence_text(item)))
 
 
 def _missing_action_keywords(key: Any, item: dict[str, Any]) -> list[str]:
@@ -280,6 +293,11 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 item_blockers.append(
                     "evidence_reference or notes must mention: %s"
                     % ", ".join(missing_keywords)
+                )
+            if key == "official_source_freshness_review" and not _has_sha256_text(item):
+                item_blockers.append(
+                    "evidence_reference or notes must include at least one "
+                    "64-character SHA-256 monitor result checksum"
                 )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))

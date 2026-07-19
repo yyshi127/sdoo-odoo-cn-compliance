@@ -1070,8 +1070,10 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "official_source_freshness_review": (
             "Official source freshness, source governance summary, monitoring "
             "results, latest monitor run state/completion time, result integrity "
-            "state, result checksum, changed or failed run disposition and local "
-            "jurisdiction updates reviewed."
+            "state verified, result checksum "
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef, "
+            "changed or failed run disposition and local jurisdiction updates "
+            "reviewed."
         ),
         "customer_scope_and_data_gap_review": (
             "External dataset coverage, evidence gap register, open risk list and "
@@ -1682,6 +1684,28 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "official_source_freshness_review: evidence_reference or notes must "
             "mention: governance summary, monitoring, latest monitor run, "
             "result integrity, result checksum, changed/failed disposition",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_source_monitor_sha256(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "official_source_freshness_review":
+                item["notes"] = (
+                    "Official source freshness, source governance summary, "
+                    "monitoring results, latest monitor run state/completion time, "
+                    "result integrity state verified, result checksum recorded, "
+                    "changed or failed run disposition and local jurisdiction "
+                    "updates reviewed."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "official_source_freshness_review: evidence_reference or notes must "
+            "include at least one 64-character SHA-256 monitor result checksum",
             result["blockers"],
         )
 
