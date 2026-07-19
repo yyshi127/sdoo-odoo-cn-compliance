@@ -25,6 +25,34 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertEqual(result["schema"], selector.SCHEMA)
             self.assertEqual(result["selected"]["candidate"], "m8")
             self.assertTrue(result["selected"]["ok"])
+            self.assertEqual(
+                result["selected"]["production_required_action_keys"],
+                ["business_uat_decision"],
+            )
+            self.assertEqual(
+                result["selected"]["production_signoff_blockers"],
+                ["business UAT decision must be recorded outside this automated status"],
+            )
+
+    def test_markdown_summary_points_reviewers_to_actions_and_blockers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(dist, 17, commit="abc", aggregate="hash17")
+            result = selector.select_latest(dist)
+            output = dist / "latest.md"
+
+            selector._write_markdown(result, output)
+
+            content = output.read_text(encoding="utf-8")
+            self.assertIn("Production sign-off action checklist:", content)
+            self.assertIn("cn_delivery_m17_chain_production_signoff_actions.md", content)
+            self.assertIn("## Required Action Keys", content)
+            self.assertIn("`business_uat_decision`", content)
+            self.assertIn("## Production Sign-off Blockers", content)
+            self.assertIn(
+                "business UAT decision must be recorded outside this automated status",
+                content,
+            )
 
     def test_skips_incomplete_newer_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -298,6 +326,9 @@ def _candidate(
             "compliance_scope_ready": True,
             "business_uat_ready": True,
             "production_signoff_ready": False,
+            "production_signoff_blockers": [
+                "business UAT decision must be recorded outside this automated status"
+            ],
             "production_signoff_required_actions": [{"key": "business_uat_decision"}],
         },
     }

@@ -307,6 +307,16 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     if real_data.get("ok") is not True:
         errors.append("real-data closed-loop check is not ok")
 
+    required_actions = [
+        action
+        for action in readiness.get("production_signoff_required_actions") or []
+        if isinstance(action, dict)
+    ]
+    production_blockers = [
+        str(blocker)
+        for blocker in readiness.get("production_signoff_blockers") or []
+        if blocker
+    ]
     return {
         "candidate": f"m{paths.number}",
         "ok": not errors,
@@ -319,9 +329,11 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         "file_count": manifest.get("file_count"),
         "business_uat_ready": readiness.get("business_uat_ready"),
         "production_signoff_ready": readiness.get("production_signoff_ready"),
-        "production_required_action_count": len(
-            readiness.get("production_signoff_required_actions") or []
-        ),
+        "production_required_action_count": len(required_actions),
+        "production_required_action_keys": [
+            str(action.get("key")) for action in required_actions if action.get("key")
+        ],
+        "production_signoff_blockers": production_blockers,
         "paths": {
             field: getattr(paths, field).as_posix()
             for field in paths.__dataclass_fields__
@@ -384,6 +396,22 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 f"- Business UAT ready: `{selected.get('business_uat_ready')}`",
                 f"- Production sign-off ready: `{selected.get('production_signoff_ready')}`",
                 f"- Required human actions: `{selected.get('production_required_action_count')}`",
+                f"- Production sign-off action checklist: `{selected.get('paths', {}).get('production_signoff_actions_markdown')}`",
+                f"- Sign-off packet: `{selected.get('paths', {}).get('signoff_packet')}`",
+                "",
+                "## Required Action Keys",
+                "",
+                *[
+                    f"- `{key}`"
+                    for key in selected.get("production_required_action_keys") or []
+                ],
+                "",
+                "## Production Sign-off Blockers",
+                "",
+                *[
+                    f"- {blocker}"
+                    for blocker in selected.get("production_signoff_blockers") or []
+                ],
                 "",
                 "Use this exact candidate number for the production sign-off runbook.",
             ]

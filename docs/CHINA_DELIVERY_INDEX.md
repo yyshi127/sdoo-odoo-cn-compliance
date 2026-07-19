@@ -151,6 +151,10 @@ regenerated Markdown checklist as the practical owner/action/evidence tracker
 for the seven remaining human gates. It does not change the automated status by
 itself; production sign-off still requires completed real evidence and a passed
 `tools/validate_cn_signoff_evidence.py` result.
+The matching `dist/cn_delivery_mNNN_chain_latest_signoff_candidate.md` is the
+reviewer entry summary: it points to the selected action checklist and sign-off
+packet, then lists the required action keys and production blockers for the
+candidate.
 
 Build the ordered sign-off evidence chain from the current delivery evidence:
 
