@@ -136,6 +136,31 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_rejects_reviewer_action_checklist_without_signoff_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                14,
+                commit="abc",
+                aggregate="hash14",
+                action_markdown=(
+                    "# checklist\n\n"
+                    "### business_uat_decision\n\n"
+                    "- Reviewer:\n"
+                    "- Decision:\n"
+                ),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist markdown incomplete sections: "
+                "business_uat_decision missing - Date:, - Evidence reference:, - Notes:",
+                result["checked_candidates"][0]["errors"],
+            )
+
 
 def _candidate(
     dist: Path,
@@ -147,7 +172,15 @@ def _candidate(
     omit: str | None = None,
     omit_summary_manifest: bool = False,
     action_binding_ok: bool = True,
-    action_markdown: str = "# checklist\n\n### business_uat_decision\n",
+    action_markdown: str = (
+        "# checklist\n\n"
+        "### business_uat_decision\n\n"
+        "- Reviewer:\n"
+        "- Decision:\n"
+        "- Date:\n"
+        "- Evidence reference:\n"
+        "- Notes:\n"
+    ),
 ) -> None:
     paths = selector._candidate_paths(dist, number)
     tag = f"m{number}"

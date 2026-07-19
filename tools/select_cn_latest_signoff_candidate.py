@@ -14,6 +14,13 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DIST = REPOSITORY_ROOT / "dist"
 SCHEMA = "sdoo.cn.latest-signoff-candidate.v1"
 STATUS_PATTERN = re.compile(r"^cn_delivery_m(?P<number>\d+)_chain_status\.json$")
+REVIEWER_ACTION_MARKDOWN_FIELDS = (
+    "- Reviewer:",
+    "- Decision:",
+    "- Date:",
+    "- Evidence reference:",
+    "- Notes:",
+)
 
 
 @dataclass(frozen=True)
@@ -91,6 +98,17 @@ def _source_commit(payload: dict[str, Any]) -> str | None:
             return commit
     commit = payload.get("git_commit") or payload.get("source_commit")
     return commit if isinstance(commit, str) else None
+
+
+def _markdown_action_section(markdown: str, key: str) -> str:
+    marker = f"### {key}"
+    start = markdown.find(marker)
+    if start < 0:
+        return ""
+    next_start = markdown.find("\n### ", start + len(marker))
+    if next_start < 0:
+        return markdown[start:]
+    return markdown[start:next_start]
 
 
 def _manifest_summary(payload: dict[str, Any]) -> dict[str, Any]:
@@ -211,6 +229,26 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         errors.append(
             "reviewer action checklist markdown missing action keys: "
             + ", ".join(markdown_missing_keys)
+        )
+    markdown_incomplete_sections = []
+    for action in actions.get("actions") or []:
+        if not isinstance(action, dict) or not action.get("key"):
+            continue
+        key = str(action["key"])
+        section = _markdown_action_section(actions_markdown, key)
+        if not section:
+            continue
+        missing_fields = [
+            field for field in REVIEWER_ACTION_MARKDOWN_FIELDS if field not in section
+        ]
+        if missing_fields:
+            markdown_incomplete_sections.append(
+                "%s missing %s" % (key, ", ".join(missing_fields))
+            )
+    if markdown_incomplete_sections:
+        errors.append(
+            "reviewer action checklist markdown incomplete sections: "
+            + "; ".join(markdown_incomplete_sections)
         )
     action_binding = actions.get("packet_binding")
     if not isinstance(action_binding, dict):

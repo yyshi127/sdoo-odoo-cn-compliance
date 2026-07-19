@@ -122,7 +122,8 @@ reviewer-facing action checklist Markdown and objective audit files exist. It
 then verifies that the machine-readable evidence agrees on the release version,
 source commit, manifest aggregate hash and packet-binding checks, and that the
 reviewer-facing Markdown checklist contains every required action key exported
-by the JSON checklist. Use the selected candidate number in
+by the JSON checklist, with reviewer, decision, date, evidence reference and
+notes fields in each action section. Use the selected candidate number in
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`. The strict flag is
 recommended for production sign-off because it fails when a newer status file
 exists but its evidence set is incomplete, instead of silently falling back to
