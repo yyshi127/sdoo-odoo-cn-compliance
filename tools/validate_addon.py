@@ -32,6 +32,21 @@ SECRET_PATTERNS = {
         r"(?i)\b(?:api[_-]?key|password|secret|token)\s*=\s*[^\s]"
     ),
 }
+MOJIBAKE_PATTERNS = {
+    # Typical UTF-8 Chinese punctuation/text decoded as Latin-1 or Windows-1252.
+    "latin-1 utf8 c3": "\u00c3",
+    "latin-1 utf8 c2": "\u00c2",
+    "windows-1252 quote/dash": "\u00e2\u20ac",
+    "mojibake chinese prefix e4-b8": "\u00e4\u00b8",
+    "mojibake chinese prefix e5-203a": "\u00e5\u203a",
+    "mojibake chinese prefix e5-160": "\u00e5\u0160",
+    "mojibake chinese prefix e6-153": "\u00e6\u0153",
+    "mojibake chinese prefix e7-a8": "\u00e7\u00a8",
+    "mojibake chinese prefix e8-a7": "\u00e8\u00a7",
+    "mojibake chinese prefix e9-a3": "\u00e9\u00a3",
+    "mojibake chinese punctuation e3-20ac": "\u00e3\u20ac",
+    "mojibake chinese punctuation ef-bc": "\u00ef\u00bc",
+}
 OFFICIAL_SOURCE_HOSTS = {
     "fgk.chinatax.gov.cn",
     "kjs.mof.gov.cn",
@@ -438,6 +453,10 @@ def validate_text_and_syntax() -> None:
         if private_use_chars:
             codepoints = ", ".join(f"U+{ord(char):04X}" for char in private_use_chars)
             fail(f"private-use mojibake-like character found in {path}: {codepoints}")
+        for label, marker in MOJIBAKE_PATTERNS.items():
+            if marker in content:
+                escaped = marker.encode("unicode_escape").decode("ascii")
+                fail(f"possible {label} text mojibake found in {path}: {escaped}")
         for label, pattern in SECRET_PATTERNS.items():
             if pattern.search(content):
                 fail(f"possible {label} found in {path}")
