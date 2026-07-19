@@ -5273,6 +5273,12 @@ def validate_delivery_objective_coverage() -> None:
         "has_reviewer_view_contract_evidence",
         "reviewer_view_contracts",
         "view_field_contract",
+        "has_ux_view_clarity_contract_evidence",
+        "ux_view_clarity_contracts",
+        "has_menu_action_contract_evidence",
+        "menu_action_contracts",
+        "has_workbench_action_contract_evidence",
+        "workbench_action_contracts",
         "has_multi_company_security_contract_evidence",
         "multi_company_security_contracts",
         "company_rule_contract",
@@ -5320,6 +5326,20 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in real_data_content:
             fail(f"China real-data closed-loop checker is missing {required}")
+    closed_loop_start = real_data_content.find(
+        'readiness["closed_loop_evidence_ready"]'
+    )
+    closed_loop_end = real_data_content.find("payload = {{", closed_loop_start)
+    closed_loop_content = real_data_content[closed_loop_start:closed_loop_end]
+    for required in (
+        "has_reviewer_view_contract_evidence",
+        "has_ux_view_clarity_contract_evidence",
+        "has_menu_action_contract_evidence",
+        "has_workbench_action_contract_evidence",
+        "has_multi_company_security_contract_evidence",
+    ):
+        if required not in closed_loop_content:
+            fail(f"China closed-loop evidence gate is missing {required}")
 
     demo_profile_path = REPOSITORY_ROOT / "tools" / "prepare_cn_demo_profile.py"
     if not demo_profile_path.is_file():

@@ -1529,6 +1529,11 @@ readiness["closed_loop_evidence_ready"] = all(
         "has_evidence_filing_payment_summary_evidence",
         "has_controlled_ai_guidance_evidence",
         "has_rule_source_governance_evidence",
+        "has_reviewer_view_contract_evidence",
+        "has_ux_view_clarity_contract_evidence",
+        "has_menu_action_contract_evidence",
+        "has_workbench_action_contract_evidence",
+        "has_multi_company_security_contract_evidence",
     )
 )
 
