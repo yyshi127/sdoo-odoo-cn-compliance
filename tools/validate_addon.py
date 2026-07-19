@@ -3693,6 +3693,136 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     view_content = (
         ADDON_ROOT / "views" / "workbench_views.xml"
     ).read_text(encoding="utf-8")
+    workbench_view_root = ElementTree.parse(
+        ADDON_ROOT / "views" / "workbench_views.xml"
+    ).getroot()
+
+    def workbench_view_field_names(record_id: str) -> set[str]:
+        arch = workbench_view_root.find(
+            f".//record[@id='{record_id}']/field[@name='arch']"
+        )
+        if arch is None:
+            fail(f"China workbench UX view contract is missing record {record_id}")
+        return {
+            element.attrib["name"]
+            for element in arch.iter("field")
+            if element.attrib.get("name")
+        }
+
+    workbench_list_fields = workbench_view_field_names(
+        "view_cn_compliance_workbench_list"
+    )
+    required_workbench_list_fields = {
+        "company_id",
+        "name",
+        "cn_workbench_status",
+        "cn_workbench_period_label",
+        "cn_workbench_closed_loop_state",
+        "cn_workbench_closed_loop_gap_count",
+        "cn_workbench_closed_loop_summary",
+        "cn_workbench_conclusion_boundary_state",
+        "cn_workbench_conclusion_boundary_summary",
+        "cn_workbench_next_best_action_label",
+        "cn_workbench_action_summary",
+        "cn_workbench_rule_basis_state",
+        "cn_workbench_rule_basis_summary",
+        "cn_workbench_rule_governance_issue_count",
+        "cn_workbench_rule_pending_professional_count",
+        "cn_workbench_source_review_overdue_count",
+        "cn_workbench_source_monitor_issue_count",
+        "cn_workbench_limitation_summary",
+        "cn_workbench_uncertainty_summary",
+        "cn_workbench_limitation_next_action",
+        "cn_workbench_data_state",
+        "cn_workbench_ready_dataset_count",
+        "cn_workbench_dataset_count",
+        "cn_workbench_high_risk_count",
+        "cn_workbench_open_task_count",
+        "cn_workbench_overdue_task_count",
+        "cn_workbench_pending_review_count",
+        "cn_workbench_ai_guidance_state",
+        "cn_workbench_pending_tax_impact_count",
+        "cn_workbench_underpayment_amount",
+        "cn_workbench_reconciliation_issue_count",
+        "cn_workbench_next_action",
+    }
+    missing_workbench_list_fields = (
+        required_workbench_list_fields - workbench_list_fields
+    )
+    if missing_workbench_list_fields:
+        fail(
+            "China workbench list must expose scope, readiness, rule basis, "
+            "limitations, data, risk, remediation, tax impact and next action "
+            f"fields: {sorted(missing_workbench_list_fields)}"
+        )
+
+    workbench_kanban_fields = workbench_view_field_names(
+        "view_cn_compliance_workbench_kanban"
+    )
+    required_workbench_kanban_fields = required_workbench_list_fields | {
+        "cn_workbench_package_label",
+        "cn_workbench_scope_label",
+        "cn_workbench_finding_count",
+        "cn_workbench_tax_impact_case_count",
+        "cn_workbench_data_next_action",
+        "cn_workbench_posted_move_count",
+        "cn_workbench_draft_move_count",
+        "cn_workbench_posted_invoice_count",
+        "cn_workbench_scan_state",
+        "cn_workbench_risk_state",
+        "cn_workbench_remediation_state",
+        "cn_workbench_rescan_state",
+        "cn_workbench_pending_rescan_count",
+        "cn_workbench_failed_rescan_count",
+        "cn_workbench_verified_remediation_count",
+        "cn_workbench_rescan_next_action",
+        "cn_workbench_report_state",
+        "cn_workbench_evidence_state",
+        "cn_workbench_evidence_count",
+        "cn_workbench_verified_evidence_count",
+        "cn_workbench_filing_archive_state",
+        "cn_workbench_filing_archive_next_action",
+        "cn_workbench_filing_archive_count",
+        "cn_workbench_sealed_filing_archive_count",
+        "cn_workbench_filing_archive_issue_count",
+        "cn_workbench_ai_guidance_next_action",
+        "cn_workbench_ai_guidance_finding_count",
+        "cn_workbench_ai_guidance_generated_count",
+        "cn_workbench_ai_guidance_current_count",
+        "cn_workbench_ai_guidance_limited_count",
+        "cn_workbench_ai_guidance_stale_count",
+        "cn_workbench_vat_domain_state",
+        "cn_workbench_cit_domain_state",
+        "cn_workbench_iit_domain_state",
+        "cn_workbench_vat_next_action",
+        "cn_workbench_cit_next_action",
+        "cn_workbench_iit_next_action",
+        "cn_workbench_obligation_state",
+        "cn_workbench_obligation_next_action",
+        "cn_workbench_obligation_count",
+        "cn_workbench_applicable_obligation_count",
+        "cn_workbench_pending_obligation_count",
+        "cn_workbench_filing_obligation_count",
+        "cn_workbench_cross_border_state",
+        "cn_workbench_cross_border_basis",
+        "cn_workbench_cross_border_next_action",
+        "cn_workbench_cross_border_transaction_count",
+        "cn_workbench_cross_border_pending_count",
+        "cn_workbench_conclusion_boundary_next_action",
+        "cn_workbench_rule_basis_next_action",
+        "cn_workbench_rule_version_count",
+        "cn_workbench_active_rule_version_count",
+    }
+    missing_workbench_kanban_fields = (
+        required_workbench_kanban_fields - workbench_kanban_fields
+    )
+    if missing_workbench_kanban_fields:
+        fail(
+            "China workbench kanban must expose the complete compliance "
+            "closed loop, data/accounting basis, rule governance, tax domains, "
+            "risk, remediation, rescan, AI guidance, evidence, filing archive "
+            f"and next action fields: {sorted(missing_workbench_kanban_fields)}"
+        )
     for required in (
         'id="action_cn_compliance_workbench"',
         'id="menu_cn_compliance_workbench"',
