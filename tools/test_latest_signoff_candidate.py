@@ -36,6 +36,14 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertEqual(
                 set(result["selected"]["evidence_sha256"]),
                 {
+                    "bundle",
+                    "bundle_metadata",
+                    "manifest",
+                    "remote_acceptance",
+                    "remote_upgrade_acceptance",
+                    "preview_health",
+                    "preview_module",
+                    "real_data_closed_loop",
                     "status",
                     "signoff_packet",
                     "production_signoff_actions",
@@ -63,6 +71,8 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertIn("Production sign-off action checklist:", content)
             self.assertIn("cn_delivery_m17_chain_production_signoff_actions.md", content)
             self.assertIn("## Evidence SHA-256", content)
+            self.assertIn("`remote_acceptance`", content)
+            self.assertIn("`remote_upgrade_acceptance`", content)
             self.assertIn("`production_signoff_actions_markdown`", content)
             self.assertIn("## Required Action Keys", content)
             self.assertIn("`business_uat_decision`", content)

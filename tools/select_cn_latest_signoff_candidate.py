@@ -329,6 +329,14 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     evidence_sha256 = {
         field: _sha256(getattr(paths, field))
         for field in (
+            "bundle",
+            "bundle_metadata",
+            "manifest",
+            "remote_acceptance",
+            "remote_upgrade_acceptance",
+            "preview_health",
+            "preview_module",
+            "real_data_closed_loop",
             "status",
             "signoff_packet",
             "production_signoff_actions",

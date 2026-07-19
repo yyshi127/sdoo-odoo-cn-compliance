@@ -154,10 +154,11 @@ itself; production sign-off still requires completed real evidence and a passed
 The matching `dist/cn_delivery_mNNN_chain_latest_signoff_candidate.md` is the
 reviewer entry summary: it points to the selected action checklist and sign-off
 packet, then lists the required action keys and production blockers for the
-candidate. It also includes SHA-256 fingerprints for the selected chain status,
-sign-off packet, production sign-off action checklist and objective audit so
-reviewers can confirm the files have not been swapped after candidate
-selection.
+candidate. It also includes SHA-256 fingerprints for the selected bundle,
+manifest, remote install and upgrade acceptance summaries, preview checks,
+real-data closed-loop check, chain status, sign-off packet, production sign-off
+action checklist and objective audit so reviewers can confirm the files have
+not been swapped after candidate selection.
 
 Build the ordered sign-off evidence chain from the current delivery evidence:
 
