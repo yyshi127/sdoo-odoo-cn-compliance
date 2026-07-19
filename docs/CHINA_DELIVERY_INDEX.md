@@ -28,8 +28,8 @@ This is the starting point for release handoff and acceptance of the
 8. `docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md`
    - Summarizes the final blocker-summary visibility pass across data,
      evidence, filing, remediation, report and report-readiness pages.
-9. `docs/CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md`
-   - Converts the latest verified m215 automated evidence into the exact human
+9. `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`
+   - Converts the latest verified automated evidence into the exact human
      production sign-off workflow and validation commands.
 
 ## Command Index

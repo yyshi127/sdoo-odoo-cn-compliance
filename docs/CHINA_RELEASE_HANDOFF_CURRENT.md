@@ -9,10 +9,10 @@ bundle is rebuilt.
 
 Delivery version: `19.0.1.130.0`
 
-Latest verified candidate at this handoff: `m215`
+Latest verified candidate at this handoff: `m217`
 
-For the m215 production sign-off workflow, use
-`docs/CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
+For the current production sign-off workflow, use
+`docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
 `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`.
 
 Use the latest numbered files in `dist/` for the active release candidate:

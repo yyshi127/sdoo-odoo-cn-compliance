@@ -463,7 +463,7 @@ def manifest_payload() -> dict:
         "docs/CHINA_BUSINESS_UAT_CHECKLIST.md",
         "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
         "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
-        "docs/CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md",
+        "docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md",
         "docs/CHINA_DELIVERY_INDEX.md",
         "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",

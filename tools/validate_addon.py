@@ -4676,7 +4676,7 @@ def validate_delivery_objective_coverage() -> None:
         "tools/build_cn_signoff_evidence_chain.py",
         "tools/render_cn_signoff_evidence_template.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
-        "docs/CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md",
+        "docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md",
     ):
         if required not in delivery_index_content:
             fail(f"China delivery index is missing {required}")
@@ -4688,7 +4688,7 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "# China Fiscal Compliance Pack Release Handoff",
         "Delivery version: `19.0.1.130.0`",
-        "Latest verified candidate at this handoff: `m215`",
+        "Latest verified candidate at this handoff: `m217`",
         "dist/sdoo-cn-compliance-delivery-m*.tgz",
         "codex_cn_m31_runtime_mNNN",
         "business_uat_ready=true",
@@ -4698,7 +4698,7 @@ def validate_delivery_objective_coverage() -> None:
         "China tax professional",
         "audit_cn_objective_completion.py",
         "build_cn_signoff_evidence_chain.py",
-        "CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md",
+        "CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md",
         "cn_objective_completion_audit_mNNN.json",
         "render_cn_signoff_evidence_template.py",
         "cn_signoff_evidence_draft_mNNN.json",
@@ -4726,13 +4726,14 @@ def validate_delivery_objective_coverage() -> None:
         if required not in blocker_visibility_content:
             fail(f"China blocker visibility milestone is missing {required}")
 
-    m215_runbook_path = REPOSITORY_ROOT / "docs" / "CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md"
-    if not m215_runbook_path.is_file():
-        fail("China m215 production sign-off runbook must be documented")
-    m215_runbook_content = m215_runbook_path.read_text(encoding="utf-8")
+    current_runbook_path = REPOSITORY_ROOT / "docs" / "CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md"
+    if not current_runbook_path.is_file():
+        fail("China current production sign-off runbook must be documented")
+    current_runbook_content = current_runbook_path.read_text(encoding="utf-8")
     for required in (
-        "# China Fiscal Compliance Pack m215 Production Sign-off Runbook",
-        "990f4374f048a4940999c55f118603fb240a7734",
+        "# China Fiscal Compliance Pack Current Production Sign-off Runbook",
+        "Current verified candidate at this handoff: `m217`",
+        "4beae7c0eb4fa2a6ddae748ff5f42ab51675f69c",
         "business UAT ready: `true`",
         "production sign-off ready: `false`",
         "`business_uat_decision`",
@@ -4742,8 +4743,8 @@ def validate_delivery_objective_coverage() -> None:
         "--require-production-signoff-ready",
         "not a tax opinion",
     ):
-        if required not in m215_runbook_content:
-            fail(f"China m215 sign-off runbook is missing {required}")
+        if required not in current_runbook_content:
+            fail(f"China current sign-off runbook is missing {required}")
 
     uat_path = REPOSITORY_ROOT / "docs" / "CHINA_BUSINESS_UAT_CHECKLIST.md"
     if not uat_path.is_file():
