@@ -2802,6 +2802,17 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "source_commit": commit,
             "production_signoff_ready": False,
             "action_count": 1,
+            "actions": [
+                {
+                    "key": "business_uat_decision",
+                    "owner": "business_reviewer",
+                    "acceptable_decisions": [
+                        "accepted",
+                        "accepted_with_limitations",
+                    ],
+                    "required_evidence": "Completed checklist.",
+                }
+            ],
             "packet_binding": {
                 "provided": True,
                 "schema_ok": True,
@@ -2830,7 +2841,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 b"# checklist\n\n"
                 b"### business_uat_decision\n\n"
                 b"- Owner: `business_reviewer`\n"
-                b"- Acceptable decisions: `accepted`\n"
+                b"- Acceptable decisions: `accepted, accepted_with_limitations`\n"
                 b"- Required evidence: Completed checklist.\n"
                 b"- Reviewer:\n"
                 b"- Decision:\n"

@@ -24,6 +24,11 @@ REVIEWER_ACTION_MARKDOWN_FIELDS = (
     "- Evidence reference:",
     "- Notes:",
 )
+ACTION_MARKDOWN_VALUE_FIELDS = (
+    ("owner", "- Owner: `%s`"),
+    ("acceptable_decisions", "- Acceptable decisions: `%s`"),
+    ("required_evidence", "- Required evidence: %s"),
+)
 
 
 @dataclass(frozen=True)
@@ -252,6 +257,33 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         errors.append(
             "reviewer action checklist markdown incomplete sections: "
             + "; ".join(markdown_incomplete_sections)
+        )
+    markdown_mismatched_sections = []
+    for action in actions.get("actions") or []:
+        if not isinstance(action, dict) or not action.get("key"):
+            continue
+        key = str(action["key"])
+        section = _markdown_action_section(actions_markdown, key)
+        if not section:
+            continue
+        missing_values = []
+        for field, template in ACTION_MARKDOWN_VALUE_FIELDS:
+            value = action.get(field)
+            if field == "acceptable_decisions":
+                value = ", ".join(value or [])
+            else:
+                value = value or ""
+            expected_line = template % value
+            if expected_line not in section:
+                missing_values.append(field)
+        if missing_values:
+            markdown_mismatched_sections.append(
+                "%s mismatch %s" % (key, ", ".join(missing_values))
+            )
+    if markdown_mismatched_sections:
+        errors.append(
+            "reviewer action checklist markdown does not match JSON actions: "
+            + "; ".join(markdown_mismatched_sections)
         )
     action_binding = actions.get("packet_binding")
     if not isinstance(action_binding, dict):

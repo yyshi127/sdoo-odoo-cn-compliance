@@ -148,7 +148,7 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                     "# checklist\n\n"
                     "### business_uat_decision\n\n"
                     "- Owner: `business_reviewer`\n"
-                    "- Acceptable decisions: `accepted`\n"
+                    "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
                     "- Required evidence: Completed checklist.\n"
                     "- Reviewer:\n"
                     "- Decision:\n"
@@ -161,6 +161,37 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertIn(
                 "reviewer action checklist markdown incomplete sections: "
                 "business_uat_decision missing - Date:, - Evidence reference:, - Notes:",
+                result["checked_candidates"][0]["errors"],
+            )
+
+    def test_rejects_reviewer_action_checklist_when_values_do_not_match_json(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                16,
+                commit="abc",
+                aggregate="hash16",
+                action_markdown=(
+                    "# checklist\n\n"
+                    "### business_uat_decision\n\n"
+                    "- Owner: `wrong_owner`\n"
+                    "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
+                    "- Required evidence: Completed checklist.\n"
+                    "- Reviewer:\n"
+                    "- Decision:\n"
+                    "- Date:\n"
+                    "- Evidence reference:\n"
+                    "- Notes:\n"
+                ),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist markdown does not match JSON actions: "
+                "business_uat_decision mismatch owner",
                 result["checked_candidates"][0]["errors"],
             )
 
@@ -207,7 +238,7 @@ def _candidate(
         "# checklist\n\n"
         "### business_uat_decision\n\n"
         "- Owner: `business_reviewer`\n"
-        "- Acceptable decisions: `accepted`\n"
+        "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
         "- Required evidence: Completed checklist.\n"
         "- Reviewer:\n"
         "- Decision:\n"
@@ -282,7 +313,17 @@ def _candidate(
         "preview_url": None,
         "production_signoff_ready": False,
         "action_count": 1,
-        "actions": [{"key": "business_uat_decision"}],
+        "actions": [
+            {
+                "key": "business_uat_decision",
+                "owner": "business_reviewer",
+                "acceptable_decisions": [
+                    "accepted",
+                    "accepted_with_limitations",
+                ],
+                "required_evidence": "Completed checklist.",
+            }
+        ],
         "packet_binding": {
             "provided": True,
             "schema_ok": True,
