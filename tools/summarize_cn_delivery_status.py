@@ -835,6 +835,7 @@ def _status(
             "version": signoff_validation.get("version"),
             "source_commit": signoff_validation.get("source_commit"),
             "preview_url": signoff_validation.get("preview_url"),
+            "preview_database": signoff_validation.get("preview_database"),
             "ok": signoff_validation.get("ok") is True,
             "production_signoff_ready": signoff_validation.get("production_signoff_ready") is True,
             "deployment_decision": signoff_validation.get("deployment_decision"),
@@ -851,6 +852,16 @@ def _status(
                 "production_blocker_coverage_binding"
             ),
         }
+    preview_database = (
+        preview_module_summary.get("database")
+        if isinstance(preview_module_summary, dict)
+        else None
+    )
+    real_data_database = (
+        real_data_closed_loop_summary.get("database")
+        if isinstance(real_data_closed_loop_summary, dict)
+        else None
+    )
     business_uat_blockers: list[str] = []
     if len(versions) > 1:
         business_uat_blockers.append("bundle, manifest and summary versions differ")
@@ -910,6 +921,8 @@ def _status(
             business_uat_blockers.append("preview module expected version does not match delivery version")
         if preview_module_summary["ok"] is not True:
             business_uat_blockers.append("preview module check did not pass")
+        if not preview_database:
+            business_uat_blockers.append("preview module database was not recorded")
     if not real_data_closed_loop_summary:
         business_uat_blockers.append("real-data closed-loop result was not provided")
     else:
@@ -922,6 +935,10 @@ def _status(
         readiness = real_data_closed_loop_summary.get("readiness") or {}
         if not isinstance(readiness, dict) or readiness.get("demo_ready") is not True:
             business_uat_blockers.append("real-data demo readiness check did not pass")
+        if preview_database and real_data_database and preview_database != real_data_database:
+            business_uat_blockers.append(
+                "preview module database does not match real-data closed-loop database"
+            )
     preview_readiness_blockers = [
         blocker
         for blocker in business_uat_blockers
@@ -956,6 +973,10 @@ def _status(
             signoff_binding_blockers.append(
                 "sign-off validation preview URL does not match delivery preview URL"
             )
+        if signoff_validation_summary.get("preview_database") != preview_database:
+            signoff_binding_blockers.append(
+                "sign-off validation preview database does not match delivery preview database"
+            )
         if signoff_binding_blockers:
             production_signoff_blockers.extend(signoff_binding_blockers)
         elif signoff_validation_summary["production_signoff_ready"] is not True:
@@ -982,6 +1003,7 @@ def _status(
         "upgrade_runtime_passed": upgrade_runtime_passed,
         "version": version,
         "preview_url": preview_url,
+        "preview_database": preview_database,
         "source_control": source_control,
         "business_uat": business_uat,
         "uat_walkthrough": uat_walkthrough,
@@ -1103,6 +1125,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Runtime passed: `{status['runtime_passed']}`",
         f"- Upgrade runtime passed: `{status.get('upgrade_runtime_passed', False)}`",
         f"- Preview URL: `{status.get('preview_url') or ''}`",
+        f"- Preview database: `{status.get('preview_database') or ''}`",
         f"- Source branch: `{source_control.get('branch', '')}`",
         f"- Source commit: `{source_control.get('commit', '')}`",
         f"- Source worktree dirty: `{source_control.get('dirty', '')}`",

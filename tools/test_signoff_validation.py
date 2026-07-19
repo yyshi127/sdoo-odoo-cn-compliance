@@ -63,6 +63,7 @@ def status_payload() -> dict:
         "runtime_passed": True,
         "upgrade_runtime_passed": True,
         "preview_url": "http://127.0.0.1:18070/web/login?db=test",
+        "preview_database": "test",
         "source_control": {
             "inside_worktree": True,
             "branch": "main",
@@ -86,7 +87,11 @@ def status_payload() -> dict:
             "log": {"failed": 0, "errors": 0},
         },
         "preview_health": {"ok": True, "url": "http://127.0.0.1:18070/web/login?db=test"},
-        "preview_module": {"ok": True, "module_installed_version": "19.0.1.130.0"},
+        "preview_module": {
+            "ok": True,
+            "database": "test",
+            "module_installed_version": "19.0.1.130.0",
+        },
         "upgrade_migration_chain": {
             "ready": True,
             "module_manifest": "addons/sudo_country_pack_cn/__manifest__.py",
@@ -131,6 +136,7 @@ def status_payload() -> dict:
             "version": "19.0.1.130.0",
             "source_commit": "abc123",
             "preview_url": "http://127.0.0.1:18070/web/login?db=test",
+            "preview_database": "test",
             "achieved": False,
             "state_counts": {"evidence_ready": 12, "blocked": 1, "not_ready": 0},
             "completion_blockers": [
@@ -998,6 +1004,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "version": packet["version"],
         "source_commit": packet["source_commit"],
         "preview_url": packet["preview_url"],
+        "preview_database": packet["preview_database"],
         "production_blocker_coverage": packet["production_blocker_coverage"],
         "decisions": decisions,
         "limitations": [],
@@ -1114,6 +1121,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(draft["version"], packet["version"])
         self.assertEqual(draft["source_commit"], packet["source_commit"])
         self.assertEqual(draft["preview_url"], packet["preview_url"])
+        self.assertEqual(draft["preview_database"], packet["preview_database"])
         self.assertEqual(
             [item["key"] for item in draft["decisions"]],
             [item["key"] for item in packet["production_actions"]],
@@ -1183,6 +1191,19 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["production_signoff_ready"])
         self.assertIn(
             "sign-off evidence preview URL does not match the packet",
+            result["blockers"],
+        )
+
+    def test_preview_database_mismatch_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["preview_database"] = "other"
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "sign-off evidence preview database does not match the packet",
             result["blockers"],
         )
 
@@ -3396,6 +3417,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(readiness["production_signoff_ready"])
         self.assertIn(
             "sign-off validation preview URL does not match delivery preview URL",
+            readiness["production_signoff_blockers"],
+        )
+
+    def test_delivery_status_rejects_mismatched_signoff_validation_preview_database(self):
+        packet = PACKET._build_packet(status_payload())
+        validation = VALIDATION._validate(packet, complete_evidence(packet))
+        validation["preview_database"] = "other"
+
+        status = delivery_status(validation)
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "sign-off validation preview database does not match delivery preview database",
             readiness["production_signoff_blockers"],
         )
 

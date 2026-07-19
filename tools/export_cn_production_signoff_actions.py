@@ -54,6 +54,7 @@ def _packet_binding(
             "version_matches_status": False,
             "source_commit_matches_status": False,
             "preview_url_matches_status": False,
+            "preview_database_matches_status": False,
             "action_keys_match": False,
             "missing_packet_action_keys": [],
             "extra_packet_action_keys": [],
@@ -72,6 +73,8 @@ def _packet_binding(
         "source_commit_matches_status": packet.get("source_commit") == status_commit,
         "preview_url_matches_status": packet.get("preview_url")
         == status.get("preview_url"),
+        "preview_database_matches_status": packet.get("preview_database")
+        == status.get("preview_database"),
         "action_keys_match": action_keys == packet_keys,
         "missing_packet_action_keys": sorted(action_keys - packet_keys),
         "extra_packet_action_keys": sorted(packet_keys - action_keys),
@@ -103,6 +106,7 @@ def export_actions(
         "source_branch": source_control.get("branch"),
         "source_control_clean": readiness.get("source_control_clean") is True,
         "preview_url": status.get("preview_url"),
+        "preview_database": status.get("preview_database"),
         "business_uat_ready": readiness.get("business_uat_ready") is True,
         "production_signoff_ready": readiness.get("production_signoff_ready") is True,
         "production_signoff_blockers": readiness.get("production_signoff_blockers")
@@ -126,6 +130,7 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"- Source commit: `{payload.get('source_commit') or ''}`",
         f"- Source control clean: `{payload.get('source_control_clean')}`",
         f"- Preview URL: `{payload.get('preview_url') or ''}`",
+        f"- Preview database: `{payload.get('preview_database') or ''}`",
         f"- Business UAT ready: `{payload.get('business_uat_ready')}`",
         f"- Production sign-off ready: `{payload.get('production_signoff_ready')}`",
         f"- Action count: `{payload.get('action_count')}`",
