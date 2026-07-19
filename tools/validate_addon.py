@@ -5110,6 +5110,8 @@ def validate_delivery_objective_coverage() -> None:
         "signoff_validation_tool",
         "SIGNOFF_CHAIN_TOOL_PATH",
         "signoff_chain_tool",
+        "SIGNOFF_CANDIDATE_SELECTOR_TOOL_PATH",
+        "signoff_candidate_selector_tool",
         "SIGNOFF_EVIDENCE_TEMPLATE_PATH",
         "signoff_evidence_template",
         "included_in_manifest",

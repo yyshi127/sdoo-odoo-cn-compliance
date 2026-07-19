@@ -479,6 +479,7 @@ def manifest_payload() -> dict:
         "tools/check_cn_real_data_closed_loop.py",
         "tools/audit_cn_objective_completion.py",
         "tools/build_cn_signoff_evidence_chain.py",
+        "tools/select_cn_latest_signoff_candidate.py",
         "tools/generate_cn_signoff_packet.py",
         "tools/render_cn_signoff_evidence_template.py",
         "tools/validate_cn_signoff_evidence.py",
@@ -3250,6 +3251,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["business_uat_blockers"],
         )
         self.assertFalse(status["signoff_chain_tool"]["included_in_manifest"])
+
+    def test_delivery_status_requires_signoff_candidate_selector_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/select_cn_latest_signoff_candidate.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off candidate selector is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["signoff_candidate_selector_tool"]["included_in_manifest"]
+        )
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):
         status = delivery_status_with_manifest(

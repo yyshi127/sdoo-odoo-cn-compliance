@@ -29,6 +29,7 @@ SIGNOFF_PACKET_TOOL_PATH = Path("tools/generate_cn_signoff_packet.py")
 SIGNOFF_EVIDENCE_RENDERER_TOOL_PATH = Path("tools/render_cn_signoff_evidence_template.py")
 SIGNOFF_VALIDATION_TOOL_PATH = Path("tools/validate_cn_signoff_evidence.py")
 SIGNOFF_CHAIN_TOOL_PATH = Path("tools/build_cn_signoff_evidence_chain.py")
+SIGNOFF_CANDIDATE_SELECTOR_TOOL_PATH = Path("tools/select_cn_latest_signoff_candidate.py")
 SIGNOFF_EVIDENCE_TEMPLATE_PATH = Path("docs/samples/cn_signoff_evidence_template.json")
 ADDON_MANIFEST_PATH = Path("addons/sudo_country_pack_cn/__manifest__.py")
 ADDON_VALIDATE_TOOL_PATH = Path("tools/validate_addon.py")
@@ -703,6 +704,12 @@ def _status(
         "path": SIGNOFF_CHAIN_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, SIGNOFF_CHAIN_TOOL_PATH),
     }
+    signoff_candidate_selector_tool = {
+        "path": SIGNOFF_CANDIDATE_SELECTOR_TOOL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(
+            manifest, SIGNOFF_CANDIDATE_SELECTOR_TOOL_PATH
+        ),
+    }
     signoff_evidence_template = {
         "path": SIGNOFF_EVIDENCE_TEMPLATE_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(
@@ -866,6 +873,7 @@ def _status(
         ("production sign-off evidence renderer", signoff_evidence_renderer_tool),
         ("production sign-off evidence validator", signoff_validation_tool),
         ("production sign-off evidence chain builder", signoff_chain_tool),
+        ("production sign-off candidate selector", signoff_candidate_selector_tool),
         ("production sign-off evidence template", signoff_evidence_template),
     ):
         if not evidence["included_in_manifest"]:
@@ -982,6 +990,7 @@ def _status(
         "signoff_evidence_renderer_tool": signoff_evidence_renderer_tool,
         "signoff_validation_tool": signoff_validation_tool,
         "signoff_chain_tool": signoff_chain_tool,
+        "signoff_candidate_selector_tool": signoff_candidate_selector_tool,
         "signoff_evidence_template": signoff_evidence_template,
         "upgrade_migration_chain": upgrade_migration_chain,
         "preview_health": preview_health_summary,
@@ -1047,6 +1056,9 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     signoff_evidence_renderer_tool = status.get("signoff_evidence_renderer_tool") or {}
     signoff_validation_tool = status.get("signoff_validation_tool") or {}
     signoff_chain_tool = status.get("signoff_chain_tool") or {}
+    signoff_candidate_selector_tool = (
+        status.get("signoff_candidate_selector_tool") or {}
+    )
     signoff_evidence_template = status.get("signoff_evidence_template") or {}
     upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
     real_data_closed_loop = status.get("real_data_closed_loop") or {}
@@ -1122,6 +1134,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Sign-off evidence validator in manifest: `{signoff_validation_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence chain builder: `{signoff_chain_tool.get('path', '')}`",
         f"- Sign-off evidence chain builder in manifest: `{signoff_chain_tool.get('included_in_manifest', False)}`",
+        f"- Sign-off candidate selector: `{signoff_candidate_selector_tool.get('path', '')}`",
+        f"- Sign-off candidate selector in manifest: `{signoff_candidate_selector_tool.get('included_in_manifest', False)}`",
         f"- Sign-off evidence template: `{signoff_evidence_template.get('path', '')}`",
         f"- Sign-off evidence template in manifest: `{signoff_evidence_template.get('included_in_manifest', False)}`",
         f"- Upgrade migration chain evidence ready: `{upgrade_migration_chain.get('ready', False)}`",
