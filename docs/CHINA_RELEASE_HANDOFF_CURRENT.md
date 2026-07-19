@@ -51,7 +51,7 @@ human sign-off evidence.
 - Preview database: `codex_cn_m31_demo_01`
 - Runtime database pattern: `codex_cn_m31_runtime_mNNN`
 - Preview URL pattern:
-  `http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01`
+  `http://127.0.0.1:18070/web/login?db=codex_cn_m31_demo_01`
 - Odoo Python: `/opt/odoo/odoo19/odoo19-venv/bin/python`
 - Odoo server: `/opt/odoo/odoo19/odoo-server/odoo-bin`
 - Odoo config: `/tmp/codex_cn_m31/odoo-dev.conf`
@@ -158,7 +158,7 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --preview-health dist/cn_preview_health_mNNN.json \
   --preview-module dist/cn_preview_module_mNNN.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
-  --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
+  --preview-url 'http://127.0.0.1:18070/web/login?db=codex_cn_m31_demo_01' \
   --output-prefix dist/cn_delivery_mNNN_chain
 ```
 
@@ -193,7 +193,7 @@ python tools/build_cn_signoff_evidence_chain.py \
   --preview-health dist/cn_preview_health_mNNN.json \
   --preview-module dist/cn_preview_module_mNNN.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
-  --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
+  --preview-url 'http://127.0.0.1:18070/web/login?db=codex_cn_m31_demo_01' \
   --completed-evidence dist/cn_signoff_evidence_completed.json \
   --output-prefix dist/cn_delivery_mNNN_signed_chain
 ```

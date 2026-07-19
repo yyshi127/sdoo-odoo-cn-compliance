@@ -150,7 +150,7 @@ python tools/build_cn_signoff_evidence_chain.py \
   --preview-health dist/cn_preview_health_mNNN.json \
   --preview-module dist/cn_preview_module_mNNN.json \
   --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
-  --preview-url http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01 \
+  --preview-url http://127.0.0.1:18070/web/login?db=codex_cn_m31_demo_01 \
   --completed-evidence dist/cn_delivery_mNNN_signoff_evidence_completed.json \
   --output-prefix dist/cn_delivery_mNNN_signed_chain \
   --require-production-signoff-ready
