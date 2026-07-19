@@ -144,9 +144,10 @@ command. It builds the initial status, bootstrap sign-off validation,
 objective completion audit, final sign-off packet and final status in the
 correct order so the final packet contains objective-audit evidence and the
 final status keeps the current production blocker action list. It also writes
-`dist/cn_delivery_mNNN_chain_latest_signoff_candidate.json` and `.md` so
-reviewers can confirm which candidate number should be used for production
-sign-off.
+`dist/cn_delivery_mNNN_chain_latest_signoff_candidate.json` and `.md` using the
+strict candidate selector, so reviewers can confirm which candidate number
+should be used for production sign-off and detect incomplete newer evidence
+sets instead of falling back to an older candidate.
 
 The lower-level commands remain available when a reviewer needs to inspect one
 step at a time:

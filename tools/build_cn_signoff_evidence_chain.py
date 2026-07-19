@@ -166,7 +166,10 @@ def _write_outputs(chain: dict[str, dict[str, Any]], prefix: Path) -> dict[str, 
         chain["objective_audit"],
         prefix.with_name(prefix.name + "_objective_audit.md"),
     )
-    latest_candidate = LATEST_CANDIDATE.select_latest(prefix.parent)
+    latest_candidate = LATEST_CANDIDATE.select_latest(
+        prefix.parent,
+        require_highest_status_complete=True,
+    )
     latest_candidate_json = prefix.with_name(prefix.name + "_latest_signoff_candidate.json")
     latest_candidate_md = prefix.with_name(prefix.name + "_latest_signoff_candidate.md")
     _write_json(latest_candidate, latest_candidate_json)

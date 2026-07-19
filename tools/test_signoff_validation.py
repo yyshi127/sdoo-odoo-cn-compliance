@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import tempfile
 import unittest
 from copy import deepcopy
@@ -2567,6 +2568,91 @@ class TestChinaSignoffValidation(unittest.TestCase):
             self.assertIn("latest_signoff_candidate_markdown", outputs)
             self.assertTrue(outputs["latest_signoff_candidate"].is_file())
             self.assertTrue(outputs["latest_signoff_candidate_markdown"].is_file())
+
+    def test_signoff_chain_latest_candidate_output_uses_strict_mode(self):
+        chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_minimal_selector_candidate(root, 1)
+            (root / "cn_delivery_m2_chain_status.json").write_text(
+                "{}",
+                encoding="utf-8",
+            )
+            current_prefix = root / "cn_delivery_m2_chain"
+            outputs = SIGNOFF_CHAIN._write_outputs(chain, current_prefix)
+            latest = json.loads(
+                outputs["latest_signoff_candidate"].read_text(encoding="utf-8")
+            )
+
+            self.assertIsNone(latest["selected"])
+            self.assertIn("refusing to select older", latest["errors"][0])
+
+    def _write_minimal_selector_candidate(self, root: Path, number: int) -> None:
+        tag = f"m{number}"
+        commit = "abc123"
+        aggregate = f"hash-{tag}"
+        source_control = {
+            "branch": "main",
+            "commit": commit,
+            "dirty": False,
+            "inside_worktree": True,
+        }
+        manifest = {
+            "version": "19.0.1.130.0",
+            "git_commit": commit,
+            "source_control": source_control,
+            "file_count": 1,
+            "aggregate_sha256": aggregate,
+        }
+        bundle = {
+            "version": "19.0.1.130.0",
+            "git_commit": commit,
+            "source_control": source_control,
+            "file_count": 1,
+            "aggregate_sha256": aggregate,
+            "bundle_sha256": "bundle",
+        }
+        acceptance = {
+            "version": "19.0.1.130.0",
+            "result": "passed",
+            "runtime": {"log": {"failed": 0, "errors": 0}},
+        }
+        status = {
+            "version": "19.0.1.130.0",
+            "source_control": source_control,
+            "readiness_gates": {
+                "preview_ready": True,
+                "compliance_scope_ready": True,
+                "business_uat_ready": True,
+                "production_signoff_ready": False,
+                "production_signoff_required_actions": [{"key": "business_uat_decision"}],
+            },
+        }
+        files = {
+            f"sdoo-cn-compliance-delivery-{tag}.tgz": b"bundle",
+            f"sdoo-cn-compliance-delivery-{tag}.bundle.json": bundle,
+            f"cn_delivery_manifest_{tag}_full.json": manifest,
+            f"cn_delivery_acceptance_{tag}_remote.json": acceptance,
+            f"cn_delivery_acceptance_{tag}_upgrade_remote.json": acceptance,
+            f"cn_preview_health_{tag}.json": {"ok": True},
+            f"cn_preview_module_{tag}.json": {"ok": True},
+            f"cn_real_data_closed_loop_{tag}.json": {"ok": True},
+            f"cn_delivery_{tag}_chain_status.json": status,
+            f"cn_delivery_{tag}_chain_signoff_packet.json": {
+                "version": "19.0.1.130.0",
+                "source_commit": commit,
+            },
+            f"cn_delivery_{tag}_chain_objective_audit.json": {
+                "version": "19.0.1.130.0",
+            },
+        }
+        for name, payload in files.items():
+            path = root / name
+            if isinstance(payload, bytes):
+                path.write_bytes(payload)
+            else:
+                path.write_text(json.dumps(payload), encoding="utf-8")
 
     def test_delivery_status_keeps_required_actions_for_incomplete_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
