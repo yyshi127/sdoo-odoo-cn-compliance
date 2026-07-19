@@ -345,7 +345,15 @@ evidence. With placeholder evidence, the final validation must remain blocked.
 After signed human evidence is available, rerun the same command with:
 
 ```bash
-  --completed-evidence dist/cn_signoff_evidence_completed.json
+  --completed-evidence dist/cn_signoff_evidence_completed.json \
+  --require-production-signoff-ready
 ```
 
+`--require-production-signoff-ready` must be used for any production release
+automation. It exits non-zero when the chain is still using placeholder
+evidence, when the human sign-off evidence does not validate, or when the final
+status still reports production blockers.
+
 Only the final chain status should be used as production-readiness evidence.
+Do not use the bootstrap status, standalone packet, standalone validation or
+draft evidence files as a production deployment decision.

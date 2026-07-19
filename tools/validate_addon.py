@@ -5042,6 +5042,12 @@ def validate_delivery_objective_coverage() -> None:
         "tools/render_cn_signoff_evidence_template.py",
         "cn_signoff_evidence_draft_mNNN.json",
         "validate_cn_signoff_evidence.py",
+        "Ordered Sign-Off Evidence Chain",
+        "tools/build_cn_signoff_evidence_chain.py",
+        "--require-production-signoff-ready",
+        "must be used for any production release",
+        "automation. It exits non-zero",
+        "Do not use the bootstrap status",
     ):
         if required not in runbook_content:
             fail(f"China delivery runbook is missing {required}")
