@@ -302,14 +302,26 @@ screens on the target screen sizes.
 
 Record:
 
-- Desktop resolution:
-- Laptop resolution:
-- Browser:
+- Browser and version:
+- Desktop viewport or resolution:
+- Smaller laptop viewport or resolution:
 - Text overlap found: yes / no
 - Buttons or badges ambiguous: yes / no
 - Important action hidden: yes / no
 - Navigation follows Odoo menu/list/form/action expectations: yes / no
-- Screenshot reference:
+
+Required screen evidence:
+
+| Page | Desktop evidence reference | Smaller laptop evidence reference | Reviewer decision |
+| --- | --- | --- | --- |
+| Compliance workbench |  |  | passed / limited / failed |
+| Risk center |  |  | passed / limited / failed |
+| Remediation tracker |  |  | passed / limited / failed |
+| Report readiness |  |  | passed / limited / failed |
+
+For each page, confirm that risk level, reason, impact amount, applicable
+period, owner, due date, status, blockers and next action remain readable
+without opening developer tools or relying on raw technical fields.
 
 Decision: passed / passed with limitations / failed
 

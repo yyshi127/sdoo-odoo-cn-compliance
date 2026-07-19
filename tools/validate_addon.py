@@ -5134,6 +5134,16 @@ def validate_delivery_objective_coverage() -> None:
         "risk level, reason, impact amount, applicable period, owner, due date, status and next action",
         "provider, prompt version, model, input checksum, output checksum and record checksum",
         "VAT, CIT, IIT and cross-border",
+        "Browser and version",
+        "Desktop viewport or resolution",
+        "Smaller laptop viewport or resolution",
+        "Required screen evidence",
+        "| Compliance workbench |",
+        "| Risk center |",
+        "| Remediation tracker |",
+        "| Report readiness |",
+        "risk level, reason, impact amount, applicable",
+        "blockers and next action remain readable",
     ):
         if required not in walkthrough_content:
             fail(f"China UAT walkthrough script is missing {required}")
