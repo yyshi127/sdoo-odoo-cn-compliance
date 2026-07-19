@@ -124,8 +124,9 @@ strict flag is recommended for production sign-off because it fails when a newer
 status file exists but its evidence set is incomplete, instead of silently
 falling back to an older candidate.
 
-Export a reviewer-facing production sign-off action checklist from the selected
-status and packet:
+The ordered sign-off evidence chain automatically writes a reviewer-facing
+production sign-off action checklist. To regenerate that checklist from an
+already selected status and packet, run:
 
 ```bash
 python tools/export_cn_production_signoff_actions.py \
@@ -137,8 +138,9 @@ python tools/export_cn_production_signoff_actions.py \
   --require-packet-binding
 ```
 
-Use the Markdown checklist as the practical owner/action/evidence tracker for
-the seven remaining human gates. It does not change the automated status by
+Use `dist/cn_delivery_mNNN_chain_production_signoff_actions.md` or the
+regenerated Markdown checklist as the practical owner/action/evidence tracker
+for the seven remaining human gates. It does not change the automated status by
 itself; production sign-off still requires completed real evidence and a passed
 `tools/validate_cn_signoff_evidence.py` result.
 

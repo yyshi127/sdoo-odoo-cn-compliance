@@ -47,6 +47,10 @@ LATEST_CANDIDATE = _load_tool(
     "cn_latest_signoff_candidate",
     REPOSITORY_ROOT / "tools" / "select_cn_latest_signoff_candidate.py",
 )
+SIGNOFF_ACTIONS = _load_tool(
+    "cn_production_signoff_actions",
+    REPOSITORY_ROOT / "tools" / "export_cn_production_signoff_actions.py",
+)
 
 
 def _load(path: Path | None) -> dict[str, Any] | None:
@@ -121,6 +125,10 @@ def build_chain(
         objective_audit=final_audit,
         signoff_validation=final_validation,
     )
+    production_signoff_actions = SIGNOFF_ACTIONS.export_actions(
+        final_status,
+        final_packet,
+    )
 
     return {
         "initial_status": initial_status,
@@ -133,6 +141,7 @@ def build_chain(
         "final_validation": final_validation,
         "objective_audit": final_audit,
         "final_status": final_status,
+        "production_signoff_actions": production_signoff_actions,
     }
 
 
@@ -150,6 +159,9 @@ def _write_outputs(chain: dict[str, dict[str, Any]], prefix: Path) -> dict[str, 
         "final_validation": prefix.with_name(prefix.name + "_signoff_validation.json"),
         "objective_audit": prefix.with_name(prefix.name + "_objective_audit.json"),
         "final_status": prefix.with_name(prefix.name + "_status.json"),
+        "production_signoff_actions": prefix.with_name(
+            prefix.name + "_production_signoff_actions.json"
+        ),
     }
     for key, path in outputs.items():
         _write_json(chain[key], path)
@@ -166,6 +178,10 @@ def _write_outputs(chain: dict[str, dict[str, Any]], prefix: Path) -> dict[str, 
         chain["objective_audit"],
         prefix.with_name(prefix.name + "_objective_audit.md"),
     )
+    SIGNOFF_ACTIONS._write_markdown(
+        chain["production_signoff_actions"],
+        prefix.with_name(prefix.name + "_production_signoff_actions.md"),
+    )
     latest_candidate = LATEST_CANDIDATE.select_latest(
         prefix.parent,
         require_highest_status_complete=True,
@@ -176,6 +192,9 @@ def _write_outputs(chain: dict[str, dict[str, Any]], prefix: Path) -> dict[str, 
     LATEST_CANDIDATE._write_markdown(latest_candidate, latest_candidate_md)
     outputs["latest_signoff_candidate"] = latest_candidate_json
     outputs["latest_signoff_candidate_markdown"] = latest_candidate_md
+    outputs["production_signoff_actions_markdown"] = prefix.with_name(
+        prefix.name + "_production_signoff_actions.md"
+    )
     return outputs
 
 

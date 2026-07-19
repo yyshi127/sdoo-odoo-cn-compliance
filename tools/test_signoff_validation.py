@@ -2582,6 +2582,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         }
         final_validation = chain["final_validation"]
         final_readiness = chain["final_status"]["readiness_gates"]
+        action_checklist = chain["production_signoff_actions"]
 
         self.assertTrue(
             final_packet_items["objective_completion_audit_present"]["ready"]
@@ -2596,6 +2597,8 @@ class TestChinaSignoffValidation(unittest.TestCase):
             len(final_readiness["production_signoff_required_actions"]),
             7,
         )
+        self.assertEqual(action_checklist["action_count"], 7)
+        self.assertTrue(action_checklist["packet_binding"]["action_keys_match"])
         self.assertEqual(
             chain["objective_audit"]["state_counts"],
             {"evidence_ready": 14, "blocked": 1, "not_ready": 0},
@@ -2625,8 +2628,17 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
             self.assertIn("latest_signoff_candidate", outputs)
             self.assertIn("latest_signoff_candidate_markdown", outputs)
+            self.assertIn("production_signoff_actions", outputs)
+            self.assertIn("production_signoff_actions_markdown", outputs)
             self.assertTrue(outputs["latest_signoff_candidate"].is_file())
             self.assertTrue(outputs["latest_signoff_candidate_markdown"].is_file())
+            self.assertTrue(outputs["production_signoff_actions"].is_file())
+            self.assertTrue(outputs["production_signoff_actions_markdown"].is_file())
+            actions = json.loads(
+                outputs["production_signoff_actions"].read_text(encoding="utf-8")
+            )
+            self.assertEqual(actions["action_count"], 7)
+            self.assertTrue(actions["packet_binding"]["action_keys_match"])
 
     def test_signoff_chain_latest_candidate_output_uses_strict_mode(self):
         chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
