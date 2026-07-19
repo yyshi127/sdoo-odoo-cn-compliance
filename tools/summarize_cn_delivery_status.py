@@ -134,7 +134,12 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
         {
             "key": "customer_scope_and_data_gap_review",
             "owner": "implementation_owner",
-            "required_evidence": "Customer-specific accounting periods, external datasets, acquisition or authorization basis, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
+            "required_evidence": (
+                "Customer-specific target periods, posted accounting data, external "
+                "invoice/filing/payment/payroll datasets, acquisition or authorization "
+                "basis, evidence gaps, open high/critical risks, remediation status, "
+                "customer-visible limitation statement and controlled AI limitations reviewed."
+            ),
             "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
             "objective_areas": [
                 "Odoo accounting and business-data basis",

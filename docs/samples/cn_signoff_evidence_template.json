@@ -60,7 +60,7 @@
       "decision": "no_blocking_gap",
       "reviewer": "Implementation owner name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Customer data, acquisition or authorization basis, evidence gap and open risk review reference",
+      "evidence_reference": "Customer target-period, posted accounting, invoice/filing/payment/payroll dataset, acquisition or authorization basis, evidence gap, open high/critical risk, remediation and limitation review reference",
       "objective_areas": [
         "Odoo accounting and business-data basis",
         "external tax data sufficiency"
@@ -68,7 +68,7 @@
       "addresses_blockers": [
         "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
       ],
-      "notes": "Customer-specific data gaps, external tax data coverage, acquisition or authorization basis, controlled AI limitations, evidence gaps and open risks reviewed."
+      "notes": "Target periods, posted accounting data, external invoice/filing/payment/payroll dataset coverage, acquisition or authorization basis, evidence gaps, open high/critical risks, remediation status, customer-visible limitation statement and controlled AI limitations reviewed."
     },
     {
       "key": "representative_ux_walkthrough",

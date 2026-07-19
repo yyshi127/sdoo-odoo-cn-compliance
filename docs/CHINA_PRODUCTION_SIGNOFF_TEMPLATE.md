@@ -145,8 +145,11 @@ decision and include substantive limitation notes.
 - Posted accounting entries complete for reviewed periods: yes / no
 - Draft accounting entries requiring review:
 - External datasets complete: yes / no
+- Invoice, filing, payment and payroll datasets reviewed:
 - Partial datasets or missing sources:
 - Evidence gaps:
+- Open high/critical risks reviewed:
+- Remediation status reviewed:
 - Controlled AI limitations or excluded findings:
 - Known conclusion limitations:
 - External tax/invoice/payment data acquisition basis reviewed: yes / no / not applicable

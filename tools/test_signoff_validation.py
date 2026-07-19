@@ -1081,9 +1081,11 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
             "reviewed."
         ),
         "customer_scope_and_data_gap_review": (
-            "External dataset coverage, acquisition basis and authorization basis, "
-            "evidence gap register, open risk list and controlled AI limitation "
-            "register reviewed."
+            "Target periods and posted accounting data reviewed; external dataset "
+            "coverage for invoice, filing, payment and payroll records, "
+            "acquisition basis and authorization basis, evidence gap register, "
+            "open high/critical risk list, remediation status, customer-visible "
+            "limitation statement and controlled AI limitation register reviewed."
         ),
         "representative_ux_walkthrough": (
             "Screen-by-screen walkthrough script completed for workbench, risk "
@@ -1799,7 +1801,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "customer_scope_and_data_gap_review: evidence_reference or notes "
-            "must mention: acquisition/authorization basis",
+            "must mention: target periods, posted accounting data, "
+            "invoice/filing/payment/payroll datasets, "
+            "acquisition/authorization basis, open high/critical risk, "
+            "remediation status, customer-visible limitation",
             result["blockers"],
         )
 

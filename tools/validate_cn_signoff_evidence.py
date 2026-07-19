@@ -68,10 +68,15 @@ ACTION_EVIDENCE_REQUIREMENTS = {
         ("local jurisdiction", ("local jurisdiction", "地方", "属地")),
     ),
     "customer_scope_and_data_gap_review": (
+        ("target periods", ("target period", "target periods", "review period", "目标期间", "复核期间")),
+        ("posted accounting data", ("posted accounting data", "posted accounting entries", "已过账会计", "已过账分录")),
         ("external dataset", ("external dataset", "外部数据", "监管数据")),
+        ("invoice/filing/payment/payroll datasets", ("invoice", "filing", "payment", "payroll", "发票", "申报", "缴款", "薪酬")),
         ("acquisition/authorization basis", ("acquisition basis", "authorization basis", "lawfully obtained", "lawful acquisition", "authorized source")),
         ("evidence gap", ("evidence gap", "证据缺口")),
-        ("open risk", ("open risk", "未关闭风险", "开放风险")),
+        ("open high/critical risk", ("open high risk", "open critical risk", "open high/critical risk", "未关闭高风险", "未关闭重大风险")),
+        ("remediation status", ("remediation status", "remediation", "整改状态", "整改")),
+        ("customer-visible limitation", ("customer-visible limitation", "customer limitation", "limitation statement", "客户可见限制", "限制说明")),
         ("controlled ai limitation", ("controlled ai limitation", "受控 ai 限制", "受控AI限制")),
     ),
     "representative_ux_walkthrough": (
