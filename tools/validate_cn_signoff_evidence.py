@@ -170,6 +170,10 @@ def _has_sha256_text(item: dict[str, Any]) -> bool:
     return bool(SHA256_RE.search(_raw_evidence_text(item)))
 
 
+def _sha256_count(item: dict[str, Any]) -> int:
+    return len(SHA256_RE.findall(_raw_evidence_text(item)))
+
+
 def _missing_action_keywords(key: Any, item: dict[str, Any]) -> list[str]:
     requirements = ACTION_EVIDENCE_REQUIREMENTS.get(str(key), ())
     evidence_text = _evidence_text(item)
@@ -328,6 +332,12 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
                 item_blockers.append(
                     "evidence_reference or notes must include at least one "
                     "64-character SHA-256 released rule checksum"
+                )
+            if key == "production_deployment_decision" and _sha256_count(item) < 2:
+                item_blockers.append(
+                    "evidence_reference or notes must include at least two "
+                    "64-character SHA-256 values for the delivery bundle and "
+                    "manifest aggregate"
                 )
             if _decision_has_limitations(decision):
                 limitation_decision_keys.append(str(key))

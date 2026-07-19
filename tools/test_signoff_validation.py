@@ -1100,8 +1100,10 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         ),
         "production_deployment_decision": (
             "Production sign-off template completed with deployment decision, "
-            "delivery version 19.0.1.130.0, source commit abc123, bundle "
-            "SHA-256 bundlechecksum, manifest aggregate hash aggregatechecksum, "
+            "delivery version 19.0.1.130.0, source commit abc123, bundle SHA-256 "
+            "1111111111111111111111111111111111111111111111111111111111111111, "
+            "manifest aggregate hash "
+            "2222222222222222222222222222222222222222222222222222222222222222, "
             "target database test, target company scope CN Company, "
             "backup/restore proof reference, rollback trigger, rollback owner, "
             "deployment window and go-live monitoring owner."
@@ -1254,6 +1256,12 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "mention: delivery version, source commit, bundle sha256, manifest "
             "aggregate hash, target database, target company scope, backup/restore "
             "proof, rollback trigger, deployment window, monitoring owner",
+            result["blockers"],
+        )
+        self.assertIn(
+            "production_deployment_decision: evidence_reference or notes must "
+            "include at least two 64-character SHA-256 values for the delivery "
+            "bundle and manifest aggregate",
             result["blockers"],
         )
 

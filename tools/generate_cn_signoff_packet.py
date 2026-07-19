@@ -541,7 +541,8 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                 "reject decision, delivery version, source commit, bundle SHA-256, "
                 "manifest aggregate hash, target database, target company scope, "
                 "backup/restore proof, rollback trigger, rollback owner, deployment "
-                "window and go-live monitoring owner."
+                "window and go-live monitoring owner. Bundle and manifest hashes must "
+                "be recorded as 64-character SHA-256 values."
             ),
             "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
             "objective_areas": [
