@@ -127,6 +127,9 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     status = _load(paths.status)
     packet = _load(paths.signoff_packet)
     actions = _load(paths.production_signoff_actions)
+    actions_markdown = paths.production_signoff_actions_markdown.read_text(
+        encoding="utf-8"
+    )
     audit = _load(paths.objective_audit)
     preview_health = _load(paths.preview_health)
     preview_module = _load(paths.preview_module)
@@ -197,6 +200,18 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         readiness.get("production_signoff_required_actions") or []
     ):
         errors.append("action checklist count does not match status required actions")
+    markdown_missing_keys = [
+        str(action.get("key"))
+        for action in actions.get("actions") or []
+        if isinstance(action, dict)
+        and action.get("key")
+        and f"### {action.get('key')}" not in actions_markdown
+    ]
+    if markdown_missing_keys:
+        errors.append(
+            "reviewer action checklist markdown missing action keys: "
+            + ", ".join(markdown_missing_keys)
+        )
     action_binding = actions.get("packet_binding")
     if not isinstance(action_binding, dict):
         errors.append("action checklist does not include packet binding")

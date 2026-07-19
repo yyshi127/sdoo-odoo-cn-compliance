@@ -2826,7 +2826,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "source_commit": commit,
             },
             f"cn_delivery_{tag}_chain_production_signoff_actions.json": actions,
-            f"cn_delivery_{tag}_chain_production_signoff_actions.md": b"# checklist\n",
+            f"cn_delivery_{tag}_chain_production_signoff_actions.md": b"# checklist\n\n### business_uat_decision\n",
             f"cn_delivery_{tag}_chain_objective_audit.json": {
                 "version": "19.0.1.130.0",
             },

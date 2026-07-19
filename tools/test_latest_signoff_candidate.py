@@ -117,6 +117,25 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 )
             )
 
+    def test_rejects_reviewer_action_checklist_without_action_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                13,
+                commit="abc",
+                aggregate="hash13",
+                action_markdown="# checklist without keys\n",
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist markdown missing action keys: business_uat_decision",
+                result["checked_candidates"][0]["errors"],
+            )
+
 
 def _candidate(
     dist: Path,
@@ -128,6 +147,7 @@ def _candidate(
     omit: str | None = None,
     omit_summary_manifest: bool = False,
     action_binding_ok: bool = True,
+    action_markdown: str = "# checklist\n\n### business_uat_decision\n",
 ) -> None:
     paths = selector._candidate_paths(dist, number)
     tag = f"m{number}"
@@ -221,7 +241,7 @@ def _candidate(
         "status": status,
         "signoff_packet": packet,
         "production_signoff_actions": actions,
-        "production_signoff_actions_markdown": b"# checklist\n",
+        "production_signoff_actions_markdown": action_markdown.encode("utf-8"),
         "objective_audit": audit,
     }
     for field, payload in payloads.items():
