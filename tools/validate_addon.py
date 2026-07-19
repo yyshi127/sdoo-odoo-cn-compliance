@@ -4595,6 +4595,51 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     evidence_view_content = (
         ADDON_ROOT / "views" / "evidence_center_views.xml"
     ).read_text(encoding="utf-8")
+    evidence_view_root = ElementTree.parse(
+        ADDON_ROOT / "views" / "evidence_center_views.xml"
+    ).getroot()
+
+    def evidence_view_field_names(record_id: str) -> set[str]:
+        arch = evidence_view_root.find(
+            f".//record[@id='{record_id}']/field[@name='arch']"
+        )
+        if arch is None:
+            fail(f"China evidence center UX view contract is missing record {record_id}")
+        return {
+            element.attrib["name"]
+            for element in arch.iter("field")
+            if element.attrib.get("name")
+        }
+
+    required_evidence_summary_fields = {
+        "name",
+        "company_id",
+        "evidence_type",
+        "evidence_date",
+        "issuer",
+        "state",
+        "cn_evidence_source_summary",
+        "cn_evidence_blocker_summary",
+        "assessment_id",
+        "finding_id",
+        "task_id",
+        "filing_id",
+        "document_checksum",
+        "verified_by_id",
+        "verified_at",
+    }
+    for record_id in (
+        "view_cn_evidence_center_list",
+        "view_cn_evidence_center_kanban",
+    ):
+        fields = evidence_view_field_names(record_id)
+        missing = required_evidence_summary_fields - fields
+        if missing:
+            fail(
+                "China evidence center summary views must expose evidence "
+                "identity, source, blocker, linkage, checksum and verification "
+                f"fields in {record_id}: {sorted(missing)}"
+            )
     for required in (
         'id="view_cn_evidence_center_search"',
         'id="view_cn_evidence_center_list"',
