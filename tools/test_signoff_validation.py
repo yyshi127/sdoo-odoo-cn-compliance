@@ -1082,10 +1082,10 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         ),
         "representative_ux_walkthrough": (
             "Screen-by-screen walkthrough script completed for workbench, risk "
-            "center, controlled AI guidance, filing/payment archive and report "
-            "screens in Chrome browser; desktop viewport and smaller laptop "
-            "viewport evidence were reviewed; input/output checksum and record "
-            "checksum were visible."
+            "center, remediation tracker, controlled AI guidance, filing/payment "
+            "archive, report readiness and formal report screens in Chrome "
+            "browser; desktop viewport and smaller laptop viewport evidence were "
+            "reviewed; input/output checksum and record checksum were visible."
         ),
         "blocker_summary_walkthrough": (
             "Data readiness, filing/payment archive, report readiness and controlled "
@@ -1605,10 +1605,10 @@ class TestChinaSignoffValidation(unittest.TestCase):
             if item["key"] == "representative_ux_walkthrough":
                 item["notes"] = (
                     "Screen-by-screen walkthrough script completed for workbench, "
-                    "risk center, controlled AI guidance, "
-                    "filing/payment archive and report screens reviewed in Chrome "
-                    "browser with desktop viewport and smaller laptop viewport "
-                    "evidence."
+                    "risk center, remediation tracker, controlled AI guidance, "
+                    "filing/payment archive, report readiness and formal report "
+                    "screens reviewed in Chrome browser with desktop viewport and "
+                    "smaller laptop viewport evidence."
                 )
 
         result = VALIDATION._validate(packet, evidence)
@@ -1627,9 +1627,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
             if item["key"] == "representative_ux_walkthrough":
                 item["notes"] = (
                     "Screen-by-screen walkthrough script completed for workbench, "
-                    "risk center, controlled AI guidance, filing/payment archive "
-                    "and report screens; input/output checksum and record checksum "
-                    "were visible."
+                    "risk center, remediation tracker, controlled AI guidance, "
+                    "filing/payment archive, report readiness and formal report "
+                    "screens; input/output checksum and record checksum were visible."
                 )
 
         result = VALIDATION._validate(packet, evidence)
@@ -1638,6 +1638,28 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "representative_ux_walkthrough: evidence_reference or notes must "
             "mention: browser, desktop viewport, laptop viewport",
+            result["blockers"],
+        )
+
+    def test_missing_remediation_and_report_scope_blocks_ux_walkthrough(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "representative_ux_walkthrough":
+                item["notes"] = (
+                    "Screen-by-screen walkthrough script completed for workbench, "
+                    "risk center, controlled AI guidance and filing/payment "
+                    "archive screens in Chrome browser; desktop viewport and "
+                    "smaller laptop viewport evidence were reviewed; input/output "
+                    "checksum and record checksum were visible."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "representative_ux_walkthrough: evidence_reference or notes must "
+            "mention: remediation tracker, report readiness",
             result["blockers"],
         )
 

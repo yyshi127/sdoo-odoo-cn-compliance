@@ -75,7 +75,7 @@
       "decision": "passed",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Screenshots, recording or completed CHINA_UAT_WALKTHROUGH_SCRIPT.md reference for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report walkthrough",
+      "evidence_reference": "Screenshots, recording or completed CHINA_UAT_WALKTHROUGH_SCRIPT.md reference for workbench, risk center, remediation tracker, controlled AI guidance, filing/payment archive, report readiness and formal compliance report walkthrough",
       "objective_areas": [
         "risk center and remediation clarity",
         "Odoo-consistent viewing experience"
@@ -83,7 +83,7 @@
       "addresses_blockers": [
         "business UAT decision must be recorded outside this automated status"
       ],
-      "notes": "Screen-by-screen walkthrough script completed in Chrome browser; desktop viewport and smaller laptop viewport evidence showed risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable."
+      "notes": "Screen-by-screen walkthrough script completed in Chrome browser for workbench, risk center, remediation tracker, controlled AI guidance, filing/payment archive, report readiness and formal compliance report pages; desktop viewport and smaller laptop viewport evidence showed risk level, cause, impact amount, period, owner, due date, status, next action, AI provider, prompt version, input/output checksum, record checksum and professional warnings were readable."
     },
     {
       "key": "blocker_summary_walkthrough",

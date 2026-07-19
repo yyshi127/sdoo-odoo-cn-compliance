@@ -61,7 +61,7 @@ PRODUCTION_SIGNOFF_BLOCKER_ACTIONS = {
         {
             "key": "representative_ux_walkthrough",
             "owner": "business_reviewer",
-            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracking, controlled AI guidance, filing/payment archive and compliance report pages, including browser/version, desktop viewport or resolution, smaller laptop viewport or resolution, and risk level, cause, impact amount, period, owner, due date, status and next action visibility, plus AI provider, prompt version, input/output checksum, record checksum and professional warning visibility.",
+            "required_evidence": "Representative walkthrough evidence for workbench, risk center, remediation tracker, controlled AI guidance, filing/payment archive, report readiness and formal compliance report pages, including browser/version, desktop viewport or resolution, smaller laptop viewport or resolution, and risk level, cause, impact amount, period, owner, due date, status and next action visibility, plus AI provider, prompt version, input/output checksum, record checksum and professional warning visibility.",
             "acceptable_decisions": ["passed", "passed_with_limitations"],
             "objective_areas": [
                 "risk center and remediation clarity",
