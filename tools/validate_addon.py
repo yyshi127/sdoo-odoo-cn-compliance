@@ -3902,10 +3902,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_limitation_next_action",
         "action_cn_open_workbench_rule_basis",
         "action_cn_open_workbench_next_best_action",
-        "Next best action",
-        "Action summary",
-        "Rule basis",
-        "Limitations and uncertainty",
+        "下一步最佳动作",
+        "行动摘要",
+        "规则依据",
+        "限制与不确定性",
         'decoration-success="cn_workbench_data_state == \'ready\'"',
         'decoration-danger="cn_workbench_data_state == \'blocked\'"',
         "可扫描 / 总数据集",
@@ -4449,7 +4449,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_cross_border_reviewed_count",
         "cn_cross_border_transaction_count",
         "cn_cross_border_next_action",
-        "Cross-Border Facts",
+        "跨境事实",
     ):
         if required not in risk_view_content:
             fail(f"China cross-border risk visibility UI is missing {required}")
@@ -4489,6 +4489,15 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China report readiness blocker summary runtime coverage is missing")
     if "cn_report_action_summary" not in report_test_content:
         fail("China report action summary runtime coverage is missing")
+    for required in (
+        "行动摘要",
+        "报告阻断事项",
+        "整改复扫门禁",
+        "申报缴款档案门禁",
+        "受控 AI 指引门禁",
+    ):
+        if required not in report_view_content:
+            fail(f"China report readiness UI Chinese clarity is missing {required}")
 
     data_basis_model_content = (
         ADDON_ROOT / "models" / "assessment_data_basis.py"
@@ -4947,6 +4956,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_queue_verification_scan",
         "action_cn_open_remediation_verification_assessment",
         "verification_assessment_id",
+        "行动摘要",
+        "阻断事项",
+        "税务影响",
+        "证据追溯",
+        "事实依据",
+        "账票税款勾稽",
         'decoration-danger="risk_level in (\'critical\', \'high\')"',
         'decoration-success="cn_traceability_state == \'complete\'"',
         'decoration-warning="cn_remediation_evidence_state == \'partial\'"',

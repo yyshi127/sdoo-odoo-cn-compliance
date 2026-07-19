@@ -211,7 +211,7 @@
                             </div>
 
                             <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">Action summary</div>
+                                <div class="text-muted small">行动摘要</div>
                                 <div class="fw-semibold">
                                     <field name="cn_workbench_action_summary"/>
                                 </div>
@@ -221,7 +221,7 @@
                                     class="btn btn-light w-100 text-start border mt-3">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Rule basis</div>
+                                        <div class="text-muted small">规则依据</div>
                                         <div class="fw-semibold">
                                             <field name="cn_workbench_rule_basis_summary"/>
                                         </div>
@@ -237,7 +237,7 @@
                                 </div>
                                 <div class="row g-2 mt-2">
                                     <div class="col-3">
-                                        <div class="text-muted small">Versions</div>
+                                        <div class="text-muted small">版本</div>
                                         <div class="fw-bold">
                                             <field name="cn_workbench_active_rule_version_count"/>
                                             <span> / </span>
@@ -245,15 +245,15 @@
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="text-muted small">Gaps</div>
+                                        <div class="text-muted small">缺口</div>
                                         <div class="fw-bold"><field name="cn_workbench_rule_governance_issue_count"/></div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="text-muted small">Sign-off</div>
+                                        <div class="text-muted small">签核</div>
                                         <div class="fw-bold"><field name="cn_workbench_rule_pending_professional_count"/></div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="text-muted small">Sources</div>
+                                        <div class="text-muted small">来源</div>
                                         <div class="fw-bold">
                                             <field name="cn_workbench_source_review_overdue_count"/>
                                             <span> / </span>
@@ -264,7 +264,7 @@
                             </button>
 
                             <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">Limitations and uncertainty</div>
+                                <div class="text-muted small">限制与不确定性</div>
                                 <div class="fw-semibold">
                                     <field name="cn_workbench_limitation_summary"/>
                                 </div>
@@ -280,7 +280,7 @@
                                     class="btn btn-primary w-100 text-start mt-3">
                                 <div class="d-flex justify-content-between align-items-center gap-2">
                                     <div>
-                                        <div class="text-white-50 small">Next best action</div>
+                                        <div class="text-white-50 small">下一步最佳动作</div>
                                         <div class="fw-semibold">
                                             <field name="cn_workbench_next_best_action_label"/>
                                         </div>
@@ -292,7 +292,7 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Conclusion boundary</div>
+                                        <div class="text-muted small">结论边界</div>
                                         <div class="fw-semibold"><field name="cn_workbench_conclusion_boundary_summary"/></div>
                                         <div class="text-muted small">
                                             <field name="cn_workbench_conclusion_boundary_next_action"/>
@@ -309,11 +309,11 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Closed-loop delivery</div>
+                                        <div class="text-muted small">闭环交付</div>
                                         <div class="fw-semibold"><field name="cn_workbench_closed_loop_summary"/></div>
                                         <div class="text-muted small">
                                             <field name="cn_workbench_closed_loop_gap_count"/>
-                                            <span> open control gaps</span>
+                                            <span> 个未关闭控制缺口</span>
                                         </div>
                                     </div>
                                     <field name="cn_workbench_closed_loop_state" widget="badge"
@@ -379,11 +379,11 @@
                                             <span> 个勾稽问题</span>
                                         </div>
                                         <div class="text-muted small mt-1">
-                                            <span>Posted moves </span>
+                                            <span>已过账凭证 </span>
                                             <field name="cn_workbench_posted_move_count"/>
-                                            <span> · Draft </span>
+                                            <span> · 草稿 </span>
                                             <field name="cn_workbench_draft_move_count"/>
-                                            <span> · Invoices </span>
+                                            <span> · 发票 </span>
                                             <field name="cn_workbench_posted_invoice_count"/>
                                         </div>
                                     </button>
@@ -449,7 +449,7 @@
                                             <field name="cn_workbench_cross_border_pending_count"/>
                                             <span> / </span>
                                             <field name="cn_workbench_cross_border_transaction_count"/>
-                                            <span> pending / total</span>
+                                            <span> 待复核 / 合计</span>
                                         </div>
                                     </button>
                                 </div>
@@ -493,7 +493,7 @@
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_ai_guidance_findings"
                                             class="btn btn-light border text-start flex-fill">
-                                        <div class="text-muted small">2.5 AI guidance</div>
+                                        <div class="text-muted small">2.5 AI 指引</div>
                                         <field name="cn_workbench_ai_guidance_state" widget="badge"
                                                decoration-success="cn_workbench_ai_guidance_state == 'ready'"
                                                decoration-warning="cn_workbench_ai_guidance_state == 'attention'"
@@ -501,9 +501,9 @@
                                                decoration-muted="cn_workbench_ai_guidance_state == 'not_started'"/>
                                         <div class="text-muted small mt-1">
                                             <field name="cn_workbench_ai_guidance_current_count"/>
-                                            <span> current / </span>
+                                            <span> 当前有效 / </span>
                                             <field name="cn_workbench_ai_guidance_generated_count"/>
-                                            <span> generated</span>
+                                            <span> 已生成</span>
                                         </div>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_tasks"
@@ -517,7 +517,7 @@
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_tasks"
                                             class="btn btn-light border text-start flex-fill">
-                                        <div class="text-muted small">3.5 Verification Rescan</div>
+                                        <div class="text-muted small">3.5 整改复扫</div>
                                         <field name="cn_workbench_rescan_state" widget="badge"
                                                decoration-success="cn_workbench_rescan_state == 'ready'"
                                                decoration-warning="cn_workbench_rescan_state == 'attention'"
@@ -525,9 +525,9 @@
                                                decoration-muted="cn_workbench_rescan_state == 'not_started'"/>
                                         <div class="text-muted small mt-1">
                                             <field name="cn_workbench_pending_rescan_count"/>
-                                            <span> pending / </span>
+                                            <span> 待复扫 / </span>
                                             <field name="cn_workbench_failed_rescan_count"/>
-                                            <span> failed</span>
+                                            <span> 未通过</span>
                                         </div>
                                     </button>
                                     <button type="object" name="action_cn_open_workbench_report_readiness"
@@ -619,12 +619,12 @@
                                             class="btn btn-light w-100 text-start">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
                                             <div>
-                                                <div class="text-muted small">Verification Rescan</div>
+                                                <div class="text-muted small">整改复扫</div>
                                                 <div class="fw-bold">
                                                     <field name="cn_workbench_pending_rescan_count"/>
-                                                    <span> pending / </span>
+                                                    <span> 待复扫 / </span>
                                                     <field name="cn_workbench_failed_rescan_count"/>
-                                                    <span> failed / </span>
+                                                    <span> 未通过 / </span>
                                                     <field name="cn_workbench_verified_remediation_count"/>
                                                     <span> verified</span>
                                                 </div>
@@ -701,7 +701,7 @@
                                 </button>
                                 <button type="object" name="action_cn_open_workbench_cross_border_transactions"
                                         class="btn btn-outline-secondary btn-sm">
-                                    Cross-Border
+                                    跨境/扣缴
                                 </button>
                             </div>
                         </div>
@@ -750,7 +750,7 @@
                             <field name="cn_workbench_last_assessment_id" readonly="1"/>
                             <field name="cn_workbench_latest_report_id" readonly="1"/>
                         </group>
-                        <group string="Rule Basis">
+                        <group string="规则依据">
                             <field name="cn_workbench_rule_basis_state" readonly="1" widget="badge"
                                    decoration-success="cn_workbench_rule_basis_state == 'ready'"
                                    decoration-warning="cn_workbench_rule_basis_state == 'attention'"
@@ -765,7 +765,7 @@
                             <field name="cn_workbench_source_review_overdue_count" readonly="1"/>
                             <field name="cn_workbench_source_monitor_issue_count" readonly="1"/>
                         </group>
-                        <group string="Limitations and Uncertainty">
+                        <group string="限制与不确定性">
                             <field name="cn_workbench_limitation_summary" readonly="1"/>
                             <field name="cn_workbench_uncertainty_summary" readonly="1"/>
                             <field name="cn_workbench_limitation_next_action" readonly="1"/>
@@ -857,9 +857,9 @@
                     </group>
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         <button name="action_cn_open_workbench_next_best_action" type="object"
-                                string="Next Best Action" class="btn-primary"/>
+                                string="下一步最佳动作" class="btn-primary"/>
                         <button name="action_cn_open_workbench_rule_basis" type="object"
-                                string="Rule Basis" class="btn-secondary"/>
+                                string="规则依据" class="btn-secondary"/>
                         <button name="action_cn_open_workbench_data_readiness" type="object"
                                 string="查看数据准备中心" class="btn-secondary"/>
                         <button name="action_cn_open_workbench_obligations" type="object"

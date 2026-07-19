@@ -92,7 +92,7 @@
                 <field name="cn_accounting_basis_posted_invoice_count" optional="show"/>
                 <field name="cn_accounting_basis_next_action" optional="hide"/>
                 <button name="action_cn_open_assessment_accounting_basis" type="object"
-                        string="Ledger" class="btn-link"/>
+                        string="账务" class="btn-link"/>
                 <field name="cn_obligation_basis_state" widget="badge"
                        decoration-success="cn_obligation_basis_state == 'ready'"
                        decoration-warning="cn_obligation_basis_state in ('missing', 'attention')"/>
@@ -187,13 +187,13 @@
                                 <field name="cn_report_next_action"/>
                             </div>
                             <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">Action summary</div>
+                                <div class="text-muted small">行动摘要</div>
                                 <div class="fw-semibold">
                                     <field name="cn_report_action_summary"/>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">Report Blockers</div>
+                                <div class="text-muted small">报告阻断事项</div>
                                 <div class="fw-semibold">
                                     <field name="cn_report_readiness_blocker_summary"/>
                                 </div>
@@ -201,7 +201,7 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Verification rescan gate</div>
+                                        <div class="text-muted small">整改复扫门禁</div>
                                         <div class="fw-semibold"><field name="cn_report_rescan_next_action"/></div>
                                     </div>
                                     <field name="cn_report_rescan_state" widget="badge"
@@ -211,15 +211,15 @@
                                            decoration-muted="cn_report_rescan_state == 'not_applicable'"/>
                                 </div>
                                 <div class="d-flex gap-3 text-muted small mt-2">
-                                    <span><field name="cn_report_pending_rescan_count"/> pending</span>
-                                    <span><field name="cn_report_failed_rescan_count"/> failed</span>
-                                    <span><field name="cn_report_verified_remediation_count"/> verified</span>
+                                    <span><field name="cn_report_pending_rescan_count"/> 待复扫</span>
+                                    <span><field name="cn_report_failed_rescan_count"/> 未通过</span>
+                                    <span><field name="cn_report_verified_remediation_count"/> 已验证</span>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Filing/payment archive gate</div>
+                                        <div class="text-muted small">申报缴款档案门禁</div>
                                         <div class="fw-semibold"><field name="cn_report_filing_archive_next_action"/></div>
                                     </div>
                                     <field name="cn_report_filing_archive_state" widget="badge"
@@ -228,15 +228,15 @@
                                            decoration-danger="cn_report_filing_archive_state == 'blocked'"/>
                                 </div>
                                 <div class="d-flex gap-3 text-muted small mt-2">
-                                    <span><field name="cn_report_sealed_filing_archive_count"/> sealed</span>
-                                    <span><field name="cn_report_filing_archive_count"/> total</span>
-                                    <span><field name="cn_report_filing_archive_issue_count"/> issues</span>
+                                    <span><field name="cn_report_sealed_filing_archive_count"/> 已封存</span>
+                                    <span><field name="cn_report_filing_archive_count"/> 合计</span>
+                                    <span><field name="cn_report_filing_archive_issue_count"/> 问题</span>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Controlled AI guidance gate</div>
+                                        <div class="text-muted small">受控 AI 指引门禁</div>
                                         <div class="fw-semibold"><field name="cn_report_ai_guidance_next_action"/></div>
                                     </div>
                                     <field name="cn_report_ai_guidance_state" widget="badge"
@@ -245,10 +245,10 @@
                                            decoration-danger="cn_report_ai_guidance_state == 'blocked'"/>
                                 </div>
                                 <div class="d-flex gap-3 text-muted small mt-2">
-                                    <span><field name="cn_report_ai_guidance_current_count"/> current</span>
-                                    <span><field name="cn_report_ai_guidance_generated_count"/> generated</span>
-                                    <span><field name="cn_report_ai_guidance_finding_count"/> risks</span>
-                                    <span><field name="cn_report_ai_guidance_stale_count"/> stale</span>
+                                    <span><field name="cn_report_ai_guidance_current_count"/> 当前有效</span>
+                                    <span><field name="cn_report_ai_guidance_generated_count"/> 已生成</span>
+                                    <span><field name="cn_report_ai_guidance_finding_count"/> 风险</span>
+                                    <span><field name="cn_report_ai_guidance_stale_count"/> 已过期</span>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
@@ -263,20 +263,20 @@
                                            decoration-danger="cn_data_basis_state == 'blocked'"/>
                                 </div>
                                 <div class="d-flex gap-3 text-muted small mt-2">
-                                    <span><field name="cn_data_basis_ready_type_count"/> ready types</span>
-                                    <span><field name="cn_data_basis_required_type_count"/> required</span>
-                                    <span><field name="cn_data_basis_missing_type_count"/> missing</span>
+                                    <span><field name="cn_data_basis_ready_type_count"/> 已就绪类型</span>
+                                    <span><field name="cn_data_basis_required_type_count"/> 必需类型</span>
+                                    <span><field name="cn_data_basis_missing_type_count"/> 缺失</span>
                                 </div>
                                 <div class="text-muted small mt-1"
                                      invisible="not cn_data_basis_missing_type_summary">
-                                    Missing: <field name="cn_data_basis_missing_type_summary"/>
+                                    缺失：<field name="cn_data_basis_missing_type_summary"/>
                                 </div>
                             </div>
                             <button type="object" name="action_cn_open_assessment_accounting_basis"
                                     class="btn btn-light w-100 text-start border mt-3">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Odoo accounting basis</div>
+                                        <div class="text-muted small">Odoo 账务基础</div>
                                         <div class="fw-semibold"><field name="cn_accounting_basis_next_action"/></div>
                                     </div>
                                     <field name="cn_accounting_basis_state" widget="badge"
@@ -285,15 +285,15 @@
                                            decoration-danger="cn_accounting_basis_state in ('no_period', 'missing')"/>
                                 </div>
                                 <div class="d-flex gap-3 text-muted small mt-2">
-                                    <span><field name="cn_accounting_basis_posted_move_count"/> posted moves</span>
-                                    <span><field name="cn_accounting_basis_draft_move_count"/> draft moves</span>
-                                    <span><field name="cn_accounting_basis_posted_invoice_count"/> posted invoices</span>
+                                    <span><field name="cn_accounting_basis_posted_move_count"/> 已过账凭证</span>
+                                    <span><field name="cn_accounting_basis_draft_move_count"/> 草稿凭证</span>
+                                    <span><field name="cn_accounting_basis_posted_invoice_count"/> 已过账发票</span>
                                 </div>
                             </button>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Tax obligation basis</div>
+                                        <div class="text-muted small">纳税义务基础</div>
                                         <div class="fw-semibold"><field name="cn_obligation_basis_next_action"/></div>
                                     </div>
                                     <field name="cn_obligation_basis_state" widget="badge"
@@ -344,13 +344,13 @@
                                 <div class="col-6">
                                     <button type="object" name="action_cn_open_assessment_obligation_basis"
                                             class="btn btn-light w-100 text-start">
-                                        <div class="text-muted small">Candidate obligations</div>
+                                        <div class="text-muted small">候选义务</div>
                                         <div class="fw-bold"><field name="cn_obligation_basis_candidate_count"/></div>
                                     </button>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">Pending review</div>
+                                        <div class="text-muted small">待确认义务</div>
                                         <div class="fw-bold"><field name="cn_obligation_basis_pending_count"/></div>
                                     </div>
                                 </div>
@@ -390,13 +390,13 @@
                         class="oe_stat_button" icon="fa-database"
                         invisible="country_id.code != 'CN'">
                     <field name="cn_data_basis_dataset_count" widget="statinfo"
-                           string="Data Sources"/>
+                           string="数据来源"/>
                 </button>
                 <button name="action_cn_open_assessment_obligation_basis" type="object"
                         class="oe_stat_button" icon="fa-check-square-o"
                         invisible="country_id.code != 'CN'">
                     <field name="cn_obligation_basis_pending_count" widget="statinfo"
-                           string="Obligations"/>
+                           string="义务"/>
                 </button>
             </xpath>
             <xpath expr="//notebook" position="before">
