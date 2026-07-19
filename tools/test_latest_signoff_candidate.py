@@ -35,6 +35,18 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 ["business UAT decision must be recorded outside this automated status"],
             )
             self.assertEqual(
+                result["selected"]["bundle_sha256"],
+                _sha("bundle-m8"),
+            )
+            self.assertTrue(
+                result["selected"]["packet_binding"]["bundle_sha256_matches_status"]
+            )
+            self.assertTrue(
+                result["selected"]["packet_binding"][
+                    "manifest_aggregate_sha256_matches_status"
+                ]
+            )
+            self.assertEqual(
                 set(result["selected"]["evidence_sha256"]),
                 {
                     "bundle",
@@ -71,6 +83,10 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             content = output.read_text(encoding="utf-8")
             self.assertIn("Production sign-off action checklist:", content)
             self.assertIn("Preview database: `test`", content)
+            self.assertIn(f"Bundle SHA-256: `{_sha('bundle-m17')}`", content)
+            self.assertIn("## Packet Binding Checks", content)
+            self.assertIn("`bundle_sha256_matches_status`: `True`", content)
+            self.assertIn("`manifest_aggregate_sha256_matches_status`: `True`", content)
             self.assertIn("cn_delivery_m17_chain_production_signoff_actions.md", content)
             self.assertIn("## Evidence SHA-256", content)
             self.assertIn("`remote_acceptance`", content)

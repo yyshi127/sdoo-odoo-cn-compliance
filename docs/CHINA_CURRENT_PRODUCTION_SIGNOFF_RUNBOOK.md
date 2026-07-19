@@ -44,7 +44,11 @@ Pick one candidate number and use it consistently:
 - Objective audit: `dist/cn_delivery_mNNN_chain_objective_audit.md`
 
 Before review, confirm these selected files all report the same delivery
-version, source commit, clean source-control state and manifest aggregate hash.
+version, source commit, clean source-control state, bundle SHA-256 and manifest
+aggregate hash. The selected latest-candidate Markdown must show successful
+packet-binding checks for the sign-off packet and production sign-off action
+checklist, including `bundle_sha256_matches_status` and
+`manifest_aggregate_sha256_matches_status`.
 
 ## Automated Evidence Already Ready
 

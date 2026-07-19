@@ -397,6 +397,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         "preview_database": preview_database,
         "manifest_aggregate_sha256": aggregate,
         "bundle_sha256": bundle_metadata.get("bundle_sha256"),
+        "packet_binding": action_binding if isinstance(action_binding, dict) else {},
         "file_count": manifest.get("file_count"),
         "business_uat_ready": readiness.get("business_uat_ready"),
         "production_signoff_ready": readiness.get("production_signoff_ready"),
@@ -465,6 +466,7 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 f"- Version: `{selected.get('version')}`",
                 f"- Source commit: `{selected.get('source_commit')}`",
                 f"- Preview database: `{selected.get('preview_database')}`",
+                f"- Bundle SHA-256: `{selected.get('bundle_sha256')}`",
                 f"- Manifest aggregate SHA-256: `{selected.get('manifest_aggregate_sha256')}`",
                 f"- Business UAT ready: `{selected.get('business_uat_ready')}`",
                 f"- Production sign-off ready: `{selected.get('production_signoff_ready')}`",
@@ -477,6 +479,13 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 *[
                     f"- `{label}`: `{digest}`"
                     for label, digest in (selected.get("evidence_sha256") or {}).items()
+                ],
+                "",
+                "## Packet Binding Checks",
+                "",
+                *[
+                    f"- `{label}`: `{value}`"
+                    for label, value in (selected.get("packet_binding") or {}).items()
                 ],
                 "",
                 "## Required Action Keys",

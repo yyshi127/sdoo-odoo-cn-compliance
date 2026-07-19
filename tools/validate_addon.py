@@ -5504,6 +5504,8 @@ def validate_delivery_objective_coverage() -> None:
         "manifest_aggregate_sha256_matches_status",
         "preview_database_matches_status",
         "Preview database",
+        "Bundle SHA-256",
+        "Packet Binding Checks",
     ):
         if required not in latest_selector_content:
             fail(f"China latest sign-off selector is missing {required}")
