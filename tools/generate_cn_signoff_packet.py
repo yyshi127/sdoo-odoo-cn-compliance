@@ -438,7 +438,11 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "business_uat_decision",
             "owner": "business_reviewer",
-            "required_evidence": "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md with company, period, reviewer, datasets, screens and decision.",
+            "required_evidence": (
+                "Completed docs/CHINA_BUSINESS_UAT_CHECKLIST.md with company, period, "
+                "reviewer, representative datasets, screenshots or recording references, "
+                "screen-by-screen walkthrough script, controlled AI evidence and decision."
+            ),
             "acceptable_decisions": ["accepted", "accepted_with_limitations"],
             "objective_areas": [
                 "representative business UAT",

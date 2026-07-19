@@ -81,7 +81,7 @@ file.
 
 | Action key | Owner | Acceptable decisions | Evidence to attach |
 | --- | --- | --- | --- |
-| `business_uat_decision` | Business reviewer | `accepted`, `accepted_with_limitations` | Completed `docs/CHINA_BUSINESS_UAT_CHECKLIST.md` with company, period, reviewer, datasets, screenshots or recording references and decision. |
+| `business_uat_decision` | Business reviewer | `accepted`, `accepted_with_limitations` | Completed `docs/CHINA_BUSINESS_UAT_CHECKLIST.md` with company, period, reviewer, representative datasets, screenshots or recording references, walkthrough script, controlled AI evidence and decision. |
 | `representative_ux_walkthrough` | Business reviewer | `passed`, `passed_with_limitations` | Walkthrough proof for workbench, risk center, remediation tracker, AI guidance, filing/payment archive and reports on normal desktop and smaller laptop sizes. |
 | `blocker_summary_walkthrough` | Business reviewer | `passed`, `passed_with_limitations` | Evidence that non-ready data, evidence, filing, remediation, report and report-readiness records explain the blocker, limitation or uncertainty and the next action. |
 | `production_deployment_decision` | Release owner | `deploy`, `deploy_with_limitations`, `defer`, `reject` | Completed `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md` including rollback owner, trigger, deployment window and limitation statement. |

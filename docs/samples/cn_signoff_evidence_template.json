@@ -15,7 +15,7 @@
       "decision": "accepted",
       "reviewer": "Business reviewer name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md and CHINA_UAT_WALKTHROUGH_SCRIPT.md",
+      "evidence_reference": "Path or document reference for completed CHINA_BUSINESS_UAT_CHECKLIST.md, screenshots or recording references and CHINA_UAT_WALKTHROUGH_SCRIPT.md",
       "objective_areas": [
         "representative business UAT",
         "closed-loop compliance workflow usability"
@@ -23,7 +23,7 @@
       "addresses_blockers": [
         "business UAT decision must be recorded outside this automated status"
       ],
-      "notes": "Company, period, datasets, screen-by-screen walkthrough script, filing/payment archive and controlled AI guidance evidence reviewed."
+      "notes": "Company, period, representative datasets, screenshots or recording references, screen-by-screen walkthrough script, accepted decision, filing/payment archive and controlled AI guidance evidence reviewed."
     },
     {
       "key": "china_tax_professional_rule_signoff",

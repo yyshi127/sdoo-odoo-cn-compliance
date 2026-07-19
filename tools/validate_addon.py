@@ -5096,6 +5096,8 @@ def validate_delivery_objective_coverage() -> None:
         "business UAT ready: `true`",
         "production sign-off ready: `false`",
         "`business_uat_decision`",
+        "representative datasets",
+        "screenshots or recording references",
         "`china_tax_professional_rule_signoff`",
         "64-character SHA-256 released rule checksum",
         "`customer_scope_and_data_gap_review`",

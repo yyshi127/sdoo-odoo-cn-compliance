@@ -1060,9 +1060,10 @@ def delivery_status_with_manifest(manifest: dict) -> dict:
 def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict:
     evidence_notes = {
         "business_uat_decision": (
-            "Completed UAT evidence for company CN Company and period 2026-06; "
-            "screen-by-screen walkthrough script and controlled AI guidance "
-            "evidence reviewed."
+            "Completed UAT checklist evidence for company CN Company and period "
+            "2026-06; representative datasets, screenshots or recording "
+            "references, screen-by-screen walkthrough script, accepted decision "
+            "and controlled AI guidance evidence reviewed."
         ),
         "china_tax_professional_rule_signoff": (
             "Released rule versions 19.0.1.130.0 official source packet reviewed "
@@ -1598,7 +1599,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn(
             "business_uat_decision: evidence_reference or notes must mention: "
-            "walkthrough script, uat, company, period, controlled ai",
+            "completed checklist, walkthrough script, uat, company, period, "
+            "representative datasets, screenshots or recording, decision, "
+            "controlled ai",
             result["blockers"],
         )
 
@@ -1694,6 +1697,26 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "representative_ux_walkthrough: evidence_reference or notes must "
             "mention: walkthrough script",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_business_uat_specifics(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "business_uat_decision":
+                item["notes"] = (
+                    "Completed UAT evidence for company CN Company and period "
+                    "2026-06; walkthrough script and controlled AI reviewed."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "business_uat_decision: evidence_reference or notes must mention: "
+            "completed checklist, representative datasets, screenshots or "
+            "recording, decision",
             result["blockers"],
         )
 

@@ -38,10 +38,14 @@ PLACEHOLDER_TEXTS = {
 
 ACTION_EVIDENCE_REQUIREMENTS = {
     "business_uat_decision": (
+        ("completed checklist", ("completed checklist", "uat checklist", "验收清单", "检查清单")),
         ("walkthrough script", ("walkthrough script", "walkthrough", "screen-by-screen")),
         ("uat", ("uat", "user acceptance", "用户验收", "业务验收")),
         ("company", ("company", "公司")),
         ("period", ("period", "期间")),
+        ("representative datasets", ("representative dataset", "representative datasets", "代表数据", "样本数据")),
+        ("screenshots or recording", ("screenshots", "recording", "screen recording", "截图", "录屏")),
+        ("decision", ("decision", "accepted", "accepted_with_limitations", "验收结论", "决策")),
         ("controlled ai", ("controlled ai", "受控 ai", "受控AI")),
     ),
     "china_tax_professional_rule_signoff": (
