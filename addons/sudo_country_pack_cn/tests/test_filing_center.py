@@ -74,11 +74,46 @@ class TestChinaFilingCenter(TransactionCase):
         )
         filing._compute_cn_filing_center_display()
 
-        self.assertIn("Blocked by:", filing.cn_filing_center_blocker_summary)
-        self.assertIn(
-            "submission archive not sealed",
-            filing.cn_filing_center_blocker_summary,
+        self.assertEqual(filing.cn_filing_center_archive_state, "attention")
+        self.assertIn("待处理：", filing.cn_filing_center_blocker_summary)
+        self.assertIn("申报回执尚未封存", filing.cn_filing_center_blocker_summary)
+        self.assertIn("申报尚未提交或确认受理", filing.cn_filing_center_blocker_summary)
+        self.assertIn("缴退税证明不完整", filing.cn_filing_center_blocker_summary)
+        self.assertIn("未关联正式证据", filing.cn_filing_center_blocker_summary)
+
+    def test_filing_center_blocks_integrity_failures(self):
+        filing = self.env["sudo.compliance.filing"].with_company(self.company).new(
+            {
+                "filing_name": "Filing center blocked test",
+                "company_id": self.company.id,
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "state": "accepted",
+                "payment_state": "paid",
+                "cn_submission_integrity_state": "changed",
+                "cn_payment_integrity_state": "verified",
+            }
         )
-        self.assertIn("filing not submitted", filing.cn_filing_center_blocker_summary)
-        self.assertIn("payment proof incomplete", filing.cn_filing_center_blocker_summary)
-        self.assertIn("no formal evidence linked", filing.cn_filing_center_blocker_summary)
+        filing._compute_cn_filing_center_display()
+
+        self.assertEqual(filing.cn_filing_center_archive_state, "blocked")
+        self.assertIn("申报封存完整性异常", filing.cn_filing_center_blocker_summary)
+
+    def test_filing_center_marks_traceable_archive_ready(self):
+        filing = self.env["sudo.compliance.filing"].with_company(self.company).new(
+            {
+                "filing_name": "Filing center ready test",
+                "company_id": self.company.id,
+                "profile_id": self.profile.id,
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "state": "accepted",
+                "payment_state": "paid",
+                "cn_submission_integrity_state": "verified",
+                "cn_payment_integrity_state": "verified",
+            }
+        )
+        filing.cn_filing_center_evidence_state = "verified"
+
+        self.assertEqual(filing._cn_filing_center_archive_state(), "ready")
