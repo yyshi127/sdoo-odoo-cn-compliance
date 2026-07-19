@@ -536,7 +536,13 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "production_deployment_decision",
             "owner": "release_owner",
-            "required_evidence": "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/reject decision and rollback owner.",
+            "required_evidence": (
+                "Completed docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md with deploy/defer/"
+                "reject decision, delivery version, source commit, bundle SHA-256, "
+                "manifest aggregate hash, target database, target company scope, "
+                "backup/restore proof, rollback trigger, rollback owner, deployment "
+                "window and go-live monitoring owner."
+            ),
             "acceptable_decisions": ["deploy", "deploy_with_limitations", "defer", "reject"],
             "objective_areas": [
                 "installable and upgradeable Odoo deployment",

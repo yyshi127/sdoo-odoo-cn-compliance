@@ -106,7 +106,7 @@
       "decision": "deploy",
       "reviewer": "Release owner name",
       "date": "YYYY-MM-DD",
-      "evidence_reference": "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference",
+      "evidence_reference": "Completed CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md reference with delivery version, source commit, bundle SHA-256, manifest aggregate hash, target database, target company scope, backup/restore proof, rollback trigger and owner, deployment window and monitoring owner",
       "objective_areas": [
         "installable and upgradeable Odoo deployment",
         "auditable release and rollback decision"
@@ -116,7 +116,7 @@
         "current official sources and released rules require professional sign-off evidence",
         "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
       ],
-      "notes": "Deploy, deploy_with_limitations, defer or reject."
+      "notes": "Production sign-off, deployment decision, delivery version, source commit, bundle SHA-256, manifest aggregate hash, target database, target company scope, backup/restore proof, rollback trigger, rollback owner, deployment window and go-live monitoring owner reviewed before deploy, deploy_with_limitations, defer or reject."
     }
   ]
 }

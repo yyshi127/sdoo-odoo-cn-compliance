@@ -102,7 +102,17 @@ ACTION_EVIDENCE_REQUIREMENTS = {
     "production_deployment_decision": (
         ("production sign-off", ("production sign-off", "生产签核", "上线签核")),
         ("deployment decision", ("deployment decision", "部署决策", "上线决策")),
-        ("rollback", ("rollback", "回滚")),
+        ("delivery version", ("delivery version", "版本")),
+        ("source commit", ("source commit", "源码提交", "源提交")),
+        ("bundle sha256", ("bundle sha256", "bundle sha-256", "bundle checksum", "交付包校验")),
+        ("manifest aggregate hash", ("manifest aggregate hash", "manifest aggregate sha-256", "manifest hash", "清单哈希")),
+        ("target database", ("target database", "目标数据库")),
+        ("target company scope", ("target company", "target company scope", "目标公司")),
+        ("backup/restore proof", ("backup", "restore", "backup/restore", "备份", "恢复")),
+        ("rollback trigger", ("rollback trigger", "回滚触发")),
+        ("rollback owner", ("rollback owner", "回滚负责人")),
+        ("deployment window", ("deployment window", "上线窗口", "部署窗口")),
+        ("monitoring owner", ("monitoring owner", "go-live monitoring", "上线监控")),
     ),
 }
 

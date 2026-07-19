@@ -1099,8 +1099,12 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
             "AI guidance disclosure blocker summaries reviewed."
         ),
         "production_deployment_decision": (
-            "Production sign-off template completed with deployment decision and "
-            "rollback owner."
+            "Production sign-off template completed with deployment decision, "
+            "delivery version 19.0.1.130.0, source commit abc123, bundle "
+            "SHA-256 bundlechecksum, manifest aggregate hash aggregatechecksum, "
+            "target database test, target company scope CN Company, "
+            "backup/restore proof reference, rollback trigger, rollback owner, "
+            "deployment window and go-live monitoring owner."
         ),
     }
     decisions = []
@@ -1231,6 +1235,27 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         for item in result["action_results"]:
             self.assertGreaterEqual(len(item["objective_areas"]), 1)
+
+    def test_signoff_evidence_requires_deployment_control_specifics(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "production_deployment_decision":
+                item["notes"] = (
+                    "Production sign-off template completed with deployment "
+                    "decision and rollback owner."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "production_deployment_decision: evidence_reference or notes must "
+            "mention: delivery version, source commit, bundle sha256, manifest "
+            "aggregate hash, target database, target company scope, backup/restore "
+            "proof, rollback trigger, deployment window, monitoring owner",
+            result["blockers"],
+        )
 
     def test_rendered_signoff_evidence_draft_tracks_packet_actions_and_commit(self):
         packet = PACKET._build_packet(status_payload())
