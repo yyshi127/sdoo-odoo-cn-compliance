@@ -170,6 +170,16 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             ),
         ),
         _readiness_item(
+            "workbench_action_contract_evidence",
+            "Workbench closed-loop shortcuts return native Odoo window actions scoped to the active China compliance profile",
+            real_data_readiness.get("has_workbench_action_contract_evidence") is True,
+            json.dumps(
+                real_data.get("workbench_action_contracts") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
             "real_data_closed_loop",
             "Representative database has accounting, external data, risk/remediation and verified evidence activity",
             real_data.get("ok") is True

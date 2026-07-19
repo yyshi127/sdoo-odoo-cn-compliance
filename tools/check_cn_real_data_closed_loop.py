@@ -161,6 +161,94 @@ def menu_action_contract(menu_xml_id, action_xml_id, res_model, required_groups)
     }}
 
 
+def _domain_terms(domain):
+    terms = []
+    if isinstance(domain, (list, tuple)):
+        if (
+            len(domain) >= 3
+            and isinstance(domain[0], str)
+            and domain[0] not in ("|", "&", "!")
+        ):
+            terms.append(tuple(domain[:3]))
+        else:
+            for item in domain:
+                terms.extend(_domain_terms(item))
+    return terms
+
+
+def _domain_has(domain, field_name, operator, value):
+    return any(
+        len(term) >= 3
+        and term[0] == field_name
+        and term[1] == operator
+        and term[2] == value
+        for term in _domain_terms(domain)
+    )
+
+
+def _domain_has_any(domain, expected_terms):
+    return any(
+        _domain_has(domain, field_name, operator, value)
+        for field_name, operator, value in expected_terms
+    )
+
+
+def workbench_action_contract(method_name, res_model, expected_terms=None):
+    profile = active_profiles[:1] if active_profiles else env["sudo.compliance.profile"]
+    if not profile:
+        return {{
+            "method": method_name,
+            "res_model": res_model,
+            "ready": False,
+            "error": "no active China compliance profile",
+            "action_type": None,
+            "scope_matches": False,
+            "expected_terms": expected_terms or [],
+        }}
+    if not hasattr(profile, method_name):
+        return {{
+            "method": method_name,
+            "res_model": res_model,
+            "ready": False,
+            "error": "method missing",
+            "action_type": None,
+            "scope_matches": False,
+            "expected_terms": expected_terms or [],
+        }}
+    try:
+        action = getattr(profile, method_name)()
+    except Exception as exc:
+        return {{
+            "method": method_name,
+            "res_model": res_model,
+            "ready": False,
+            "error": str(exc),
+            "action_type": None,
+            "scope_matches": False,
+            "expected_terms": expected_terms or [],
+        }}
+    domain = action.get("domain") or []
+    action_type = action.get("type")
+    expected_terms = expected_terms or [("profile_id", "=", profile.id)]
+    scope_matches = _domain_has_any(domain, expected_terms)
+    return {{
+        "method": method_name,
+        "res_model": res_model,
+        "ready": bool(
+            action_type == "ir.actions.act_window"
+            and action.get("res_model") == res_model
+            and scope_matches
+        ),
+        "action_type": action_type,
+        "action_res_model": action.get("res_model"),
+        "view_mode": action.get("view_mode"),
+        "scope_matches": scope_matches,
+        "expected_terms": expected_terms,
+        "domain": domain,
+        "context": action.get("context") or {{}},
+    }}
+
+
 def company_rule_contract(model_name):
     model_record = env["ir.model"].sudo().search([("model", "=", model_name)], limit=1)
     rules = env["ir.rule"].sudo().search([("model_id", "=", model_record.id), ("active", "=", True)])
@@ -971,6 +1059,93 @@ menu_action_contracts = [
     ),
 ]
 
+active_profile = active_profiles[:1] if active_profiles else False
+profile_scope = ("profile_id", "=", active_profile.id) if active_profile else ("profile_id", "=", False)
+assessment_profile_scope = (
+    "assessment_id.profile_id",
+    "=",
+    active_profile.id if active_profile else False,
+)
+company_scope = (
+    "company_id",
+    "=",
+    active_profile.company_id.id if active_profile else False,
+)
+
+workbench_action_contracts = [
+    workbench_action_contract(
+        "action_cn_open_workbench_assessments",
+        "sudo.compliance.assessment",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_data_readiness",
+        "sudo.cn.external.dataset",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_obligations",
+        "sudo.compliance.obligation",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_findings",
+        "sudo.compliance.finding",
+        [assessment_profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_tasks",
+        "sudo.compliance.task",
+        [assessment_profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_tax_impacts",
+        "sudo.cn.tax.impact.case",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_evidence_center",
+        "sudo.compliance.evidence",
+        [
+            company_scope,
+            ("assessment_id.profile_id", "=", active_profile.id if active_profile else False),
+            ("finding_id.assessment_id.profile_id", "=", active_profile.id if active_profile else False),
+            ("task_id.assessment_id.profile_id", "=", active_profile.id if active_profile else False),
+            ("filing_id.profile_id", "=", active_profile.id if active_profile else False),
+        ],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_filing_center",
+        "sudo.compliance.filing",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_report_readiness",
+        "sudo.compliance.assessment",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_reports",
+        "sudo.cn.compliance.report",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_ai_guidance_findings",
+        "sudo.compliance.finding",
+        [assessment_profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_cross_border_transactions",
+        "sudo.cn.cross.border.transaction",
+        [profile_scope],
+    ),
+    workbench_action_contract(
+        "action_cn_open_workbench_rule_basis",
+        "sudo.compliance.rule.version",
+        [("rule_id.country_id.code", "=", "CN")],
+    ),
+]
+
 multi_company_security_contracts = [
     company_rule_contract(model_name)
     for model_name in (
@@ -1273,6 +1448,10 @@ readiness = {{
         menu_action_contracts
         and all(contract.get("ready") for contract in menu_action_contracts)
     ),
+    "has_workbench_action_contract_evidence": bool(
+        workbench_action_contracts
+        and all(contract.get("ready") for contract in workbench_action_contracts)
+    ),
     "has_multi_company_security_contract_evidence": bool(
         multi_company_security_contracts
         and all(contract.get("ready") for contract in multi_company_security_contracts)
@@ -1385,6 +1564,7 @@ payload = {{
     "reviewer_view_contracts": reviewer_view_contracts,
     "ux_view_clarity_contracts": ux_view_clarity_contracts,
     "menu_action_contracts": menu_action_contracts,
+    "workbench_action_contracts": workbench_action_contracts,
     "multi_company_security_contracts": multi_company_security_contracts,
     "readiness": readiness,
     "ok": readiness["demo_ready"],

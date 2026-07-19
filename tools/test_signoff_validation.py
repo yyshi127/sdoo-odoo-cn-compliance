@@ -187,6 +187,7 @@ def status_payload() -> dict:
                 "has_cross_border_review_scope_evidence": True,
                 "has_multi_company_security_contract_evidence": True,
                 "has_menu_action_contract_evidence": True,
+                "has_workbench_action_contract_evidence": True,
                 "has_ux_view_clarity_contract_evidence": True,
             },
             "sample_profiles": [
@@ -308,6 +309,25 @@ def status_payload() -> dict:
                     "action_matches": True,
                     "missing_groups": [],
                     "groups": ["sudo_global_finance.group_compliance_user"],
+                }
+            ],
+            "workbench_action_contracts": [
+                {
+                    "method": "action_cn_open_workbench_findings",
+                    "res_model": "sudo.compliance.finding",
+                    "ready": True,
+                    "action_type": "ir.actions.act_window",
+                    "action_res_model": "sudo.compliance.finding",
+                    "view_mode": "kanban,list,form",
+                    "scope_matches": True,
+                    "expected_terms": [
+                        ["assessment_id.profile_id", "=", 1],
+                    ],
+                    "domain": [
+                        ["assessment_id.profile_id", "=", 1],
+                        ["result", "in", ["fail", "unknown", "error"]],
+                    ],
+                    "context": {},
                 }
             ],
             "sample_evidence": [
@@ -580,6 +600,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_cross_border_review_scope_evidence": True,
             "has_multi_company_security_contract_evidence": True,
             "has_menu_action_contract_evidence": True,
+            "has_workbench_action_contract_evidence": True,
             "has_ux_view_clarity_contract_evidence": True,
         },
         "sample_profiles": [
@@ -701,6 +722,25 @@ def real_data_closed_loop_payload() -> dict:
                 "action_matches": True,
                 "missing_groups": [],
                 "groups": ["sudo_global_finance.group_compliance_user"],
+            }
+        ],
+        "workbench_action_contracts": [
+            {
+                "method": "action_cn_open_workbench_findings",
+                "res_model": "sudo.compliance.finding",
+                "ready": True,
+                "action_type": "ir.actions.act_window",
+                "action_res_model": "sudo.compliance.finding",
+                "view_mode": "kanban,list,form",
+                "scope_matches": True,
+                "expected_terms": [
+                    ["assessment_id.profile_id", "=", 1],
+                ],
+                "domain": [
+                    ["assessment_id.profile_id", "=", 1],
+                    ["result", "in", ["fail", "unknown", "error"]],
+                ],
+                "context": {},
             }
         ],
         "sample_evidence": [
@@ -1213,6 +1253,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["native_odoo_multi_company_security"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_workbench_action_contract_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_workbench_action_contract_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["native_odoo_multi_company_security"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "workbench_action_contract=False",
+            items["native_odoo_multi_company_security"]["evidence"],
+        )
+
     def test_objective_audit_blocks_when_upgrade_migration_chain_is_missing(self):
         status = delivery_status()
         status["upgrade_migration_chain"]["ready"] = False
@@ -1496,6 +1554,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["native_menu_action_contract_evidence"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_workbench_action_contract_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("workbench_action_contract_evidence", automated)
+        self.assertTrue(automated["workbench_action_contract_evidence"]["ready"])
+        self.assertIn(
+            "action_cn_open_workbench_findings",
+            automated["workbench_action_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "assessment_id.profile_id",
+            automated["workbench_action_contract_evidence"]["evidence"],
+        )
+
     def test_signoff_packet_surfaces_upgrade_migration_chain_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1585,6 +1659,34 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "missing_groups",
             automated["native_menu_action_contract_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_workbench_action_contract_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_workbench_action_contract_evidence"
+        ] = False
+        payload["real_data_closed_loop"]["workbench_action_contracts"] = [
+            {
+                "method": "action_cn_open_workbench_findings",
+                "res_model": "sudo.compliance.finding",
+                "ready": False,
+                "action_type": "ir.actions.act_window",
+                "action_res_model": "sudo.compliance.finding",
+                "scope_matches": False,
+                "expected_terms": [["assessment_id.profile_id", "=", 1]],
+                "domain": [],
+                "context": {},
+            }
+        ]
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["workbench_action_contract_evidence"]["ready"])
+        self.assertIn(
+            '"scope_matches": false',
+            automated["workbench_action_contract_evidence"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
@@ -2692,6 +2794,29 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "sudo_global_finance.group_compliance_user",
             contracts[0]["groups"],
         )
+
+    def test_delivery_status_preserves_workbench_action_contract_details(self):
+        status = delivery_status()
+
+        contracts = status["real_data_closed_loop"]["workbench_action_contracts"]
+
+        self.assertEqual(
+            contracts[0]["method"],
+            "action_cn_open_workbench_findings",
+        )
+        self.assertTrue(contracts[0]["ready"])
+        self.assertTrue(contracts[0]["scope_matches"])
+        self.assertEqual(contracts[0]["action_type"], "ir.actions.act_window")
+
+    def test_delivery_status_markdown_lists_workbench_action_contract_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("Workbench action contract evidence ready: `True`", content)
 
     def test_delivery_status_markdown_lists_menu_action_contract_evidence(self):
         status = delivery_status()
