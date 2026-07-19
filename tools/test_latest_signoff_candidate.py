@@ -25,6 +25,7 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertEqual(result["schema"], selector.SCHEMA)
             self.assertEqual(result["selected"]["candidate"], "m8")
             self.assertTrue(result["selected"]["ok"])
+            self.assertEqual(result["selected"]["preview_database"], "test")
             self.assertEqual(
                 result["selected"]["production_required_action_keys"],
                 ["business_uat_decision"],
@@ -69,6 +70,7 @@ class TestLatestSignoffCandidate(unittest.TestCase):
 
             content = output.read_text(encoding="utf-8")
             self.assertIn("Production sign-off action checklist:", content)
+            self.assertIn("Preview database: `test`", content)
             self.assertIn("cn_delivery_m17_chain_production_signoff_actions.md", content)
             self.assertIn("## Evidence SHA-256", content)
             self.assertIn("`remote_acceptance`", content)
@@ -349,6 +351,7 @@ def _candidate(
         "schema": "sdoo.cn.delivery-status.v1",
         "version": "19.0.1.130.0",
         "source_control": source_control,
+        "preview_database": "test",
         "readiness_gates": {
             "preview_ready": True,
             "compliance_scope_ready": True,
@@ -364,12 +367,14 @@ def _candidate(
         "schema": "sdoo.cn.signoff-packet.v1",
         "version": "19.0.1.130.0",
         "source_commit": packet_commit or commit,
+        "preview_database": "test",
     }
     actions = {
         "schema": "sdoo.cn.production-signoff-actions.v1",
         "version": "19.0.1.130.0",
         "source_commit": commit,
         "preview_url": None,
+        "preview_database": "test",
         "production_signoff_ready": False,
         "action_count": 1,
         "actions": [
@@ -389,6 +394,7 @@ def _candidate(
             "version_matches_status": True,
             "source_commit_matches_status": True,
             "preview_url_matches_status": True,
+            "preview_database_matches_status": True,
             "action_keys_match": action_binding_ok,
         },
     }

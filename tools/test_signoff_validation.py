@@ -2851,6 +2851,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         status = {
             "version": "19.0.1.130.0",
             "source_control": source_control,
+            "preview_database": "test",
             "readiness_gates": {
                 "preview_ready": True,
                 "compliance_scope_ready": True,
@@ -2862,6 +2863,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         actions = {
             "version": "19.0.1.130.0",
             "source_commit": commit,
+            "preview_database": "test",
             "production_signoff_ready": False,
             "action_count": 1,
             "actions": [
@@ -2881,6 +2883,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "version_matches_status": True,
                 "source_commit_matches_status": True,
                 "preview_url_matches_status": True,
+                "preview_database_matches_status": True,
                 "action_keys_match": True,
             },
         }
@@ -2897,6 +2900,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             f"cn_delivery_{tag}_chain_signoff_packet.json": {
                 "version": "19.0.1.130.0",
                 "source_commit": commit,
+                "preview_database": "test",
             },
             f"cn_delivery_{tag}_chain_production_signoff_actions.json": actions,
             f"cn_delivery_{tag}_chain_production_signoff_actions.md": (

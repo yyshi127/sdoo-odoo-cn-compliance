@@ -5435,6 +5435,16 @@ def validate_delivery_objective_coverage() -> None:
     chain_tool_content = (
         REPOSITORY_ROOT / "tools" / "build_cn_signoff_evidence_chain.py"
     ).read_text(encoding="utf-8")
+    latest_selector_content = (
+        REPOSITORY_ROOT / "tools" / "select_cn_latest_signoff_candidate.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        '"preview_database": status.get("preview_database")',
+        "preview_database_matches_status",
+        "Preview database",
+    ):
+        if required not in latest_selector_content:
+            fail(f"China latest sign-off selector is missing {required}")
     for required in (
         "--require-production-signoff-ready",
         "production sign-off readiness gate failed",

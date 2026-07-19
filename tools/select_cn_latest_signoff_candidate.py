@@ -304,6 +304,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
             "version_matches_status",
             "source_commit_matches_status",
             "preview_url_matches_status",
+            "preview_database_matches_status",
             "action_keys_match",
         ):
             if action_binding.get(key) is not True:
@@ -351,6 +352,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         "source_commit": commit,
         "source_branch": source_control.get("branch") if isinstance(source_control, dict) else None,
         "source_clean": source_control.get("dirty") is False if isinstance(source_control, dict) else False,
+        "preview_database": status.get("preview_database"),
         "manifest_aggregate_sha256": aggregate,
         "bundle_sha256": bundle_metadata.get("bundle_sha256"),
         "file_count": manifest.get("file_count"),
@@ -420,6 +422,7 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 f"- Candidate: `{selected['candidate']}`",
                 f"- Version: `{selected.get('version')}`",
                 f"- Source commit: `{selected.get('source_commit')}`",
+                f"- Preview database: `{selected.get('preview_database')}`",
                 f"- Manifest aggregate SHA-256: `{selected.get('manifest_aggregate_sha256')}`",
                 f"- Business UAT ready: `{selected.get('business_uat_ready')}`",
                 f"- Production sign-off ready: `{selected.get('production_signoff_ready')}`",
