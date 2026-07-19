@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ def _load_tool(name: str, path: Path):
     module = importlib.util.module_from_spec(spec)
     if not spec or not spec.loader:
         raise RuntimeError(f"cannot load tool: {path}")
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -40,6 +42,10 @@ VALIDATION = _load_tool(
 OBJECTIVE_AUDIT = _load_tool(
     "cn_objective_audit",
     REPOSITORY_ROOT / "tools" / "audit_cn_objective_completion.py",
+)
+LATEST_CANDIDATE = _load_tool(
+    "cn_latest_signoff_candidate",
+    REPOSITORY_ROOT / "tools" / "select_cn_latest_signoff_candidate.py",
 )
 
 
@@ -160,6 +166,13 @@ def _write_outputs(chain: dict[str, dict[str, Any]], prefix: Path) -> dict[str, 
         chain["objective_audit"],
         prefix.with_name(prefix.name + "_objective_audit.md"),
     )
+    latest_candidate = LATEST_CANDIDATE.select_latest(prefix.parent)
+    latest_candidate_json = prefix.with_name(prefix.name + "_latest_signoff_candidate.json")
+    latest_candidate_md = prefix.with_name(prefix.name + "_latest_signoff_candidate.md")
+    _write_json(latest_candidate, latest_candidate_json)
+    LATEST_CANDIDATE._write_markdown(latest_candidate, latest_candidate_md)
+    outputs["latest_signoff_candidate"] = latest_candidate_json
+    outputs["latest_signoff_candidate_markdown"] = latest_candidate_md
     return outputs
 
 

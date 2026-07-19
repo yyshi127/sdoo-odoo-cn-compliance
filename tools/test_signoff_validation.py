@@ -2556,6 +2556,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertTrue(chain["objective_audit"]["achieved"])
 
+    def test_signoff_chain_writes_latest_candidate_outputs(self):
+        chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
+
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / "cn_delivery_m1_chain"
+            outputs = SIGNOFF_CHAIN._write_outputs(chain, prefix)
+
+            self.assertIn("latest_signoff_candidate", outputs)
+            self.assertIn("latest_signoff_candidate_markdown", outputs)
+            self.assertTrue(outputs["latest_signoff_candidate"].is_file())
+            self.assertTrue(outputs["latest_signoff_candidate_markdown"].is_file())
+
     def test_delivery_status_keeps_required_actions_for_incomplete_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
         evidence = complete_evidence(packet)
