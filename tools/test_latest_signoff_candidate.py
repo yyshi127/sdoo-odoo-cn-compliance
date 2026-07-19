@@ -41,6 +41,17 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_strict_mode_rejects_incomplete_newer_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(dist, 7, commit="abc", aggregate="hash7")
+            _candidate(dist, 8, commit="def", aggregate="hash8", omit="preview_health")
+
+            result = selector.select_latest(dist, require_highest_status_complete=True)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn("refusing to select older m7", result["errors"][0])
+
     def test_rejects_commit_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             dist = Path(temp)

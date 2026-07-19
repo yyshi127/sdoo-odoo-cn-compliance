@@ -9,7 +9,10 @@ Use the latest verified `mNNN` evidence set in `dist/` for the candidate under
 review. Confirm the exact candidate number, commit and manifest hash from the
 selected status, packet and manifest before completing any sign-off evidence.
 Use `tools/select_cn_latest_signoff_candidate.py` to select and cross-check the
-latest complete candidate evidence set before reviewer walkthroughs.
+latest complete candidate evidence set before reviewer walkthroughs. For
+production sign-off, run it with `--require-highest-status-complete` so the
+process fails if a newer candidate status exists but its evidence files are
+incomplete.
 
 It is not a tax opinion and must not be used to certify a taxpayer filing
 position without current official sources, customer-specific facts and China tax

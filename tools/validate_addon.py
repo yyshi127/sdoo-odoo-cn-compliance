@@ -4734,6 +4734,7 @@ def validate_delivery_objective_coverage() -> None:
         "# China Fiscal Compliance Pack Current Production Sign-off Runbook",
         "latest verified `mNNN` evidence set",
         "tools/select_cn_latest_signoff_candidate.py",
+        "--require-highest-status-complete",
         "dist/sdoo-cn-compliance-delivery-mNNN.tgz",
         "dist/cn_delivery_mNNN_chain_signoff_packet.md",
         "business UAT ready: `true`",

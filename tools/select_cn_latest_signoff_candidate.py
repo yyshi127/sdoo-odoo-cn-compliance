@@ -214,21 +214,41 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     }
 
 
-def select_latest(dist_dir: Path = DIST) -> dict[str, Any]:
+def select_latest(
+    dist_dir: Path = DIST,
+    *,
+    require_highest_status_complete: bool = False,
+) -> dict[str, Any]:
     checked: list[dict[str, Any]] = []
-    for number in reversed(_discover_numbers(dist_dir)):
+    numbers = _discover_numbers(dist_dir)
+    highest_number = numbers[-1] if numbers else None
+    for number in reversed(numbers):
         candidate = _validate_candidate(_candidate_paths(dist_dir, number))
         checked.append(candidate)
         if candidate["ok"]:
+            if require_highest_status_complete and number != highest_number:
+                return {
+                    "schema": SCHEMA,
+                    "selected": None,
+                    "checked_candidates": checked,
+                    "errors": [
+                        (
+                            "latest discovered status candidate is incomplete; "
+                            f"refusing to select older {candidate['candidate']}"
+                        )
+                    ],
+                }
             return {
                 "schema": SCHEMA,
                 "selected": candidate,
                 "checked_candidates": checked,
+                "errors": [],
             }
     return {
         "schema": SCHEMA,
         "selected": None,
         "checked_candidates": checked,
+        "errors": ["no complete candidate evidence set was found"] if checked else [],
     }
 
 
@@ -267,12 +287,23 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Exit with an error when no complete candidate can be selected.",
     )
+    parser.add_argument(
+        "--require-highest-status-complete",
+        action="store_true",
+        help=(
+            "Exit with an error instead of selecting an older complete candidate "
+            "when a newer mNNN status file exists but is incomplete or invalid."
+        ),
+    )
     return parser
 
 
 def main() -> int:
     args = _parser().parse_args()
-    payload = select_latest(args.dist_dir)
+    payload = select_latest(
+        args.dist_dir,
+        require_highest_status_complete=args.require_highest_status_complete,
+    )
     if args.json_output:
         args.json_output.parent.mkdir(parents=True, exist_ok=True)
         args.json_output.write_text(
@@ -283,7 +314,11 @@ def main() -> int:
         _write_markdown(payload, args.markdown_output)
     selected = payload.get("selected")
     if not isinstance(selected, dict):
-        message = "no complete China sign-off candidate found"
+        errors = payload.get("errors")
+        if isinstance(errors, list) and errors:
+            message = "; ".join(str(error) for error in errors)
+        else:
+            message = "no complete China sign-off candidate found"
         if args.require_found:
             raise SystemExit(message)
         print(message)
