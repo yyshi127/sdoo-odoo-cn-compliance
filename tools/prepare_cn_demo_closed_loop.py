@@ -25,6 +25,7 @@ def _shell_code(company_name: str | None, allow_demo_data: bool) -> str:
 import hashlib
 import json
 from datetime import date
+from unittest.mock import patch
 
 allow_demo_data = {allow_demo_data!r}
 company_name = {company_name!r}
@@ -343,6 +344,66 @@ def ensure_demo_rule(profile):
         version.with_user(approver).action_activate()
     version.invalidate_recordset()
     return rule, version, True
+
+
+def ensure_source_monitor_run(version):
+    source = version.authority_source_ids[:1]
+    if not source:
+        return None, False
+    author = env["res.users"].sudo().search([
+        ("login", "=", "codex_cn_demo_rule_author"),
+    ], limit=1) or env.user
+    changed = False
+    if (
+        not getattr(source, "cn_monitor_enabled", False)
+        or not getattr(source, "cn_next_monitor_date", False)
+        or getattr(source, "cn_monitor_interval_days", 0) != 30
+    ):
+        source.with_user(author).write({{
+            "cn_monitor_enabled": True,
+            "cn_monitor_interval_days": 30,
+            "cn_next_monitor_date": "2026-07-15",
+        }})
+        changed = True
+    Run = env["sudo.cn.authority.source.monitor.run"].sudo()
+    existing = Run.search([
+        ("source_id", "=", source.id),
+        ("state", "in", ("unchanged", "changed", "failed")),
+        ("result_checksum", "!=", False),
+    ], order="requested_at desc, id desc", limit=8).filtered(
+        lambda item: item.result_integrity_state == "verified"
+    )[:1]
+    if existing:
+        return existing, changed
+    run = Run.search([
+        ("source_id", "=", source.id),
+        ("state", "=", "queued"),
+    ], order="requested_at desc, id desc", limit=1)
+    if not run:
+        run = env["sudo.cn.authority.source.monitor.run"].with_user(author).enqueue(
+            source.with_user(author),
+            request_kind="manual",
+        )
+        changed = True
+    raw = source.snapshot_attachment_id.sudo().raw or b""
+    if isinstance(raw, str):
+        raw = raw.encode("utf-8")
+    capture = {{
+        "content": raw,
+        "content_type": source.snapshot_attachment_id.mimetype or "text/html",
+        "etag": '"codex-demo-source-monitor"',
+        "final_url": source.official_url,
+        "http_status": 200,
+        "last_modified": "Wed, 15 Jul 2026 00:00:00 GMT",
+    }}
+    patch_target = (
+        "odoo.addons.sudo_global_finance.models.authority_source."
+        "SudoComplianceAuthoritySource._download_official_snapshot"
+    )
+    with patch(patch_target, return_value=capture):
+        run.with_user(author).action_process_now()
+    run.invalidate_recordset()
+    return run, True
 
 
 def ensure_assessment(run):
@@ -1757,6 +1818,7 @@ else:
     else:
         run, created_run = latest_or_create_vat_run(profile)
         rule, version, changed_rule = ensure_demo_rule(profile)
+        source_monitor_run, changed_source_monitor = ensure_source_monitor_run(version)
         assessment, created_assessment = ensure_assessment(run)
         finding, task, changed_task = ensure_finding_task(assessment)
         verification = ensure_remediation_verification(profile, run, task)
@@ -1807,10 +1869,14 @@ else:
                 and cit_scope["run"].state == "succeeded"
                 and cit_scope["run"].conclusion_state == "aligned"
                 and cit_scope["run"].result_integrity_state == "verified"
+                and source_monitor_run
+                and source_monitor_run.state == "unchanged"
+                and source_monitor_run.result_integrity_state == "verified"
             ),
             "changed": bool(
                 created_run
                 or changed_rule
+                or changed_source_monitor
                 or created_assessment
                 or changed_task
                 or verification.get("changed")
@@ -1840,6 +1906,15 @@ else:
                 "id": version.id,
                 "name": version.display_name,
                 "state": version.state,
+            }},
+            "source_monitor_run": {{
+                "id": source_monitor_run.id if source_monitor_run else False,
+                "name": source_monitor_run.display_name if source_monitor_run else False,
+                "state": source_monitor_run.state if source_monitor_run else False,
+                "result_integrity_state": source_monitor_run.result_integrity_state if source_monitor_run else False,
+                "source_snapshot_checksum": source_monitor_run.source_snapshot_checksum if source_monitor_run else False,
+                "impact_snapshot_checksum": source_monitor_run.impact_snapshot_checksum if source_monitor_run else False,
+                "result_checksum": source_monitor_run.result_checksum if source_monitor_run else False,
             }},
             "assessment": {{
                 "id": assessment.id,

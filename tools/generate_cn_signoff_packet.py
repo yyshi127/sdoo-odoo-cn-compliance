@@ -339,6 +339,8 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             real_data_readiness.get("has_rule_source_governance_evidence") is True
             and real_data_readiness.get("has_official_source_freshness_evidence")
             is True
+            and real_data_readiness.get("has_official_source_monitor_run_evidence")
+            is True
             and real_data_readiness.get("has_rule_professional_signoff_evidence")
             is True
             and real_data_readiness.get("has_rule_checksum_traceability_evidence")
@@ -348,6 +350,9 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
                     "governance": {
                         "official_source_freshness": real_data_readiness.get(
                             "has_official_source_freshness_evidence"
+                        ),
+                        "official_source_monitor_run": real_data_readiness.get(
+                            "has_official_source_monitor_run_evidence"
                         ),
                         "rule_professional_signoff": real_data_readiness.get(
                             "has_rule_professional_signoff_evidence"

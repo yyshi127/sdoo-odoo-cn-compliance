@@ -1251,6 +1251,17 @@ rule_checksum_traceability_evidence = bool(
         for version in sample_rule_versions
     )
 )
+official_source_monitor_run_evidence = bool(
+    any(
+        run.get("state") in ("unchanged", "changed")
+        and run.get("result_integrity_state") == "verified"
+        and has_text(run.get("completed_at"))
+        and has_text(run.get("source_snapshot_checksum"))
+        and has_text(run.get("impact_snapshot_checksum"))
+        and has_text(run.get("result_checksum"))
+        for run in sample_source_monitor_runs
+    )
+)
 customer_data_scope_review_evidence = bool(
     (accounting.get("active_profile_posted_moves") or 0) > 0
     and (accounting.get("active_profile_posted_move_lines") or 0) > 0
@@ -1427,10 +1438,12 @@ readiness = {{
         )
     ),
     "has_official_source_freshness_evidence": official_source_freshness_evidence,
+    "has_official_source_monitor_run_evidence": official_source_monitor_run_evidence,
     "has_rule_professional_signoff_evidence": rule_professional_signoff_evidence,
     "has_rule_checksum_traceability_evidence": rule_checksum_traceability_evidence,
     "has_rule_source_governance_evidence": bool(
         official_source_freshness_evidence
+        and official_source_monitor_run_evidence
         and rule_professional_signoff_evidence
         and rule_checksum_traceability_evidence
     ),

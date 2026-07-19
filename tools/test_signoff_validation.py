@@ -190,6 +190,7 @@ def status_payload() -> dict:
                 "has_controlled_ai_guidance_evidence": True,
                 "has_rule_source_governance_evidence": True,
                 "has_official_source_freshness_evidence": True,
+                "has_official_source_monitor_run_evidence": True,
                 "has_rule_professional_signoff_evidence": True,
                 "has_rule_checksum_traceability_evidence": True,
                 "has_customer_scope_gap_review_evidence": True,
@@ -457,7 +458,20 @@ def status_payload() -> dict:
                     "next_review_date": "2027-07-15",
                 }
             ],
-            "sample_source_monitor_runs": [],
+            "sample_source_monitor_runs": [
+                {
+                    "name": "CODEX-DEMO source monitor run",
+                    "source": "CODEX-DEMO China VAT source",
+                    "state": "unchanged",
+                    "request_kind": "manual",
+                    "completed_at": "2026-07-15 00:00:00",
+                    "result_integrity_state": "verified",
+                    "source_snapshot_checksum": "sourcesnapshot123",
+                    "impact_snapshot_checksum": "impactsnapshot123",
+                    "result_checksum": "resultchecksum123",
+                    "result_summary": "Remote source content is unchanged.",
+                }
+            ],
             "sample_iit_reconciliation_runs": [
                 {
                     "name": "CN IIT payroll withholding June run",
@@ -646,6 +660,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_controlled_ai_guidance_evidence": True,
             "has_rule_source_governance_evidence": True,
             "has_official_source_freshness_evidence": True,
+            "has_official_source_monitor_run_evidence": True,
             "has_rule_professional_signoff_evidence": True,
             "has_rule_checksum_traceability_evidence": True,
             "has_customer_scope_gap_review_evidence": True,
@@ -913,7 +928,20 @@ def real_data_closed_loop_payload() -> dict:
                 "next_review_date": "2027-07-15",
             }
         ],
-        "sample_source_monitor_runs": [],
+        "sample_source_monitor_runs": [
+            {
+                "name": "CODEX-DEMO source monitor run",
+                "source": "CODEX-DEMO China VAT source",
+                "state": "unchanged",
+                "request_kind": "manual",
+                "completed_at": "2026-07-15 00:00:00",
+                "result_integrity_state": "verified",
+                "source_snapshot_checksum": "sourcesnapshot123",
+                "impact_snapshot_checksum": "impactsnapshot123",
+                "result_checksum": "resultchecksum123",
+                "result_summary": "Remote source content is unchanged.",
+            }
+        ],
         "sample_iit_reconciliation_runs": [
             {
                 "name": "CN IIT payroll withholding June run",
@@ -3416,7 +3444,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("CN VAT Demo Rule / 2026.1", content)
         self.assertIn("Professional review", content)
         self.assertIn("Multi-company security contract evidence ready: `True`", content)
-        self.assertIn("No source monitor run sample was provided", content)
+        self.assertIn("CODEX-DEMO source monitor run", content)
+        self.assertIn("Source/state: `CODEX-DEMO China VAT source` / `unchanged`", content)
+        self.assertIn("Integrity/checksum: `verified` / `resultchecksum123`", content)
 
     def test_delivery_status_markdown_lists_official_source_governance_overview(self):
         status = delivery_status()
