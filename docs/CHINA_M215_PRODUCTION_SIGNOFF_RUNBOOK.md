@@ -1,0 +1,152 @@
+# China Fiscal Compliance Pack m215 Production Sign-off Runbook
+
+This runbook turns the current automated delivery evidence for m215 into a
+reviewer-ready production sign-off workflow. It is the practical checklist for
+closing the remaining human gates before any production deployment decision.
+
+It is not a tax opinion and must not be used to certify a taxpayer filing
+position without current official sources, customer-specific facts and China tax
+professional judgment.
+
+## Release Candidate Under Review
+
+- Delivery version: `19.0.1.130.0`
+- Git commit: `990f4374f048a4940999c55f118603fb240a7734`
+- Release branch: `main`
+- Delivery package: `dist/sdoo-cn-compliance-delivery-m215.tgz`
+- Delivery metadata: `dist/sdoo-cn-compliance-delivery-m215.bundle.json`
+- Delivery manifest: `dist/cn_delivery_manifest_m215_full.json`
+- Remote runtime acceptance: `dist/cn_delivery_acceptance_m215_remote.json`
+- Remote upgrade acceptance: `dist/cn_delivery_acceptance_m215_upgrade_remote.json`
+- Preview module check: `dist/cn_preview_module_m215.json`
+- Preview health check: `dist/cn_preview_health_m215.json`
+- Real-data closed-loop check: `dist/cn_real_data_closed_loop_m215.json`
+- Ordered status: `dist/cn_delivery_m215_chain_status.md`
+- Sign-off packet: `dist/cn_delivery_m215_chain_signoff_packet.md`
+- Objective audit: `dist/cn_delivery_m215_chain_objective_audit.md`
+
+## Automated Evidence Already Ready
+
+The m215 evidence set proves the software and audit chain are ready for business
+review:
+
+- clean install and upgrade runtime acceptance passed;
+- delivery manifest, bundle metadata and source-control evidence are consistent;
+- preview database is reachable and reports the expected module version;
+- real Odoo accounting data is present in the preview scope;
+- native Odoo menu, action, multi-company and record-rule contracts are checked;
+- workbench shortcut actions open native Odoo act-window pages in company and
+  China profile scope;
+- workbench, risk, remediation, report readiness and formal report views expose
+  status, risk, amount, owner, due date, blocker and next-action fields;
+- objective audit has no automated not-ready item.
+
+The expected automated status is:
+
+- business UAT ready: `true`
+- production sign-off ready: `false`
+
+Production remains blocked by design until the human evidence below is
+completed.
+
+## Required Human Evidence
+
+Complete these seven actions from the m215 sign-off packet. Each action needs a
+real reviewer, date, decision, notes and evidence reference.
+
+| Action key | Owner | Acceptable decisions | Evidence to attach |
+| --- | --- | --- | --- |
+| `business_uat_decision` | Business reviewer | `accepted`, `accepted_with_limitations` | Completed `docs/CHINA_BUSINESS_UAT_CHECKLIST.md` with company, period, reviewer, datasets, screenshots or recording references and decision. |
+| `representative_ux_walkthrough` | Business reviewer | `passed`, `passed_with_limitations` | Walkthrough proof for workbench, risk center, remediation tracker, AI guidance, filing/payment archive and reports on normal desktop and smaller laptop sizes. |
+| `blocker_summary_walkthrough` | Business reviewer | `passed`, `passed_with_limitations` | Evidence that non-ready data, evidence, filing, remediation, report and report-readiness records explain the blocker, limitation or uncertainty and the next action. |
+| `production_deployment_decision` | Release owner | `deploy`, `deploy_with_limitations`, `defer`, `reject` | Completed `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md` including rollback owner, trigger, deployment window and limitation statement. |
+| `china_tax_professional_rule_signoff` | China tax professional | `approved`, `approved_with_limitations` | Signed review of all released rules and official sources used for formal conclusions. |
+| `official_source_freshness_review` | Rule governance owner | `current`, `current_with_documented_limitations` | Current official-source monitoring result and local jurisdiction review for the target period. |
+| `customer_scope_and_data_gap_review` | Implementation owner | `no_blocking_gap`, `limitations_documented` | Review of target periods, posted accounting data, external invoice/filing/payment/payroll datasets, evidence gaps, open risks and remediation status. |
+
+Use `defer` or `reject` for the deployment decision if any reviewer cannot
+provide real evidence or if unresolved high-impact limitations are not formally
+accepted.
+
+## Reviewer Walkthrough Sequence
+
+1. Open the preview database or a customer-specific copied test database.
+2. Confirm the China compliance profile, company, period and taxpayer
+   classification.
+3. Open the compliance workbench and confirm the scope, data readiness, blocker
+   summary and next action are understandable.
+4. Open the risk center and confirm every material risk shows severity, reason,
+   period, impact amount, rule/source basis, evidence requirement and next
+   action.
+5. Open the remediation tracker and confirm owner, due date, status, evidence
+   state and verification rescan state are visible.
+6. Open AI guidance records and confirm provider, prompt version, checksums,
+   source warnings and professional-boundary text are visible.
+7. Open filing/payment archives, evidence center, report readiness and formal
+   reports.
+8. Capture evidence references for the completed UAT checklist and sign-off
+   template.
+9. Convert the sign-off packet into machine-readable evidence, replace all
+   placeholders with real records, then validate it.
+
+## Build And Validate Completed Evidence
+
+Start from the m215 rendered draft or regenerate it from the packet:
+
+```bash
+python tools/render_cn_signoff_evidence_template.py \
+  --packet dist/cn_delivery_m215_chain_signoff_packet.json \
+  --json-output dist/cn_delivery_m215_signoff_evidence_completed.json
+```
+
+Edit the generated file outside the delivery bundle process and replace all
+placeholder reviewers, dates, decisions, notes and evidence references with real
+review evidence. Dates must use ISO format such as `2026-07-19`.
+
+Validate the completed evidence:
+
+```bash
+python tools/validate_cn_signoff_evidence.py \
+  --packet dist/cn_delivery_m215_chain_signoff_packet.json \
+  --evidence dist/cn_delivery_m215_signoff_evidence_completed.json \
+  --json-output dist/cn_delivery_m215_signoff_validation_completed.json \
+  --require-production-signoff-ready
+```
+
+Regenerate the ordered chain with the completed evidence:
+
+```bash
+python tools/build_cn_signoff_evidence_chain.py \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-m215.bundle.json \
+  --manifest dist/cn_delivery_manifest_m215_full.json \
+  --summary dist/cn_delivery_acceptance_m215_remote.json \
+  --upgrade-summary dist/cn_delivery_acceptance_m215_upgrade_remote.json \
+  --preview-health dist/cn_preview_health_m215.json \
+  --preview-module dist/cn_preview_module_m215.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_m215.json \
+  --preview-url http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01 \
+  --completed-evidence dist/cn_delivery_m215_signoff_evidence_completed.json \
+  --output-prefix dist/cn_delivery_m215_signed_chain \
+  --require-production-signoff-ready
+```
+
+Only a passed validation and a signed chain with
+`production_signoff_ready=true` can support a production deployment decision.
+
+## Evidence Retention Rules
+
+- Keep the completed UAT checklist, walkthrough screenshots or recording
+  references, rule/source sign-off packet and deployment decision together.
+- Keep the machine-readable completed sign-off evidence with the exact delivery
+  package and manifest it reviewed.
+- Do not overwrite the original unsigned m215 evidence set.
+- Do not store private keys, database dumps, production filestores, customer
+  secrets or unredacted confidential documents in this repository.
+
+## Production Boundary
+
+The software can organize, test and document China fiscal compliance workflows,
+but production conclusions depend on external facts that automation cannot
+invent: current official sources, real taxpayer data, complete invoice/filing
+and payment evidence, customer-specific scope review and qualified professional
+judgment.

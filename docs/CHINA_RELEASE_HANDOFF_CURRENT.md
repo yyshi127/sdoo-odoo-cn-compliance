@@ -9,6 +9,12 @@ bundle is rebuilt.
 
 Delivery version: `19.0.1.130.0`
 
+Latest verified candidate at this handoff: `m215`
+
+For the m215 production sign-off workflow, use
+`docs/CHINA_M215_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
+`docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md`.
+
 Use the latest numbered files in `dist/` for the active release candidate:
 
 - delivery package: `dist/sdoo-cn-compliance-delivery-m*.tgz`
