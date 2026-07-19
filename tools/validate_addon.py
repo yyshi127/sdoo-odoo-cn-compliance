@@ -4688,7 +4688,6 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "# China Fiscal Compliance Pack Release Handoff",
         "Delivery version: `19.0.1.130.0`",
-        "Latest verified candidate at this handoff: `m217`",
         "dist/sdoo-cn-compliance-delivery-m*.tgz",
         "codex_cn_m31_runtime_mNNN",
         "business_uat_ready=true",
@@ -4732,8 +4731,9 @@ def validate_delivery_objective_coverage() -> None:
     current_runbook_content = current_runbook_path.read_text(encoding="utf-8")
     for required in (
         "# China Fiscal Compliance Pack Current Production Sign-off Runbook",
-        "Current verified candidate at this handoff: `m217`",
-        "4beae7c0eb4fa2a6ddae748ff5f42ab51675f69c",
+        "latest verified `mNNN` evidence set",
+        "dist/sdoo-cn-compliance-delivery-mNNN.tgz",
+        "dist/cn_delivery_mNNN_chain_signoff_packet.md",
         "business UAT ready: `true`",
         "production sign-off ready: `false`",
         "`business_uat_decision`",

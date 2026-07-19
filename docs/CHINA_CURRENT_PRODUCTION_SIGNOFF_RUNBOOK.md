@@ -5,36 +5,40 @@ verified release candidate into a reviewer-ready production sign-off workflow.
 It is the practical checklist for closing the remaining human gates before any
 production deployment decision.
 
-Current verified candidate at this handoff: `m217`
-
-Update this document whenever a newer release candidate supersedes the evidence
-set below.
+Use the latest verified `mNNN` evidence set in `dist/` for the candidate under
+review. Confirm the exact candidate number, commit and manifest hash from the
+selected status, packet and manifest before completing any sign-off evidence.
 
 It is not a tax opinion and must not be used to certify a taxpayer filing
 position without current official sources, customer-specific facts and China tax
 professional judgment.
 
-## Release Candidate Under Review
+## Select The Release Candidate
+
+Pick one candidate number and use it consistently:
 
 - Delivery version: `19.0.1.130.0`
-- Git commit: `4beae7c0eb4fa2a6ddae748ff5f42ab51675f69c`
-- Release branch: `main`
-- Delivery package: `dist/sdoo-cn-compliance-delivery-m217.tgz`
-- Delivery metadata: `dist/sdoo-cn-compliance-delivery-m217.bundle.json`
-- Delivery manifest: `dist/cn_delivery_manifest_m217_full.json`
-- Remote runtime acceptance: `dist/cn_delivery_acceptance_m217_remote.json`
-- Remote upgrade acceptance: `dist/cn_delivery_acceptance_m217_upgrade_remote.json`
-- Preview module check: `dist/cn_preview_module_m217.json`
-- Preview health check: `dist/cn_preview_health_m217.json`
-- Real-data closed-loop check: `dist/cn_real_data_closed_loop_m217.json`
-- Ordered status: `dist/cn_delivery_m217_chain_status.md`
-- Sign-off packet: `dist/cn_delivery_m217_chain_signoff_packet.md`
-- Objective audit: `dist/cn_delivery_m217_chain_objective_audit.md`
+- Git commit: read from `dist/cn_delivery_mNNN_chain_status.md`
+- Release branch: read from `dist/cn_delivery_mNNN_chain_status.md`
+- Delivery package: `dist/sdoo-cn-compliance-delivery-mNNN.tgz`
+- Delivery metadata: `dist/sdoo-cn-compliance-delivery-mNNN.bundle.json`
+- Delivery manifest: `dist/cn_delivery_manifest_mNNN_full.json`
+- Remote runtime acceptance: `dist/cn_delivery_acceptance_mNNN_remote.json`
+- Remote upgrade acceptance: `dist/cn_delivery_acceptance_mNNN_upgrade_remote.json`
+- Preview module check: `dist/cn_preview_module_mNNN.json`
+- Preview health check: `dist/cn_preview_health_mNNN.json`
+- Real-data closed-loop check: `dist/cn_real_data_closed_loop_mNNN.json`
+- Ordered status: `dist/cn_delivery_mNNN_chain_status.md`
+- Sign-off packet: `dist/cn_delivery_mNNN_chain_signoff_packet.md`
+- Objective audit: `dist/cn_delivery_mNNN_chain_objective_audit.md`
+
+Before review, confirm these selected files all report the same delivery
+version, source commit, clean source-control state and manifest aggregate hash.
 
 ## Automated Evidence Already Ready
 
-The m217 evidence set proves the software and audit chain are ready for business
-review:
+The selected evidence set must prove the software and audit chain are ready for
+business review:
 
 - clean install and upgrade runtime acceptance passed;
 - delivery manifest, bundle metadata and source-control evidence are consistent;
@@ -57,8 +61,8 @@ completed.
 
 ## Required Human Evidence
 
-Complete these seven actions from the m217 sign-off packet. Each action needs a
-real reviewer, date, decision, notes and evidence reference.
+Complete these seven actions from the selected sign-off packet. Each action
+needs a real reviewer, date, decision, notes and evidence reference.
 
 | Action key | Owner | Acceptable decisions | Evidence to attach |
 | --- | --- | --- | --- |
@@ -97,12 +101,13 @@ accepted.
 
 ## Build And Validate Completed Evidence
 
-Start from the m217 rendered draft or regenerate it from the packet:
+Start from the rendered draft for the selected candidate, or regenerate it from
+the packet:
 
 ```bash
 python tools/render_cn_signoff_evidence_template.py \
-  --packet dist/cn_delivery_m217_chain_signoff_packet.json \
-  --json-output dist/cn_delivery_m217_signoff_evidence_completed.json
+  --packet dist/cn_delivery_mNNN_chain_signoff_packet.json \
+  --json-output dist/cn_delivery_mNNN_signoff_evidence_completed.json
 ```
 
 Edit the generated file outside the delivery bundle process and replace all
@@ -113,9 +118,9 @@ Validate the completed evidence:
 
 ```bash
 python tools/validate_cn_signoff_evidence.py \
-  --packet dist/cn_delivery_m217_chain_signoff_packet.json \
-  --evidence dist/cn_delivery_m217_signoff_evidence_completed.json \
-  --json-output dist/cn_delivery_m217_signoff_validation_completed.json \
+  --packet dist/cn_delivery_mNNN_chain_signoff_packet.json \
+  --evidence dist/cn_delivery_mNNN_signoff_evidence_completed.json \
+  --json-output dist/cn_delivery_mNNN_signoff_validation_completed.json \
   --require-production-signoff-ready
 ```
 
@@ -123,16 +128,16 @@ Regenerate the ordered chain with the completed evidence:
 
 ```bash
 python tools/build_cn_signoff_evidence_chain.py \
-  --bundle-metadata dist/sdoo-cn-compliance-delivery-m217.bundle.json \
-  --manifest dist/cn_delivery_manifest_m217_full.json \
-  --summary dist/cn_delivery_acceptance_m217_remote.json \
-  --upgrade-summary dist/cn_delivery_acceptance_m217_upgrade_remote.json \
-  --preview-health dist/cn_preview_health_m217.json \
-  --preview-module dist/cn_preview_module_m217.json \
-  --real-data-closed-loop dist/cn_real_data_closed_loop_m217.json \
+  --bundle-metadata dist/sdoo-cn-compliance-delivery-mNNN.bundle.json \
+  --manifest dist/cn_delivery_manifest_mNNN_full.json \
+  --summary dist/cn_delivery_acceptance_mNNN_remote.json \
+  --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
+  --preview-health dist/cn_preview_health_mNNN.json \
+  --preview-module dist/cn_preview_module_mNNN.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
   --preview-url http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01 \
-  --completed-evidence dist/cn_delivery_m217_signoff_evidence_completed.json \
-  --output-prefix dist/cn_delivery_m217_signed_chain \
+  --completed-evidence dist/cn_delivery_mNNN_signoff_evidence_completed.json \
+  --output-prefix dist/cn_delivery_mNNN_signed_chain \
   --require-production-signoff-ready
 ```
 
@@ -145,7 +150,8 @@ Only a passed validation and a signed chain with
   references, rule/source sign-off packet and deployment decision together.
 - Keep the machine-readable completed sign-off evidence with the exact delivery
   package and manifest it reviewed.
-- Do not overwrite the original unsigned m217 evidence set.
+- Do not overwrite the original unsigned evidence set for the selected
+  candidate.
 - Do not store private keys, database dumps, production filestores, customer
   secrets or unredacted confidential documents in this repository.
 
