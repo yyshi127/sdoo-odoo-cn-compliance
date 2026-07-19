@@ -159,6 +159,8 @@ def _validate(packet: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any
         blockers.append("sign-off evidence version does not match the packet version")
     if evidence.get("source_commit") != packet.get("source_commit"):
         blockers.append("sign-off evidence source commit does not match the packet")
+    if evidence.get("preview_url") != packet.get("preview_url"):
+        blockers.append("sign-off evidence preview URL does not match the packet")
     production_blocker_coverage = packet.get("production_blocker_coverage") or {}
     evidence_blocker_coverage = evidence.get("production_blocker_coverage")
     coverage_matches_packet = evidence_blocker_coverage == production_blocker_coverage

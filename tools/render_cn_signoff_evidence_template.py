@@ -66,6 +66,7 @@ def render_template(packet: dict[str, Any]) -> dict[str, Any]:
         "schema": EVIDENCE_SCHEMA,
         "version": packet.get("version"),
         "source_commit": packet.get("source_commit"),
+        "preview_url": packet.get("preview_url"),
         "generated_from_packet_at_utc": (
             datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         ),

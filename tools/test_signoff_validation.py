@@ -997,6 +997,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         "schema": VALIDATION.EVIDENCE_SCHEMA,
         "version": packet["version"],
         "source_commit": packet["source_commit"],
+        "preview_url": packet["preview_url"],
         "production_blocker_coverage": packet["production_blocker_coverage"],
         "decisions": decisions,
         "limitations": [],
@@ -1112,6 +1113,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertEqual(draft["schema"], VALIDATION.EVIDENCE_SCHEMA)
         self.assertEqual(draft["version"], packet["version"])
         self.assertEqual(draft["source_commit"], packet["source_commit"])
+        self.assertEqual(draft["preview_url"], packet["preview_url"])
         self.assertEqual(
             [item["key"] for item in draft["decisions"]],
             [item["key"] for item in packet["production_actions"]],
@@ -1168,6 +1170,19 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertIn(
             "sign-off evidence production_blocker_coverage does not match the packet",
+            result["blockers"],
+        )
+
+    def test_preview_url_mismatch_blocks_production_gate(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        evidence["preview_url"] = "http://127.0.0.1:18070/web/login?db=other"
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["production_signoff_ready"])
+        self.assertIn(
+            "sign-off evidence preview URL does not match the packet",
             result["blockers"],
         )
 
