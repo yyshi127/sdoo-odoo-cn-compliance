@@ -63,6 +63,7 @@ FULL_PROFILE_TOOL_TESTS = [
     "tools.test_xbrl_contract",
     "tools.test_xbrl_normalizer",
     "tools.test_xbrl_worker_compatibility",
+    "tools.test_latest_signoff_candidate",
     "tools.test_signoff_validation",
 ]
 MANIFEST_SCHEMA = "sdoo.cn.delivery-manifest.v1"
@@ -177,6 +178,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "tools" / "summarize_cn_delivery_status.py",
         ROOT / "tools" / "audit_cn_objective_completion.py",
         ROOT / "tools" / "build_cn_signoff_evidence_chain.py",
+        ROOT / "tools" / "select_cn_latest_signoff_candidate.py",
         ROOT / "tools" / "generate_cn_signoff_packet.py",
         ROOT / "tools" / "render_cn_signoff_evidence_template.py",
         ROOT / "tools" / "validate_cn_signoff_evidence.py",
@@ -186,6 +188,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "tools" / "test_xbrl_contract.py",
         ROOT / "tools" / "test_xbrl_normalizer.py",
         ROOT / "tools" / "test_xbrl_worker_compatibility.py",
+        ROOT / "tools" / "test_latest_signoff_candidate.py",
         ROOT / "tools" / "test_signoff_validation.py",
     ]
     paths: list[Path] = []

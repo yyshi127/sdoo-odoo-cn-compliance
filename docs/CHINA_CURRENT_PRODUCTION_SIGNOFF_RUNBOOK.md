@@ -8,6 +8,8 @@ production deployment decision.
 Use the latest verified `mNNN` evidence set in `dist/` for the candidate under
 review. Confirm the exact candidate number, commit and manifest hash from the
 selected status, packet and manifest before completing any sign-off evidence.
+Use `tools/select_cn_latest_signoff_candidate.py` to select and cross-check the
+latest complete candidate evidence set before reviewer walkthroughs.
 
 It is not a tax opinion and must not be used to certify a taxpayer filing
 position without current official sources, customer-specific facts and China tax

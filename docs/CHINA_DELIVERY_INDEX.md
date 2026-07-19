@@ -104,6 +104,22 @@ acceptance summary.
 Use `--require-source-control-clean` for formal release packaging when the
 handoff must fail unless branch, commit and a clean worktree are recorded.
 
+Select the latest complete production sign-off candidate evidence set:
+
+```bash
+python tools/select_cn_latest_signoff_candidate.py \
+  --dist-dir dist \
+  --json-output dist/cn_latest_signoff_candidate.json \
+  --markdown-output dist/cn_latest_signoff_candidate.md \
+  --require-found
+```
+
+This selector scans `dist/cn_delivery_mNNN_chain_status.json` files, then checks
+that the matching bundle, manifest, remote acceptance, upgrade acceptance,
+preview, real-data, sign-off packet and objective audit files exist and agree on
+the release version, source commit and manifest aggregate hash. Use the selected
+candidate number in `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`.
+
 Build the ordered sign-off evidence chain from the current delivery evidence:
 
 ```bash
