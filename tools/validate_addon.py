@@ -5028,6 +5028,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "docs" / "CHINA_UAT_WALKTHROUGH_SCRIPT.md"',
         'ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"',
         'ROOT / "docs" / "CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md"',
+        'ROOT / "docs" / "CHINA_PRODUCTION_RELEASE_CONTROL.md"',
         'ROOT / "tools" / "check_cn_preview_health.py"',
         'ROOT / "tools" / "check_cn_preview_module.py"',
         'ROOT / "tools" / "check_cn_real_data_closed_loop.py"',

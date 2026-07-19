@@ -87,6 +87,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
     preview_module = status.get("preview_module") or {}
     uat_walkthrough = status.get("uat_walkthrough") or {}
     release_handoff = status.get("release_handoff") or {}
+    production_release_control = status.get("production_release_control") or {}
     objective_audit = status.get("objective_audit") or {}
     real_data = status.get("real_data_closed_loop") or {}
     source_governance = status.get("source_governance_summary") or {}
@@ -176,6 +177,12 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             "Current release handoff is included in the delivery manifest",
             release_handoff.get("included_in_manifest") is True,
             str(release_handoff.get("path") or ""),
+        ),
+        _readiness_item(
+            "production_release_control_in_manifest",
+            "Production release-control checklist is included in the delivery manifest",
+            production_release_control.get("included_in_manifest") is True,
+            str(production_release_control.get("path") or ""),
         ),
         _readiness_item(
             "signoff_evidence_template_in_manifest",

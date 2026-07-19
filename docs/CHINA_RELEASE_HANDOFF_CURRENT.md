@@ -16,6 +16,7 @@ Use the latest numbered files in `dist/` for the active release candidate:
 - delivery manifest: `dist/cn_delivery_manifest_m*_full.json`
 - local acceptance: `dist/cn_delivery_acceptance_m*_local.json`
 - remote acceptance: `dist/cn_delivery_acceptance_m*_remote.json`
+- remote upgrade acceptance: `dist/cn_delivery_acceptance_m*_upgrade_remote.json`
 - delivery status: `dist/cn_delivery_status_m*.md`
 - objective completion audit: `dist/cn_objective_completion_audit_m*.md`
 - sign-off packet: `dist/cn_signoff_packet_m*.md`
@@ -62,6 +63,7 @@ status shows all of the following:
 - `Business UAT walkthrough script in manifest: True`
 - `Objective coverage in manifest: True`
 - `Production sign-off template in manifest: True`
+- `Production release-control checklist in manifest: True`
 - `Preview health ok: True`
 - `Preview module ok: True`
 - `Real-data closed-loop evidence ready: True`

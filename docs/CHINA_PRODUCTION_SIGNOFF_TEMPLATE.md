@@ -15,6 +15,8 @@ for the exact candidate under review:
 - `dist/cn_signoff_packet_mNNN.json`
 - `dist/cn_signoff_packet_mNNN.md`
 - `dist/cn_delivery_acceptance_mNNN_remote.json`
+- `dist/cn_delivery_acceptance_mNNN_upgrade_remote.json`
+- `docs/CHINA_PRODUCTION_RELEASE_CONTROL.md`
 - `dist/sdoo-cn-compliance-delivery-mNNN.bundle.json`
 - `dist/cn_delivery_manifest_mNNN_full.json`
 
@@ -72,8 +74,11 @@ decision and include substantive limitation notes.
 - Bundle metadata verified: yes / no
 - Artifact verifier passed: yes / no
 - Odoo runtime acceptance result: passed / failed / not run
+- Odoo upgrade runtime acceptance result: passed / failed / not run
 - Runtime failed tests:
 - Runtime errors:
+- Production release-control checklist included in manifest: yes / no
+- Backup, restore, rollback trigger and monitoring controls reviewed: yes / no
 - Objective coverage matrix included in manifest: yes / no
 - Business UAT checklist included in manifest: yes / no
 - Business UAT walkthrough script included in manifest: yes / no

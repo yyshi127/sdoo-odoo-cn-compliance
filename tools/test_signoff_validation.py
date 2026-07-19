@@ -103,6 +103,10 @@ def status_payload() -> dict:
             "path": "docs/CHINA_RELEASE_HANDOFF_CURRENT.md",
             "included_in_manifest": True,
         },
+        "production_release_control": {
+            "path": "docs/CHINA_PRODUCTION_RELEASE_CONTROL.md",
+            "included_in_manifest": True,
+        },
         "signoff_evidence_template": {
             "path": "docs/samples/cn_signoff_evidence_template.json",
             "included_in_manifest": True,
@@ -410,6 +414,7 @@ def manifest_payload() -> dict:
         "docs/CHINA_DELIVERY_M138_STATUS.md",
         "docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md",
         "docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md",
+        "docs/CHINA_PRODUCTION_RELEASE_CONTROL.md",
         "docs/samples/cn_signoff_evidence_template.json",
         "addons/sudo_country_pack_cn/__manifest__.py",
         "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
@@ -1387,6 +1392,18 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "tools/validate_addon.py",
             automated["upgrade_migration_chain_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_surfaces_production_release_control_manifest_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("production_release_control_in_manifest", automated)
+        self.assertTrue(automated["production_release_control_in_manifest"]["ready"])
+        self.assertIn(
+            "docs/CHINA_PRODUCTION_RELEASE_CONTROL.md",
+            automated["production_release_control_in_manifest"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_upgrade_runtime_evidence(self):
@@ -2480,6 +2497,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("## Upgrade Runtime", content)
         self.assertIn("Install mode: `False`", content)
 
+    def test_delivery_status_markdown_lists_production_release_control(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn(
+            "Production release-control checklist in manifest: `True`",
+            content,
+        )
+        self.assertIn("docs/CHINA_PRODUCTION_RELEASE_CONTROL.md", content)
+
     def test_delivery_status_markdown_lists_evidence_filing_payment_summary_evidence(self):
         status = delivery_status()
         with tempfile.TemporaryDirectory() as directory:
@@ -2777,6 +2808,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             readiness["business_uat_blockers"],
         )
         self.assertFalse(status["release_handoff"]["included_in_manifest"])
+
+    def test_delivery_status_requires_production_release_control_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("docs/CHINA_PRODUCTION_RELEASE_CONTROL.md")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production release-control checklist is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["production_release_control"]["included_in_manifest"],
+        )
 
     def test_delivery_status_requires_current_migration_in_manifest(self):
         status = delivery_status_with_manifest(

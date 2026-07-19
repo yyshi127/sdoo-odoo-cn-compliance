@@ -20,6 +20,7 @@ RELEASE_HANDOFF_PATH = Path("docs/CHINA_RELEASE_HANDOFF_CURRENT.md")
 DELIVERY_INDEX_PATH = Path("docs/CHINA_DELIVERY_INDEX.md")
 OBJECTIVE_COVERAGE_PATH = Path("docs/CHINA_DELIVERY_OBJECTIVE_COVERAGE.md")
 PRODUCTION_SIGNOFF_PATH = Path("docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md")
+PRODUCTION_RELEASE_CONTROL_PATH = Path("docs/CHINA_PRODUCTION_RELEASE_CONTROL.md")
 PREVIEW_HEALTH_TOOL_PATH = Path("tools/check_cn_preview_health.py")
 PREVIEW_MODULE_TOOL_PATH = Path("tools/check_cn_preview_module.py")
 REAL_DATA_CLOSED_LOOP_TOOL_PATH = Path("tools/check_cn_real_data_closed_loop.py")
@@ -658,6 +659,12 @@ def _status(
         "path": PRODUCTION_SIGNOFF_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, PRODUCTION_SIGNOFF_PATH),
     }
+    production_release_control = {
+        "path": PRODUCTION_RELEASE_CONTROL_PATH.as_posix(),
+        "included_in_manifest": _manifest_includes(
+            manifest, PRODUCTION_RELEASE_CONTROL_PATH
+        ),
+    }
     preview_health_checker = {
         "path": PREVIEW_HEALTH_TOOL_PATH.as_posix(),
         "included_in_manifest": _manifest_includes(manifest, PREVIEW_HEALTH_TOOL_PATH),
@@ -841,6 +848,7 @@ def _status(
         ("business UAT checklist", business_uat),
         ("business UAT walkthrough script", uat_walkthrough),
         ("production sign-off template", production_signoff),
+        ("production release-control checklist", production_release_control),
         ("preview health checker", preview_health_checker),
         ("preview module checker", preview_module_checker),
         ("real-data closed-loop checker", real_data_closed_loop_checker),
@@ -956,6 +964,7 @@ def _status(
         "delivery_index": delivery_index,
         "objective_coverage": objective_coverage,
         "production_signoff": production_signoff,
+        "production_release_control": production_release_control,
         "preview_health_checker": preview_health_checker,
         "preview_module_checker": preview_module_checker,
         "real_data_closed_loop_checker": real_data_closed_loop_checker,
@@ -1018,6 +1027,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
     delivery_index = status.get("delivery_index") or {}
     objective_coverage = status.get("objective_coverage") or {}
     production_signoff = status.get("production_signoff") or {}
+    production_release_control = status.get("production_release_control") or {}
     preview_health_checker = status.get("preview_health_checker") or {}
     preview_health = status.get("preview_health") or {}
     preview_module_checker = status.get("preview_module_checker") or {}
@@ -1075,6 +1085,8 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Objective coverage in manifest: `{objective_coverage.get('included_in_manifest', False)}`",
         f"- Production sign-off template: `{production_signoff.get('path', '')}`",
         f"- Production sign-off template in manifest: `{production_signoff.get('included_in_manifest', False)}`",
+        f"- Production release-control checklist: `{production_release_control.get('path', '')}`",
+        f"- Production release-control checklist in manifest: `{production_release_control.get('included_in_manifest', False)}`",
         f"- Preview health checker: `{preview_health_checker.get('path', '')}`",
         f"- Preview health checker in manifest: `{preview_health_checker.get('included_in_manifest', False)}`",
         f"- Preview health ok: `{preview_health.get('ok', False)}`",
