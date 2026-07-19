@@ -3021,6 +3021,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             ),
             f"cn_delivery_{tag}_chain_objective_audit.json": {
                 "version": "19.0.1.130.0",
+                "preview_database": "test",
             },
         }
         for name, payload in files.items():

@@ -186,6 +186,21 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         if payload_version != version:
             errors.append(f"{label} version mismatch: {payload_version!r} != {version!r}")
 
+    preview_database = status.get("preview_database")
+    if not preview_database:
+        errors.append("status preview database is missing")
+    for label, payload in (
+        ("sign-off packet", packet),
+        ("production sign-off actions", actions),
+        ("objective audit", audit),
+    ):
+        payload_preview_database = payload.get("preview_database")
+        if payload_preview_database != preview_database:
+            errors.append(
+                f"{label} preview database mismatch: "
+                f"{payload_preview_database!r} != {preview_database!r}"
+            )
+
     for label, payload in (
         ("bundle metadata", bundle_metadata),
         ("status", status),
@@ -352,7 +367,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         "source_commit": commit,
         "source_branch": source_control.get("branch") if isinstance(source_control, dict) else None,
         "source_clean": source_control.get("dirty") is False if isinstance(source_control, dict) else False,
-        "preview_database": status.get("preview_database"),
+        "preview_database": preview_database,
         "manifest_aggregate_sha256": aggregate,
         "bundle_sha256": bundle_metadata.get("bundle_sha256"),
         "file_count": manifest.get("file_count"),

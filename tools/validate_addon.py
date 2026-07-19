@@ -5441,7 +5441,9 @@ def validate_delivery_objective_coverage() -> None:
         REPOSITORY_ROOT / "tools" / "select_cn_latest_signoff_candidate.py"
     ).read_text(encoding="utf-8")
     for required in (
-        '"preview_database": status.get("preview_database")',
+        'preview_database = status.get("preview_database")',
+        "status preview database is missing",
+        "preview database mismatch",
         "preview_database_matches_status",
         "Preview database",
     ):

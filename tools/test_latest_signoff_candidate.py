@@ -120,6 +120,44 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertIsNone(result["selected"])
             self.assertIn("sign-off packet commit mismatch", result["checked_candidates"][0]["errors"][0])
 
+    def test_rejects_preview_database_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                18,
+                commit="abc",
+                aggregate="hash18",
+                packet_preview_database="other",
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "sign-off packet preview database mismatch: 'other' != 'test'",
+                result["checked_candidates"][0]["errors"],
+            )
+
+    def test_rejects_objective_audit_without_preview_database(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                19,
+                commit="abc",
+                aggregate="hash19",
+                audit_preview_database=None,
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "objective audit preview database mismatch: None != 'test'",
+                result["checked_candidates"][0]["errors"],
+            )
+
     def test_accepts_remote_summary_without_manifest_hash(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             dist = Path(temp)
@@ -289,6 +327,9 @@ def _candidate(
     commit: str,
     aggregate: str,
     packet_commit: str | None = None,
+    packet_preview_database: str | None = "test",
+    actions_preview_database: str | None = "test",
+    audit_preview_database: str | None = "test",
     omit: str | None = None,
     omit_summary_manifest: bool = False,
     action_binding_ok: bool = True,
@@ -367,14 +408,14 @@ def _candidate(
         "schema": "sdoo.cn.signoff-packet.v1",
         "version": "19.0.1.130.0",
         "source_commit": packet_commit or commit,
-        "preview_database": "test",
+        "preview_database": packet_preview_database,
     }
     actions = {
         "schema": "sdoo.cn.production-signoff-actions.v1",
         "version": "19.0.1.130.0",
         "source_commit": commit,
         "preview_url": None,
-        "preview_database": "test",
+        "preview_database": actions_preview_database,
         "production_signoff_ready": False,
         "action_count": 1,
         "actions": [
@@ -401,6 +442,7 @@ def _candidate(
     audit = {
         "schema": "sdoo.cn.objective-audit.v1",
         "version": "19.0.1.130.0",
+        "preview_database": audit_preview_database,
     }
     payloads: dict[str, object] = {
         "bundle": b"bundle",
