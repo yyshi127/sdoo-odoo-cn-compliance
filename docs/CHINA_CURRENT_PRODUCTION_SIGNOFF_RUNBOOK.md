@@ -87,7 +87,7 @@ file.
 | `production_deployment_decision` | Release owner | `deploy`, `deploy_with_limitations`, `defer`, `reject` | Completed `docs/CHINA_PRODUCTION_SIGNOFF_TEMPLATE.md` including rollback owner, trigger, deployment window and limitation statement. |
 | `china_tax_professional_rule_signoff` | China tax professional | `approved`, `approved_with_limitations` | Signed review of all released rules and official sources used for formal conclusions. |
 | `official_source_freshness_review` | Rule governance owner | `current`, `current_with_documented_limitations` | Current official-source monitoring result, latest monitor run state/completion time, result integrity state, 64-character SHA-256 result checksum, changed/failed run disposition and local jurisdiction review for the target period. |
-| `customer_scope_and_data_gap_review` | Implementation owner | `no_blocking_gap`, `limitations_documented` | Review of target periods, posted accounting data, external invoice/filing/payment/payroll datasets, evidence gaps, open risks and remediation status. |
+| `customer_scope_and_data_gap_review` | Implementation owner | `no_blocking_gap`, `limitations_documented` | Review of target periods, posted accounting data, external invoice/filing/payment/payroll datasets, acquisition or authorization basis, evidence gaps, open risks and remediation status. |
 
 Use `defer` or `reject` for the deployment decision if any reviewer cannot
 provide real evidence or if unresolved high-impact limitations are not formally

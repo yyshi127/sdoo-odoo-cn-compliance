@@ -482,7 +482,7 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
         {
             "key": "customer_scope_and_data_gap_review",
             "owner": "implementation_owner",
-            "required_evidence": "Customer-specific accounting periods, external datasets, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
+            "required_evidence": "Customer-specific accounting periods, external datasets, acquisition or authorization basis, controlled AI limitations, evidence gaps, open risks and remediation status reviewed.",
             "acceptable_decisions": ["no_blocking_gap", "limitations_documented"],
             "objective_areas": [
                 "Odoo accounting and business-data basis",

@@ -147,6 +147,7 @@ decision and include substantive limitation notes.
 - Controlled AI limitations or excluded findings:
 - Known conclusion limitations:
 - External tax/invoice/payment data acquisition basis reviewed: yes / no / not applicable
+- External data acquisition/authorization evidence reference:
 - Data sufficiency reviewer:
 - Customer-facing limitation statement:
 

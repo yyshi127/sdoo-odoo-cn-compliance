@@ -62,6 +62,7 @@ ACTION_EVIDENCE_REQUIREMENTS = {
     ),
     "customer_scope_and_data_gap_review": (
         ("external dataset", ("external dataset", "外部数据", "监管数据")),
+        ("acquisition/authorization basis", ("acquisition basis", "authorization basis", "lawfully obtained", "lawful acquisition", "authorized source")),
         ("evidence gap", ("evidence gap", "证据缺口")),
         ("open risk", ("open risk", "未关闭风险", "开放风险")),
         ("controlled ai limitation", ("controlled ai limitation", "受控 ai 限制", "受控AI限制")),

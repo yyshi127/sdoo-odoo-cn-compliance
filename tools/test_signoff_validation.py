@@ -1076,8 +1076,9 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
             "reviewed."
         ),
         "customer_scope_and_data_gap_review": (
-            "External dataset coverage, evidence gap register, open risk list and "
-            "controlled AI limitation register reviewed."
+            "External dataset coverage, acquisition basis and authorization basis, "
+            "evidence gap register, open risk list and controlled AI limitation "
+            "register reviewed."
         ),
         "representative_ux_walkthrough": (
             "Screen-by-screen walkthrough script completed for workbench, risk "
@@ -1706,6 +1707,25 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             "official_source_freshness_review: evidence_reference or notes must "
             "include at least one 64-character SHA-256 monitor result checksum",
+            result["blockers"],
+        )
+
+    def test_signoff_evidence_requires_external_data_acquisition_basis(self):
+        packet = PACKET._build_packet(status_payload())
+        evidence = complete_evidence(packet)
+        for item in evidence["decisions"]:
+            if item["key"] == "customer_scope_and_data_gap_review":
+                item["notes"] = (
+                    "External dataset coverage, evidence gap register, open "
+                    "risk list and controlled AI limitation register reviewed."
+                )
+
+        result = VALIDATION._validate(packet, evidence)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "customer_scope_and_data_gap_review: evidence_reference or notes "
+            "must mention: acquisition/authorization basis",
             result["blockers"],
         )
 
