@@ -160,6 +160,16 @@ def _build_packet(status: dict[str, Any]) -> dict[str, Any]:
             ),
         ),
         _readiness_item(
+            "native_menu_action_contract_evidence",
+            "Core China compliance menus are native Odoo menu entries bound to expected window actions and compliance groups",
+            real_data_readiness.get("has_menu_action_contract_evidence") is True,
+            json.dumps(
+                real_data.get("menu_action_contracts") or [],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        ),
+        _readiness_item(
             "real_data_closed_loop",
             "Representative database has accounting, external data, risk/remediation and verified evidence activity",
             real_data.get("ok") is True

@@ -105,6 +105,39 @@ def view_field_contract(xml_id, required_fields):
     }}
 
 
+def menu_action_contract(menu_xml_id, action_xml_id, res_model, required_groups):
+    menu = env.ref("sudo_country_pack_cn." + menu_xml_id, raise_if_not_found=False)
+    action = env.ref("sudo_country_pack_cn." + action_xml_id, raise_if_not_found=False)
+    menu_action = menu.action if menu else None
+    menu_groups = menu.group_ids if menu else env["res.groups"]
+    group_external_ids = menu_groups.get_external_id() if menu else {{}}
+    groups = [
+        group_external_ids.get(group.id) or group.display_name
+        for group in menu_groups
+    ]
+    missing_groups = [
+        group
+        for group in required_groups
+        if group not in groups
+    ]
+    action_matches = bool(
+        action
+        and getattr(action, "res_model", None) == res_model
+        and menu_action
+        and getattr(menu_action, "_name", "") == "ir.actions.act_window"
+        and menu_action.id == action.id
+    )
+    return {{
+        "menu_xml_id": menu_xml_id,
+        "action_xml_id": action_xml_id,
+        "res_model": res_model,
+        "ready": bool(menu and action_matches and not missing_groups),
+        "action_matches": action_matches,
+        "missing_groups": missing_groups,
+        "groups": groups,
+    }}
+
+
 def company_rule_contract(model_name):
     model_record = env["ir.model"].sudo().search([("model", "=", model_name)], limit=1)
     rules = env["ir.rule"].sudo().search([("model_id", "=", model_record.id), ("active", "=", True)])
@@ -749,6 +782,57 @@ reviewer_view_contracts = [
     ),
 ]
 
+menu_action_contracts = [
+    menu_action_contract(
+        "menu_cn_compliance_workbench",
+        "action_cn_compliance_workbench",
+        "sudo.compliance.profile",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_risk_center",
+        "action_cn_risk_center",
+        "sudo.compliance.finding",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_remediation_tracker",
+        "action_cn_remediation_tracker",
+        "sudo.compliance.task",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_data_readiness_center",
+        "action_cn_data_readiness_center",
+        "sudo.cn.external.dataset",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_evidence_center",
+        "action_cn_evidence_center",
+        "sudo.compliance.evidence",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_filing_center",
+        "action_cn_filing_center",
+        "sudo.compliance.filing",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_report_readiness",
+        "action_cn_report_readiness",
+        "sudo.compliance.assessment",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+    menu_action_contract(
+        "menu_cn_formal_compliance_reports",
+        "action_cn_formal_compliance_reports",
+        "sudo.cn.compliance.report",
+        ["sudo_global_finance.group_compliance_user"],
+    ),
+]
+
 multi_company_security_contracts = [
     company_rule_contract(model_name)
     for model_name in (
@@ -1043,6 +1127,10 @@ readiness = {{
         reviewer_view_contracts
         and all(contract.get("ready") for contract in reviewer_view_contracts)
     ),
+    "has_menu_action_contract_evidence": bool(
+        menu_action_contracts
+        and all(contract.get("ready") for contract in menu_action_contracts)
+    ),
     "has_multi_company_security_contract_evidence": bool(
         multi_company_security_contracts
         and all(contract.get("ready") for contract in multi_company_security_contracts)
@@ -1153,6 +1241,7 @@ payload = {{
     "sample_iit_reconciliation_runs": sample_iit_reconciliation_runs,
     "sample_cross_border_transactions": sample_cross_border_transactions,
     "reviewer_view_contracts": reviewer_view_contracts,
+    "menu_action_contracts": menu_action_contracts,
     "multi_company_security_contracts": multi_company_security_contracts,
     "readiness": readiness,
     "ok": readiness["demo_ready"],

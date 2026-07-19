@@ -186,6 +186,7 @@ def status_payload() -> dict:
                 "has_iit_payroll_withholding_scope_evidence": True,
                 "has_cross_border_review_scope_evidence": True,
                 "has_multi_company_security_contract_evidence": True,
+                "has_menu_action_contract_evidence": True,
             },
             "sample_profiles": [
                 {
@@ -275,6 +276,17 @@ def status_payload() -> dict:
                             ],
                         }
                     ],
+                }
+            ],
+            "menu_action_contracts": [
+                {
+                    "menu_xml_id": "menu_cn_risk_center",
+                    "action_xml_id": "action_cn_risk_center",
+                    "res_model": "sudo.compliance.finding",
+                    "ready": True,
+                    "action_matches": True,
+                    "missing_groups": [],
+                    "groups": ["sudo_global_finance.group_compliance_user"],
                 }
             ],
             "sample_evidence": [
@@ -546,6 +558,7 @@ def real_data_closed_loop_payload() -> dict:
             "has_iit_payroll_withholding_scope_evidence": True,
             "has_cross_border_review_scope_evidence": True,
             "has_multi_company_security_contract_evidence": True,
+            "has_menu_action_contract_evidence": True,
         },
         "sample_profiles": [
             {
@@ -635,6 +648,17 @@ def real_data_closed_loop_payload() -> dict:
                         ],
                     }
                 ],
+            }
+        ],
+        "menu_action_contracts": [
+            {
+                "menu_xml_id": "menu_cn_risk_center",
+                "action_xml_id": "action_cn_risk_center",
+                "res_model": "sudo.compliance.finding",
+                "ready": True,
+                "action_matches": True,
+                "missing_groups": [],
+                "groups": ["sudo_global_finance.group_compliance_user"],
             }
         ],
         "sample_evidence": [
@@ -1111,6 +1135,24 @@ class TestChinaSignoffValidation(unittest.TestCase):
             items["native_odoo_multi_company_security"]["evidence"],
         )
 
+    def test_objective_audit_blocks_when_menu_action_contract_is_missing(self):
+        status = delivery_status()
+        status["real_data_closed_loop"]["readiness"][
+            "has_menu_action_contract_evidence"
+        ] = False
+
+        audit = OBJECTIVE_AUDIT.audit(status)
+
+        items = {item["key"]: item for item in audit["items"]}
+        self.assertEqual(
+            items["native_odoo_multi_company_security"]["state"],
+            "not_ready",
+        )
+        self.assertIn(
+            "menu_action_contract=False",
+            items["native_odoo_multi_company_security"]["evidence"],
+        )
+
     def test_objective_audit_blocks_when_upgrade_migration_chain_is_missing(self):
         status = delivery_status()
         status["upgrade_migration_chain"]["ready"] = False
@@ -1378,6 +1420,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
             automated["multi_company_security_contract_evidence"]["evidence"],
         )
 
+    def test_signoff_packet_surfaces_native_menu_action_contract_evidence(self):
+        packet = PACKET._build_packet(status_payload())
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+
+        self.assertIn("native_menu_action_contract_evidence", automated)
+        self.assertTrue(automated["native_menu_action_contract_evidence"]["ready"])
+        self.assertIn(
+            "menu_cn_risk_center",
+            automated["native_menu_action_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "action_cn_risk_center",
+            automated["native_menu_action_contract_evidence"]["evidence"],
+        )
+
     def test_signoff_packet_surfaces_upgrade_migration_chain_evidence(self):
         packet = PACKET._build_packet(status_payload())
 
@@ -1437,6 +1495,36 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn(
             '"ready": false',
             automated["multi_company_security_contract_evidence"]["evidence"],
+        )
+
+    def test_signoff_packet_blocks_when_menu_action_contract_is_missing(self):
+        payload = status_payload()
+        payload["real_data_closed_loop"]["readiness"][
+            "has_menu_action_contract_evidence"
+        ] = False
+        payload["real_data_closed_loop"]["menu_action_contracts"] = [
+            {
+                "menu_xml_id": "menu_cn_risk_center",
+                "action_xml_id": "action_cn_risk_center",
+                "res_model": "sudo.compliance.finding",
+                "ready": False,
+                "action_matches": False,
+                "missing_groups": ["sudo_global_finance.group_compliance_user"],
+                "groups": [],
+            }
+        ]
+
+        packet = PACKET._build_packet(payload)
+
+        automated = {item["key"]: item for item in packet["automated_items"]}
+        self.assertFalse(automated["native_menu_action_contract_evidence"]["ready"])
+        self.assertIn(
+            '"ready": false',
+            automated["native_menu_action_contract_evidence"]["evidence"],
+        )
+        self.assertIn(
+            "missing_groups",
+            automated["native_menu_action_contract_evidence"]["evidence"],
         )
 
     def test_signoff_packet_surfaces_risk_task_report_summary_evidence(self):
@@ -2456,6 +2544,29 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(contracts[0]["ready"])
         self.assertEqual(contracts[0]["rule_count"], 1)
         self.assertIn("company_ids", contracts[0]["rules"][0]["domain"])
+
+    def test_delivery_status_preserves_menu_action_contract_details(self):
+        status = delivery_status()
+
+        contracts = status["real_data_closed_loop"]["menu_action_contracts"]
+
+        self.assertEqual(contracts[0]["menu_xml_id"], "menu_cn_risk_center")
+        self.assertTrue(contracts[0]["ready"])
+        self.assertTrue(contracts[0]["action_matches"])
+        self.assertIn(
+            "sudo_global_finance.group_compliance_user",
+            contracts[0]["groups"],
+        )
+
+    def test_delivery_status_markdown_lists_menu_action_contract_evidence(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("Menu/action contract evidence ready: `True`", content)
 
     def test_delivery_status_preserves_upgrade_migration_chain_details(self):
         status = delivery_status()

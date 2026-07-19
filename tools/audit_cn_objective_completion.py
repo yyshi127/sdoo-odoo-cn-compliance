@@ -126,13 +126,16 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
         ),
         _item(
             "native_odoo_multi_company_security",
-            "Native Odoo multi-company and record-rule security contract",
+            "Native Odoo menu, action, multi-company and record-rule security contract",
             _state(
                 _ready(real_data_readiness.get("has_multi_company_security_contract_evidence"))
+                and _ready(real_data_readiness.get("has_menu_action_contract_evidence"))
             ),
             [
                 f"multi_company_security={real_data_readiness.get('has_multi_company_security_contract_evidence')}",
                 f"security_contracts={len(real_data.get('multi_company_security_contracts') or [])}",
+                f"menu_action_contracts={len(real_data.get('menu_action_contracts') or [])}",
+                f"menu_action_contract={real_data_readiness.get('has_menu_action_contract_evidence')}",
             ],
         ),
         _item(

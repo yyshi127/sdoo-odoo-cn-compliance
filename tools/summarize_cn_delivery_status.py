@@ -780,6 +780,9 @@ def _status(
             "reviewer_view_contracts": real_data_closed_loop.get(
                 "reviewer_view_contracts"
             ),
+            "menu_action_contracts": real_data_closed_loop.get(
+                "menu_action_contracts"
+            ),
             "multi_company_security_contracts": real_data_closed_loop.get(
                 "multi_company_security_contracts"
             ),
@@ -1128,6 +1131,7 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         f"- Remediation verification rescan evidence ready: `{real_data_readiness.get('has_remediation_verification_rescan_evidence', False)}`",
         f"- Report visibility evidence ready: `{real_data_readiness.get('has_report_visibility_evidence', False)}`",
         f"- Reviewer view contract evidence ready: `{real_data_readiness.get('has_reviewer_view_contract_evidence', False)}`",
+        f"- Menu/action contract evidence ready: `{real_data_readiness.get('has_menu_action_contract_evidence', False)}`",
         f"- Evidence/filing/payment summary evidence ready: `{real_data_readiness.get('has_evidence_filing_payment_summary_evidence', False)}`",
         f"- Controlled AI guidance evidence ready: `{real_data_readiness.get('has_controlled_ai_guidance_evidence', False)}`",
         f"- Rule/source governance evidence ready: `{real_data_readiness.get('has_rule_source_governance_evidence', False)}`",
