@@ -29,6 +29,7 @@ class CandidatePaths:
     real_data_closed_loop: Path
     status: Path
     signoff_packet: Path
+    production_signoff_actions: Path
     objective_audit: Path
 
 
@@ -51,6 +52,8 @@ def _candidate_paths(dist_dir: Path, number: int) -> CandidatePaths:
         real_data_closed_loop=dist_dir / f"cn_real_data_closed_loop_{tag}.json",
         status=dist_dir / f"cn_delivery_{tag}_chain_status.json",
         signoff_packet=dist_dir / f"cn_delivery_{tag}_chain_signoff_packet.json",
+        production_signoff_actions=dist_dir
+        / f"cn_delivery_{tag}_chain_production_signoff_actions.json",
         objective_audit=dist_dir / f"cn_delivery_{tag}_chain_objective_audit.json",
     )
 
@@ -120,6 +123,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     remote_upgrade = _load(paths.remote_upgrade_acceptance)
     status = _load(paths.status)
     packet = _load(paths.signoff_packet)
+    actions = _load(paths.production_signoff_actions)
     audit = _load(paths.objective_audit)
     preview_health = _load(paths.preview_health)
     preview_module = _load(paths.preview_module)
@@ -134,6 +138,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         ("bundle metadata", bundle_metadata),
         ("status", status),
         ("sign-off packet", packet),
+        ("production sign-off actions", actions),
         ("objective audit", audit),
     ):
         payload_version = payload.get("version")
@@ -144,6 +149,7 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         ("bundle metadata", bundle_metadata),
         ("status", status),
         ("sign-off packet", packet),
+        ("production sign-off actions", actions),
     ):
         payload_commit = _source_commit(payload)
         if payload_commit != commit:
@@ -182,6 +188,26 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
             errors.append(f"status readiness gate {key} is not true")
     if readiness.get("production_signoff_ready") is not False:
         errors.append("unsigned candidate should remain production_signoff_ready=false")
+    if actions.get("production_signoff_ready") is not False:
+        errors.append("action checklist should remain production_signoff_ready=false")
+    if actions.get("action_count") != len(
+        readiness.get("production_signoff_required_actions") or []
+    ):
+        errors.append("action checklist count does not match status required actions")
+    action_binding = actions.get("packet_binding")
+    if not isinstance(action_binding, dict):
+        errors.append("action checklist does not include packet binding")
+    else:
+        for key in (
+            "provided",
+            "schema_ok",
+            "version_matches_status",
+            "source_commit_matches_status",
+            "preview_url_matches_status",
+            "action_keys_match",
+        ):
+            if action_binding.get(key) is not True:
+                errors.append(f"action checklist packet binding {key} is not true")
 
     if preview_health.get("ok") is not True:
         errors.append("preview health is not ok")

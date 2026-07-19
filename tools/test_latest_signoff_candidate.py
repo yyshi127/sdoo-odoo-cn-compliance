@@ -71,6 +71,25 @@ class TestLatestSignoffCandidate(unittest.TestCase):
 
             self.assertEqual(result["selected"]["candidate"], "m10")
 
+    def test_rejects_action_checklist_packet_binding_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                11,
+                commit="abc",
+                aggregate="hash11",
+                action_binding_ok=False,
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "action checklist packet binding action_keys_match is not true",
+                result["checked_candidates"][0]["errors"],
+            )
+
 
 def _candidate(
     dist: Path,
@@ -81,6 +100,7 @@ def _candidate(
     packet_commit: str | None = None,
     omit: str | None = None,
     omit_summary_manifest: bool = False,
+    action_binding_ok: bool = True,
 ) -> None:
     paths = selector._candidate_paths(dist, number)
     tag = f"m{number}"
@@ -141,6 +161,23 @@ def _candidate(
         "version": "19.0.1.130.0",
         "source_commit": packet_commit or commit,
     }
+    actions = {
+        "schema": "sdoo.cn.production-signoff-actions.v1",
+        "version": "19.0.1.130.0",
+        "source_commit": commit,
+        "preview_url": None,
+        "production_signoff_ready": False,
+        "action_count": 1,
+        "actions": [{"key": "business_uat_decision"}],
+        "packet_binding": {
+            "provided": True,
+            "schema_ok": True,
+            "version_matches_status": True,
+            "source_commit_matches_status": True,
+            "preview_url_matches_status": True,
+            "action_keys_match": action_binding_ok,
+        },
+    }
     audit = {
         "schema": "sdoo.cn.objective-audit.v1",
         "version": "19.0.1.130.0",
@@ -156,6 +193,7 @@ def _candidate(
         "real_data_closed_loop": {"ok": True},
         "status": status,
         "signoff_packet": packet,
+        "production_signoff_actions": actions,
         "objective_audit": audit,
     }
     for field, payload in payloads.items():

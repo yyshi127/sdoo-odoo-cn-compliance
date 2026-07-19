@@ -117,12 +117,13 @@ python tools/select_cn_latest_signoff_candidate.py \
 
 This selector scans `dist/cn_delivery_mNNN_chain_status.json` files, then checks
 that the matching bundle, manifest, remote acceptance, upgrade acceptance,
-preview, real-data, sign-off packet and objective audit files exist and agree on
-the release version, source commit and manifest aggregate hash. Use the selected
-candidate number in `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`. The
-strict flag is recommended for production sign-off because it fails when a newer
-status file exists but its evidence set is incomplete, instead of silently
-falling back to an older candidate.
+preview, real-data, sign-off packet, production sign-off action checklist and
+objective audit files exist and agree on the release version, source commit,
+manifest aggregate hash and packet-binding checks. Use the selected candidate
+number in `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`. The strict flag is
+recommended for production sign-off because it fails when a newer status file
+exists but its evidence set is incomplete, instead of silently falling back to
+an older candidate.
 
 The ordered sign-off evidence chain automatically writes a reviewer-facing
 production sign-off action checklist. To regenerate that checklist from an

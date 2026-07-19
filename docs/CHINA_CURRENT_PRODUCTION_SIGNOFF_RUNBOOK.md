@@ -74,9 +74,10 @@ completed.
 
 Complete these seven actions from the selected sign-off packet. Each action
 needs a real reviewer, date, decision, notes and evidence reference.
-The exported `dist/cn_delivery_mNNN_production_signoff_actions.md` checklist is
-the recommended working copy for assigning owners and collecting those evidence
-references before producing the final machine-readable evidence file.
+The exported `dist/cn_delivery_mNNN_chain_production_signoff_actions.md`
+checklist is the recommended working copy for assigning owners and collecting
+those evidence references before producing the final machine-readable evidence
+file.
 
 | Action key | Owner | Acceptable decisions | Evidence to attach |
 | --- | --- | --- | --- |

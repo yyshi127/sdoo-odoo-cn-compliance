@@ -2700,6 +2700,20 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "production_signoff_required_actions": [{"key": "business_uat_decision"}],
             },
         }
+        actions = {
+            "version": "19.0.1.130.0",
+            "source_commit": commit,
+            "production_signoff_ready": False,
+            "action_count": 1,
+            "packet_binding": {
+                "provided": True,
+                "schema_ok": True,
+                "version_matches_status": True,
+                "source_commit_matches_status": True,
+                "preview_url_matches_status": True,
+                "action_keys_match": True,
+            },
+        }
         files = {
             f"sdoo-cn-compliance-delivery-{tag}.tgz": b"bundle",
             f"sdoo-cn-compliance-delivery-{tag}.bundle.json": bundle,
@@ -2714,6 +2728,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "version": "19.0.1.130.0",
                 "source_commit": commit,
             },
+            f"cn_delivery_{tag}_chain_production_signoff_actions.json": actions,
             f"cn_delivery_{tag}_chain_objective_audit.json": {
                 "version": "19.0.1.130.0",
             },
