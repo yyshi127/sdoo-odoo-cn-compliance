@@ -3995,6 +3995,79 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     report_view_content = (
         ADDON_ROOT / "views" / "report_readiness_views.xml"
     ).read_text(encoding="utf-8")
+    report_readiness_view_root = ElementTree.parse(
+        ADDON_ROOT / "views" / "report_readiness_views.xml"
+    ).getroot()
+
+    def report_readiness_view_field_names(record_id: str) -> set[str]:
+        arch = report_readiness_view_root.find(
+            f".//record[@id='{record_id}']/field[@name='arch']"
+        )
+        if arch is None:
+            fail(f"China report readiness UX view contract is missing record {record_id}")
+        return {
+            element.attrib["name"]
+            for element in arch.iter("field")
+            if element.attrib.get("name")
+        }
+
+    report_readiness_list_fields = report_readiness_view_field_names(
+        "view_cn_report_readiness_list"
+    )
+    report_readiness_kanban_fields = report_readiness_view_field_names(
+        "view_cn_report_readiness_kanban"
+    )
+    required_report_readiness_summary_fields = {
+        "company_id",
+        "profile_id",
+        "period_start",
+        "period_end",
+        "state",
+        "cn_report_readiness_state",
+        "cn_report_next_action",
+        "cn_report_action_summary",
+        "cn_report_readiness_blocker_summary",
+        "cn_report_issue_count",
+        "cn_report_open_task_count",
+        "cn_report_limitation_count",
+        "cn_report_pending_tax_impact_count",
+        "cn_report_rescan_state",
+        "cn_report_rescan_next_action",
+        "cn_report_pending_rescan_count",
+        "cn_report_failed_rescan_count",
+        "cn_report_verified_remediation_count",
+        "cn_report_filing_archive_state",
+        "cn_report_filing_archive_next_action",
+        "cn_report_filing_archive_count",
+        "cn_report_filing_archive_issue_count",
+        "cn_report_sealed_filing_archive_count",
+        "cn_report_ai_guidance_state",
+        "cn_report_ai_guidance_next_action",
+        "cn_data_basis_state",
+        "cn_data_basis_normalized_record_count",
+        "cn_data_basis_missing_type_count",
+        "cn_data_basis_missing_type_summary",
+        "cn_data_basis_next_action",
+        "cn_accounting_basis_state",
+        "cn_accounting_basis_posted_move_count",
+        "cn_accounting_basis_draft_move_count",
+        "cn_accounting_basis_next_action",
+        "cn_obligation_basis_state",
+        "cn_obligation_basis_pending_count",
+        "cn_obligation_basis_next_action",
+    }
+    for record_id, fields in (
+        ("view_cn_report_readiness_list", report_readiness_list_fields),
+        ("view_cn_report_readiness_kanban", report_readiness_kanban_fields),
+    ):
+        missing = required_report_readiness_summary_fields - fields
+        if missing:
+            fail(
+                "China report readiness summary views must expose scope, "
+                "blockers, data/accounting/obligation basis, rescan, filing "
+                "archive, AI guidance and next action fields in "
+                f"{record_id}: {sorted(missing)}"
+            )
     for required in (
         'id="action_cn_report_readiness"',
         'id="menu_cn_report_readiness"',
