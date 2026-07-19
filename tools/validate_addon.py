@@ -5849,6 +5849,52 @@ def validate_delivery_objective_coverage() -> None:
             fail(f"China delivery status workbench summary evidence is missing {required}")
 
 
+def validate_china_native_menu_integration() -> None:
+    allowed_parents = {
+        "sudo_global_finance.menu_global_finance_root",
+        "sudo_global_finance.menu_compliance_management",
+        "sudo_global_finance.menu_compliance_configuration",
+    }
+    allowed_group_prefixes = (
+        "sudo_global_finance.group_compliance_",
+        "sudo_country_pack_cn.group_cn_",
+    )
+    menu_count = 0
+    for path in sorted((ADDON_ROOT / "views").glob("*.xml")):
+        root = ElementTree.parse(path).getroot()
+        for menu in root.iter("menuitem"):
+            menu_id = menu.attrib.get("id", "")
+            if not menu_id.startswith("menu_cn"):
+                continue
+            menu_count += 1
+            parent = menu.attrib.get("parent")
+            if parent not in allowed_parents:
+                fail(
+                    "China menu entries must stay under the native global "
+                    f"finance compliance menus: {menu_id} parent={parent!r}"
+                )
+            action = menu.attrib.get("action")
+            if not action:
+                fail(f"China menu entry must point to a native action: {menu_id}")
+            groups = [
+                group.strip()
+                for group in (menu.attrib.get("groups") or "").split(",")
+                if group.strip()
+            ]
+            if not groups:
+                fail(f"China menu entry must declare compliance groups: {menu_id}")
+            if any(
+                not group.startswith(allowed_group_prefixes)
+                for group in groups
+            ):
+                fail(
+                    "China menu entry must only use compliance groups: "
+                    f"{menu_id} groups={groups}"
+                )
+    if menu_count < 30:
+        fail("China native menu integration unexpectedly lost menu coverage")
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -6055,6 +6101,7 @@ def main() -> int:
     validate_china_jurisdiction_governance(manifest)
     validate_china_compliance_workbench(manifest)
     validate_delivery_objective_coverage()
+    validate_china_native_menu_integration()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
