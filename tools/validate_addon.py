@@ -5045,6 +5045,8 @@ def validate_delivery_objective_coverage() -> None:
     ):
         if required not in handoff_content:
             fail(f"China current release handoff is missing {required}")
+    if re.search(r"dist/cn_(?:preview|delivery|signoff|objective)[^\\s`]*_m\\d+[^\\s`]*", handoff_content):
+        fail("China current release handoff must use mNNN placeholders, not stale numbered evidence files")
 
     blocker_visibility_path = (
         REPOSITORY_ROOT / "docs" / "MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md"

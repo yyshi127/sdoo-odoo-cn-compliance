@@ -155,9 +155,9 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
   --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
-  --preview-health dist/cn_preview_health_m137.json \
-  --preview-module dist/cn_preview_module_m137.json \
-  --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
+  --preview-health dist/cn_preview_health_mNNN.json \
+  --preview-module dist/cn_preview_module_mNNN.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
   --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
   --output-prefix dist/cn_delivery_mNNN_chain
 ```
@@ -190,9 +190,9 @@ python tools/build_cn_signoff_evidence_chain.py \
   --manifest dist/cn_delivery_manifest_mNNN_full.json \
   --summary dist/cn_delivery_acceptance_mNNN_remote.json \
   --upgrade-summary dist/cn_delivery_acceptance_mNNN_upgrade_remote.json \
-  --preview-health dist/cn_preview_health_m137.json \
-  --preview-module dist/cn_preview_module_m137.json \
-  --real-data-closed-loop dist/cn_real_data_closed_loop_m137.json \
+  --preview-health dist/cn_preview_health_mNNN.json \
+  --preview-module dist/cn_preview_module_mNNN.json \
+  --real-data-closed-loop dist/cn_real_data_closed_loop_mNNN.json \
   --preview-url 'http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01' \
   --completed-evidence dist/cn_signoff_evidence_completed.json \
   --output-prefix dist/cn_delivery_mNNN_signed_chain
