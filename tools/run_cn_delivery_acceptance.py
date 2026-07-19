@@ -179,6 +179,7 @@ def _manifest_paths() -> list[Path]:
         ROOT / "tools" / "audit_cn_objective_completion.py",
         ROOT / "tools" / "build_cn_signoff_evidence_chain.py",
         ROOT / "tools" / "select_cn_latest_signoff_candidate.py",
+        ROOT / "tools" / "export_cn_production_signoff_actions.py",
         ROOT / "tools" / "generate_cn_signoff_packet.py",
         ROOT / "tools" / "render_cn_signoff_evidence_template.py",
         ROOT / "tools" / "validate_cn_signoff_evidence.py",

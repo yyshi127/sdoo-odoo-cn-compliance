@@ -43,6 +43,10 @@ SIGNOFF_CHAIN = load_tool(
     "cn_signoff_chain",
     REPOSITORY_ROOT / "tools" / "build_cn_signoff_evidence_chain.py",
 )
+SIGNOFF_ACTIONS = load_tool(
+    "cn_production_signoff_actions",
+    REPOSITORY_ROOT / "tools" / "export_cn_production_signoff_actions.py",
+)
 ADDON_VALIDATION = load_tool(
     "cn_addon_validation",
     REPOSITORY_ROOT / "tools" / "validate_addon.py",
@@ -480,6 +484,7 @@ def manifest_payload() -> dict:
         "tools/audit_cn_objective_completion.py",
         "tools/build_cn_signoff_evidence_chain.py",
         "tools/select_cn_latest_signoff_candidate.py",
+        "tools/export_cn_production_signoff_actions.py",
         "tools/generate_cn_signoff_packet.py",
         "tools/render_cn_signoff_evidence_template.py",
         "tools/validate_cn_signoff_evidence.py",
@@ -976,6 +981,59 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
 
 
 class TestChinaSignoffValidation(unittest.TestCase):
+    def test_production_signoff_actions_export_lists_required_actions(self):
+        export = SIGNOFF_ACTIONS.export_actions(delivery_status())
+
+        self.assertEqual(export["schema"], "sdoo.cn.production-signoff-actions.v1")
+        self.assertFalse(export["production_signoff_ready"])
+        self.assertEqual(export["action_count"], 7)
+        self.assertEqual(
+            {action["key"] for action in export["actions"]},
+            {
+                "business_uat_decision",
+                "representative_ux_walkthrough",
+                "blocker_summary_walkthrough",
+                "production_deployment_decision",
+                "china_tax_professional_rule_signoff",
+                "official_source_freshness_review",
+                "customer_scope_and_data_gap_review",
+            },
+        )
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            export["production_signoff_blockers"],
+        )
+
+    def test_production_signoff_actions_export_binds_to_packet(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+
+        export = SIGNOFF_ACTIONS.export_actions(status, packet)
+
+        binding = export["packet_binding"]
+        self.assertTrue(binding["provided"])
+        self.assertTrue(binding["schema_ok"])
+        self.assertTrue(binding["version_matches_status"])
+        self.assertTrue(binding["source_commit_matches_status"])
+        self.assertTrue(binding["preview_url_matches_status"])
+        self.assertTrue(binding["action_keys_match"])
+
+    def test_production_signoff_actions_markdown_is_reviewer_checklist(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+        export = SIGNOFF_ACTIONS.export_actions(status, packet)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "actions.md"
+
+            SIGNOFF_ACTIONS._write_markdown(export, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("# China Production Sign-off Action Checklist", content)
+        self.assertIn("## Required Actions", content)
+        self.assertIn("### business_uat_decision", content)
+        self.assertIn("- Evidence reference:", content)
+        self.assertIn("## Packet Binding", content)
+
     def test_objective_coverage_path_guard_accepts_real_paths_and_rejects_missing_paths(self):
         content = (
             "`models/risk_center.py` `views/*.xml` "
@@ -3266,6 +3324,22 @@ class TestChinaSignoffValidation(unittest.TestCase):
         )
         self.assertFalse(
             status["signoff_candidate_selector_tool"]["included_in_manifest"]
+        )
+
+    def test_delivery_status_requires_production_signoff_actions_exporter_in_manifest(self):
+        status = delivery_status_with_manifest(
+            manifest_without("tools/export_cn_production_signoff_actions.py")
+        )
+
+        readiness = status["readiness_gates"]
+        self.assertFalse(readiness["business_uat_ready"])
+        self.assertFalse(readiness["production_signoff_ready"])
+        self.assertIn(
+            "production sign-off action checklist exporter is not included in the manifest",
+            readiness["business_uat_blockers"],
+        )
+        self.assertFalse(
+            status["production_signoff_actions_tool"]["included_in_manifest"]
         )
 
     def test_delivery_status_requires_uat_walkthrough_script_in_manifest(self):

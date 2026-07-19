@@ -13,6 +13,9 @@ latest complete candidate evidence set before reviewer walkthroughs. For
 production sign-off, run it with `--require-highest-status-complete` so the
 process fails if a newer candidate status exists but its evidence files are
 incomplete.
+After selecting the candidate, export the reviewer-facing checklist with
+`tools/export_cn_production_signoff_actions.py` so each owner can complete the
+same seven action keys recorded in the sign-off packet.
 
 It is not a tax opinion and must not be used to certify a taxpayer filing
 position without current official sources, customer-specific facts and China tax
@@ -35,6 +38,8 @@ Pick one candidate number and use it consistently:
 - Real-data closed-loop check: `dist/cn_real_data_closed_loop_mNNN.json`
 - Ordered status: `dist/cn_delivery_mNNN_chain_status.md`
 - Sign-off packet: `dist/cn_delivery_mNNN_chain_signoff_packet.md`
+- Production sign-off action checklist:
+  `dist/cn_delivery_mNNN_production_signoff_actions.md`
 - Objective audit: `dist/cn_delivery_mNNN_chain_objective_audit.md`
 
 Before review, confirm these selected files all report the same delivery
@@ -68,6 +73,9 @@ completed.
 
 Complete these seven actions from the selected sign-off packet. Each action
 needs a real reviewer, date, decision, notes and evidence reference.
+The exported `dist/cn_delivery_mNNN_production_signoff_actions.md` checklist is
+the recommended working copy for assigning owners and collecting those evidence
+references before producing the final machine-readable evidence file.
 
 | Action key | Owner | Acceptable decisions | Evidence to attach |
 | --- | --- | --- | --- |

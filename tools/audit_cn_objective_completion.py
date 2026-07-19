@@ -72,6 +72,9 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
     upgrade_migration_chain = status.get("upgrade_migration_chain") or {}
     production_release_control = status.get("production_release_control") or {}
     signoff_candidate_selector_tool = status.get("signoff_candidate_selector_tool") or {}
+    production_signoff_actions_tool = (
+        status.get("production_signoff_actions_tool") or {}
+    )
     signoff_validation = status.get("signoff_validation") or {}
     coverage_binding = (
         signoff_validation.get("production_blocker_coverage_binding")
@@ -118,6 +121,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
                 and _ready(status.get("acceptance_passed"))
                 and _ready(production_release_control.get("included_in_manifest"))
                 and _ready(signoff_candidate_selector_tool.get("included_in_manifest"))
+                and _ready(production_signoff_actions_tool.get("included_in_manifest"))
             ),
             [
                 f"aggregate_consistent={status.get('aggregate_consistent')}",
@@ -125,6 +129,7 @@ def audit(status: dict[str, Any]) -> dict[str, Any]:
                 f"manifest_files={(status.get('manifest') or {}).get('file_count')}",
                 f"production_release_control={production_release_control.get('included_in_manifest')}",
                 f"signoff_candidate_selector={signoff_candidate_selector_tool.get('included_in_manifest')}",
+                f"production_signoff_actions={production_signoff_actions_tool.get('included_in_manifest')}",
             ],
         ),
         _item(
