@@ -2991,8 +2991,12 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("production_deployment_decision", content)
 
     def test_delivery_status_markdown_preserves_valid_chinese_and_masks_bad_text(self):
+        private_use_mojibake = (
+            "\u6d93" + chr(0xE15E) + "\u6d57\u935a\u5823" + chr(0xE749)
+            + "\u5997\uff46" + chr(0xE50D)
+        )
         self.assertFalse(SUMMARY._looks_mojibake("中国合规档案"))
-        self.assertTrue(SUMMARY._looks_mojibake("涓浗鍚堣妗ｆ"))
+        self.assertTrue(SUMMARY._looks_mojibake(private_use_mojibake))
         self.assertTrue(SUMMARY._looks_mojibake("中国合规" + "\ufffd" + "档案"))
         self.assertTrue(SUMMARY._looks_mojibake("中国合规?档案"))
         status = delivery_status()
@@ -3004,7 +3008,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "status": "active",
                 "period_label": "2026-06",
                 "next_action": "澶嶆牳椋庨櫓",
-                "action_summary": "涓浗鍚堣?妗ｆ",
+                "action_summary": private_use_mojibake,
             }
         ]
         with tempfile.TemporaryDirectory() as directory:

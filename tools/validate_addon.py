@@ -432,6 +432,12 @@ def validate_text_and_syntax() -> None:
         content = path.read_text(encoding="utf-8", errors="strict")
         if "\ufffd" in content:
             fail(f"replacement character found in {path}")
+        private_use_chars = sorted(
+            {char for char in content if 0xE000 <= ord(char) <= 0xF8FF}
+        )
+        if private_use_chars:
+            codepoints = ", ".join(f"U+{ord(char):04X}" for char in private_use_chars)
+            fail(f"private-use mojibake-like character found in {path}: {codepoints}")
         for label, pattern in SECRET_PATTERNS.items():
             if pattern.search(content):
                 fail(f"possible {label} found in {path}")
