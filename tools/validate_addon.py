@@ -5079,6 +5079,15 @@ def validate_delivery_objective_coverage() -> None:
     status_tool = (
         REPOSITORY_ROOT / "tools" / "summarize_cn_delivery_status.py"
     ).read_text(encoding="utf-8")
+    chain_tool_content = (
+        REPOSITORY_ROOT / "tools" / "build_cn_signoff_evidence_chain.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "--require-production-signoff-ready",
+        "production sign-off readiness gate failed",
+    ):
+        if required not in chain_tool_content:
+            fail(f"China sign-off chain production readiness guard is missing {required}")
     for required in (
         "DELIVERY_INDEX_PATH",
         "delivery_index",

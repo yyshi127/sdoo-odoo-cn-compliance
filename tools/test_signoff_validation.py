@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -905,6 +907,25 @@ def delivery_inputs() -> dict:
         "real_data_closed_loop": real_data_closed_loop_payload(),
         "preview_url": "http://127.0.0.1:18070/web/login?db=test",
     }
+
+
+def write_delivery_input_files(directory: Path) -> dict[str, Path]:
+    inputs = delivery_inputs()
+    paths = {
+        "bundle_metadata": directory / "bundle.json",
+        "manifest": directory / "manifest.json",
+        "summary": directory / "summary.json",
+        "upgrade_summary": directory / "upgrade.json",
+        "preview_health": directory / "preview_health.json",
+        "preview_module": directory / "preview_module.json",
+        "real_data_closed_loop": directory / "real_data.json",
+    }
+    for key, path in paths.items():
+        path.write_text(
+            json.dumps(inputs[key], ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    return paths
 
 
 def delivery_status_with_manifest(manifest: dict) -> dict:
@@ -2618,6 +2639,82 @@ class TestChinaSignoffValidation(unittest.TestCase):
             chain["final_status"]["readiness_gates"]["production_signoff_ready"]
         )
         self.assertTrue(chain["objective_audit"]["achieved"])
+
+    def test_signoff_chain_require_ready_flag_rejects_placeholder_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            inputs = write_delivery_input_files(root)
+            argv = [
+                "build_cn_signoff_evidence_chain.py",
+                "--bundle-metadata",
+                str(inputs["bundle_metadata"]),
+                "--manifest",
+                str(inputs["manifest"]),
+                "--summary",
+                str(inputs["summary"]),
+                "--upgrade-summary",
+                str(inputs["upgrade_summary"]),
+                "--preview-health",
+                str(inputs["preview_health"]),
+                "--preview-module",
+                str(inputs["preview_module"]),
+                "--real-data-closed-loop",
+                str(inputs["real_data_closed_loop"]),
+                "--preview-url",
+                "http://127.0.0.1:18070/web/login?db=test",
+                "--output-prefix",
+                str(root / "cn_delivery_m1_chain"),
+                "--require-production-signoff-ready",
+            ]
+
+            with patch.object(sys, "argv", argv):
+                result = SIGNOFF_CHAIN.main()
+
+            self.assertEqual(result, 2)
+
+    def test_signoff_chain_require_ready_flag_accepts_completed_evidence(self):
+        initial_chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            inputs = write_delivery_input_files(root)
+            completed_evidence = root / "completed_evidence.json"
+            completed_evidence.write_text(
+                json.dumps(
+                    complete_evidence(initial_chain["final_packet"]),
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            argv = [
+                "build_cn_signoff_evidence_chain.py",
+                "--bundle-metadata",
+                str(inputs["bundle_metadata"]),
+                "--manifest",
+                str(inputs["manifest"]),
+                "--summary",
+                str(inputs["summary"]),
+                "--upgrade-summary",
+                str(inputs["upgrade_summary"]),
+                "--preview-health",
+                str(inputs["preview_health"]),
+                "--preview-module",
+                str(inputs["preview_module"]),
+                "--real-data-closed-loop",
+                str(inputs["real_data_closed_loop"]),
+                "--preview-url",
+                "http://127.0.0.1:18070/web/login?db=test",
+                "--completed-evidence",
+                str(completed_evidence),
+                "--output-prefix",
+                str(root / "cn_delivery_m1_signed_chain"),
+                "--require-production-signoff-ready",
+            ]
+
+            with patch.object(sys, "argv", argv):
+                result = SIGNOFF_CHAIN.main()
+
+            self.assertEqual(result, 0)
 
     def test_signoff_chain_writes_latest_candidate_outputs(self):
         chain = SIGNOFF_CHAIN.build_chain(delivery_inputs())

@@ -223,6 +223,14 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--output-prefix", type=Path, required=True)
+    parser.add_argument(
+        "--require-production-signoff-ready",
+        action="store_true",
+        help=(
+            "Exit with status 2 unless the final chain status is production "
+            "sign-off ready. Use this only with completed human evidence."
+        ),
+    )
     return parser
 
 
@@ -251,6 +259,15 @@ def main() -> int:
         f"final_validation_ok={chain['final_validation'].get('ok')} "
         f"outputs={len(outputs)}"
     )
+    if (
+        args.require_production_signoff_ready
+        and final_readiness.get("production_signoff_ready") is not True
+    ):
+        print(
+            "production sign-off readiness gate failed: "
+            f"{final_readiness.get('production_signoff_blockers') or []}"
+        )
+        return 2
     return 0
 
 
