@@ -5895,6 +5895,57 @@ def validate_china_native_menu_integration() -> None:
         fail("China native menu integration unexpectedly lost menu coverage")
 
 
+def validate_china_company_security_contract() -> None:
+    allowed_without_company_rule = {
+        "model_sudo_cn_authority_source_monitor_run",
+        "model_sudo_cn_cit_period_reconciliation_wizard",
+        "model_sudo_cn_einvoice_manual_match_wizard",
+        "model_sudo_cn_einvoice_reconciliation_wizard",
+        "model_sudo_cn_iit_period_reconciliation_wizard",
+        "model_sudo_cn_jurisdiction_version",
+        "model_sudo_cn_rule_review_citation",
+        "model_sudo_cn_rule_review_packet",
+        "model_sudo_cn_tax_data_import_wizard",
+        "model_sudo_cn_vat_period_reconciliation_wizard",
+    }
+    with (ADDON_ROOT / "security" / "ir.model.access.csv").open(
+        encoding="utf-8"
+    ) as handle:
+        accessed_models = {
+            row["model_id:id"]
+            for row in csv.DictReader(handle)
+            if row["model_id:id"].startswith("model_sudo_cn_")
+        }
+
+    security_root = ElementTree.parse(
+        ADDON_ROOT / "security" / "compliance_security.xml"
+    ).getroot()
+    ruled_models: set[str] = set()
+    for record in security_root.findall(".//record[@model='ir.rule']"):
+        fields = {field.attrib.get("name"): field for field in record.findall("field")}
+        model_ref = fields.get("model_id").attrib.get("ref") if fields.get("model_id") is not None else ""
+        domain = field_text(fields, "domain_force", record.attrib.get("id", "company rule"))
+        if model_ref.startswith("model_sudo_cn_"):
+            ruled_models.add(model_ref)
+            if "company_ids" not in domain or "company_id" not in domain:
+                fail(
+                    "China company record rules must enforce allowed companies: "
+                    f"{record.attrib.get('id')} domain={domain!r}"
+                )
+    missing_rules = accessed_models - ruled_models - allowed_without_company_rule
+    if missing_rules:
+        fail(
+            "China ACL models must either have an allowed-company record rule "
+            f"or be explicitly allowlisted as global/wizard models: {sorted(missing_rules)}"
+        )
+    stale_allowlist = allowed_without_company_rule - accessed_models
+    if stale_allowlist:
+        fail(
+            "China company security allowlist references models no longer in ACL: "
+            f"{sorted(stale_allowlist)}"
+        )
+
+
 def validate_xbrl_parser_addon() -> None:
     manifest_path = XBRL_ADDON_ROOT / "__manifest__.py"
     if not manifest_path.is_file():
@@ -6102,6 +6153,7 @@ def main() -> int:
     validate_china_compliance_workbench(manifest)
     validate_delivery_objective_coverage()
     validate_china_native_menu_integration()
+    validate_china_company_security_contract()
     validate_xbrl_parser_addon()
     print(f"validated {ADDON_ROOT.name} {manifest['version']}")
     return 0
