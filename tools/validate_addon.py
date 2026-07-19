@@ -5911,11 +5911,31 @@ def validate_china_company_security_contract() -> None:
     with (ADDON_ROOT / "security" / "ir.model.access.csv").open(
         encoding="utf-8"
     ) as handle:
-        accessed_models = {
-            row["model_id:id"]
-            for row in csv.DictReader(handle)
-            if row["model_id:id"].startswith("model_sudo_cn_")
-        }
+        access_rows = list(csv.DictReader(handle))
+    allowed_acl_group_prefixes = (
+        "sudo_global_finance.group_compliance_",
+        "sudo_country_pack_cn.group_cn_",
+    )
+    accessed_models = {
+        row["model_id:id"]
+        for row in access_rows
+        if row["model_id:id"].startswith("model_sudo_cn_")
+    }
+    for row in access_rows:
+        group = row["group_id:id"]
+        if not group.startswith(allowed_acl_group_prefixes):
+            fail(
+                "China ACL rows must only grant compliance groups: "
+                f"{row['id']} group={group!r}"
+            )
+        if group.endswith("group_compliance_user") and row["perm_unlink"] != "0":
+            fail(f"ordinary China compliance users must not delete records: {row['id']}")
+        if group.endswith(("group_compliance_rule_approver", "group_cn_report_approver")):
+            if row["perm_create"] != "0" or row["perm_unlink"] != "0":
+                fail(
+                    "China approval groups must not create or delete governed records: "
+                    f"{row['id']}"
+                )
 
     security_root = ElementTree.parse(
         ADDON_ROOT / "security" / "compliance_security.xml"
