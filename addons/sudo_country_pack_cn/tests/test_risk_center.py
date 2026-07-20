@@ -695,3 +695,22 @@ class TestChinaRiskCenterDisplay(TransactionCase):
                 "china_remediation_responsibility_visibility"
             ]
         )
+
+    def test_risk_closure_state_is_searchable(self):
+        domain = self.env[
+            "sudo.compliance.finding"
+        ]._search_cn_closure_state("=", "blocked")
+
+        self.assertEqual(domain[0][0], "id")
+        self.assertEqual(domain[0][1], "in")
+
+    def test_risk_center_search_view_exposes_closure_filters(self):
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_risk_center_finding_search"
+        )
+        arch = view.arch_db
+
+        self.assertIn("cn_closure_ready", arch)
+        self.assertIn("cn_closure_action_required", arch)
+        self.assertIn("cn_closure_blocked", arch)
+        self.assertIn("cn_closure_state", arch)

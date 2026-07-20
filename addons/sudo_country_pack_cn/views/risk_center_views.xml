@@ -27,6 +27,13 @@
                 <filter name="cn_verification_failed" string="验证未通过"
                         domain="[('task_verification_state', '=', 'failed')]"/>
                 <separator/>
+                <filter name="cn_closure_ready" string="关闭就绪"
+                        domain="[('cn_closure_state', '=', 'ready')]"/>
+                <filter name="cn_closure_action_required" string="需动作"
+                        domain="[('cn_closure_state', '=', 'action_required')]"/>
+                <filter name="cn_closure_blocked" string="阻断"
+                        domain="[('cn_closure_state', '=', 'blocked')]"/>
+                <separator/>
                 <filter name="group_risk" string="按风险等级"
                         context="{'group_by': 'risk_level'}"/>
                 <filter name="group_review" string="按复核状态"

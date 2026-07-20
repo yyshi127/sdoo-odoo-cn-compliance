@@ -1,4 +1,5 @@
 from odoo import _, fields, models
+from odoo.osv import expression
 
 
 EVIDENCE_STATES = [
@@ -170,6 +171,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         CLOSURE_STATES,
         string="Closure Status",
         compute="_compute_cn_risk_center_display",
+        search="_search_cn_closure_state",
     )
     cn_closure_summary = fields.Char(
         string="Closure Summary",
@@ -366,6 +368,26 @@ class SudoChinaRiskCenterFinding(models.Model):
         if version.cn_release_state == "active_attention":
             return "active_attention"
         return "ready"
+
+    def _search_cn_closure_state(self, operator, value):
+        allowed = {"ready", "action_required", "blocked"}
+        if operator in ("=", "!="):
+            values = {value}
+        elif operator in ("in", "not in"):
+            values = set(value or [])
+        else:
+            return [("id", "=", 0)]
+        values &= allowed
+        if not values:
+            return [] if operator in ("!=", "not in") else [("id", "=", 0)]
+        cn_domain = [("assessment_id.profile_id.country_id.code", "=", "CN")]
+        matched = self.search(cn_domain).filtered(
+            lambda finding: finding._cn_closure_summary()[0] in values
+        )
+        domain = [("id", "in", matched.ids)]
+        if operator in ("!=", "not in"):
+            return expression.NOT(domain)
+        return domain
 
     def action_cn_open_risk_rule_version(self):
         self.ensure_one()
