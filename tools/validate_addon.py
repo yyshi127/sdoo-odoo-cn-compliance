@@ -3964,6 +3964,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_workbench_surfaces_cross_border_transaction_register",
         "test_cross_border_transaction_review_freezes_checksum",
         "test_cross_border_fact_provider_exposes_period_snapshot",
+        "test_evidence_center_search_view_exposes_audit_gap_filters",
         "test_workbench_navigation_actions_are_scoped_to_profile",
         "test_workbench_marks_obligation_readiness_after_review",
     ):
@@ -4704,6 +4705,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "document_checksum",
         "cn_evidence_source_summary",
         "cn_evidence_blocker_summary",
+        "cn_no_linked_source",
+        "cn_checksum_missing",
+        "cn_verified_metadata_gap",
         "verified_by_id",
         "verified_at",
         'decoration-success="state == \'verified\'"',

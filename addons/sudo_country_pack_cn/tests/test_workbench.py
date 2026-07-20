@@ -850,6 +850,45 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("evidence not submitted", evidence.cn_evidence_blocker_summary)
         self.assertIn("checksum not frozen", evidence.cn_evidence_blocker_summary)
 
+    def test_evidence_center_search_view_exposes_audit_gap_filters(self):
+        evidence = self.env["sudo.compliance.evidence"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "Workbench evidence center unlinked evidence",
+                "company_id": self.company.id,
+                "evidence_type": "external_reference",
+                "external_reference": "DMS/CN/EVIDENCE-CENTER-UNLINKED",
+            }
+        )
+
+        evidence_with_gap = self.env["sudo.compliance.evidence"].search(
+            [
+                ("assessment_id", "=", False),
+                ("finding_id", "=", False),
+                ("task_id", "=", False),
+                ("filing_id", "=", False),
+                ("document_checksum", "=", False),
+            ]
+        )
+        self.assertIn(evidence, evidence_with_gap)
+
+        view = self.env.ref("sudo_country_pack_cn.view_cn_evidence_center_search")
+        arch = view.arch_db
+        for required in (
+            "cn_no_linked_source",
+            "cn_checksum_missing",
+            "cn_verified_metadata_gap",
+            "assessment_id",
+            "finding_id",
+            "task_id",
+            "filing_id",
+            "document_checksum",
+            "verified_by_id",
+            "verified_at",
+        ):
+            self.assertIn(required, arch)
+
     def test_workbench_marks_obligation_readiness_after_review(self):
         source = self.env.ref(
             "sudo_country_pack_cn.source_cn_tax_collection_law_2015_candidate"

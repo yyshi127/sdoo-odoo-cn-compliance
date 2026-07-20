@@ -31,6 +31,13 @@
                 <filter name="remediation_proof" string="整改证明"
                         domain="[('evidence_type', '=', 'remediation_proof')]"/>
                 <separator/>
+                <filter name="cn_no_linked_source" string="未关联来源"
+                        domain="[('assessment_id', '=', False), ('finding_id', '=', False), ('task_id', '=', False), ('filing_id', '=', False)]"/>
+                <filter name="cn_checksum_missing" string="未冻结校验和"
+                        domain="[('document_checksum', '=', False)]"/>
+                <filter name="cn_verified_metadata_gap" string="验证元数据缺口"
+                        domain="['&amp;', ('state', '=', 'verified'), '|', ('verified_by_id', '=', False), ('verified_at', '=', False)]"/>
+                <separator/>
                 <filter name="group_state" string="按状态"
                         context="{'group_by': 'state'}"/>
                 <filter name="group_type" string="按证据类型"
