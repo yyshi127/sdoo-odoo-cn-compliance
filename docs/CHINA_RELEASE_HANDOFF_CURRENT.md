@@ -39,6 +39,15 @@ Always confirm the exact source commit in the selected delivery status file:
 - `Business UAT ready`
 - `Production sign-off ready`
 
+Also confirm that
+`dist/cn_delivery_mNNN_chain_latest_signoff_candidate.md` reports no selector
+errors, and that
+`dist/cn_delivery_mNNN_chain_production_signoff_actions.md` includes both the
+owner summary and the blocker-to-action matrix before reviewer sign-off begins.
+These sections are part of the current audit contract: every remaining
+production blocker must map to at least one human action, and every action owner
+must be visible to the reviewer.
+
 For the last verified candidate before this handoff was generalized, the latest
 status file showed `business_uat_ready=true` and
 `production_signoff_ready=false`. That is the expected state before completed
@@ -82,7 +91,10 @@ The sign-off packet should expose automated evidence for delivery integrity,
 runtime acceptance, preview health, real-data closed-loop evidence, UAT
 walkthrough script inclusion, workbench/risk/remediation/report/evidence
 summaries, official source governance, IIT payroll withholding scope and
-cross-border review scope.
+cross-border review scope. The production sign-off action checklist should
+then translate the remaining human gates into owner-specific action lists and a
+blocker coverage matrix, making the handoff auditable without asking reviewers
+to infer blocker ownership from free text.
 
 ## What Is Not Yet Complete
 

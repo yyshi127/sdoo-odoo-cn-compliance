@@ -126,8 +126,11 @@ reviewer-facing Markdown checklist contains every required action key exported
 by the JSON checklist, with reviewer, decision, date, evidence reference and
 notes fields plus owner, acceptable decision and required-evidence fields in
 each action section. The owner, acceptable decisions and required-evidence
-lines must match the machine-readable JSON checklist. Use the selected
-candidate number in
+lines must match the machine-readable JSON checklist. The selector also rejects
+candidates whose production sign-off action checklist is missing the owner
+summary, blocker-to-action coverage matrix, or the matching Markdown sections,
+so reviewers can see who owns each human gate and which action covers each
+production blocker. Use the selected candidate number in
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md`. The strict flag is
 recommended for production sign-off because it fails when a newer status file
 exists but its evidence set is incomplete, instead of silently falling back to
@@ -149,9 +152,13 @@ python tools/export_cn_production_signoff_actions.py \
 
 Use `dist/cn_delivery_mNNN_chain_production_signoff_actions.md` or the
 regenerated Markdown checklist as the practical owner/action/evidence tracker
-for the seven remaining human gates. It does not change the automated status by
-itself; production sign-off still requires completed real evidence and a passed
-`tools/validate_cn_signoff_evidence.py` result.
+for the seven remaining human gates. The checklist must show an owner summary
+and a blocker-to-action matrix before the detailed action sections, so the
+business reviewer, China tax professional, rule governance owner,
+implementation owner and release owner can each see their assigned evidence
+items without reverse-engineering the JSON. It does not change the automated
+status by itself; production sign-off still requires completed real evidence
+and a passed `tools/validate_cn_signoff_evidence.py` result.
 The matching `dist/cn_delivery_mNNN_chain_latest_signoff_candidate.md` is the
 reviewer entry summary: it points to the selected action checklist and sign-off
 packet, then lists the required action keys and production blockers for the
