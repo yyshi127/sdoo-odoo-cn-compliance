@@ -181,6 +181,34 @@ class TestChinaReportReadiness(TransactionCase):
             assessment.cn_report_readiness_blocker_summary,
         )
 
+    def test_report_readiness_state_is_searchable(self):
+        assessment = self._assessment()
+        assessment.invalidate_recordset()
+
+        assessments = self.env["sudo.compliance.assessment"].search(
+            [("cn_report_readiness_state", "=", "limited")]
+        )
+
+        self.assertIn(assessment, assessments)
+
+    def test_report_readiness_search_view_exposes_status_filters(self):
+        view = self.env.ref("sudo_country_pack_cn.view_cn_report_readiness_search")
+        arch = view.arch_db
+
+        for required in (
+            "cn_report_needs_review",
+            "cn_report_needs_remediation",
+            "cn_report_limited",
+            "cn_report_ready",
+            "cn_report_issued",
+            "cn_report_rescan_failed",
+            "cn_report_archive_blocked",
+            "cn_report_readiness_state",
+            "cn_report_rescan_state",
+            "cn_report_filing_archive_state",
+        ):
+            self.assertIn(required, arch)
+
     def test_country_pack_advertises_report_readiness_badge_clarity(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][
@@ -250,6 +278,12 @@ class TestChinaReportReadiness(TransactionCase):
         self.assertEqual(assessment.cn_report_failed_rescan_count, 1)
         self.assertEqual(assessment.cn_report_verified_remediation_count, 1)
         self.assertIn("failed", assessment.cn_report_rescan_next_action)
+        self.assertIn(
+            assessment,
+            self.env["sudo.compliance.assessment"].search(
+                [("cn_report_rescan_state", "=", "failed")]
+            ),
+        )
 
     def test_report_readiness_surfaces_filing_archive_gate(self):
         assessment = self._assessment()
@@ -270,6 +304,12 @@ class TestChinaReportReadiness(TransactionCase):
             assessment.cn_report_readiness_blocker_summary,
         )
         self.assertIn(filing, self.env["sudo.compliance.filing"].search([]))
+        self.assertIn(
+            assessment,
+            self.env["sudo.compliance.assessment"].search(
+                [("cn_report_filing_archive_state", "=", "blocked")]
+            ),
+        )
 
     def test_report_readiness_surfaces_ai_guidance_gate(self):
         assessment = self._assessment()

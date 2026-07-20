@@ -4147,6 +4147,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_report_filing_archive_count",
         "cn_report_filing_archive_issue_count",
         "cn_report_sealed_filing_archive_count",
+        "_search_cn_report_readiness_state",
+        "_search_cn_report_rescan_state",
+        "_search_cn_report_filing_archive_state",
         "action_cn_open_report_readiness_findings",
         "action_cn_open_report_readiness_tasks",
     ):
@@ -4236,6 +4239,13 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'id="view_cn_report_readiness_list"',
         'id="view_cn_report_readiness_search"',
         "cn_report_readiness_state",
+        "cn_report_needs_review",
+        "cn_report_needs_remediation",
+        "cn_report_limited",
+        "cn_report_ready",
+        "cn_report_issued",
+        "cn_report_rescan_failed",
+        "cn_report_archive_blocked",
         "cn_report_next_action",
         "cn_report_action_summary",
         "cn_report_readiness_blocker_summary",
@@ -4272,9 +4282,6 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in report_view_content:
             fail(f"China report readiness UI is missing {required}")
-    if "('cn_report_readiness_state'" in report_view_content:
-        fail("China report readiness must not search on non-stored readiness state")
-
     risk_view_content = (
         ADDON_ROOT / "views" / "risk_center_views.xml"
     ).read_text(encoding="utf-8")
@@ -4482,6 +4489,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_completed_clean_assessment_discloses_limitations",
         "test_incomplete_assessment_requires_scan_completion",
         "test_country_pack_advertises_report_readiness_badge_clarity",
+        "test_report_readiness_state_is_searchable",
+        "test_report_readiness_search_view_exposes_status_filters",
         "test_report_readiness_blocks_pending_or_failed_rescans",
         "test_report_readiness_surfaces_filing_archive_gate",
         "test_readiness_navigation_actions_are_scoped_to_assessment",

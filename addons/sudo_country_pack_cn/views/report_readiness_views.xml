@@ -14,6 +14,21 @@
                 <filter name="completed" string="扫描完成"
                         domain="[('state', '=', 'completed')]"/>
                 <separator/>
+                <filter name="cn_report_needs_review" string="待复核"
+                        domain="[('cn_report_readiness_state', '=', 'needs_review')]"/>
+                <filter name="cn_report_needs_remediation" string="待整改"
+                        domain="[('cn_report_readiness_state', '=', 'needs_remediation')]"/>
+                <filter name="cn_report_limited" string="受限"
+                        domain="[('cn_report_readiness_state', '=', 'limited')]"/>
+                <filter name="cn_report_ready" string="可编制"
+                        domain="[('cn_report_readiness_state', '=', 'ready')]"/>
+                <filter name="cn_report_issued" string="已签发"
+                        domain="[('cn_report_readiness_state', '=', 'issued')]"/>
+                <filter name="cn_report_rescan_failed" string="复扫失败"
+                        domain="[('cn_report_rescan_state', '=', 'failed')]"/>
+                <filter name="cn_report_archive_blocked" string="档案受阻"
+                        domain="[('cn_report_filing_archive_state', '=', 'blocked')]"/>
+                <separator/>
                 <filter name="group_company" string="按公司"
                         context="{'group_by': 'company_id'}"/>
                 <filter name="group_period" string="按期间结束月"

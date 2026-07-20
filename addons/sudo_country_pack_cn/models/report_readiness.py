@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from odoo import _, fields, models
+from odoo.osv import expression
 
 
 OPEN_TASK_STATES = ("open", "in_progress", "waiting", "pending_review", "blocked")
@@ -41,6 +42,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
         ],
         string="中国报告准备度",
         compute="_compute_cn_report_readiness",
+        search="_search_cn_report_readiness_state",
     )
     cn_report_next_action = fields.Char(
         string="报告下一步",
@@ -81,6 +83,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
         ],
         string="Report Rescan Gate",
         compute="_compute_cn_report_readiness",
+        search="_search_cn_report_rescan_state",
     )
     cn_report_rescan_next_action = fields.Char(
         string="Rescan Next Action",
@@ -107,6 +110,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
         ],
         string="Filing Archive Gate",
         compute="_compute_cn_report_readiness",
+        search="_search_cn_report_filing_archive_state",
     )
     cn_report_filing_archive_next_action = fields.Char(
         string="Filing Archive Next Action",
@@ -522,6 +526,65 @@ class SudoChinaReportReadinessAssessment(models.Model):
             assessment.cn_report_action_summary = (
                 assessment._cn_report_action_summary()
             )
+
+    def _search_cn_report_readiness_value(self, operator, value, allowed, field_name):
+        if operator in ("=", "!="):
+            values = {value}
+        elif operator in ("in", "not in"):
+            values = set(value or [])
+        else:
+            return [("id", "=", 0)]
+        values &= allowed
+        if not values:
+            return [] if operator in ("!=", "not in") else [("id", "=", 0)]
+        assessments = self.search([("country_id.code", "=", "CN")])
+        matched = assessments.filtered(
+            lambda assessment: assessment[field_name] in values
+        )
+        domain = [("id", "in", matched.ids)]
+        if operator in ("!=", "not in"):
+            return expression.NOT(domain)
+        return domain
+
+    def _search_cn_report_readiness_state(self, operator, value):
+        return self._search_cn_report_readiness_value(
+            operator,
+            value,
+            {
+                "needs_scan",
+                "needs_review",
+                "needs_remediation",
+                "limited",
+                "ready",
+                "draft_report",
+                "submitted",
+                "issued",
+            },
+            "cn_report_readiness_state",
+        )
+
+    def _search_cn_report_rescan_state(self, operator, value):
+        return self._search_cn_report_readiness_value(
+            operator,
+            value,
+            {
+                "not_applicable",
+                "in_progress",
+                "pending_rescan",
+                "failed",
+                "verified",
+                "evidence_gap",
+            },
+            "cn_report_rescan_state",
+        )
+
+    def _search_cn_report_filing_archive_state(self, operator, value):
+        return self._search_cn_report_readiness_value(
+            operator,
+            value,
+            {"not_started", "ready", "attention", "blocked"},
+            "cn_report_filing_archive_state",
+        )
 
     def _cn_report_readiness_blocker_summary(self):
         self.ensure_one()
