@@ -851,23 +851,31 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("checksum not frozen", evidence.cn_evidence_blocker_summary)
 
     def test_evidence_center_search_view_exposes_audit_gap_filters(self):
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-01",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(self.rule_version.ids)],
+            }
+        )
         evidence = self.env["sudo.compliance.evidence"].with_company(
             self.company
         ).create(
             {
-                "name": "Workbench evidence center unlinked evidence",
+                "name": "Workbench evidence center checksum gap",
                 "company_id": self.company.id,
+                "assessment_id": assessment.id,
                 "evidence_type": "external_reference",
-                "external_reference": "DMS/CN/EVIDENCE-CENTER-UNLINKED",
+                "external_reference": "DMS/CN/EVIDENCE-CENTER-CHECKSUM-GAP",
             }
         )
 
         evidence_with_gap = self.env["sudo.compliance.evidence"].search(
             [
-                ("assessment_id", "=", False),
-                ("finding_id", "=", False),
-                ("task_id", "=", False),
-                ("filing_id", "=", False),
                 ("document_checksum", "=", False),
             ]
         )
