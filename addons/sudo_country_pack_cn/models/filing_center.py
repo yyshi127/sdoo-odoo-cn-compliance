@@ -1,4 +1,5 @@
 from odoo import _, fields, models
+from odoo.osv import expression
 
 
 EVIDENCE_STATES = [
@@ -45,6 +46,7 @@ class SudoChinaFilingCenterFiling(models.Model):
         ARCHIVE_READINESS_STATES,
         string="归档就绪",
         compute="_compute_cn_filing_center_display",
+        search="_search_cn_filing_center_archive_state",
     )
     cn_filing_center_evidence_count = fields.Integer(
         string="证据记录",
@@ -138,6 +140,32 @@ class SudoChinaFilingCenterFiling(models.Model):
         ):
             return "attention"
         return "ready"
+
+    def _search_cn_filing_center_archive_state(self, operator, value):
+        allowed = {"ready", "attention", "blocked"}
+        if operator in ("=", "!="):
+            values = {value}
+        elif operator in ("in", "not in"):
+            values = set(value or [])
+        else:
+            return [("id", "=", 0)]
+        values &= allowed
+        if not values:
+            return [] if operator in ("!=", "not in") else [("id", "=", 0)]
+        controlled_domain = [
+            "|",
+            "|",
+            ("cn_vat_reconciliation_run_id", "!=", False),
+            ("cn_cit_reconciliation_run_id", "!=", False),
+            ("cn_iit_reconciliation_run_id", "!=", False),
+        ]
+        matched = self.search(controlled_domain).filtered(
+            lambda filing: filing._cn_filing_center_archive_state() in values
+        )
+        domain = [("id", "in", matched.ids)]
+        if operator in ("!=", "not in"):
+            return expression.NOT(domain)
+        return domain
 
     def _cn_filing_center_blocker_summary(self):
         self.ensure_one()

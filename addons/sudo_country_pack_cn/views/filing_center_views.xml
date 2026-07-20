@@ -14,6 +14,13 @@
                 <filter name="cn_controlled" string="中国受控档案"
                         domain="['|', '|', ('cn_vat_reconciliation_run_id', '!=', False), ('cn_cit_reconciliation_run_id', '!=', False), ('cn_iit_reconciliation_run_id', '!=', False)]"/>
                 <separator/>
+                <filter name="cn_archive_ready" string="可用于报告"
+                        domain="[('cn_filing_center_archive_state', '=', 'ready')]"/>
+                <filter name="cn_archive_attention" string="需补充"
+                        domain="[('cn_filing_center_archive_state', '=', 'attention')]"/>
+                <filter name="cn_archive_blocked" string="不可引用"
+                        domain="[('cn_filing_center_archive_state', '=', 'blocked')]"/>
+                <separator/>
                 <filter name="group_state" string="按申报状态"
                         context="{'group_by': 'state'}"/>
                 <filter name="group_payment_state" string="按缴退税状态"

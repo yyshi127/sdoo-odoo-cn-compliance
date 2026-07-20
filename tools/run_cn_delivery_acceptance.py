@@ -26,6 +26,7 @@ XBRL_ADDON = ROOT / "addons" / "sudo_country_pack_cn_einvoice_xbrl"
 DEFAULT_RUNTIME_TAGS = [
     "/sudo_country_pack_cn:TestChinaComplianceWorkbench",
     "/sudo_country_pack_cn:TestChinaRiskCenterDisplay",
+    "/sudo_country_pack_cn:TestChinaFilingCenter",
     "/sudo_country_pack_cn:TestChinaReportReadiness",
     "/sudo_country_pack_cn:TestChinaFormalComplianceReport",
 ]
@@ -36,7 +37,6 @@ TAX_RUNTIME_TAGS = [
     "/sudo_country_pack_cn:TestChinaVatPeriodReconciliation",
     "/sudo_country_pack_cn:TestChinaCitPeriodReconciliation",
     "/sudo_country_pack_cn:TestChinaIitPeriodReconciliation",
-    "/sudo_country_pack_cn:TestChinaFilingCenter",
 ]
 GOVERNANCE_RUNTIME_TAGS = [
     "/sudo_country_pack_cn:TestChinaCountryPack",

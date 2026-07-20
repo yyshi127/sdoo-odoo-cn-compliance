@@ -117,3 +117,22 @@ class TestChinaFilingCenter(TransactionCase):
         filing.cn_filing_center_evidence_state = "verified"
 
         self.assertEqual(filing._cn_filing_center_archive_state(), "ready")
+
+    def test_filing_center_archive_state_is_searchable(self):
+        domain = self.env[
+            "sudo.compliance.filing"
+        ]._search_cn_filing_center_archive_state("=", "ready")
+
+        self.assertEqual(domain[0][0], "id")
+        self.assertEqual(domain[0][1], "in")
+
+    def test_filing_center_search_view_exposes_archive_readiness_filters(self):
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_filing_center_search"
+        )
+        arch = view.arch_db
+
+        self.assertIn("cn_archive_ready", arch)
+        self.assertIn("cn_archive_attention", arch)
+        self.assertIn("cn_archive_blocked", arch)
+        self.assertIn("cn_filing_center_archive_state", arch)
