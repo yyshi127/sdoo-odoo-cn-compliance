@@ -763,6 +763,36 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(report.cn_report_center_stage, "issued")
         self.assertEqual(report.cn_report_center_integrity_state, "verified")
 
+    def test_report_center_search_view_exposes_audit_filters(self):
+        report = self._report()
+        report.with_user(self.manager).action_submit()
+
+        reports = self.env["sudo.cn.compliance.report"].search(
+            [("finding_closure_blocked_count", ">", 0)]
+        )
+        self.assertIn(report, reports)
+
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_formal_compliance_report_search"
+        )
+        arch = view.arch_db
+        for required in (
+            "cn_report_closure_blocked",
+            "cn_report_fact_gap",
+            "cn_report_no_evidence",
+            "cn_report_overdue_tasks",
+            "cn_report_pending_verification",
+            "cn_report_pending_tax_impact",
+            "finding_closure_blocked_count",
+            "fact_issue_count",
+            "finding_without_fact_count",
+            "evidence_count",
+            "overdue_task_count",
+            "remediation_pending_verification_count",
+            "tax_impact_pending_count",
+        ):
+            self.assertIn(required, arch)
+
     def test_country_pack_advertises_report_center_visibility(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][

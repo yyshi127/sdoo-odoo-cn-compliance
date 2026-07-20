@@ -21,6 +21,19 @@
                 <filter name="limited" string="存在限制"
                         domain="[('has_material_limitations', '=', True)]"/>
                 <separator/>
+                <filter name="cn_report_closure_blocked" string="闭环阻断"
+                        domain="[('finding_closure_blocked_count', '&gt;', 0)]"/>
+                <filter name="cn_report_fact_gap" string="事实缺口"
+                        domain="['|', ('fact_issue_count', '&gt;', 0), ('finding_without_fact_count', '&gt;', 0)]"/>
+                <filter name="cn_report_no_evidence" string="无证据"
+                        domain="[('evidence_count', '=', 0)]"/>
+                <filter name="cn_report_overdue_tasks" string="逾期整改"
+                        domain="[('overdue_task_count', '&gt;', 0)]"/>
+                <filter name="cn_report_pending_verification" string="待验证复扫"
+                        domain="[('remediation_pending_verification_count', '&gt;', 0)]"/>
+                <filter name="cn_report_pending_tax_impact" string="待量化影响"
+                        domain="[('tax_impact_pending_count', '&gt;', 0)]"/>
+                <separator/>
                 <filter name="my_approvals" string="待我批准"
                         domain="[('state', '=', 'submitted'), ('reviewer_id', '=', uid)]"/>
                 <group>

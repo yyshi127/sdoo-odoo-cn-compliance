@@ -3119,6 +3119,7 @@ def validate_formal_compliance_report() -> None:
         "test_only_designated_approver_can_return_or_issue",
         "test_report_html_preserves_boundary_and_non_net_tax_impact",
         "test_report_center_exposes_stage_next_action_and_navigation",
+        "test_report_center_search_view_exposes_audit_filters",
         "test_country_pack_advertises_report_center_visibility",
         "test_pending_obligations_require_report_limitation",
     ):
