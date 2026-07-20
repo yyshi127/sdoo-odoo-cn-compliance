@@ -1186,6 +1186,26 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(binding["preview_url_matches_status"])
         self.assertTrue(binding["action_keys_match"])
 
+    def test_production_signoff_actions_export_summarizes_owners(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+
+        export = SIGNOFF_ACTIONS.export_actions(status, packet)
+
+        owners = {item["owner"]: item for item in export["owner_summary"]}
+        self.assertIn("business_reviewer", owners)
+        self.assertIn("release_owner", owners)
+        self.assertIn("china_tax_professional", owners)
+        self.assertIn("implementation_owner", owners)
+        self.assertIn("business_uat_decision", owners["business_reviewer"]["action_keys"])
+        self.assertIn(
+            "business UAT decision must be recorded outside this automated status",
+            owners["business_reviewer"]["addresses_blockers"],
+        )
+        self.assertTrue(
+            all(item["covered"] for item in export["blocker_action_matrix"])
+        )
+
     def test_production_signoff_actions_markdown_is_reviewer_checklist(self):
         status = delivery_status()
         packet = PACKET._build_packet(status)
@@ -1197,6 +1217,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
 
             content = output.read_text(encoding="utf-8")
         self.assertIn("# China Production Sign-off Action Checklist", content)
+        self.assertIn("## Owner Summary", content)
+        self.assertIn("### business_reviewer", content)
+        self.assertIn("## Blocker-To-Action Matrix", content)
         self.assertIn("## Required Actions", content)
         self.assertIn("### business_uat_decision", content)
         self.assertIn("- Evidence reference:", content)

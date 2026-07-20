@@ -42,6 +42,27 @@ def _unique_actions(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(by_key.values())
 
 
+def _owner_summary(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_owner: dict[str, dict[str, Any]] = {}
+    for action in actions:
+        owner = str(action.get("owner") or "unassigned")
+        entry = by_owner.setdefault(
+            owner,
+            {
+                "owner": owner,
+                "action_count": 0,
+                "action_keys": [],
+                "addresses_blockers": [],
+            },
+        )
+        entry["action_count"] += 1
+        entry["action_keys"].append(action["key"])
+        for blocker in action.get("addresses_blockers") or []:
+            if blocker not in entry["addresses_blockers"]:
+                entry["addresses_blockers"].append(blocker)
+    return sorted(by_owner.values(), key=lambda item: item["owner"])
+
+
 def _packet_binding(
     status: dict[str, Any],
     packet: dict[str, Any] | None,
@@ -126,6 +147,7 @@ def export_actions(
         "production_signoff_blockers": readiness.get("production_signoff_blockers")
         or [],
         "action_count": len(actions),
+        "owner_summary": _owner_summary(actions),
         "actions": actions,
         "blocker_action_matrix": readiness.get(
             "production_signoff_blocker_action_matrix"
@@ -156,6 +178,33 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
     ]
     blockers = payload.get("production_signoff_blockers") or []
     lines.extend([f"- {blocker}" for blocker in blockers] or ["- None"])
+    lines.extend(["", "## Owner Summary", ""])
+    for item in payload.get("owner_summary") or []:
+        lines.extend(
+            [
+                f"### {item.get('owner')}",
+                "",
+                f"- Action count: `{item.get('action_count')}`",
+                f"- Action keys: `{', '.join(item.get('action_keys') or [])}`",
+                f"- Addresses blockers: `{', '.join(item.get('addresses_blockers') or [])}`",
+                "",
+            ]
+        )
+    if not payload.get("owner_summary"):
+        lines.append("- None")
+    lines.extend(["", "## Blocker-To-Action Matrix", ""])
+    for item in payload.get("blocker_action_matrix") or []:
+        lines.extend(
+            [
+                f"### {item.get('blocker')}",
+                "",
+                f"- Covered: `{item.get('covered')}`",
+                f"- Action keys: `{', '.join(item.get('action_keys') or [])}`",
+                "",
+            ]
+        )
+    if not payload.get("blocker_action_matrix"):
+        lines.append("- None")
     lines.extend(["", "## Required Actions", ""])
     for action in payload.get("actions") or []:
         lines.extend(
