@@ -263,6 +263,45 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_rejects_action_checklist_without_owner_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                23,
+                commit="abc",
+                aggregate=_sha("manifest23"),
+                omit_owner_summary=True,
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "action checklist owner summary is missing",
+                result["checked_candidates"][0]["errors"],
+            )
+
+    def test_rejects_action_checklist_without_blocker_matrix_coverage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                24,
+                commit="abc",
+                aggregate=_sha("manifest24"),
+                matrix_covered=False,
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "action checklist blocker-action matrix does not cover blockers: "
+                "business UAT decision must be recorded outside this automated status",
+                result["checked_candidates"][0]["errors"],
+            )
+
     def test_rejects_missing_reviewer_action_checklist_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             dist = Path(temp)
@@ -412,12 +451,24 @@ def _candidate(
     action_binding_ok: bool = True,
     action_bundle_binding_ok: bool = True,
     action_manifest_binding_ok: bool = True,
+    omit_owner_summary: bool = False,
+    matrix_covered: bool = True,
     packet_bundle_sha256: str | None = None,
     packet_manifest_aggregate_sha256: str | None = None,
     actions_bundle_sha256: str | None = None,
     actions_manifest_aggregate_sha256: str | None = None,
     action_markdown: str = (
         "# checklist\n\n"
+        "## Owner Summary\n\n"
+        "### business_reviewer\n\n"
+        "- Action count: `1`\n"
+        "- Action keys: `business_uat_decision`\n"
+        "- Addresses blockers: `business UAT decision must be recorded outside this automated status`\n\n"
+        "## Blocker-To-Action Matrix\n\n"
+        "### business UAT decision must be recorded outside this automated status\n\n"
+        "- Covered: `True`\n"
+        "- Action keys: `business_uat_decision`\n\n"
+        "## Required Actions\n\n"
         "### business_uat_decision\n\n"
         "- Owner: `business_reviewer`\n"
         "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
@@ -506,6 +557,18 @@ def _candidate(
         "manifest_aggregate_sha256": actions_manifest_aggregate_sha256 or aggregate,
         "production_signoff_ready": False,
         "action_count": 1,
+        "owner_summary": []
+        if omit_owner_summary
+        else [
+            {
+                "owner": "business_reviewer",
+                "action_count": 1,
+                "action_keys": ["business_uat_decision"],
+                "addresses_blockers": [
+                    "business UAT decision must be recorded outside this automated status"
+                ],
+            }
+        ],
         "actions": [
             {
                 "key": "business_uat_decision",
@@ -515,6 +578,13 @@ def _candidate(
                     "accepted_with_limitations",
                 ],
                 "required_evidence": "Completed checklist.",
+            }
+        ],
+        "blocker_action_matrix": [
+            {
+                "blocker": "business UAT decision must be recorded outside this automated status",
+                "covered": matrix_covered,
+                "action_keys": ["business_uat_decision"] if matrix_covered else [],
             }
         ],
         "packet_binding": {

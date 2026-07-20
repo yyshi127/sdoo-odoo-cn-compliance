@@ -3260,6 +3260,9 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "compliance_scope_ready": True,
                 "business_uat_ready": True,
                 "production_signoff_ready": False,
+                "production_signoff_blockers": [
+                    "business UAT decision must be recorded outside this automated status"
+                ],
                 "production_signoff_required_actions": [{"key": "business_uat_decision"}],
             },
         }
@@ -3271,6 +3274,16 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "manifest_aggregate_sha256": aggregate,
             "production_signoff_ready": False,
             "action_count": 1,
+            "owner_summary": [
+                {
+                    "owner": "business_reviewer",
+                    "action_count": 1,
+                    "action_keys": ["business_uat_decision"],
+                    "addresses_blockers": [
+                        "business UAT decision must be recorded outside this automated status"
+                    ],
+                }
+            ],
             "actions": [
                 {
                     "key": "business_uat_decision",
@@ -3280,6 +3293,13 @@ class TestChinaSignoffValidation(unittest.TestCase):
                         "accepted_with_limitations",
                     ],
                     "required_evidence": "Completed checklist.",
+                }
+            ],
+            "blocker_action_matrix": [
+                {
+                    "blocker": "business UAT decision must be recorded outside this automated status",
+                    "covered": True,
+                    "action_keys": ["business_uat_decision"],
                 }
             ],
             "packet_binding": {
@@ -3314,6 +3334,16 @@ class TestChinaSignoffValidation(unittest.TestCase):
             f"cn_delivery_{tag}_chain_production_signoff_actions.json": actions,
             f"cn_delivery_{tag}_chain_production_signoff_actions.md": (
                 b"# checklist\n\n"
+                b"## Owner Summary\n\n"
+                b"### business_reviewer\n\n"
+                b"- Action count: `1`\n"
+                b"- Action keys: `business_uat_decision`\n"
+                b"- Addresses blockers: `business UAT decision must be recorded outside this automated status`\n\n"
+                b"## Blocker-To-Action Matrix\n\n"
+                b"### business UAT decision must be recorded outside this automated status\n\n"
+                b"- Covered: `True`\n"
+                b"- Action keys: `business_uat_decision`\n\n"
+                b"## Required Actions\n\n"
                 b"### business_uat_decision\n\n"
                 b"- Owner: `business_reviewer`\n"
                 b"- Acceptable decisions: `accepted, accepted_with_limitations`\n"

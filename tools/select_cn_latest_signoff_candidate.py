@@ -275,6 +275,47 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
         readiness.get("production_signoff_required_actions") or []
     ):
         errors.append("action checklist count does not match status required actions")
+    owner_summary = actions.get("owner_summary")
+    if not isinstance(owner_summary, list) or not owner_summary:
+        errors.append("action checklist owner summary is missing")
+        owner_summary = []
+    action_owners = {
+        str(action.get("owner") or "unassigned")
+        for action in actions.get("actions") or []
+        if isinstance(action, dict)
+    }
+    summary_owners = {
+        str(item.get("owner"))
+        for item in owner_summary
+        if isinstance(item, dict) and item.get("owner")
+    }
+    if action_owners and not action_owners.issubset(summary_owners):
+        errors.append(
+            "action checklist owner summary missing owners: "
+            + ", ".join(sorted(action_owners - summary_owners))
+        )
+    blocker_matrix = actions.get("blocker_action_matrix")
+    if not isinstance(blocker_matrix, list) or not blocker_matrix:
+        errors.append("action checklist blocker-action matrix is missing")
+        blocker_matrix = []
+    matrix_blockers = {
+        str(item.get("blocker"))
+        for item in blocker_matrix
+        if isinstance(item, dict) and item.get("blocker") and item.get("covered") is True
+    }
+    status_blockers = {
+        str(blocker)
+        for blocker in readiness.get("production_signoff_blockers") or []
+        if blocker
+    }
+    if status_blockers and not status_blockers.issubset(matrix_blockers):
+        errors.append(
+            "action checklist blocker-action matrix does not cover blockers: "
+            + ", ".join(sorted(status_blockers - matrix_blockers))
+        )
+    for marker in ("## Owner Summary", "## Blocker-To-Action Matrix"):
+        if marker not in actions_markdown:
+            errors.append(f"reviewer action checklist markdown missing {marker}")
     markdown_missing_keys = [
         str(action.get("key"))
         for action in actions.get("actions") or []
