@@ -528,6 +528,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
             )
 
     def _search_cn_report_readiness_value(self, operator, value, allowed, field_name):
+        records = self.with_context(lang=self.env.user.lang or "en_US")
         if operator in ("=", "!="):
             values = {value}
         elif operator in ("in", "not in"):
@@ -537,7 +538,7 @@ class SudoChinaReportReadinessAssessment(models.Model):
         values &= allowed
         if not values:
             return [] if operator in ("!=", "not in") else [("id", "=", 0)]
-        assessments = self.search([("country_id.code", "=", "CN")])
+        assessments = records.search([("country_id.code", "=", "CN")])
         matched = assessments.filtered(
             lambda assessment: assessment[field_name] in values
         )

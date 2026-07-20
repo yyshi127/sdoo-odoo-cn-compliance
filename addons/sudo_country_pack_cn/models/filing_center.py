@@ -142,6 +142,7 @@ class SudoChinaFilingCenterFiling(models.Model):
         return "ready"
 
     def _search_cn_filing_center_archive_state(self, operator, value):
+        records = self.with_context(lang=self.env.user.lang or "en_US")
         allowed = {"ready", "attention", "blocked"}
         if operator in ("=", "!="):
             values = {value}
@@ -159,7 +160,7 @@ class SudoChinaFilingCenterFiling(models.Model):
             ("cn_cit_reconciliation_run_id", "!=", False),
             ("cn_iit_reconciliation_run_id", "!=", False),
         ]
-        matched = self.search(controlled_domain).filtered(
+        matched = records.search(controlled_domain).filtered(
             lambda filing: filing._cn_filing_center_archive_state() in values
         )
         domain = [("id", "in", matched.ids)]

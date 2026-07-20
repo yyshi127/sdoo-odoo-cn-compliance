@@ -370,6 +370,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         return "ready"
 
     def _search_cn_closure_state(self, operator, value):
+        records = self.with_context(lang=self.env.user.lang or "en_US")
         allowed = {"ready", "action_required", "blocked"}
         if operator in ("=", "!="):
             values = {value}
@@ -381,7 +382,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         if not values:
             return [] if operator in ("!=", "not in") else [("id", "=", 0)]
         cn_domain = [("assessment_id.profile_id.country_id.code", "=", "CN")]
-        matched = self.search(cn_domain).filtered(
+        matched = records.search(cn_domain).filtered(
             lambda finding: finding._cn_closure_summary()[0] in values
         )
         domain = [("id", "in", matched.ids)]
@@ -1004,6 +1005,7 @@ class SudoChinaRiskCenterTask(models.Model):
         return "in_progress"
 
     def _search_cn_remediation_rescan_stage(self, operator, value):
+        records = self.with_context(lang=self.env.user.lang or "en_US")
         allowed = {
             "in_progress",
             "overdue",
@@ -1028,7 +1030,7 @@ class SudoChinaRiskCenterTask(models.Model):
             ("assessment_id.profile_id.country_id.code", "=", "CN"),
             ("task_type", "=", "remediation"),
         ]
-        matched = self.search(cn_domain).filtered(
+        matched = records.search(cn_domain).filtered(
             lambda task: task._cn_remediation_rescan_stage() in values
         )
         domain = [("id", "in", matched.ids)]

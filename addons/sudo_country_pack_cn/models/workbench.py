@@ -648,6 +648,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
 
     def _search_cn_workbench_status(self, operator, value):
+        records = self.with_context(lang=self.env.user.lang or "en_US")
         allowed = {
             "setup_required",
             "healthy",
@@ -664,7 +665,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         values &= allowed
         if not values:
             return [] if operator in ("!=", "not in") else [("id", "=", 0)]
-        matched = self.search([("country_id.code", "=", "CN")]).filtered(
+        matched = records.search([("country_id.code", "=", "CN")]).filtered(
             lambda profile: profile.cn_workbench_status in values
         )
         domain = [("id", "in", matched.ids)]
