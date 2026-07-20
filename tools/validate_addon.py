@@ -3635,6 +3635,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for required in (
         '_inherit = "sudo.compliance.profile"',
         "cn_workbench_status",
+        "_search_cn_workbench_status",
         "cn_workbench_high_risk_count",
         "cn_workbench_open_task_count",
         "cn_workbench_pending_tax_impact_count",
@@ -3853,6 +3854,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'id="menu_cn_compliance_workbench"',
         'view_mode">kanban,list,form',
         "cn_workbench_status",
+        "cn_status_action_required",
+        "cn_status_limited",
+        "cn_status_warning",
+        "cn_status_setup_required",
+        "cn_status_healthy",
         "cn_workbench_next_action",
         "cn_workbench_package_label",
         "cn_workbench_scope_label",
@@ -3935,8 +3941,6 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China workbench UI is missing {required}")
     if "group_by': 'cn_workbench_status'" in view_content:
         fail("China workbench must not group by a non-stored computed status")
-    if "('cn_workbench_status'" in view_content:
-        fail("China workbench must not search on a non-stored computed status")
 
     tests_init = (ADDON_ROOT / "tests" / "__init__.py").read_text(
         encoding="utf-8"
@@ -3950,6 +3954,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ).read_text(encoding="utf-8")
     for test_name in (
         "test_country_pack_advertises_china_workbench_feature",
+        "test_workbench_status_is_searchable",
+        "test_workbench_search_view_exposes_status_filters",
         "test_workbench_summarizes_profile_setup_state",
         "test_workbench_summarizes_pending_data_readiness",
         "test_workbench_summarizes_remediation_rescan_status",

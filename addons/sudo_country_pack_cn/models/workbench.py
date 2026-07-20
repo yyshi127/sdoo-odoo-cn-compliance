@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from odoo import _, fields, models
+from odoo.osv import expression
 
 
 OPEN_TASK_STATES = ("open", "in_progress", "waiting", "pending_review", "blocked")
@@ -256,6 +257,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         ],
         string="中国合规状态",
         compute="_compute_cn_workbench",
+        search="_search_cn_workbench_status",
     )
     cn_workbench_next_action = fields.Char(
         string="下一步动作",
@@ -644,6 +646,31 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         string="Next Best Action",
         compute="_compute_cn_workbench",
     )
+
+    def _search_cn_workbench_status(self, operator, value):
+        allowed = {
+            "setup_required",
+            "healthy",
+            "warning",
+            "action_required",
+            "limited",
+        }
+        if operator in ("=", "!="):
+            values = {value}
+        elif operator in ("in", "not in"):
+            values = set(value or [])
+        else:
+            return [("id", "=", 0)]
+        values &= allowed
+        if not values:
+            return [] if operator in ("!=", "not in") else [("id", "=", 0)]
+        matched = self.search([("country_id.code", "=", "CN")]).filtered(
+            lambda profile: profile.cn_workbench_status in values
+        )
+        domain = [("id", "in", matched.ids)]
+        if operator in ("!=", "not in"):
+            return expression.NOT(domain)
+        return domain
 
     def _cn_workbench_action_summary(self):
         self.ensure_one()

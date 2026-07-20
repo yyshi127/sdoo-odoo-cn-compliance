@@ -9,6 +9,17 @@
                 <filter name="cn_profiles" string="中国档案"
                         domain="[('country_id.code', '=', 'CN')]"/>
                 <separator/>
+                <filter name="cn_status_action_required" string="需整改"
+                        domain="[('cn_workbench_status', '=', 'action_required')]"/>
+                <filter name="cn_status_limited" string="受限"
+                        domain="[('cn_workbench_status', '=', 'limited')]"/>
+                <filter name="cn_status_warning" string="需关注"
+                        domain="[('cn_workbench_status', '=', 'warning')]"/>
+                <filter name="cn_status_setup_required" string="待完善"
+                        domain="[('cn_workbench_status', '=', 'setup_required')]"/>
+                <filter name="cn_status_healthy" string="正常"
+                        domain="[('cn_workbench_status', '=', 'healthy')]"/>
+                <separator/>
                 <filter name="group_company" string="按公司"
                         context="{'group_by': 'company_id'}"/>
             </search>

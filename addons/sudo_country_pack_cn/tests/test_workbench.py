@@ -378,6 +378,27 @@ class TestChinaComplianceWorkbench(TransactionCase):
             ]
         )
 
+    def test_workbench_status_is_searchable(self):
+        profiles = self.env["sudo.compliance.profile"].search(
+            [("cn_workbench_status", "=", "setup_required")]
+        )
+
+        self.assertIn(self.profile, profiles)
+
+    def test_workbench_search_view_exposes_status_filters(self):
+        view = self.env.ref("sudo_country_pack_cn.view_cn_compliance_workbench_search")
+        arch = view.arch_db
+
+        for required in (
+            "cn_status_action_required",
+            "cn_status_limited",
+            "cn_status_warning",
+            "cn_status_setup_required",
+            "cn_status_healthy",
+            "cn_workbench_status",
+        ):
+            self.assertIn(required, arch)
+
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
 
