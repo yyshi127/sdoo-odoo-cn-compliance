@@ -392,6 +392,33 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(action["res_model"], "sudo.compliance.assessment")
         self.assertEqual(action["res_id"], finding.assessment_id.id)
 
+    def test_remediation_rescan_stage_is_searchable(self):
+        finding = self._finding()
+        task = self.env["sudo.compliance.task"].create_from_finding(finding)
+        task._transition_write({"state": "pending_review"})
+
+        tasks = self.env["sudo.compliance.task"].search(
+            [("cn_remediation_rescan_stage", "=", "ready_for_rescan")]
+        )
+
+        self.assertIn(task, tasks)
+
+    def test_remediation_tracker_search_view_exposes_rescan_filters(self):
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_remediation_tracker_task_search"
+        )
+        arch = view.arch_db
+
+        for required in (
+            "cn_rescan_ready",
+            "cn_rescan_pending",
+            "cn_rescan_failed",
+            "cn_rescan_evidence_gap",
+            "cn_rescan_verified",
+            "cn_remediation_rescan_stage",
+        ):
+            self.assertIn(required, arch)
+
     def test_country_pack_advertises_remediation_rescan_visibility(self):
         self.assertTrue(
             self.country_pack.capability_json["features"][

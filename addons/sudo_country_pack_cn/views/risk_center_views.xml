@@ -518,6 +518,17 @@
                 <filter name="verification_failed" string="验证未通过"
                         domain="[('state', '=', 'blocked')]"/>
                 <separator/>
+                <filter name="cn_rescan_ready" string="可复扫"
+                        domain="[('cn_remediation_rescan_stage', '=', 'ready_for_rescan')]"/>
+                <filter name="cn_rescan_pending" string="复扫中"
+                        domain="[('cn_remediation_rescan_stage', '=', 'pending_rescan')]"/>
+                <filter name="cn_rescan_failed" string="复扫失败"
+                        domain="[('cn_remediation_rescan_stage', '=', 'failed')]"/>
+                <filter name="cn_rescan_evidence_gap" string="证据缺口"
+                        domain="[('cn_remediation_rescan_stage', '=', 'evidence_gap')]"/>
+                <filter name="cn_rescan_verified" string="已闭环"
+                        domain="[('cn_remediation_rescan_stage', '=', 'verified')]"/>
+                <separator/>
                 <filter name="group_state" string="按状态"
                         context="{'group_by': 'state'}"/>
                 <filter name="group_assignee" string="按负责人"

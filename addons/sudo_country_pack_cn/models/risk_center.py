@@ -894,6 +894,7 @@ class SudoChinaRiskCenterTask(models.Model):
         ],
         string="复扫闭环",
         compute="_compute_cn_remediation_display",
+        search="_search_cn_remediation_rescan_stage",
     )
 
     cn_remediation_progress = fields.Integer(
@@ -1001,6 +1002,39 @@ class SudoChinaRiskCenterTask(models.Model):
         if self.state == "done" and self.cn_remediation_evidence_state != "verified":
             return "evidence_gap"
         return "in_progress"
+
+    def _search_cn_remediation_rescan_stage(self, operator, value):
+        allowed = {
+            "in_progress",
+            "overdue",
+            "blocked",
+            "ready_for_rescan",
+            "pending_rescan",
+            "failed",
+            "evidence_gap",
+            "verified",
+            "cancelled",
+        }
+        if operator in ("=", "!="):
+            values = {value}
+        elif operator in ("in", "not in"):
+            values = set(value or [])
+        else:
+            return [("id", "=", 0)]
+        values &= allowed
+        if not values:
+            return [] if operator in ("!=", "not in") else [("id", "=", 0)]
+        cn_domain = [
+            ("assessment_id.profile_id.country_id.code", "=", "CN"),
+            ("task_type", "=", "remediation"),
+        ]
+        matched = self.search(cn_domain).filtered(
+            lambda task: task._cn_remediation_rescan_stage() in values
+        )
+        domain = [("id", "in", matched.ids)]
+        if operator in ("!=", "not in"):
+            return expression.NOT(domain)
+        return domain
 
     def _cn_remediation_next_action(self):
         self.ensure_one()
