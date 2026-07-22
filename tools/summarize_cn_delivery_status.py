@@ -236,6 +236,33 @@ def _production_signoff_blocker_action_matrix(
     return matrix
 
 
+def _production_signoff_owner_summary(
+    actions: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    by_owner: dict[str, dict[str, object]] = {}
+    for action in actions:
+        owner = str(action.get("owner") or "unassigned")
+        entry = by_owner.setdefault(
+            owner,
+            {
+                "owner": owner,
+                "action_count": 0,
+                "action_keys": [],
+                "addresses_blockers": [],
+            },
+        )
+        entry["action_count"] = int(entry["action_count"]) + 1
+        action_keys = entry["action_keys"]
+        if isinstance(action_keys, list):
+            action_keys.append(str(action.get("key") or ""))
+        addresses = entry["addresses_blockers"]
+        if isinstance(addresses, list):
+            for blocker in action.get("addresses_blockers") or []:
+                if blocker not in addresses:
+                    addresses.append(blocker)
+    return sorted(by_owner.values(), key=lambda item: str(item["owner"]))
+
+
 def _manifest_includes(
     manifest: dict[str, object] | None,
     path: Path,
@@ -1076,6 +1103,11 @@ def _status(
             "production_signoff_ready": production_signoff_ready,
             "production_signoff_blockers": production_signoff_blockers,
             "production_signoff_required_actions": production_signoff_required_actions,
+            "production_signoff_owner_summary": (
+                _production_signoff_owner_summary(
+                    production_signoff_required_actions
+                )
+            ),
             "production_signoff_blocker_action_matrix": (
                 _production_signoff_blocker_action_matrix(
                     production_signoff_blockers,
@@ -1277,6 +1309,18 @@ def _write_markdown(status: dict[str, object], path: Path) -> None:
         *[
             f"- {blocker}"
             for blocker in readiness.get("production_signoff_blockers", [])
+        ],
+        "",
+        "### Production Sign-off Owner Summary",
+        "",
+        *[
+            (
+                f"- `{item.get('owner')}`: `{item.get('action_count')}` actions "
+                f"(`{', '.join(item.get('action_keys') or [])}`); "
+                f"blockers=`{'; '.join(item.get('addresses_blockers') or [])}`"
+            )
+            for item in readiness.get("production_signoff_owner_summary", [])
+            if isinstance(item, dict)
         ],
         "",
         "### Production Sign-off Blocker Action Matrix",

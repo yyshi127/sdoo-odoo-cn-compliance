@@ -2962,6 +2962,21 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 "customer-specific data gaps, evidence gaps and open critical risks must be reviewed"
             ]["action_keys"],
         )
+        owner_summary = {
+            item["owner"]: item
+            for item in readiness["production_signoff_owner_summary"]
+        }
+        self.assertEqual(len(owner_summary), 5)
+        self.assertEqual(owner_summary["business_reviewer"]["action_count"], 3)
+        self.assertEqual(
+            owner_summary["business_reviewer"]["action_keys"],
+            [
+                "business_uat_decision",
+                "representative_ux_walkthrough",
+                "blocker_summary_walkthrough",
+            ],
+        )
+        self.assertEqual(owner_summary["release_owner"]["action_count"], 1)
 
     def test_delivery_status_surfaces_preview_readiness_blockers(self):
         preview_health = preview_health_payload()
@@ -3040,6 +3055,21 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("business_uat_decision", content)
         self.assertIn("china_tax_professional_rule_signoff", content)
         self.assertIn("customer_scope_and_data_gap_review", content)
+
+    def test_delivery_status_markdown_lists_production_owner_summary(self):
+        status = delivery_status()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "status.md"
+
+            SUMMARY._write_markdown(status, output)
+
+            content = output.read_text(encoding="utf-8")
+        self.assertIn("### Production Sign-off Owner Summary", content)
+        self.assertIn("`business_reviewer`: `3` actions", content)
+        self.assertIn("`china_tax_professional`: `1` actions", content)
+        self.assertIn("`implementation_owner`: `1` actions", content)
+        self.assertIn("`release_owner`: `1` actions", content)
+        self.assertIn("`rule_governance_owner`: `1` actions", content)
 
     def test_delivery_status_accepts_valid_signoff_validation(self):
         packet = PACKET._build_packet(status_payload())
