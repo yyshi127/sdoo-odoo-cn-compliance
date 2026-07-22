@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools.translate import PoFileReader
 
 
 @tagged("post_install", "-at_install")
@@ -58,6 +61,23 @@ class TestChinaComplianceWorkbench(TransactionCase):
                 "evaluator_type": "manual",
                 "requires_human_review": True,
             }
+        )
+
+    def test_chinese_translation_catalog_entries_are_runtime_importable(self):
+        translation_path = (
+            Path(__file__).resolve().parents[1] / "i18n" / "zh_CN.po"
+        )
+        rows = list(PoFileReader(str(translation_path)))
+        translations = {row["src"]: row["value"] for row in rows}
+        self.assertEqual(
+            translations["Review unresolved compliance risks"],
+            "复核未解决合规风险",
+        )
+        self.assertIn(
+            "Risks: %(high)s high / %(total)s total; %(pending)s pending "
+            "review. Remediation: %(open)s open / %(overdue)s overdue. "
+            "Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready.",
+            translations,
         )
 
     def _finding(self, suffix="default"):

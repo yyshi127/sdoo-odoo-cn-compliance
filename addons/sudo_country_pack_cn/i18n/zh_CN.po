@@ -16,1193 +16,1491 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Profile Setup"
 msgstr "档案配置"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Basis"
 msgstr "规则依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Data Readiness"
 msgstr "数据准备"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Obligations"
 msgstr "纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Scan"
 msgstr "规则扫描"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Risk Review"
 msgstr "风险复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation"
 msgstr "整改"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Report Readiness"
 msgstr "报告准备"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Evidence"
 msgstr "证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Archive"
 msgstr "申报缴款档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI Guidance"
 msgstr "AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "rule basis"
 msgstr "规则依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "obligations"
 msgstr "纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "data"
 msgstr "数据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "scan"
 msgstr "规则扫描"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "risk review"
 msgstr "风险复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "remediation"
 msgstr "整改"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verification rescan"
 msgstr "验证复扫"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "report"
 msgstr "正式报告"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "evidence"
 msgstr "证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "filing archive"
 msgstr "申报缴款档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI guidance"
 msgstr "AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Activate the China compliance profile before evaluating the closed loop."
 msgstr "请先启用中国合规档案，再评估闭环状态。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed loop blocked: %(stages)s."
 msgstr "闭环受阻：%(stages)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed loop gaps: %(stages)s."
 msgstr "闭环存在缺口：%(stages)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed loop is ready: data, scan, risk review, remediation, evidence and report controls are aligned."
 msgstr "闭环已就绪：数据、扫描、风险复核、整改、证据和报告控制已衔接。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Not usable as a compliance conclusion until the China profile is active."
 msgstr "中国合规档案启用前，当前结果不能作为合规结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete and activate the China compliance profile first."
 msgstr "请先完善并启用中国合规档案。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Not usable as a compliance conclusion because controlled accounting/tax data is not ready."
 msgstr "受控会计或税务数据尚未就绪，当前结果不能作为合规结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Not usable as a compliance conclusion because China rule sources or rule governance require attention."
 msgstr "中国规则来源或规则治理仍需处理，当前结果不能作为合规结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is limited until China rule source freshness and professional sign-off gaps are reviewed."
 msgstr "规则来源时效性和专业签核缺口完成复核前，结论范围受限。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Only a limited conclusion is possible because scope, evidence or report limitations exist."
 msgstr "存在范围、证据或报告限制，当前只能形成受限结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Resolve or explicitly document all limitations before final sign-off."
 msgstr "最终签核前，请解除全部限制或明确记录限制说明。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is incomplete until China tax obligation applicability has been reviewed."
 msgstr "中国纳税义务适用性完成复核前，当前结论不完整。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is not current because no completed rule scan is available for this profile."
 msgstr "该档案尚无已完成的规则扫描，当前结论不具备时效性。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Run and complete a rule scan for the target period."
 msgstr "请对目标期间运行并完成规则扫描。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion requires review because unresolved or high-risk findings remain."
 msgstr "仍存在未解决或高风险事项，当前结论需要复核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review risks, quantify tax impact, and create remediation tasks where needed."
 msgstr "请复核风险、量化税务影响，并按需创建整改任务。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion requires remediation follow-through before it can support management sign-off."
 msgstr "整改闭环完成前，当前结论不能支持管理层签核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete open remediation tasks and verify them with evidence."
 msgstr "请完成未关闭整改任务，并使用证据验证整改结果。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is waiting for remediation verification rescans."
 msgstr "当前结论正在等待整改验证复扫。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is not yet packaged as an issued formal compliance report."
 msgstr "当前结论尚未形成已签发的正式合规报告。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Generate and issue the formal China compliance report after review gates pass."
 msgstr "通过全部复核关口后，请生成并签发中国正式合规报告。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is not fully supportable until evidence is attached and verified."
 msgstr "证据完成关联和验证前，当前结论缺少充分支撑。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verify supporting evidence for the report, risks, remediation and filing archives."
 msgstr "请验证报告、风险、整改和申报缴款档案的支持性证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI guidance is available only as controlled assistance and still has limited inputs to disclose."
 msgstr "AI 指引仅作为受控辅助使用，且仍有输入限制需要披露。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review AI guidance disclosures before using them in remediation instructions."
 msgstr "将 AI 指引用于整改说明前，请先复核相关披露。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion is close but the closed-loop control summary still has open gaps."
 msgstr "结论已接近就绪，但闭环控制仍存在未关闭缺口。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned."
 msgstr "可提交管理层复核：数据、扫描、风险复核、整改、证据和已签发报告已衔接。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Keep rules, source references and period data current before the next scan."
 msgstr "下次扫描前，请保持规则、依据来源和期间数据为最新状态。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete and activate the China profile"
 msgstr "完善并启用中国合规档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review China rule source and sign-off basis"
 msgstr "复核中国规则来源和签核依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Prepare controlled accounting and tax data"
 msgstr "准备受控会计和税务数据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review China tax obligations"
 msgstr "复核中国纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Run or review the rule scan"
 msgstr "运行或复核规则扫描"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review unresolved compliance risks"
 msgstr "复核未解决合规风险"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Work remediation tasks"
 msgstr "推进整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verify remediation with rescans"
 msgstr "通过复扫验证整改结果"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Prepare the formal compliance report"
 msgstr "准备正式合规报告"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verify supporting evidence"
 msgstr "验证支持性证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Seal filing and payment archives"
 msgstr "封存申报缴款档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review controlled AI guidance"
 msgstr "复核受控 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review the ready compliance report package"
 msgstr "复核已就绪的合规报告包"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Risks: %(high)s high / %(total)s total; %(pending)s pending review. Remediation: %(open)s open / %(overdue)s overdue. Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."
 msgstr "风险：高风险 %(high)s 项 / 共 %(total)s 项，待复核 %(pending)s 项；整改：未完成 %(open)s 项 / 逾期 %(overdue)s 项；闭环：%(gaps)s 个缺口，数据 %(ready)s/%(datasets)s 可扫描。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Post Odoo accounting entries for the scanned period before relying on compliance risk results."
 msgstr "请先过账扫描期间的 Odoo 会计凭证，再使用合规风险结果。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Seed the China candidate obligation list from the compliance profile."
 msgstr "请从合规档案生成中国候选纳税义务清单。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review candidate tax obligations, confirm applicability, and link official sources before relying on filing controls."
 msgstr "请复核候选纳税义务、确认适用性并关联官方来源，再使用申报控制结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Obligation applicability has been reviewed; keep sources current and rescan periodically."
 msgstr "纳税义务适用性已复核；请保持依据来源有效并定期复扫。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No China rule versions are installed or governed yet."
 msgstr "尚未安装或治理中国规则版本。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Install or seed China rule versions before relying on rule scans."
 msgstr "请先安装或生成中国规则版本，再使用规则扫描结论。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "%(versions)s China rule versions, %(active)s active; %(overdue)s official sources overdue; %(issues)s source monitor issues."
 msgstr "中国规则版本 %(versions)s 个，其中 %(active)s 个启用；官方来源逾期 %(overdue)s 个，来源监控异常 %(issues)s 个。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review overdue or changed official sources, update affected rule versions, and rerun scans."
 msgstr "请复核逾期或变化的官方来源，更新受影响规则版本并重新扫描。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "%(versions)s China rule versions, %(active)s active; %(gaps)s governance gaps; %(pending)s pending professional sign-off."
 msgstr "中国规则版本 %(versions)s 个，其中 %(active)s 个启用；治理缺口 %(gaps)s 个，待专业签核 %(pending)s 个。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete source governance, review packets, tests and China tax professional sign-off for rule gaps."
 msgstr "请补齐规则缺口的来源治理、复核包、测试和中国财税专业签核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "%(versions)s China rule versions, %(active)s active; sources and professional sign-off gates are current."
 msgstr "中国规则版本 %(versions)s 个，其中 %(active)s 个启用；来源和专业签核均在有效期内。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Keep official source monitoring current and rescan when rules or data change."
 msgstr "请持续监控官方来源，并在规则或数据变化后重新扫描。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No unresolved China risk currently requires controlled AI guidance."
 msgstr "当前没有需要受控 AI 指引的未解决中国合规风险。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Regenerate controlled AI guidance for risks whose input facts or remediation state changed."
 msgstr "输入事实或整改状态变化后，请重新生成相关风险的受控 AI 指引。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Controlled AI guidance is current for all unresolved China risks."
 msgstr "全部未解决中国合规风险的受控 AI 指引均为当前有效。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Generate controlled AI guidance for remaining unresolved risks and disclose limited inputs."
 msgstr "请为其余未解决风险生成受控 AI 指引，并披露输入限制。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Generate controlled AI guidance before using the report as a step-by-step remediation playbook."
 msgstr "将报告作为分步整改手册前，请先生成受控 AI 指引。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Resolve scope, data or evidence limitations before treating remediation rescans as conclusive."
 msgstr "解除范围、数据或证据限制后，整改复扫结果方可作为结论依据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review failed verification rescans, reopen remediation where needed, and rerun the exact-period scan."
 msgstr "请复核未通过的验证复扫，按需重新开启整改，并重跑相同期间扫描。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Monitor pending verification rescans and attach the resulting assessment to the remediation evidence trail."
 msgstr "请跟进待完成验证复扫，并将扫描评估关联至整改证据链。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verified remediation is available for report sign-off; keep evidence and rescan records sealed."
 msgstr "整改已通过验证，可用于报告签核；请保持证据和复扫记录封存。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete remediation tasks, request review, then queue verification rescans."
 msgstr "请完成整改任务、提交复核，再安排验证复扫。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No remediation rescan has been required yet; run scans and close any confirmed risks through the remediation workflow."
 msgstr "当前尚无需要复扫的整改；请持续扫描，并通过整改流程关闭已确认风险。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Create controlled filing/payment archives from VAT, CIT and IIT reconciliation runs."
 msgstr "请根据增值税、企业所得税和个人所得税勾稽结果建立受控申报缴款档案。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review filing/payment archive integrity and verified evidence before relying on filings."
 msgstr "使用申报结果前，请复核申报缴款档案完整性和已验证证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Controlled filing/payment archive chain is sealed; keep receipts and payment evidence current."
 msgstr "受控申报缴款档案链已封存；请持续维护回执和缴款证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Seal submission and payment evidence for all controlled filing archives."
 msgstr "请为全部受控申报档案封存申报和缴款证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "profile is not active"
 msgstr "合规档案尚未启用"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Activate the China compliance profile."
 msgstr "请启用中国合规档案。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "rule basis is blocked"
 msgstr "规则依据受阻"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "official source freshness or monitor issue"
 msgstr "官方来源时效性或监控异常"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "rule governance or professional sign-off gap"
 msgstr "规则治理或专业签核缺口"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "controlled accounting/tax data is not ready"
 msgstr "受控会计或税务数据尚未就绪"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "some controlled datasets need review"
 msgstr "部分受控数据集需要复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "tax obligation applicability not fully reviewed"
 msgstr "纳税义务适用性尚未全部复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "local jurisdiction coverage is %(state)s"
 msgstr "地方辖区覆盖状态为 %(state)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "latest report conclusion is %(state)s"
 msgstr "最新报告结论状态为 %(state)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "cross-border or withholding facts need review"
 msgstr "跨境或源泉扣缴事实需要复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "controlled AI guidance has limited inputs"
 msgstr "受控 AI 指引存在输入限制"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "supporting evidence is not fully verified"
 msgstr "支持性证据尚未全部验证"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verify supporting evidence before management sign-off."
 msgstr "管理层签核前，请验证支持性证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "formal report package is not final"
 msgstr "正式报告包尚未定稿"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Prepare the formal report with explicit limitations and uncertainty disclosure."
 msgstr "请准备正式报告，并明确披露限制和不确定性。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Explicit limitations: %(reasons)s."
 msgstr "明确限制：%(reasons)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No explicit conclusion limitation is currently recorded."
 msgstr "当前未记录明确的结论限制。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Uncertainty drivers: %(reasons)s."
 msgstr "不确定性来源：%(reasons)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No open uncertainty driver is currently recorded."
 msgstr "当前未记录未关闭的不确定性来源。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Keep limitations and uncertainty disclosures current before each report sign-off."
 msgstr "每次报告签核前，请更新限制和不确定性披露。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review official source freshness and rule governance before relying on China compliance conclusions."
 msgstr "使用中国合规结论前，请复核官方来源时效性和规则治理。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Confirm China tax obligation applicability before treating scan results as complete."
 msgstr "将扫描结果视为完整结论前，请先确认中国纳税义务适用性。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Current closed loop is ready. Historical unresolved findings: %(findings)s; historical blocked tasks: %(tasks)s."
 msgstr "当前闭环已就绪。历史未解决风险 %(findings)s 项；历史受阻整改任务 %(tasks)s 项。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "China Tax Obligations"
 msgstr "中国纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Controlled AI Guidance"
 msgstr "受控 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "China Rule Basis"
 msgstr "中国规则依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "China Compliance Profile"
 msgstr "中国合规档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Workbench Action Summary"
 msgstr "行动摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Posted Accounting Entries"
 msgstr "已过账会计凭证"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Draft Accounting Entries"
 msgstr "草稿会计凭证"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Posted Accounting Invoices"
 msgstr "已过账发票"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Historical Unresolved Findings"
 msgstr "历史未解决风险"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Historical Blocked Tasks"
 msgstr "历史受阻整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Obligation Readiness"
 msgstr "纳税义务准备状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Obligation Next Action"
 msgstr "纳税义务下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Candidate Obligations"
 msgstr "候选纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Applicable Obligations"
 msgstr "已适用纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Obligations Needing Review"
 msgstr "待复核纳税义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Applicable Filing Obligations"
 msgstr "已适用申报义务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Transactions"
 msgstr "跨境交易"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Pending Review"
 msgstr "跨境待复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Basis Readiness"
 msgstr "规则依据状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Basis Summary"
 msgstr "规则依据摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Basis Next Action"
 msgstr "规则依据下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "China Rule Versions"
 msgstr "中国规则版本"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Active China Rule Versions"
 msgstr "启用中的中国规则版本"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rule Governance Issues"
 msgstr "规则治理问题"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rules Pending Professional Sign-off"
 msgstr "待专业签核规则"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Official Sources Review Overdue"
 msgstr "官方来源复核逾期"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Official Source Monitor Issues"
 msgstr "官方来源监控异常"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Limitations Summary"
 msgstr "限制摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Uncertainty Summary"
 msgstr "不确定性摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Limitations Next Action"
 msgstr "限制处理下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verification Rescan State"
 msgstr "验证复扫状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Pending Verification Rescans"
 msgstr "待验证复扫"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Failed Verification Rescans"
 msgstr "未通过验证复扫"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verified Remediations"
 msgstr "已验证整改"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Verification Rescan Next Action"
 msgstr "验证复扫下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Archive State"
 msgstr "申报缴款档案状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Archive Next Action"
 msgstr "申报缴款档案下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Controlled Filing Archives"
 msgstr "受控申报缴款档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Sealed Filing Archives"
 msgstr "已封存申报缴款档案"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Archive Issues"
 msgstr "申报缴款档案问题"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI Guidance State"
 msgstr "AI 指引状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI Guidance Next Action"
 msgstr "AI 指引下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "AI Guidance Findings"
 msgstr "需要 AI 指引的风险"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Generated AI Guidance"
 msgstr "已生成 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Current AI Guidance"
 msgstr "当前有效 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Limited AI Guidance Inputs"
 msgstr "输入受限 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Stale AI Guidance Inputs"
 msgstr "输入已变化 AI 指引"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed Loop Readiness"
 msgstr "闭环准备状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed Loop Gaps"
 msgstr "闭环缺口"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed Loop Summary"
 msgstr "闭环摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion Boundary"
 msgstr "结论边界"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion Boundary Summary"
 msgstr "结论边界摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Conclusion Boundary Next Action"
 msgstr "结论边界下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Next Best Action Target"
 msgstr "下一步最佳动作目标"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Next Best Action"
 msgstr "下一步最佳动作"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Blocked"
 msgstr "受阻"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Action Required"
 msgstr "需要处理"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete"
 msgstr "完整"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Ready"
 msgstr "就绪"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No Period"
 msgstr "无期间"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Missing"
 msgstr "缺失"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Warning"
 msgstr "需关注"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Unavailable"
 msgstr "不可用"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Difference Review"
 msgstr "差异待复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Disclosure Review"
 msgstr "披露待复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Aligned"
 msgstr "已一致"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "None"
 msgstr "无"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Pending Review"
 msgstr "待复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Integrity Issue"
 msgstr "完整性异常"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Unquantifiable"
 msgstr "暂无法量化"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reviewed"
 msgstr "已复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No Task"
 msgstr "无整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Overdue"
 msgstr "已逾期"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Due Soon"
 msgstr "即将到期"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Waiting Rescan"
 msgstr "等待复扫"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "On Track"
 msgstr "进度正常"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed"
 msgstr "已关闭"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No Transactions"
 msgstr "无交易"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Limited"
 msgstr "范围受限"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Unknown"
 msgstr "未知"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "%(start)s to %(end)s"
 msgstr "%(start)s 至 %(end)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No period recorded"
 msgstr "未记录期间"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No remediation task has been created."
 msgstr "尚未创建整改任务。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Unassigned"
 msgstr "未分配责任人"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closed by %(assignee)s; due %(due)s"
 msgstr "由 %(assignee)s 关闭；截止日 %(due)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s"
 msgstr "责任人 %(assignee)s；截止日 %(due)s；任务 %(state)s；验证 %(verification)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "data basis"
 msgstr "数据依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "review data basis warning"
 msgstr "复核数据依据提示"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "rule/source basis"
 msgstr "规则或来源依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "scan result"
 msgstr "扫描结果"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "human review"
 msgstr "人工复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "create remediation task"
 msgstr "创建整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "close remediation task"
 msgstr "关闭整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verify remediation"
 msgstr "验证整改结果"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "tax impact review"
 msgstr "税务影响复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "document tax impact"
 msgstr "记录税务影响"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verify evidence"
 msgstr "验证证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Blocked before sign-off: %(items)s."
 msgstr "签核前受阻：%(items)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Next before sign-off: %(items)s."
 msgstr "签核前下一步：%(items)s。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."
 msgstr "可进行报告签核：风险复核、整改、证据、税务影响和复扫控制已衔接。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Next: %(action)s"
 msgstr "下一步：%(action)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Owner/due: %(responsibility)s"
 msgstr "责任与期限：%(responsibility)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Owner/due: no remediation task"
 msgstr "责任与期限：尚无整改任务"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Evidence: %(verified)s/%(total)s verified"
 msgstr "证据：%(verified)s/%(total)s 已验证"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Evidence: none"
 msgstr "证据：无"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closure: %(summary)s"
 msgstr "闭环：%(summary)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Blockers: %(summary)s"
 msgstr "阻断：%(summary)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Rescan: %(state)s"
 msgstr "复扫：%(state)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Progress: %(progress)s%%"
 msgstr "进度：%(progress)s%%"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete the assessment data basis before relying on this risk conclusion."
 msgstr "使用该风险结论前，请先补齐评估数据依据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review incomplete period data before report sign-off."
 msgstr "报告签核前，请复核期间数据不完整问题。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Close remediation, tax impact and verified evidence gaps."
 msgstr "请关闭整改、税务影响和已验证证据缺口。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No cross-border transactions were captured for this period."
 msgstr "当前期间未采集到跨境交易。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Traceability Evidence"
 msgstr "可追溯证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete the assessment data basis before closing remediation."
 msgstr "关闭整改前，请先补齐评估数据依据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Review incomplete period data before verification rescan."
 msgstr "验证复扫前，请复核期间数据不完整问题。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Close the task and verify remediation evidence."
 msgstr "请关闭任务并验证整改证据。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No blocker: remediation is ready for report sign-off."
 msgstr "无阻断：整改已可用于报告签核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Blocked by: %(blockers)s"
 msgstr "受阻原因：%(blockers)s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No rule fact snapshots are attached."
 msgstr "尚未关联规则事实快照。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No reconciliation risk summary is attached."
 msgstr "尚未关联勾稽风险摘要。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No tax impact review case is linked."
 msgstr "尚未关联税务影响复核事项。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Traceability is complete for reporting."
 msgstr "报告所需可追溯链已完整。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Complete data basis, rule basis, scan result and human review before reporting."
 msgstr "出具报告前，请补齐数据依据、规则依据、扫描结果和人工复核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No cross-border fact snapshot is attached to this finding."
 msgstr "该风险事项尚未关联跨境事实快照。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Open the rule scan facts and confirm the cross-border snapshot."
 msgstr "请打开规则扫描事实并确认跨境快照。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Open Cross-Border register and finish controlled review before reporting."
 msgstr "出具报告前，请打开跨境业务台账并完成受控复核。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reviewed cross-border facts are available for professional analysis."
 msgstr "已复核跨境事实可用于专业分析。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation traceability is complete."
 msgstr "整改可追溯链已完整。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Resolve data basis and verification rescan before report sign-off."
 msgstr "报告签核前，请解决数据依据和验证复扫问题。"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "overdue"
 msgstr "逾期"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "missing data basis"
 msgstr "缺少数据依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "incomplete data basis"
 msgstr "数据依据不完整"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "task blocked"
 msgstr "任务受阻"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "task not closed"
 msgstr "任务未关闭"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "no verified evidence"
 msgstr "无已验证证据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "evidence pending verification"
 msgstr "证据待验证"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verification rescan pending"
 msgstr "验证复扫待完成"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verification rescan failed"
 msgstr "验证复扫未通过"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "verification not completed"
 msgstr "验证未完成"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "+%s more"
 msgstr "另有 %s 项"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "missing %s"
 msgstr "缺少 %s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Missing required facts: %s"
 msgstr "缺少必要事实：%s"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Risk Action Summary"
 msgstr "风险行动摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Urgency"
 msgstr "整改紧迫度"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Responsibility Summary"
 msgstr "责任摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Fact Snapshots"
 msgstr "事实快照"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Fact Issues"
 msgstr "事实问题"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Fact Summary"
 msgstr "事实摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reconciliation Risk"
 msgstr "勾稽风险"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reconciliation Summary"
 msgstr "勾稽摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reconciliation Next Action"
 msgstr "勾稽下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Data Basis"
 msgstr "数据依据"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Required Data Types"
 msgstr "必需数据类型"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Ready Data Types"
 msgstr "已就绪数据类型"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Missing Data Types"
 msgstr "缺失数据类型"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Missing Data Type Summary"
 msgstr "缺失数据类型摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Data Basis Next Action"
 msgstr "数据依据下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Traceability"
 msgstr "可追溯性"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Traceability Gaps"
 msgstr "可追溯缺口"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Traceability Next Action"
 msgstr "可追溯下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closure Status"
 msgstr "闭环状态"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Closure Summary"
 msgstr "闭环摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Facts"
 msgstr "跨境事实"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Pending"
 msgstr "跨境待复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Reviewed"
 msgstr "跨境已复核"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Total"
 msgstr "跨境交易合计"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Cross-Border Next Action"
 msgstr "跨境下一步"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Currency"
 msgstr "币种"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Impact"
 msgstr "税务影响"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Pending Tax Impact"
 msgstr "待复核税务影响"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Unquantifiable Tax Impact"
 msgstr "暂无法量化税务影响"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Impact Integrity Issues"
 msgstr "税务影响完整性问题"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reviewed Underpayment"
 msgstr "已复核潜在少缴"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reviewed Overpayment"
 msgstr "已复核潜在多缴"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Reviewed Timing Difference"
 msgstr "已复核时间性差异"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Tax Impact Summary"
 msgstr "税务影响摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Action Summary"
 msgstr "整改行动摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Tax Impact"
 msgstr "整改税务影响"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Progress"
 msgstr "整改进度"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Summary"
 msgstr "整改摘要"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Remediation Blockers"
 msgstr "整改阻断"
 
 #. module: sudo_country_pack_cn
+#: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Blockers"
 msgstr "申报缴款阻断"

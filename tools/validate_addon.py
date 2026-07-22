@@ -3804,6 +3804,21 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             "China translation catalog entries must declare "
             "'#. module: sudo_country_pack_cn' for Odoo runtime import"
         )
+    translation_entries_without_occurrences = [
+        block
+        for block in translation_blocks
+        if re.search(r'^msgid "(?!")', block, flags=re.MULTILINE)
+        and not re.search(
+            r"^#: code:addons/sudo_country_pack_cn/[^:]+:\d+$",
+            block,
+            flags=re.MULTILINE,
+        )
+    ]
+    if translation_entries_without_occurrences:
+        fail(
+            "China translation catalog entries must declare an Odoo code "
+            "occurrence so the runtime importer does not silently skip them"
+        )
     for required in (
         '"Language: zh_CN\\n"',
         'msgid "Risks: %(high)s high / %(total)s total; %(pending)s pending review. Remediation: %(open)s open / %(overdue)s overdue. Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
