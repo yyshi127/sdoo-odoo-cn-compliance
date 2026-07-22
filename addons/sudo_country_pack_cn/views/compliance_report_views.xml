@@ -145,11 +145,11 @@
                                         <div class="fw-semibold"><field name="cn_report_fact_basis_next_action"/></div>
                                         <div class="text-muted small">
                                             <field name="fact_snapshot_count"/>
-                                            <span> snapshots · </span>
+                                            <span> 个快照 · </span>
                                             <field name="fact_issue_count"/>
-                                            <span> issues · </span>
+                                            <span> 个问题 · </span>
                                             <field name="finding_without_fact_count"/>
-                                            <span> findings without facts</span>
+                                            <span> 个风险未关联事实</span>
                                         </div>
                                     </div>
                                     <field name="cn_report_fact_basis_state" widget="badge"

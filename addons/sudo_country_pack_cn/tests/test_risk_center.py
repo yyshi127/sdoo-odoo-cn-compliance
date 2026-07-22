@@ -498,7 +498,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_risk_fact_snapshot_count, 1)
         self.assertEqual(finding.cn_risk_fact_issue_count, 0)
         self.assertIn(snapshot.definition_id.label, finding.cn_risk_fact_summary)
-        self.assertIn("complete", finding.cn_risk_fact_summary)
+        quality_labels = dict(
+            snapshot._fields["quality_state"]._description_selection(snapshot.env)
+        )
+        self.assertIn(quality_labels["complete"], finding.cn_risk_fact_summary)
 
     def test_finding_flags_incomplete_fact_snapshots(self):
         finding = self._finding()
@@ -506,7 +509,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
 
         self.assertEqual(finding.cn_risk_fact_snapshot_count, 1)
         self.assertEqual(finding.cn_risk_fact_issue_count, 1)
-        self.assertIn("truncated", finding.cn_risk_fact_summary)
+        snapshot = finding.fact_snapshot_ids[:1]
+        quality_labels = dict(
+            snapshot._fields["quality_state"]._description_selection(snapshot.env)
+        )
+        self.assertIn(quality_labels["truncated"], finding.cn_risk_fact_summary)
 
     def test_finding_exposes_reconciliation_risk_summary(self):
         finding = self._finding()

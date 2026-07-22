@@ -423,11 +423,15 @@ class SudoChinaRiskCenterFinding(models.Model):
 
         issue_count = missing_count
         labels = []
+        quality_labels = dict(
+            snapshots._fields["quality_state"]._description_selection(self.env)
+        )
         for snapshot in snapshots[:4]:
             label = snapshot.definition_id.label or snapshot.definition_id.key
-            quality = snapshot.quality_state or "unknown"
-            labels.append("%s=%s" % (label, quality))
-            if quality in ("missing", "stale", "truncated", "error"):
+            quality_key = snapshot.quality_state or "unknown"
+            quality_label = quality_labels.get(quality_key, _("Unknown"))
+            labels.append("%s=%s" % (label, quality_label))
+            if quality_key in ("missing", "stale", "truncated", "error"):
                 issue_count += 1
             elif not snapshot.is_complete or not snapshot.is_full_dataset:
                 issue_count += 1
