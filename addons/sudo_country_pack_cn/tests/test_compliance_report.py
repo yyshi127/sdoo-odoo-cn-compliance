@@ -455,6 +455,9 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertEqual(report.snapshot_json["filing_archive"]["state"], "not_started")
         self.assertEqual(report.snapshot_json["filing_archive"]["archive_count"], 0)
+        self.assertEqual(report.snapshot_json["rule_governance"]["state"], "ready")
+        self.assertEqual(report.snapshot_json["rule_governance"]["issue_count"], 0)
+        self.assertIn("authority_sources", report.snapshot_json["rules"][0])
         self.assertEqual(report.snapshot_json["data_basis"]["state"], "missing")
         self.assertGreater(
             report.snapshot_json["data_basis"]["missing_type_count"],
@@ -841,6 +844,11 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertTrue(
             self.country_pack.capability_json["features"][
+                "china_report_current_rule_governance_gate"
+            ]
+        )
+        self.assertTrue(
+            self.country_pack.capability_json["features"][
                 "china_traceability_matrix_visibility"
             ]
         )
@@ -857,6 +865,73 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         report = self._report(unsigned)
         with self.assertRaisesRegex(UserError, "真人专业签核"):
+            report.with_user(self.manager).action_submit()
+
+    def test_source_drift_after_assessment_blocks_submission_and_is_visible(self):
+        source = self._authority_source("rule-governance-drift")
+        source._lifecycle_write({"status": "valid"})
+        self.rule_version.write(
+            {"authority_source_ids": [Command.set(source.ids)]}
+        )
+        self.finding._engine_write(
+            {"source_snapshot_json": [source.snapshot_payload()]}
+        )
+        source.action_mark_change_detected()
+        report = self._report()
+
+        self.assertEqual(report.cn_report_rule_governance_state, "blocked")
+        self.assertEqual(report.cn_report_rule_governance_issue_count, 1)
+        self.assertIn("CN-REPORT-TEST", report.cn_report_rule_governance_blockers)
+        self.assertIn(source.name, report.cn_report_rule_governance_blockers)
+        self.assertEqual(report.cn_report_traceability_state, "blocked")
+        self.assertIn(
+            "current rule governance changed",
+            report.cn_report_blocker_summary,
+        )
+        with self.assertRaisesRegex(UserError, "官方来源.*评估后"):
+            report.with_user(self.manager).action_submit()
+
+    def test_source_link_change_after_assessment_blocks_submission(self):
+        assessed_source = self._authority_source("rule-source-assessed")
+        assessed_source._lifecycle_write({"status": "valid"})
+        added_source = self._authority_source("rule-source-added")
+        added_source._lifecycle_write({"status": "valid"})
+        self.rule_version.write(
+            {"authority_source_ids": [Command.set(assessed_source.ids)]}
+        )
+        self.finding._engine_write(
+            {"source_snapshot_json": [assessed_source.snapshot_payload()]}
+        )
+        self.rule_version.write(
+            {
+                "authority_source_ids": [
+                    Command.set((assessed_source | added_source).ids)
+                ]
+            }
+        )
+        report = self._report()
+
+        self.assertEqual(report.cn_report_rule_governance_state, "blocked")
+        self.assertIn(added_source.name, report.cn_report_rule_governance_blockers)
+        with self.assertRaisesRegex(UserError, "新增了官方来源"):
+            report.with_user(self.manager).action_submit()
+
+    def test_professional_signoff_drift_after_assessment_blocks_submission(self):
+        self.finding._engine_write(
+            {
+                "professional_snapshot_json": {
+                    "state": "approved",
+                    "rule_checksum": "a" * 64,
+                    "is_valid": True,
+                }
+            }
+        )
+        report = self._report()
+
+        self.assertEqual(report.cn_report_rule_governance_state, "blocked")
+        self.assertEqual(report.cn_report_rule_governance_issue_count, 1)
+        self.assertIn("CN-REPORT-TEST", report.cn_report_rule_governance_blockers)
+        with self.assertRaisesRegex(UserError, "专业签核.*评估后"):
             report.with_user(self.manager).action_submit()
 
     def test_source_change_after_submission_requires_return_and_resubmit(self):
@@ -1155,6 +1230,8 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertIn("Missing data type summary".encode(), html)
         self.assertIn("Accounting basis".encode(), html)
         self.assertIn("Posted / draft journal entries".encode(), html)
+        self.assertIn("报告冻结时规则治理状态".encode(), html)
+        self.assertIn("当前治理阻断".encode(), html)
         self.assertIn("Rule basis:".encode(), html)
         self.assertIn(self.finding.legal_basis.encode(), html)
         self.assertIn("Evidence required:".encode(), html)

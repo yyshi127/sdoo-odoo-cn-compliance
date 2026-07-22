@@ -674,6 +674,26 @@ class SudoChinaComplianceReport(models.Model):
         string="Report Blockers",
         compute="_compute_cn_report_traceability",
     )
+    cn_report_rule_governance_state = fields.Selection(
+        [
+            ("ready", "规则依据有效"),
+            ("blocked", "规则依据已变化"),
+        ],
+        string="当前规则治理",
+        compute="_compute_cn_report_rule_governance",
+    )
+    cn_report_rule_governance_issue_count = fields.Integer(
+        string="规则治理阻断",
+        compute="_compute_cn_report_rule_governance",
+    )
+    cn_report_rule_governance_blockers = fields.Text(
+        string="规则治理阻断明细",
+        compute="_compute_cn_report_rule_governance",
+    )
+    cn_report_rule_governance_next_action = fields.Char(
+        string="规则治理下一步",
+        compute="_compute_cn_report_rule_governance",
+    )
     cn_report_center_period_label = fields.Char(
         string="报告期间",
         compute="_compute_cn_report_center_display",
@@ -1221,10 +1241,23 @@ class SudoChinaComplianceReport(models.Model):
                 "version": version.version,
                 "state": version.state,
                 "checksum": version.checksum,
+                "cn_release_state": version.cn_release_state or None,
+                "cn_governance_ready": bool(version.cn_governance_ready),
+                "cn_release_blockers": version.cn_release_blockers or None,
                 "professional_review_state": version.professional_review_state,
                 "professional_rule_checksum": (
                     version.professional_rule_checksum or None
                 ),
+                "authority_sources": [
+                    {
+                        "id": source.id,
+                        "name": source.name,
+                        "status": source.status,
+                        "content_hash": source.content_hash or None,
+                        "next_review_date": _date_value(source.next_review_date),
+                    }
+                    for source in version.authority_source_ids.sorted("id")
+                ],
             }
             for version in assessment.rule_version_ids.sorted("id")
         ]
@@ -1367,6 +1400,7 @@ class SudoChinaComplianceReport(models.Model):
                 "note": assessment.note or None,
             },
             "rules": rules,
+            "rule_governance": self._current_rule_governance_payload(),
             "obligation_readiness": self._obligation_readiness_payload(),
             "data_basis": self._data_basis_payload(),
             "filing_archive": self._filing_archive_payload(),
@@ -1458,6 +1492,7 @@ class SudoChinaComplianceReport(models.Model):
             issues.append(_("仍有规则结果使用待复核官方来源。"))
         if assessment.professional_warning_count:
             issues.append(_("仍有规则结果未完成真人专业签核。"))
+        issues.extend(self._current_rule_governance_issues())
         if assessment.finding_ids.filtered(
             lambda finding: finding.review_state == "pending"
         ):
@@ -1674,6 +1709,124 @@ class SudoChinaComplianceReport(models.Model):
             return _fact_basis_summary({})
         return _fact_basis_summary(self._snapshot_payload())
 
+    def _current_rule_governance_issues(self):
+        self.ensure_one()
+        issues = []
+        today = fields.Date.context_today(self)
+        for finding in self.assessment_id.finding_ids.sorted("id"):
+            version = finding.rule_version_id
+            if not version:
+                continue
+            rule_label = version.rule_id.code or version.display_name
+            current_sources = {
+                source.id: source for source in version.authority_source_ids
+            }
+            snapshot_source_ids = set()
+            for source_snapshot in finding.source_snapshot_json or []:
+                if not isinstance(source_snapshot, dict):
+                    continue
+                source_id = source_snapshot.get("id")
+                if not source_id:
+                    continue
+                snapshot_source_ids.add(source_id)
+                current_source = current_sources.get(source_id)
+                snapshot_hash = source_snapshot.get("content_hash")
+                source_changed = (
+                    not current_source
+                    or current_source.status != "valid"
+                    or (
+                        current_source.next_review_date
+                        and current_source.next_review_date < today
+                    )
+                    or (
+                        snapshot_hash
+                        and current_source.content_hash != snapshot_hash
+                    )
+                )
+                if source_changed:
+                    issues.append(
+                        _(
+                            "规则 %(rule)s 的官方来源 %(source)s 在评估后已变更、失效或解除关联；请完成来源复核并重新扫描。",
+                            rule=rule_label,
+                            source=(
+                                source_snapshot.get("name")
+                                or (current_source and current_source.display_name)
+                                or source_id
+                            ),
+                        )
+                    )
+
+            added_sources = version.authority_source_ids.filtered(
+                lambda source: snapshot_source_ids
+                and source.id not in snapshot_source_ids
+            )
+            if added_sources:
+                issues.append(
+                    _(
+                        "规则 %(rule)s 在评估后新增了官方来源 %(sources)s；请复核新的规则依据并重新扫描。",
+                        rule=rule_label,
+                        sources=", ".join(added_sources.mapped("display_name")),
+                    )
+                )
+
+            professional_snapshot = finding.professional_snapshot_json or {}
+            signed_rule_checksum = (
+                professional_snapshot.get("rule_checksum")
+                if isinstance(professional_snapshot, dict)
+                else None
+            )
+            if signed_rule_checksum and (
+                version.professional_review_state != "approved"
+                or version.professional_rule_checksum != signed_rule_checksum
+                or not version._has_valid_professional_signoff()
+            ):
+                issues.append(
+                    _(
+                        "规则 %(rule)s 的专业签核在评估后已失效或与评估快照不一致；请重新签核并重新扫描。",
+                        rule=rule_label,
+                    )
+                )
+        return list(dict.fromkeys(issues))
+
+    def _current_rule_governance_payload(self):
+        self.ensure_one()
+        issues = self._current_rule_governance_issues()
+        if issues:
+            next_action = _(
+                "完成官方来源或专业签核复核，并重新执行规则扫描后再提交正式报告。"
+            )
+        else:
+            next_action = _("当前官方来源与专业签核仍与评估快照一致。")
+        return {
+            "state": "blocked" if issues else "ready",
+            "rule_count": len(self.assessment_id.rule_version_ids),
+            "source_count": len(
+                self.assessment_id.rule_version_ids.mapped("authority_source_ids")
+            ),
+            "issue_count": len(issues),
+            "blockers": issues,
+            "next_action": next_action,
+        }
+
+    @api.depends(
+        "assessment_id.finding_ids.source_snapshot_json",
+        "assessment_id.finding_ids.professional_snapshot_json",
+        "assessment_id.rule_version_ids.authority_source_ids.status",
+        "assessment_id.rule_version_ids.authority_source_ids.content_hash",
+        "assessment_id.rule_version_ids.authority_source_ids.next_review_date",
+        "assessment_id.rule_version_ids.professional_review_state",
+        "assessment_id.rule_version_ids.professional_rule_checksum",
+    )
+    def _compute_cn_report_rule_governance(self):
+        for report in self:
+            payload = report._current_rule_governance_payload()
+            report.cn_report_rule_governance_state = payload["state"]
+            report.cn_report_rule_governance_issue_count = payload["issue_count"]
+            report.cn_report_rule_governance_blockers = "\n".join(
+                "- %s" % blocker for blocker in payload["blockers"]
+            ) or _("无当前规则治理阻断。")
+            report.cn_report_rule_governance_next_action = payload["next_action"]
+
     @api.depends(
         "snapshot_json",
         "fact_snapshot_count",
@@ -1707,6 +1860,7 @@ class SudoChinaComplianceReport(models.Model):
         "finding_without_fact_count",
         "assessment_id.profile_id.obligation_ids.write_date",
         "assessment_id.profile_id.obligation_ids.authority_source_id.write_date",
+        "cn_report_rule_governance_state",
         "assessment_id.finding_ids.cn_traceability_gap_count",
         "assessment_id.finding_ids.task_ids.cn_remediation_traceability_gap_count",
     )
@@ -1743,6 +1897,8 @@ class SudoChinaComplianceReport(models.Model):
                 "attention",
             ):
                 gaps.append("obligation_readiness")
+            if report.cn_report_rule_governance_state == "blocked":
+                gaps.append("rule_governance")
             if any(report.assessment_id.finding_ids.mapped("cn_traceability_gap_count")):
                 gaps.append("finding_traceability")
             if any(
@@ -1768,6 +1924,7 @@ class SudoChinaComplianceReport(models.Model):
                 "approval_integrity",
                 "pdf_integrity",
                 "fact_basis",
+                "rule_governance",
                 "finding_traceability",
                 "finding_closure",
             }:
@@ -1806,6 +1963,7 @@ class SudoChinaComplianceReport(models.Model):
             "evidence": _("evidence not fully verified"),
             "tax_impact": _("tax impact review pending"),
             "fact_basis": _("fact basis incomplete"),
+            "rule_governance": _("current rule governance changed"),
             "obligation_readiness": _("tax obligation applicability not confirmed"),
             "finding_traceability": _("risk traceability gaps"),
             "remediation_traceability": _("remediation traceability gaps"),

@@ -60,7 +60,7 @@ MANIFEST_AGGREGATE_SHA256 = "2" * 64
 
 def status_payload() -> dict:
     return {
-        "version": "19.0.1.130.0",
+        "version": "19.0.1.131.0",
         "version_consistent": True,
         "acceptance_passed": True,
         "runtime_passed": True,
@@ -99,7 +99,7 @@ def status_payload() -> dict:
         "preview_module": {
             "ok": True,
             "database": "test",
-            "module_installed_version": "19.0.1.130.0",
+            "module_installed_version": "19.0.1.131.0",
         },
         "upgrade_migration_chain": {
             "ready": True,
@@ -107,14 +107,18 @@ def status_payload() -> dict:
             "module_manifest_included": True,
             "validator": "tools/validate_addon.py",
             "validator_included": True,
-            "current_version": "19.0.1.130.0",
+            "current_version": "19.0.1.131.0",
             "current_migration": (
                 "addons/sudo_country_pack_cn/migrations/"
-                "19.0.1.130.0/post-migration.py"
+                "19.0.1.131.0/post-migration.py"
             ),
             "current_migration_included": True,
-            "migration_script_count": 120,
-            "packaged_migration_versions": ["19.0.1.129.0", "19.0.1.130.0"],
+            "migration_script_count": 121,
+            "packaged_migration_versions": [
+                "19.0.1.129.0",
+                "19.0.1.130.0",
+                "19.0.1.131.0",
+            ],
         },
         "uat_walkthrough": {
             "path": "docs/CHINA_UAT_WALKTHROUGH_SCRIPT.md",
@@ -142,7 +146,7 @@ def status_payload() -> dict:
         },
         "objective_audit": {
             "schema": "sdoo.cn.objective-completion-audit.v1",
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "source_commit": "abc123",
             "preview_url": "http://127.0.0.1:18070/web/login?db=test",
             "preview_database": "test",
@@ -547,7 +551,7 @@ def manifest_payload() -> dict:
         "docs/CHINA_PRODUCTION_RELEASE_CONTROL.md",
         "docs/samples/cn_signoff_evidence_template.json",
         "addons/sudo_country_pack_cn/__manifest__.py",
-        "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+        "addons/sudo_country_pack_cn/migrations/19.0.1.131.0/post-migration.py",
         "tools/validate_addon.py",
         "tools/check_cn_preview_health.py",
         "tools/check_cn_preview_module.py",
@@ -562,7 +566,7 @@ def manifest_payload() -> dict:
     ]
     return {
         "schema": "sdoo.cn.delivery-manifest.v1",
-        "version": "19.0.1.130.0",
+        "version": "19.0.1.131.0",
         "aggregate_sha256": MANIFEST_AGGREGATE_SHA256,
         "files": [{"path": path} for path in paths],
     }
@@ -579,7 +583,7 @@ def manifest_without(path_to_remove: str) -> dict:
 def bundle_metadata_payload() -> dict:
     return {
         "schema": "sdoo.cn.delivery-bundle.v1",
-        "version": "19.0.1.130.0",
+        "version": "19.0.1.131.0",
         "aggregate_sha256": MANIFEST_AGGREGATE_SHA256,
         "bundle_sha256": BUNDLE_SHA256,
         "source_control": {
@@ -594,7 +598,7 @@ def bundle_metadata_payload() -> dict:
 def summary_payload() -> dict:
     return {
         "schema": "sdoo.cn.delivery-acceptance-summary.v1",
-        "version": "19.0.1.130.0",
+        "version": "19.0.1.131.0",
         "result": "passed",
         "runtime": {
             "database": "test",
@@ -606,7 +610,7 @@ def summary_payload() -> dict:
 def upgrade_summary_payload() -> dict:
     return {
         "schema": "sdoo.cn.delivery-acceptance-summary.v1",
-        "version": "19.0.1.130.0",
+        "version": "19.0.1.131.0",
         "result": "passed",
         "runtime": {
             "requested": True,
@@ -631,10 +635,10 @@ def preview_module_payload() -> dict:
     return {
         "schema": SUMMARY.PREVIEW_MODULE_SCHEMA,
         "database": "test",
-        "expected_version": "19.0.1.130.0",
+        "expected_version": "19.0.1.131.0",
         "ok": True,
-        "module_installed_version": "19.0.1.130.0",
-        "country_pack_version": "19.0.1.130.0",
+        "module_installed_version": "19.0.1.131.0",
+        "country_pack_version": "19.0.1.131.0",
     }
 
 
@@ -642,7 +646,7 @@ def real_data_closed_loop_payload() -> dict:
     return {
         "schema": SUMMARY.REAL_DATA_CLOSED_LOOP_SCHEMA,
         "database": "test",
-        "expected_version": "19.0.1.130.0",
+        "expected_version": "19.0.1.131.0",
         "ok": True,
         "objects": {
             "vat_reconciliation_runs": 1,
@@ -1075,7 +1079,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
             "and controlled AI guidance evidence reviewed."
         ),
         "china_tax_professional_rule_signoff": (
-            "Released rule versions 19.0.1.130.0 official source packet reviewed "
+            "Released rule versions 19.0.1.131.0 official source packet reviewed "
             "by China tax professional with professional qualification recorded; "
             "sign-off evidence reference CN-TAX-SIGNOFF-2026-001 and released "
             "rule checksum "
@@ -1109,7 +1113,7 @@ def complete_evidence(packet: dict, deployment_decision: str = "deploy") -> dict
         ),
         "production_deployment_decision": (
             "Production sign-off template completed with deployment decision, "
-            "delivery version 19.0.1.130.0, source commit abc123, bundle SHA-256 "
+            "delivery version 19.0.1.131.0, source commit abc123, bundle SHA-256 "
             f"{BUNDLE_SHA256}, "
             "manifest aggregate hash "
             f"{MANIFEST_AGGREGATE_SHA256}, "
@@ -2074,7 +2078,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("upgrade_migration_chain_evidence", automated)
         self.assertTrue(automated["upgrade_migration_chain_evidence"]["ready"])
         self.assertIn(
-            "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+            "addons/sudo_country_pack_cn/migrations/19.0.1.131.0/post-migration.py",
             automated["upgrade_migration_chain_evidence"]["evidence"],
         )
         self.assertIn(
@@ -3261,14 +3265,14 @@ class TestChinaSignoffValidation(unittest.TestCase):
             "inside_worktree": True,
         }
         manifest = {
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "git_commit": commit,
             "source_control": source_control,
             "file_count": 1,
             "aggregate_sha256": aggregate,
         }
         bundle = {
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "git_commit": commit,
             "source_control": source_control,
             "file_count": 1,
@@ -3277,12 +3281,12 @@ class TestChinaSignoffValidation(unittest.TestCase):
         }
         bundle_sha256 = bundle["bundle_sha256"]
         acceptance = {
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "result": "passed",
             "runtime": {"log": {"failed": 0, "errors": 0}},
         }
         status = {
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "source_control": source_control,
             "preview_database": "test",
             "readiness_gates": {
@@ -3297,7 +3301,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             },
         }
         actions = {
-            "version": "19.0.1.130.0",
+            "version": "19.0.1.131.0",
             "source_commit": commit,
             "preview_database": "test",
             "bundle_sha256": bundle_sha256,
@@ -3355,7 +3359,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
             f"cn_real_data_closed_loop_{tag}.json": {"ok": True},
             f"cn_delivery_{tag}_chain_status.json": status,
             f"cn_delivery_{tag}_chain_signoff_packet.json": {
-                "version": "19.0.1.130.0",
+                "version": "19.0.1.131.0",
                 "source_commit": commit,
                 "preview_database": "test",
                 "bundle_sha256": bundle_sha256,
@@ -3385,7 +3389,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
                 b"- Notes:\n"
             ),
             f"cn_delivery_{tag}_chain_objective_audit.json": {
-                "version": "19.0.1.130.0",
+                "version": "19.0.1.131.0",
                 "preview_database": "test",
             },
         }
@@ -3697,7 +3701,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(chain["module_manifest_included"])
         self.assertTrue(chain["validator_included"])
         self.assertTrue(chain["current_migration_included"])
-        self.assertEqual(chain["current_version"], "19.0.1.130.0")
+        self.assertEqual(chain["current_version"], "19.0.1.131.0")
         self.assertGreaterEqual(chain["migration_script_count"], 1)
 
     def test_delivery_status_markdown_lists_upgrade_migration_chain_evidence(self):
@@ -3711,7 +3715,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("Upgrade migration chain evidence ready: `True`", content)
         self.assertIn("## Upgrade Migration Chain Evidence", content)
         self.assertIn(
-            "addons/sudo_country_pack_cn/migrations/19.0.1.130.0/post-migration.py",
+            "addons/sudo_country_pack_cn/migrations/19.0.1.131.0/post-migration.py",
             content,
         )
         self.assertIn("tools/validate_addon.py", content)
@@ -4109,7 +4113,7 @@ class TestChinaSignoffValidation(unittest.TestCase):
         status = delivery_status_with_manifest(
             manifest_without(
                 "addons/sudo_country_pack_cn/migrations/"
-                "19.0.1.130.0/post-migration.py"
+                "19.0.1.131.0/post-migration.py"
             )
         )
 

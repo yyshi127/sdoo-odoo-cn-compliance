@@ -30,7 +30,7 @@ professional judgment.
 
 Pick one candidate number and use it consistently:
 
-- Delivery version: `19.0.1.130.0`
+- Delivery version: `19.0.1.131.0`
 - Git commit: read from `dist/cn_delivery_mNNN_chain_status.md`
 - Release branch: read from `dist/cn_delivery_mNNN_chain_status.md`
 - Delivery package: `dist/sdoo-cn-compliance-delivery-mNNN.tgz`
@@ -62,6 +62,8 @@ The selected evidence set must prove the software and audit chain are ready for
 business review:
 
 - clean install and upgrade runtime acceptance passed;
+- formal report submission is blocked if the current official-source basis or
+  professional sign-off no longer matches the assessment snapshot;
 - delivery manifest, bundle metadata and source-control evidence are consistent;
 - preview database is reachable and reports the expected module version;
 - real Odoo accounting data is present in the preview scope;

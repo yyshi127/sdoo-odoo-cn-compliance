@@ -566,6 +566,8 @@ def validate_country_pack_metadata(manifest: dict[str, object]) -> None:
         fail("China report rescan gate capability must be declared")
     if features.get("china_report_filing_archive_gate") is not True:
         fail("China report filing archive gate capability must be declared")
+    if features.get("china_report_current_rule_governance_gate") is not True:
+        fail("China report current rule governance gate capability must be declared")
     if features.get("china_report_filing_archive_snapshot") is not True:
         fail("China report filing archive snapshot capability must be declared")
     if features.get("china_report_risk_closure_snapshot") is not True:
@@ -2835,6 +2837,15 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "cn_report_traceability_next_action",
+        "cn_report_rule_governance_state",
+        "cn_report_rule_governance_issue_count",
+        "cn_report_rule_governance_blockers",
+        "cn_report_rule_governance_next_action",
+        "_current_rule_governance_issues",
+        "_current_rule_governance_payload",
+        '"rule_governance"',
+        '"authority_sources"',
+        '"current rule governance changed"',
         "obligation_readiness",
         "_obligation_readiness_payload",
         "filing_archive",
@@ -2946,6 +2957,9 @@ def validate_formal_compliance_report() -> None:
         "cn_report_blocker_summary",
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
+        "cn_report_rule_governance_state",
+        "cn_report_rule_governance_issue_count",
+        "cn_report_rule_governance_next_action",
         "cn_report_fact_basis_state",
         "fact_snapshot_count",
         "fact_issue_count",
@@ -2988,6 +3002,7 @@ def validate_formal_compliance_report() -> None:
         "snapshot_checksum",
         "approval_checksum",
         "issued_pdf_sha256",
+        "cn_report_rule_governance_blockers",
     }
     missing_form_fields = required_report_form_fields - report_form_fields
     if missing_form_fields:
@@ -3010,6 +3025,10 @@ def validate_formal_compliance_report() -> None:
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
         "cn_report_traceability_next_action",
+        "cn_report_rule_governance_state",
+        "cn_report_rule_governance_issue_count",
+        "cn_report_rule_governance_blockers",
+        "cn_report_rule_governance_next_action",
         "remediation_pending_verification_count",
         "remediation_verified_count",
         "action_cn_open_report_findings",
@@ -3019,6 +3038,7 @@ def validate_formal_compliance_report() -> None:
         "批准并签发",
         "下载已签发 PDF",
         "源资料已变化",
+        "当前规则治理状态与评估快照不一致",
         "PDF 完整性异常",
     ):
         if required not in view_content:
@@ -3053,6 +3073,9 @@ def validate_formal_compliance_report() -> None:
         "source.get('status')",
         "Professional review snapshot:",
         "finding.get('professional_snapshot')",
+        "rule_governance",
+        "报告冻结时规则治理状态",
+        "当前治理阻断",
         "Controlled AI metadata",
         "analysis.get('provider_key')",
         "analysis.get('model_name')",
@@ -3105,6 +3128,9 @@ def validate_formal_compliance_report() -> None:
         "test_submission_freezes_explainable_snapshot_and_audit",
         "test_unreviewed_or_unsigned_findings_block_formal_submission",
         "test_source_change_after_submission_requires_return_and_resubmit",
+        "test_source_drift_after_assessment_blocks_submission_and_is_visible",
+        "test_source_link_change_after_assessment_blocks_submission",
+        "test_professional_signoff_drift_after_assessment_blocks_submission",
         "test_independent_approver_issues_immutable_pdf",
         "test_pdf_tampering_is_detected_and_download_blocked",
         "test_approval_tampering_is_detected_and_download_blocked",
@@ -3131,6 +3157,7 @@ def validate_formal_compliance_report() -> None:
         "china_report_remediation_verification",
         "china_report_filing_archive_snapshot",
         "china_report_risk_closure_snapshot",
+        "china_report_current_rule_governance_gate",
         "china_formal_report_badge_clarity",
         "cn_report_blocker_summary",
         "remediation_pending_verification_count",
@@ -3152,6 +3179,11 @@ def validate_formal_compliance_report() -> None:
         "filing_archive",
         "cn_report_traceability_state",
         "cn_report_traceability_gap_count",
+        "cn_report_rule_governance_state",
+        "cn_report_rule_governance_issue_count",
+        "cn_report_rule_governance_blockers",
+        "报告冻结时规则治理状态",
+        "当前治理阻断",
         "action_cn_open_report_evidence",
     ):
         if required not in test_content:
@@ -3493,6 +3525,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China report rescan gate capability is missing from {label}")
         if "china_report_filing_archive_gate" not in content:
             fail(f"China report filing archive gate capability is missing from {label}")
+        if "china_report_current_rule_governance_gate" not in content:
+            fail(
+                "China report current rule governance gate capability is missing "
+                f"from {label}"
+            )
         if "china_report_filing_archive_snapshot" not in content:
             fail(
                 f"China report filing archive snapshot capability is missing from {label}"
@@ -5092,7 +5129,7 @@ def validate_delivery_objective_coverage() -> None:
     handoff_content = handoff_path.read_text(encoding="utf-8")
     for required in (
         "# China Fiscal Compliance Pack Release Handoff",
-        "Delivery version: `19.0.1.130.0`",
+        "Delivery version: `19.0.1.131.0`",
         "dist/sdoo-cn-compliance-delivery-m*.tgz",
         "codex_cn_m31_runtime_mNNN",
         "business_uat_ready=true",

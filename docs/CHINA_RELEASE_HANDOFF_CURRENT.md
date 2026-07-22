@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.130.0`
+Delivery version: `19.0.1.131.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -85,6 +85,8 @@ status shows all of the following:
 - `Preview module ok: True`
 - `Real-data closed-loop evidence ready: True`
 - `Official source governance summary ready: True`
+- formal reports revalidate current official-source links, source hashes,
+  source validity and professional sign-off against the assessment snapshot;
 - `Business UAT ready: True`
 
 The sign-off packet should expose automated evidence for delivery integrity,

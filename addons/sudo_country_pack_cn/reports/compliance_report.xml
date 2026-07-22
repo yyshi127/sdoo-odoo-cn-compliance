@@ -16,6 +16,7 @@
                 <t t-set="payload" t-value="report.report_payload()"/>
                 <t t-set="assessment" t-value="payload.get('assessment', {})"/>
                 <t t-set="tax_impact" t-value="payload.get('tax_impact', {})"/>
+                <t t-set="rule_governance" t-value="payload.get('rule_governance', {})"/>
                 <t t-call="web.external_layout">
                     <div class="page">
                         <div style="border-bottom: 3px solid #0f766e; padding-bottom: 12px; margin-bottom: 18px;">
@@ -122,6 +123,28 @@
                         <p class="text-muted" t-if="payload.get('obligation_readiness', {}).get('next_action')">
                             <span t-esc="payload.get('obligation_readiness', {}).get('next_action')"/>
                         </p>
+
+                        <h3 style="font-size: 14px;">报告冻结时规则治理状态</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>当前状态</th>
+                                    <td><span t-esc="rule_governance.get('state') or '-'"/></td>
+                                    <th>规则 / 官方来源</th>
+                                    <td>
+                                        <span t-esc="rule_governance.get('rule_count', 0)"/>
+                                        /
+                                        <span t-esc="rule_governance.get('source_count', 0)"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>当前治理阻断</th>
+                                    <td><span t-esc="rule_governance.get('issue_count', 0)"/></td>
+                                    <th>下一步</th>
+                                    <td><span t-esc="rule_governance.get('next_action') or '-'"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
 
                         <h2 style="font-size: 17px; color: #17313b;">三、评估与数据充分性</h2>
                         <table class="table table-sm table-bordered text-center">

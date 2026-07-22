@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.130.0</field>
+        <field name="version">19.0.1.131.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {
@@ -68,6 +68,7 @@
                 'china_report_remediation_verification': True,
                 'china_report_rescan_gate': True,
                 'china_report_filing_archive_gate': True,
+                'china_report_current_rule_governance_gate': True,
                 'china_report_ai_guidance_readiness': True,
                 'china_filing_archive_field_label_clarity': True,
                 'china_report_filing_archive_snapshot': True,

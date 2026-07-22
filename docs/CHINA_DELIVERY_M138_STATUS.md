@@ -5,7 +5,7 @@
 The China compliance package is ready for business UAT, but it is not production
 sign-off ready.
 
-- Delivery version: `19.0.1.130.0`
+- Delivery version: `19.0.1.131.0`
 - Source commit: `a513d109709eb6cca403a791df8ab9b0c07f05c9`
 - Preview database: `codex_cn_m31_demo_01`
 - Preview URL on the server: `http://127.0.0.1:8069/web/login?db=codex_cn_m31_demo_01`
@@ -53,6 +53,9 @@ domains:
 
 ## Important Fixes Completed After m135
 
+- Formal reports now show a current rule-governance gate and refuse submission
+  when an official source or professional sign-off has changed since the
+  assessment. The frozen report payload records this status for audit.
 - CIT payment dataset selection now filters payment datasets by `tax_type_code == "CIT"` for the target period. This prevents VAT/IIT payment datasets from being treated as duplicate CIT payment datasets.
 - The controlled CIT demo filing now calculates adjustment increase dynamically from the real accounting profit snapshot and keeps a stable representative taxable income/payment bridge for UAT.
 - The demo preparation output now includes CIT issue details so future failures show exact issue code, severity, source area, amounts and action hints.
@@ -129,4 +132,3 @@ sudo -u odoo /opt/odoo/odoo19/odoo19-venv/bin/python tools/prepare_cn_demo_close
   --allow-demo-data \
   --json-output dist/cn_demo_closed_loop_m137.json
 ```
-
