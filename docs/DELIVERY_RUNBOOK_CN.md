@@ -162,7 +162,7 @@ python tools/check_cn_preview_module.py \
   --odoo-bin /path/to/odoo-bin \
   --config /path/to/odoo.conf \
   --database target_database \
-  --expected-version 19.0.1.136.0 \
+  --expected-version 19.0.1.137.0 \
   --json-output /tmp/cn_preview_module.json
 
 python tools/check_cn_real_data_closed_loop.py \
@@ -170,7 +170,7 @@ python tools/check_cn_real_data_closed_loop.py \
   --odoo-bin /path/to/odoo-bin \
   --config /path/to/odoo.conf \
   --database target_database \
-  --expected-version 19.0.1.136.0 \
+  --expected-version 19.0.1.137.0 \
   --require-demo-ready \
   --require-closed-loop-evidence \
   --json-output /tmp/cn_real_data_closed_loop.json

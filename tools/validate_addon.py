@@ -3792,6 +3792,18 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     if not translation_path.is_file():
         fail("China workbench Simplified Chinese translation catalog is missing")
     translation_content = translation_path.read_text(encoding="utf-8")
+    translation_blocks = re.split(r"\n\s*\n", translation_content)
+    unscoped_translation_entries = [
+        block
+        for block in translation_blocks
+        if re.search(r'^msgid "(?!")', block, flags=re.MULTILINE)
+        and "#. module: sudo_country_pack_cn" not in block
+    ]
+    if unscoped_translation_entries:
+        fail(
+            "China translation catalog entries must declare "
+            "'#. module: sudo_country_pack_cn' for Odoo runtime import"
+        )
     for required in (
         '"Language: zh_CN\\n"',
         'msgid "Risks: %(high)s high / %(total)s total; %(pending)s pending review. Remediation: %(open)s open / %(overdue)s overdue. Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
