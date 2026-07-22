@@ -105,6 +105,8 @@ class TestChinaFormalComplianceReport(TransactionCase):
         result="fail",
         source_warning=False,
         professional_warning=False,
+        source_snapshot=None,
+        professional_snapshot=None,
         review=True,
     ):
         assessment = self.env["sudo.compliance.assessment"].with_company(
@@ -134,15 +136,27 @@ class TestChinaFormalComplianceReport(TransactionCase):
                 "requires_human_review": True,
                 "source_warning": source_warning,
                 "professional_warning": professional_warning,
-                "professional_snapshot_json": {
-                    "state": "approved" if not professional_warning else "pending"
-                },
-                "source_snapshot_json": [
-                    {
-                        "name": "测试官方来源快照",
-                        "status": "valid" if not source_warning else "pending_review",
+                "professional_snapshot_json": (
+                    professional_snapshot
+                    if professional_snapshot is not None
+                    else {
+                        "state": (
+                            "approved" if not professional_warning else "pending"
+                        )
                     }
-                ],
+                ),
+                "source_snapshot_json": (
+                    source_snapshot
+                    if source_snapshot is not None
+                    else [
+                        {
+                            "name": "测试官方来源快照",
+                            "status": (
+                                "valid" if not source_warning else "pending_review"
+                            ),
+                        }
+                    ]
+                ),
                 "result_details_json": {"affected_count": 1},
                 "checksum": (suffix.encode().hex() + "a" * 64)[:64],
             }
@@ -873,16 +887,18 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.rule_version.write(
             {"authority_source_ids": [Command.set(source.ids)]}
         )
-        self.finding._engine_write(
-            {"source_snapshot_json": [source.snapshot_payload()]}
+        assessment, finding = self._assessment(
+            "source-governance-drift",
+            source_snapshot=[source.snapshot_payload()],
         )
         source.action_mark_change_detected()
-        report = self._report()
+        report = self._report(assessment)
 
         self.assertEqual(report.cn_report_rule_governance_state, "blocked")
         self.assertEqual(report.cn_report_rule_governance_issue_count, 1)
         self.assertIn("CN-REPORT-TEST", report.cn_report_rule_governance_blockers)
         self.assertIn(source.name, report.cn_report_rule_governance_blockers)
+        self.assertEqual(report.assessment_id, finding.assessment_id)
         self.assertEqual(report.cn_report_traceability_state, "blocked")
         self.assertIn(
             "current rule governance changed",
@@ -899,8 +915,9 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.rule_version.write(
             {"authority_source_ids": [Command.set(assessed_source.ids)]}
         )
-        self.finding._engine_write(
-            {"source_snapshot_json": [assessed_source.snapshot_payload()]}
+        assessment, _finding = self._assessment(
+            "source-link-change",
+            source_snapshot=[assessed_source.snapshot_payload()],
         )
         self.rule_version.write(
             {
@@ -909,7 +926,7 @@ class TestChinaFormalComplianceReport(TransactionCase):
                 ]
             }
         )
-        report = self._report()
+        report = self._report(assessment)
 
         self.assertEqual(report.cn_report_rule_governance_state, "blocked")
         self.assertIn(added_source.name, report.cn_report_rule_governance_blockers)
@@ -917,16 +934,15 @@ class TestChinaFormalComplianceReport(TransactionCase):
             report.with_user(self.manager).action_submit()
 
     def test_professional_signoff_drift_after_assessment_blocks_submission(self):
-        self.finding._engine_write(
-            {
-                "professional_snapshot_json": {
-                    "state": "approved",
-                    "rule_checksum": "a" * 64,
-                    "is_valid": True,
-                }
-            }
+        assessment, _finding = self._assessment(
+            "professional-signoff-drift",
+            professional_snapshot={
+                "state": "approved",
+                "rule_checksum": "a" * 64,
+                "is_valid": True,
+            },
         )
-        report = self._report()
+        report = self._report(assessment)
 
         self.assertEqual(report.cn_report_rule_governance_state, "blocked")
         self.assertEqual(report.cn_report_rule_governance_issue_count, 1)
