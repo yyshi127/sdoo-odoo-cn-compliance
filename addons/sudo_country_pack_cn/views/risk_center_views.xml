@@ -228,7 +228,7 @@
                 <field name="cn_ai_guidance_next_action"/>
                 <field name="cn_ai_guidance_input_checksum"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.task_is_overdue.raw_value || record.risk_level.raw_value == 'critical' || record.risk_level.raw_value == 'high' ? 'border-danger' : record.risk_level.raw_value == 'medium' ? 'border-warning' : 'border-info'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
@@ -668,7 +668,7 @@
                 <field name="recommendation_snapshot"/>
                 <field name="is_overdue"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.is_overdue.raw_value ? 'border-danger' : record.state.raw_value == 'pending_review' ? 'border-info' : record.state.raw_value == 'blocked' ? 'border-warning' : 'border-secondary'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>

@@ -100,7 +100,7 @@
                 <field name="cn_submission_integrity_state"/>
                 <field name="cn_payment_integrity_state"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_submission_integrity_state.raw_value == 'changed' || record.cn_submission_integrity_state.raw_value == 'invalid' || record.cn_payment_integrity_state.raw_value == 'changed' || record.cn_payment_integrity_state.raw_value == 'invalid' ? 'border-danger' : record.cn_submission_integrity_state.raw_value == 'unsealed' || record.cn_payment_integrity_state.raw_value == 'unsealed' ? 'border-warning' : 'border-success'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>

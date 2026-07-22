@@ -465,7 +465,22 @@ def validate_text_and_syntax() -> None:
         elif path.suffix == ".json":
             json.loads(content)
         elif path.suffix == ".xml":
-            ElementTree.parse(path)
+            root = ElementTree.parse(path).getroot()
+            for kanban in root.findall(".//kanban"):
+                templates = kanban.find("templates")
+                if templates is None:
+                    continue
+                template_names = {
+                    template.attrib.get("t-name")
+                    for template in templates.findall(".//t")
+                }
+                if "kanban-box" in template_names:
+                    fail(
+                        "Odoo 19 kanban views must use the 'card' template, "
+                        f"not 'kanban-box': {path}"
+                    )
+                if "card" not in template_names:
+                    fail(f"kanban view is missing the Odoo 19 'card' template: {path}")
 
 
 def validate_manifest() -> dict[str, object]:

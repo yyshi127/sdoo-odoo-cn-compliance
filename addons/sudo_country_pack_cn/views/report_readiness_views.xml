@@ -180,7 +180,7 @@
                 <field name="cn_obligation_basis_filing_count"/>
                 <field name="cn_obligation_basis_next_action"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_report_readiness_state.raw_value == 'ready' || record.cn_report_readiness_state.raw_value == 'issued' ? 'border-success' : record.cn_report_readiness_state.raw_value == 'needs_review' || record.cn_report_readiness_state.raw_value == 'needs_remediation' ? 'border-danger' : 'border-warning'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>

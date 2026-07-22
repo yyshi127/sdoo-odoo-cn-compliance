@@ -103,7 +103,7 @@
                 <field name="verified_by_id"/>
                 <field name="verified_at"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.state.raw_value == 'verified' ? 'border-success' : record.state.raw_value == 'submitted' ? 'border-warning' : record.state.raw_value == 'rejected' ? 'border-danger' : 'border-secondary'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>

@@ -110,7 +110,7 @@
                 <field name="parse_run_count"/>
                 <field name="tax_data_parse_run_count"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_data_readiness_stage.raw_value == 'blocked' ? 'border-danger' : record.cn_data_readiness_stage.raw_value == 'ready' ? 'border-success' : 'border-warning'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>

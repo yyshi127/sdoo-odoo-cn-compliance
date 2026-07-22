@@ -81,7 +81,7 @@
                 <field name="cn_cross_border_next_action"/>
                 <field name="state"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.state.raw_value == 'reviewed' ? 'border-success' : record.state.raw_value == 'cancelled' ? 'border-secondary' : 'border-warning'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
