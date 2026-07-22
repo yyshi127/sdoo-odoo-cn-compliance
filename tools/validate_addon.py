@@ -3770,8 +3770,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China workbench contract is missing {required}")
 
     for required in (
-        '_("Closed loop blocked: %(stages)s."',
-        '_("Complete and activate the China profile")',
+        "translate = profile.env._",
+        'translate("Closed loop blocked: %(stages)s."',
+        'translate("Complete and activate the China profile")',
         '"Risks: %(high)s high / %(total)s total; %(pending)s pending review. "',
         '"Remediation: %(open)s open / %(overdue)s overdue. "',
         '"Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
