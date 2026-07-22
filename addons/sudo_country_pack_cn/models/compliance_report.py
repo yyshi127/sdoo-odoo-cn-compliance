@@ -112,7 +112,8 @@ def _controlled_filing_domain(assessment):
     ]
 
 
-def _fact_basis_summary(payload):
+def _fact_basis_summary(payload, translate=None):
+    translate = translate or (lambda message: message)
     facts = payload.get("facts") or []
     findings = payload.get("findings") or []
     issue_states = {"missing", "stale", "truncated", "error"}
@@ -135,15 +136,19 @@ def _fact_basis_summary(payload):
     )
     if issue_count or findings_without_facts:
         state = "blocked"
-        next_action = _(
+        next_action = translate(
             "Review missing, stale or incomplete fact snapshots before relying on the report."
         )
     elif facts:
         state = "ready"
-        next_action = _("Report findings are linked to controlled fact snapshots.")
+        next_action = translate(
+            "Report findings are linked to controlled fact snapshots."
+        )
     else:
         state = "not_started"
-        next_action = _("No controlled fact snapshots are attached to this report.")
+        next_action = translate(
+            "No controlled fact snapshots are attached to this report."
+        )
     return {
         "state": state,
         "next_action": next_action,
@@ -1431,7 +1436,7 @@ class SudoChinaComplianceReport(models.Model):
             "ai_guidance": _ai_guidance_report_summary(findings),
             "ai_analysis_metadata": ai_rows,
         }
-        payload["fact_basis"] = _fact_basis_summary(payload)
+        payload["fact_basis"] = _fact_basis_summary(payload, self.env._)
         return payload
 
     @api.model
@@ -1559,7 +1564,9 @@ class SudoChinaComplianceReport(models.Model):
         tasks = payload["tasks"]
         evidence = payload["evidence"]
         tax_impact = payload["tax_impact"]
-        fact_basis = payload.get("fact_basis") or _fact_basis_summary(payload)
+        fact_basis = payload.get("fact_basis") or _fact_basis_summary(
+            payload, self.env._
+        )
         conclusion, has_limits = self._derive_conclusion(payload)
         open_tasks = [
             task
@@ -1706,8 +1713,8 @@ class SudoChinaComplianceReport(models.Model):
         if self.snapshot_json and self.snapshot_json.get("fact_basis"):
             return self.snapshot_json["fact_basis"]
         if not self.assessment_id:
-            return _fact_basis_summary({})
-        return _fact_basis_summary(self._snapshot_payload())
+            return _fact_basis_summary({}, self.env._)
+        return _fact_basis_summary(self._snapshot_payload(), self.env._)
 
     def _current_rule_governance_issues(self):
         self.ensure_one()
