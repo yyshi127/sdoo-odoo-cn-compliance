@@ -35,6 +35,14 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 ["business UAT decision must be recorded outside this automated status"],
             )
             self.assertEqual(
+                result["selected"]["production_owner_summary"][0]["owner"],
+                "business_reviewer",
+            )
+            self.assertEqual(
+                result["selected"]["production_blocker_action_matrix"][0]["blocker"],
+                "business UAT decision must be recorded outside this automated status",
+            )
+            self.assertEqual(
                 result["selected"]["bundle_sha256"],
                 _sha("bundle-m8"),
             )
@@ -94,6 +102,10 @@ class TestLatestSignoffCandidate(unittest.TestCase):
             self.assertIn("`production_signoff_actions_markdown`", content)
             self.assertIn("## Required Action Keys", content)
             self.assertIn("`business_uat_decision`", content)
+            self.assertIn("## Owner Summary", content)
+            self.assertIn("`business_reviewer`", content)
+            self.assertIn("## Blocker-To-Action Matrix", content)
+            self.assertIn("covered `True` by `business_uat_decision`", content)
             self.assertIn("## Production Sign-off Blockers", content)
             self.assertIn(
                 "business UAT decision must be recorded outside this automated status",

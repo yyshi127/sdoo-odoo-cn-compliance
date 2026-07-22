@@ -5571,6 +5571,8 @@ def validate_delivery_objective_coverage() -> None:
         "Packet Binding Checks",
         "owner_summary",
         "blocker_action_matrix",
+        "production_owner_summary",
+        "production_blocker_action_matrix",
         "## Owner Summary",
         "## Blocker-To-Action Matrix",
         "action checklist owner summary is missing",
@@ -5581,6 +5583,8 @@ def validate_delivery_objective_coverage() -> None:
     for required in (
         "test_rejects_action_checklist_without_owner_summary",
         "test_rejects_action_checklist_without_blocker_matrix_coverage",
+        "production_owner_summary",
+        "production_blocker_action_matrix",
         "omit_owner_summary",
         "matrix_covered",
     ):

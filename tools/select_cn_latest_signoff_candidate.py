@@ -447,6 +447,12 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
             str(action.get("key")) for action in required_actions if action.get("key")
         ],
         "production_signoff_blockers": production_blockers,
+        "production_owner_summary": [
+            item for item in owner_summary if isinstance(item, dict)
+        ],
+        "production_blocker_action_matrix": [
+            item for item in blocker_matrix if isinstance(item, dict)
+        ],
         "evidence_sha256": evidence_sha256,
         "paths": {
             field: getattr(paths, field).as_posix()
@@ -534,6 +540,30 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
                 *[
                     f"- `{key}`"
                     for key in selected.get("production_required_action_keys") or []
+                ],
+                "",
+                "## Owner Summary",
+                "",
+                *[
+                    "- `{owner}`: `{count}` action(s), keys `{keys}`".format(
+                        owner=item.get("owner") or "",
+                        count=item.get("action_count") or 0,
+                        keys=", ".join(item.get("action_keys") or []),
+                    )
+                    for item in selected.get("production_owner_summary") or []
+                    if isinstance(item, dict)
+                ],
+                "",
+                "## Blocker-To-Action Matrix",
+                "",
+                *[
+                    "- {blocker}: covered `{covered}` by `{keys}`".format(
+                        blocker=item.get("blocker") or "",
+                        covered=item.get("covered"),
+                        keys=", ".join(item.get("action_keys") or []),
+                    )
+                    for item in selected.get("production_blocker_action_matrix") or []
+                    if isinstance(item, dict)
                 ],
                 "",
                 "## Production Sign-off Blockers",
