@@ -441,6 +441,15 @@ class TestChinaComplianceWorkbench(TransactionCase):
         ):
             self.assertIn(required, arch)
 
+    def test_workbench_kanban_preserves_readable_dashboard_layout(self):
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_compliance_workbench_kanban"
+        )
+        arch = view.arch_db
+
+        self.assertIn("o_cn_compliance_workbench_kanban", arch)
+        self.assertIn("flex-shrink-0", arch)
+
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
 

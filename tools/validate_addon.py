@@ -3508,6 +3508,22 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China data readiness center view must be loaded")
     if "views/cross_border_views.xml" not in data_files:
         fail("China cross-border transaction view must be loaded")
+    backend_assets = set(manifest.get("assets", {}).get("web.assets_backend", []))
+    workbench_asset = "sudo_country_pack_cn/static/src/scss/workbench.scss"
+    if workbench_asset not in backend_assets:
+        fail("China workbench responsive stylesheet must be loaded")
+    workbench_stylesheet = (
+        ADDON_ROOT / "static" / "src" / "scss" / "workbench.scss"
+    )
+    if not workbench_stylesheet.is_file():
+        fail("China workbench responsive stylesheet is missing")
+    workbench_style_content = workbench_stylesheet.read_text(encoding="utf-8")
+    for required in (
+        ".o_cn_compliance_workbench_kanban",
+        "--KanbanRecord-width: 640px",
+    ):
+        if required not in workbench_style_content:
+            fail(f"China workbench responsive stylesheet is missing {required}")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -4065,6 +4081,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "规则依据",
         "限制与不确定性",
         "已验证",
+        "o_cn_compliance_workbench_kanban",
+        "flex-shrink-0",
         'decoration-success="cn_workbench_data_state == \'ready\'"',
         'decoration-danger="cn_workbench_data_state == \'blocked\'"',
         "可扫描 / 总数据集",

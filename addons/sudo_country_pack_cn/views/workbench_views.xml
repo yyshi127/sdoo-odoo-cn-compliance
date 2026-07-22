@@ -102,7 +102,8 @@
         <field name="name">sudo.compliance.profile.cn.workbench.kanban</field>
         <field name="model">sudo.compliance.profile</field>
         <field name="arch" type="xml">
-            <kanban string="中国合规工作台" class="o_kanban_dashboard"
+            <kanban string="中国合规工作台"
+                    class="o_kanban_dashboard o_cn_compliance_workbench_kanban"
                     create="0" quick_create="0" sample="0">
                 <field name="name"/>
                 <field name="company_id"/>
@@ -212,7 +213,7 @@
                                         <field name="cn_workbench_scope_label"/>
                                     </div>
                                 </div>
-                                <span t-attf-class="badge rounded-pill #{record.cn_workbench_status.raw_value == 'action_required' ? 'text-bg-danger' : record.cn_workbench_status.raw_value == 'healthy' ? 'text-bg-success' : 'text-bg-warning'}">
+                                <span t-attf-class="badge rounded-pill flex-shrink-0 #{record.cn_workbench_status.raw_value == 'action_required' ? 'text-bg-danger' : record.cn_workbench_status.raw_value == 'healthy' ? 'text-bg-success' : 'text-bg-warning'}">
                                     <field name="cn_workbench_status"/>
                                 </span>
                             </div>
