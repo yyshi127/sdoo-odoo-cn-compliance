@@ -637,7 +637,7 @@
                                                     <field name="cn_workbench_failed_rescan_count"/>
                                                     <span> 未通过 / </span>
                                                     <field name="cn_workbench_verified_remediation_count"/>
-                                                    <span> verified</span>
+                                                    <span> 已验证</span>
                                                 </div>
                                             </div>
                                             <field name="cn_workbench_rescan_state" widget="badge"

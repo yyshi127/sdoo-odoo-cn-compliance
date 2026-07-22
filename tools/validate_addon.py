@@ -3769,6 +3769,40 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if required not in model_content:
             fail(f"China workbench contract is missing {required}")
 
+    for required in (
+        '_("Closed loop blocked: %(stages)s."',
+        '_("Complete and activate the China profile")',
+        '"Risks: %(high)s high / %(total)s total; %(pending)s pending review. "',
+        '"Remediation: %(open)s open / %(overdue)s overdue. "',
+        '"Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
+        '"Explicit limitations: %(reasons)s."',
+    ):
+        if required not in model_content:
+            fail(f"China workbench concise localized summary is missing {required}")
+    for stale in (
+        'parts.append("Next:',
+        '"Report: %s; Evidence: %s; Filing: %s; AI: %s"',
+        '"Limitations: %s | Uncertainty: %s"',
+    ):
+        if stale in model_content:
+            fail(f"China workbench still contains the superseded dense summary {stale}")
+
+    translation_path = ADDON_ROOT / "i18n" / "zh_CN.po"
+    if not translation_path.is_file():
+        fail("China workbench Simplified Chinese translation catalog is missing")
+    translation_content = translation_path.read_text(encoding="utf-8")
+    for required in (
+        '"Language: zh_CN\\n"',
+        'msgid "Risks: %(high)s high / %(total)s total; %(pending)s pending review. Remediation: %(open)s open / %(overdue)s overdue. Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
+        'msgstr "风险：高风险 %(high)s 项 / 共 %(total)s 项，待复核 %(pending)s 项；整改：未完成 %(open)s 项 / 逾期 %(overdue)s 项；闭环：%(gaps)s 个缺口，数据 %(ready)s/%(datasets)s 可扫描。"',
+        'msgid "Review unresolved compliance risks"',
+        'msgstr "复核未解决合规风险"',
+        'msgid "Conclusion Boundary Summary"',
+        'msgstr "结论边界摘要"',
+    ):
+        if required not in translation_content:
+            fail(f"China workbench translation catalog is missing {required}")
+
     view_content = (
         ADDON_ROOT / "views" / "workbench_views.xml"
     ).read_text(encoding="utf-8")
@@ -3970,6 +4004,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "行动摘要",
         "规则依据",
         "限制与不确定性",
+        "已验证",
         'decoration-success="cn_workbench_data_state == \'ready\'"',
         'decoration-danger="cn_workbench_data_state == \'blocked\'"',
         "可扫描 / 总数据集",
@@ -3997,6 +4032,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in view_content:
             fail(f"China workbench UI is missing {required}")
+    if "> verified<" in view_content:
+        fail("China workbench must not display the untranslated verification label")
     if "group_by': 'cn_workbench_status'" in view_content:
         fail("China workbench must not group by a non-stored computed status")
 
@@ -5117,6 +5154,10 @@ def _coverage_path_exists(reference: str) -> bool:
 
 
 def validate_delivery_objective_coverage() -> None:
+    current_manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    current_version = current_manifest["version"]
     delivery_index_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_INDEX.md"
     if not delivery_index_path.is_file():
         fail("China delivery index must be documented")
@@ -5149,7 +5190,7 @@ def validate_delivery_objective_coverage() -> None:
     handoff_content = handoff_path.read_text(encoding="utf-8")
     for required in (
         "# China Fiscal Compliance Pack Release Handoff",
-        "Delivery version: `19.0.1.131.0`",
+        f"Delivery version: `{current_version}`",
         "dist/sdoo-cn-compliance-delivery-m*.tgz",
         "codex_cn_m31_runtime_mNNN",
         "business_uat_ready=true",

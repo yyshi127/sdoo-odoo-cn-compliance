@@ -73,27 +73,27 @@ def _closed_loop_values(profile):
         return (
             "not_started",
             1,
-            "Activate the China compliance profile before evaluating the closed loop.",
+            _("Activate the China compliance profile before evaluating the closed loop."),
         )
 
     stages = [
-        ("rule basis", profile.cn_workbench_rule_basis_state),
-        ("obligations", profile.cn_workbench_obligation_state),
-        ("data", profile.cn_workbench_data_state),
-        ("scan", profile.cn_workbench_scan_state),
-        ("risk review", profile.cn_workbench_risk_state),
-        ("remediation", profile.cn_workbench_remediation_state),
-        ("verification rescan", profile.cn_workbench_rescan_state),
-        ("report", profile.cn_workbench_report_state),
-        ("evidence", profile.cn_workbench_evidence_state),
+        (_("rule basis"), profile.cn_workbench_rule_basis_state),
+        (_("obligations"), profile.cn_workbench_obligation_state),
+        (_("data"), profile.cn_workbench_data_state),
+        (_("scan"), profile.cn_workbench_scan_state),
+        (_("risk review"), profile.cn_workbench_risk_state),
+        (_("remediation"), profile.cn_workbench_remediation_state),
+        (_("verification rescan"), profile.cn_workbench_rescan_state),
+        (_("report"), profile.cn_workbench_report_state),
+        (_("evidence"), profile.cn_workbench_evidence_state),
     ]
     if (
         profile.cn_workbench_filing_obligation_count
         or profile.cn_workbench_filing_archive_count
     ):
-        stages.append(("filing archive", profile.cn_workbench_filing_archive_state))
+        stages.append((_("filing archive"), profile.cn_workbench_filing_archive_state))
     if profile.cn_workbench_ai_guidance_finding_count:
-        stages.append(("AI guidance", profile.cn_workbench_ai_guidance_state))
+        stages.append((_("AI guidance"), profile.cn_workbench_ai_guidance_state))
 
     blocked = [label for label, state in stages if state == "blocked"]
     gaps = [
@@ -105,18 +105,20 @@ def _closed_loop_values(profile):
         return (
             "blocked",
             len(gaps),
-            "Closed loop blocked: %s." % ", ".join(gaps[:6]),
+            _("Closed loop blocked: %(stages)s.", stages=", ".join(gaps[:6])),
         )
     if gaps:
         return (
             "attention",
             len(gaps),
-            "Closed loop gaps: %s." % ", ".join(gaps[:6]),
+            _("Closed loop gaps: %(stages)s.", stages=", ".join(gaps[:6])),
         )
     return (
         "ready",
         0,
-        "Closed loop is ready: data, scan, risk review, remediation, evidence and report controls are aligned.",
+        _(
+            "Closed loop is ready: data, scan, risk review, remediation, evidence and report controls are aligned."
+        ),
     )
 
 
@@ -126,91 +128,123 @@ def _conclusion_boundary_values(profile):
     if profile.status != "active":
         return (
             "blocked",
-            "Not usable as a compliance conclusion until the China profile is active.",
-            "Complete and activate the China compliance profile first.",
+            _("Not usable as a compliance conclusion until the China profile is active."),
+            _("Complete and activate the China compliance profile first."),
         )
     if profile.cn_workbench_data_state in ("blocked", "not_started"):
         return (
             "blocked",
-            "Not usable as a compliance conclusion because controlled accounting/tax data is not ready.",
+            _(
+                "Not usable as a compliance conclusion because controlled accounting/tax data is not ready."
+            ),
             profile.cn_workbench_data_next_action,
         )
     if profile.cn_workbench_rule_basis_state == "blocked":
         return (
             "blocked",
-            "Not usable as a compliance conclusion because China rule sources or rule governance require attention.",
+            _(
+                "Not usable as a compliance conclusion because China rule sources or rule governance require attention."
+            ),
             profile.cn_workbench_rule_basis_next_action,
         )
     if profile.cn_workbench_rule_basis_state == "attention":
         return (
             "attention",
-            "Conclusion is limited until China rule source freshness and professional sign-off gaps are reviewed.",
+            _(
+                "Conclusion is limited until China rule source freshness and professional sign-off gaps are reviewed."
+            ),
             profile.cn_workbench_rule_basis_next_action,
         )
     if profile.cn_workbench_limitation_count:
         return (
             "blocked",
-            "Only a limited conclusion is possible because scope, evidence or report limitations exist.",
-            "Resolve or explicitly document all limitations before final sign-off.",
+            _(
+                "Only a limited conclusion is possible because scope, evidence or report limitations exist."
+            ),
+            _("Resolve or explicitly document all limitations before final sign-off."),
         )
     if profile.cn_workbench_obligation_state != "ready":
         return (
             "attention",
-            "Conclusion is incomplete until China tax obligation applicability has been reviewed.",
+            _(
+                "Conclusion is incomplete until China tax obligation applicability has been reviewed."
+            ),
             profile.cn_workbench_obligation_next_action,
         )
     if profile.cn_workbench_scan_state != "ready":
         return (
             "attention",
-            "Conclusion is not current because no completed rule scan is available for this profile.",
-            "Run and complete a rule scan for the target period.",
+            _(
+                "Conclusion is not current because no completed rule scan is available for this profile."
+            ),
+            _("Run and complete a rule scan for the target period."),
         )
     if profile.cn_workbench_risk_state in ("blocked", "attention"):
         return (
             "attention",
-            "Conclusion requires review because unresolved or high-risk findings remain.",
-            "Review risks, quantify tax impact, and create remediation tasks where needed.",
+            _(
+                "Conclusion requires review because unresolved or high-risk findings remain."
+            ),
+            _(
+                "Review risks, quantify tax impact, and create remediation tasks where needed."
+            ),
         )
     if profile.cn_workbench_remediation_state in ("blocked", "attention"):
         return (
             "attention",
-            "Conclusion requires remediation follow-through before it can support management sign-off.",
-            "Complete open remediation tasks and verify them with evidence.",
+            _(
+                "Conclusion requires remediation follow-through before it can support management sign-off."
+            ),
+            _("Complete open remediation tasks and verify them with evidence."),
         )
     if profile.cn_workbench_rescan_state in ("blocked", "attention"):
         return (
             "attention",
-            "Conclusion is waiting for remediation verification rescans.",
+            _("Conclusion is waiting for remediation verification rescans."),
             profile.cn_workbench_rescan_next_action,
         )
     if profile.cn_workbench_report_state != "ready":
         return (
             "attention",
-            "Conclusion is not yet packaged as an issued formal compliance report.",
-            "Generate and issue the formal China compliance report after review gates pass.",
+            _("Conclusion is not yet packaged as an issued formal compliance report."),
+            _(
+                "Generate and issue the formal China compliance report after review gates pass."
+            ),
         )
     if profile.cn_workbench_evidence_state != "ready":
         return (
             "attention",
-            "Conclusion is not fully supportable until evidence is attached and verified.",
-            "Verify supporting evidence for the report, risks, remediation and filing archives.",
+            _(
+                "Conclusion is not fully supportable until evidence is attached and verified."
+            ),
+            _(
+                "Verify supporting evidence for the report, risks, remediation and filing archives."
+            ),
         )
     if profile.cn_workbench_ai_guidance_limited_count:
         return (
             "attention",
-            "AI guidance is available only as controlled assistance and still has limited inputs to disclose.",
-            "Review AI guidance disclosures before using them in remediation instructions.",
+            _(
+                "AI guidance is available only as controlled assistance and still has limited inputs to disclose."
+            ),
+            _(
+                "Review AI guidance disclosures before using them in remediation instructions."
+            ),
         )
     if profile.cn_workbench_closed_loop_state != "ready":
         return (
             "attention",
-            "Conclusion is close but the closed-loop control summary still has open gaps.",
+            _(
+                "Conclusion is close but the closed-loop control summary still has open gaps."
+            ),
             profile.cn_workbench_closed_loop_summary,
         )
     return (
         "ready",
-        "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned.",
-        "Keep rules, source references and period data current before the next scan.",
+        _(
+            "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned."
+        ),
+        _("Keep rules, source references and period data current before the next scan."),
     )
 
 
@@ -218,30 +252,30 @@ def _next_best_action_values(profile):
     if profile.country_id.code != "CN":
         return (False, False)
     if profile.status != "active":
-        return ("profile", "Complete and activate the China profile")
+        return ("profile", _("Complete and activate the China profile"))
     if profile.cn_workbench_rule_basis_state == "blocked":
-        return ("rule_basis", "Review China rule source and sign-off basis")
+        return ("rule_basis", _("Review China rule source and sign-off basis"))
     if profile.cn_workbench_data_state in ("blocked", "not_started"):
-        return ("data_readiness", "Prepare controlled accounting and tax data")
+        return ("data_readiness", _("Prepare controlled accounting and tax data"))
     if profile.cn_workbench_obligation_state != "ready":
-        return ("obligations", "Review China tax obligations")
+        return ("obligations", _("Review China tax obligations"))
     if profile.cn_workbench_scan_state != "ready":
-        return ("scan", "Run or review the rule scan")
+        return ("scan", _("Run or review the rule scan"))
     if profile.cn_workbench_risk_state in ("blocked", "attention"):
-        return ("risks", "Review unresolved compliance risks")
+        return ("risks", _("Review unresolved compliance risks"))
     if profile.cn_workbench_remediation_state in ("blocked", "attention"):
-        return ("remediation", "Work remediation tasks")
+        return ("remediation", _("Work remediation tasks"))
     if profile.cn_workbench_rescan_state in ("blocked", "attention"):
-        return ("remediation", "Verify remediation with rescans")
+        return ("remediation", _("Verify remediation with rescans"))
     if profile.cn_workbench_report_state != "ready":
-        return ("report_readiness", "Prepare the formal compliance report")
+        return ("report_readiness", _("Prepare the formal compliance report"))
     if profile.cn_workbench_evidence_state != "ready":
-        return ("evidence", "Verify supporting evidence")
+        return ("evidence", _("Verify supporting evidence"))
     if profile.cn_workbench_filing_archive_state in ("blocked", "attention"):
-        return ("filing", "Seal filing and payment archives")
+        return ("filing", _("Seal filing and payment archives"))
     if profile.cn_workbench_ai_guidance_state in ("blocked", "attention"):
-        return ("ai_guidance", "Review controlled AI guidance")
-    return ("report_readiness", "Review the ready compliance report package")
+        return ("ai_guidance", _("Review controlled AI guidance"))
+    return ("report_readiness", _("Review the ready compliance report package"))
 
 
 class SudoChinaComplianceWorkbenchProfile(models.Model):
@@ -675,63 +709,19 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
     def _cn_workbench_action_summary(self):
         self.ensure_one()
-        parts = []
-        next_action = (
-            self.cn_workbench_next_best_action_label or self.cn_workbench_next_action
+        return _(
+            "Risks: %(high)s high / %(total)s total; %(pending)s pending review. "
+            "Remediation: %(open)s open / %(overdue)s overdue. "
+            "Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready.",
+            high=self.cn_workbench_high_risk_count or 0,
+            total=self.cn_workbench_finding_count or 0,
+            pending=self.cn_workbench_pending_review_count or 0,
+            open=self.cn_workbench_open_task_count or 0,
+            overdue=self.cn_workbench_overdue_task_count or 0,
+            gaps=self.cn_workbench_closed_loop_gap_count or 0,
+            ready=self.cn_workbench_ready_dataset_count or 0,
+            datasets=self.cn_workbench_dataset_count or 0,
         )
-        if next_action:
-            parts.append("Next: %s" % next_action)
-        if self.cn_workbench_conclusion_boundary_summary:
-            parts.append(
-                "Conclusion: %s" % self.cn_workbench_conclusion_boundary_summary
-            )
-        if self.cn_workbench_closed_loop_summary:
-            parts.append(
-                "Closed loop: %s (%s gaps) - %s"
-                % (
-                    self.cn_workbench_closed_loop_state or "unknown",
-                    self.cn_workbench_closed_loop_gap_count or 0,
-                    self.cn_workbench_closed_loop_summary,
-                )
-            )
-        parts.extend(
-            [
-                "Risks: %s high / %s total; %s pending review"
-                % (
-                    self.cn_workbench_high_risk_count or 0,
-                    self.cn_workbench_finding_count or 0,
-                    self.cn_workbench_pending_review_count or 0,
-                ),
-                "Tasks: %s open / %s overdue"
-                % (
-                    self.cn_workbench_open_task_count or 0,
-                    self.cn_workbench_overdue_task_count or 0,
-                ),
-                "Data: %s/%s controlled datasets ready"
-                % (
-                    self.cn_workbench_ready_dataset_count or 0,
-                    self.cn_workbench_dataset_count or 0,
-                ),
-                "Report: %s; Evidence: %s; Filing: %s; AI: %s"
-                % (
-                    self.cn_workbench_report_state or "unknown",
-                    self.cn_workbench_evidence_state or "unknown",
-                    self.cn_workbench_filing_archive_state or "unknown",
-                    self.cn_workbench_ai_guidance_state or "unknown",
-                ),
-                "Rule basis: %s - %s"
-                % (
-                    self.cn_workbench_rule_basis_state or "unknown",
-                    self.cn_workbench_rule_basis_summary or "no summary",
-                ),
-                "Limitations: %s | Uncertainty: %s"
-                % (
-                    self.cn_workbench_limitation_summary or "none recorded",
-                    self.cn_workbench_uncertainty_summary or "none recorded",
-                ),
-            ]
-        )
-        return " | ".join(parts)
 
     def _compute_cn_workbench(self):
         today = fields.Date.context_today(self)
@@ -1155,47 +1145,44 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             )
             if not rule_versions:
                 profile.cn_workbench_rule_basis_state = "not_started"
-                profile.cn_workbench_rule_basis_summary = (
+                profile.cn_workbench_rule_basis_summary = _(
                     "No China rule versions are installed or governed yet."
                 )
-                profile.cn_workbench_rule_basis_next_action = (
+                profile.cn_workbench_rule_basis_next_action = _(
                     "Install or seed China rule versions before relying on rule scans."
                 )
             elif source_monitor_issue_count or source_review_overdue_count:
                 profile.cn_workbench_rule_basis_state = "blocked"
-                profile.cn_workbench_rule_basis_summary = (
-                    "%s China rule versions, %s active; %s official sources overdue; %s source monitor issues."
-                    % (
-                        len(rule_versions),
-                        len(active_rule_versions),
-                        source_review_overdue_count,
-                        source_monitor_issue_count,
-                    )
+                profile.cn_workbench_rule_basis_summary = _(
+                    "%(versions)s China rule versions, %(active)s active; %(overdue)s official sources overdue; %(issues)s source monitor issues.",
+                    versions=len(rule_versions),
+                    active=len(active_rule_versions),
+                    overdue=source_review_overdue_count,
+                    issues=source_monitor_issue_count,
                 )
-                profile.cn_workbench_rule_basis_next_action = (
+                profile.cn_workbench_rule_basis_next_action = _(
                     "Review overdue or changed official sources, update affected rule versions, and rerun scans."
                 )
             elif governance_issue_versions or pending_professional_versions:
                 profile.cn_workbench_rule_basis_state = "attention"
-                profile.cn_workbench_rule_basis_summary = (
-                    "%s China rule versions, %s active; %s governance gaps; %s pending professional sign-off."
-                    % (
-                        len(rule_versions),
-                        len(active_rule_versions),
-                        len(governance_issue_versions),
-                        len(pending_professional_versions),
-                    )
+                profile.cn_workbench_rule_basis_summary = _(
+                    "%(versions)s China rule versions, %(active)s active; %(gaps)s governance gaps; %(pending)s pending professional sign-off.",
+                    versions=len(rule_versions),
+                    active=len(active_rule_versions),
+                    gaps=len(governance_issue_versions),
+                    pending=len(pending_professional_versions),
                 )
-                profile.cn_workbench_rule_basis_next_action = (
+                profile.cn_workbench_rule_basis_next_action = _(
                     "Complete source governance, review packets, tests and China tax professional sign-off for rule gaps."
                 )
             else:
                 profile.cn_workbench_rule_basis_state = "ready"
-                profile.cn_workbench_rule_basis_summary = (
-                    "%s China rule versions, %s active; sources and professional sign-off gates are current."
-                    % (len(rule_versions), len(active_rule_versions))
+                profile.cn_workbench_rule_basis_summary = _(
+                    "%(versions)s China rule versions, %(active)s active; sources and professional sign-off gates are current.",
+                    versions=len(rule_versions),
+                    active=len(active_rule_versions),
                 )
-                profile.cn_workbench_rule_basis_next_action = (
+                profile.cn_workbench_rule_basis_next_action = _(
                     "Keep official source monitoring current and rescan when rules or data change."
                 )
             cross_border_state = _cross_border_state(
@@ -1400,23 +1387,29 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             uncertainty_reasons = []
             limitation_actions = []
             if profile.status != "active":
-                uncertainty_reasons.append("profile is not active")
-                limitation_actions.append("Activate the China compliance profile.")
+                uncertainty_reasons.append(_("profile is not active"))
+                limitation_actions.append(_("Activate the China compliance profile."))
             if profile.cn_workbench_rule_basis_state == "blocked":
-                limitation_reasons.append("rule basis is blocked")
-                uncertainty_reasons.append("official source freshness or monitor issue")
+                limitation_reasons.append(_("rule basis is blocked"))
+                uncertainty_reasons.append(_("official source freshness or monitor issue"))
                 limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
             elif profile.cn_workbench_rule_basis_state == "attention":
-                uncertainty_reasons.append("rule governance or professional sign-off gap")
+                uncertainty_reasons.append(
+                    _("rule governance or professional sign-off gap")
+                )
                 limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
             if profile.cn_workbench_data_state in ("blocked", "not_started"):
-                limitation_reasons.append("controlled accounting/tax data is not ready")
+                limitation_reasons.append(
+                    _("controlled accounting/tax data is not ready")
+                )
                 limitation_actions.append(profile.cn_workbench_data_next_action)
             elif profile.cn_workbench_data_state == "attention":
-                uncertainty_reasons.append("some controlled datasets need review")
+                uncertainty_reasons.append(_("some controlled datasets need review"))
                 limitation_actions.append(profile.cn_workbench_data_next_action)
             if profile.cn_workbench_obligation_state != "ready":
-                uncertainty_reasons.append("tax obligation applicability not fully reviewed")
+                uncertainty_reasons.append(
+                    _("tax obligation applicability not fully reviewed")
+                )
                 limitation_actions.append(profile.cn_workbench_obligation_next_action)
             if latest_assessment and "cn_jurisdiction_coverage_state" in latest_assessment._fields:
                 if latest_assessment.cn_jurisdiction_coverage_state in (
@@ -1425,41 +1418,60 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                     "limited",
                 ):
                     limitation_reasons.append(
-                        "local jurisdiction coverage is %s"
-                        % latest_assessment.cn_jurisdiction_coverage_state
+                        _(
+                            "local jurisdiction coverage is %(state)s",
+                            state=latest_assessment.cn_jurisdiction_coverage_state,
+                        )
                     )
             if latest_report and latest_report.conclusion_state in (
                 "limited",
                 "limited_action_required",
             ):
                 limitation_reasons.append(
-                    "latest report conclusion is %s" % latest_report.conclusion_state
+                    _(
+                        "latest report conclusion is %(state)s",
+                        state=latest_report.conclusion_state,
+                    )
                 )
             if profile.cn_workbench_cross_border_state in ("blocked", "attention"):
-                uncertainty_reasons.append("cross-border or withholding facts need review")
+                uncertainty_reasons.append(
+                    _("cross-border or withholding facts need review")
+                )
                 limitation_actions.append(profile.cn_workbench_cross_border_next_action)
             if profile.cn_workbench_ai_guidance_limited_count:
-                uncertainty_reasons.append("controlled AI guidance has limited inputs")
+                uncertainty_reasons.append(
+                    _("controlled AI guidance has limited inputs")
+                )
                 limitation_actions.append(profile.cn_workbench_ai_guidance_next_action)
             if profile.cn_workbench_evidence_state in ("blocked", "attention"):
-                limitation_reasons.append("supporting evidence is not fully verified")
+                limitation_reasons.append(
+                    _("supporting evidence is not fully verified")
+                )
                 limitation_actions.append(
-                    "Verify supporting evidence before management sign-off."
+                    _("Verify supporting evidence before management sign-off.")
                 )
             if profile.cn_workbench_report_state in ("blocked", "attention"):
-                uncertainty_reasons.append("formal report package is not final")
+                uncertainty_reasons.append(_("formal report package is not final"))
                 limitation_actions.append(
-                    "Prepare the formal report with explicit limitations and uncertainty disclosure."
+                    _(
+                        "Prepare the formal report with explicit limitations and uncertainty disclosure."
+                    )
                 )
             profile.cn_workbench_limitation_summary = (
-                "Explicit limitations: %s." % "; ".join(limitation_reasons[:6])
+                _(
+                    "Explicit limitations: %(reasons)s.",
+                    reasons="; ".join(limitation_reasons[:6]),
+                )
                 if limitation_reasons
-                else "No explicit conclusion limitation is currently recorded."
+                else _("No explicit conclusion limitation is currently recorded.")
             )
             profile.cn_workbench_uncertainty_summary = (
-                "Uncertainty drivers: %s." % "; ".join(uncertainty_reasons[:6])
+                _(
+                    "Uncertainty drivers: %(reasons)s.",
+                    reasons="; ".join(uncertainty_reasons[:6]),
+                )
                 if uncertainty_reasons
-                else "No open uncertainty driver is currently recorded."
+                else _("No open uncertainty driver is currently recorded.")
             )
             unique_actions = []
             for action in limitation_actions:
@@ -1468,7 +1480,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             profile.cn_workbench_limitation_next_action = (
                 " ".join(unique_actions[:3])
                 if unique_actions
-                else "Keep limitations and uncertainty disclosures current before each report sign-off."
+                else _(
+                    "Keep limitations and uncertainty disclosures current before each report sign-off."
+                )
             )
 
             if profile.country_id.code != "CN":

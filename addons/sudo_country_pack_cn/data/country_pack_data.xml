@@ -5,7 +5,7 @@
         <field name="code">CN</field>
         <field name="country_id" ref="base.cn"/>
         <field name="module_name">sudo_country_pack_cn</field>
-        <field name="version">19.0.1.133.0</field>
+        <field name="version">19.0.1.134.0</field>
         <field name="capability_json" eval="{
             'schema_version': 1,
             'setup_defaults': {

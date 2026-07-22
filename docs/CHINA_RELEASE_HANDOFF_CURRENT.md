@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.131.0`
+Delivery version: `19.0.1.134.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -87,6 +87,10 @@ status shows all of the following:
 - `Official source governance summary ready: True`
 - formal reports revalidate current official-source links, source hashes,
   source validity and professional sign-off against the assessment snapshot;
+- Odoo 19 card views use the supported `card` template and load without legacy
+  kanban-template errors;
+- the Chinese workbench uses concise risk, remediation and closed-loop summaries,
+  with translated conclusion, rule-basis and next-action guidance;
 - `Business UAT ready: True`
 
 The sign-off packet should expose automated evidence for delivery integrity,
