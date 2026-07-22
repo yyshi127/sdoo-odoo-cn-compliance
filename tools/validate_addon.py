@@ -5577,6 +5577,8 @@ def validate_delivery_objective_coverage() -> None:
         "## Blocker-To-Action Matrix",
         "action checklist owner summary is missing",
         "action checklist blocker-action matrix does not cover blockers",
+        "reviewer action checklist owner summary does not match JSON",
+        "reviewer action checklist blocker-action matrix does not match JSON",
     ):
         if required not in latest_selector_content:
             fail(f"China latest sign-off selector is missing {required}")
@@ -5587,6 +5589,8 @@ def validate_delivery_objective_coverage() -> None:
         "production_blocker_action_matrix",
         "omit_owner_summary",
         "matrix_covered",
+        "test_rejects_reviewer_action_checklist_without_owner_summary_values",
+        "test_rejects_reviewer_action_checklist_without_blocker_matrix_values",
     ):
         if required not in latest_selector_test_content:
             fail(f"China latest sign-off selector tests are missing {required}")

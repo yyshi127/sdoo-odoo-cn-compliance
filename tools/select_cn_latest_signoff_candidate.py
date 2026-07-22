@@ -30,6 +30,15 @@ ACTION_MARKDOWN_VALUE_FIELDS = (
     ("acceptable_decisions", "- Acceptable decisions: `%s`"),
     ("required_evidence", "- Required evidence: %s"),
 )
+OWNER_SUMMARY_MARKDOWN_VALUE_FIELDS = (
+    ("action_count", "- Action count: `%s`"),
+    ("action_keys", "- Action keys: `%s`"),
+    ("addresses_blockers", "- Addresses blockers: `%s`"),
+)
+BLOCKER_MATRIX_MARKDOWN_VALUE_FIELDS = (
+    ("covered", "- Covered: `%s`"),
+    ("action_keys", "- Action keys: `%s`"),
+)
 
 
 @dataclass(frozen=True)
@@ -126,6 +135,27 @@ def _markdown_action_section(markdown: str, key: str) -> str:
     if next_start < 0:
         return markdown[start:]
     return markdown[start:next_start]
+
+
+def _markdown_named_subsection(
+    markdown: str, section_title: str, subsection_title: str
+) -> str:
+    section_marker = f"## {section_title}"
+    section_start = markdown.find(section_marker)
+    if section_start < 0:
+        return ""
+    section_end = markdown.find("\n## ", section_start + len(section_marker))
+    section = markdown[section_start:] if section_end < 0 else markdown[section_start:section_end]
+    subsection_marker = f"### {subsection_title}"
+    subsection_start = section.find(subsection_marker)
+    if subsection_start < 0:
+        return ""
+    subsection_end = section.find(
+        "\n### ", subsection_start + len(subsection_marker)
+    )
+    if subsection_end < 0:
+        return section[subsection_start:]
+    return section[subsection_start:subsection_end]
 
 
 def _manifest_summary(payload: dict[str, Any]) -> dict[str, Any]:
@@ -316,6 +346,60 @@ def _validate_candidate(paths: CandidatePaths) -> dict[str, Any]:
     for marker in ("## Owner Summary", "## Blocker-To-Action Matrix"):
         if marker not in actions_markdown:
             errors.append(f"reviewer action checklist markdown missing {marker}")
+    markdown_mismatched_owner_summaries = []
+    for item in owner_summary:
+        if not isinstance(item, dict) or not item.get("owner"):
+            continue
+        owner = str(item["owner"])
+        section = _markdown_named_subsection(actions_markdown, "Owner Summary", owner)
+        mismatched_values = []
+        if not section:
+            mismatched_values.append("section")
+        else:
+            for field, template in OWNER_SUMMARY_MARKDOWN_VALUE_FIELDS:
+                value = item.get(field)
+                if isinstance(value, list):
+                    value = ", ".join(str(entry) for entry in value)
+                expected_line = template % (value if value is not None else "")
+                if expected_line not in section:
+                    mismatched_values.append(field)
+        if mismatched_values:
+            markdown_mismatched_owner_summaries.append(
+                "%s mismatch %s" % (owner, ", ".join(mismatched_values))
+            )
+    if markdown_mismatched_owner_summaries:
+        errors.append(
+            "reviewer action checklist owner summary does not match JSON: "
+            + "; ".join(markdown_mismatched_owner_summaries)
+        )
+    markdown_mismatched_blocker_matrix = []
+    for item in blocker_matrix:
+        if not isinstance(item, dict) or not item.get("blocker"):
+            continue
+        blocker = str(item["blocker"])
+        section = _markdown_named_subsection(
+            actions_markdown, "Blocker-To-Action Matrix", blocker
+        )
+        mismatched_values = []
+        if not section:
+            mismatched_values.append("section")
+        else:
+            for field, template in BLOCKER_MATRIX_MARKDOWN_VALUE_FIELDS:
+                value = item.get(field)
+                if isinstance(value, list):
+                    value = ", ".join(str(entry) for entry in value)
+                expected_line = template % (value if value is not None else "")
+                if expected_line not in section:
+                    mismatched_values.append(field)
+        if mismatched_values:
+            markdown_mismatched_blocker_matrix.append(
+                "%s mismatch %s" % (blocker, ", ".join(mismatched_values))
+            )
+    if markdown_mismatched_blocker_matrix:
+        errors.append(
+            "reviewer action checklist blocker-action matrix does not match JSON: "
+            + "; ".join(markdown_mismatched_blocker_matrix)
+        )
     markdown_missing_keys = [
         str(action.get("key"))
         for action in actions.get("actions") or []

@@ -447,6 +447,85 @@ class TestLatestSignoffCandidate(unittest.TestCase):
                 result["checked_candidates"][0]["errors"],
             )
 
+    def test_rejects_reviewer_action_checklist_without_owner_summary_values(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                25,
+                commit="abc",
+                aggregate="hash25",
+                action_markdown=(
+                    _DEFAULT_ACTION_MARKDOWN.replace(
+                        "- Action keys: `business_uat_decision`\n"
+                        "- Addresses blockers:",
+                        "- Action keys: `wrong_action`\n"
+                        "- Addresses blockers:",
+                        1,
+                    )
+                ),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist owner summary does not match JSON: "
+                "business_reviewer mismatch action_keys",
+                result["checked_candidates"][0]["errors"],
+            )
+
+    def test_rejects_reviewer_action_checklist_without_blocker_matrix_values(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dist = Path(temp)
+            _candidate(
+                dist,
+                26,
+                commit="abc",
+                aggregate="hash26",
+                action_markdown=(
+                    _DEFAULT_ACTION_MARKDOWN.replace(
+                        "- Covered: `True`\n",
+                        "- Covered: `False`\n",
+                        1,
+                    )
+                ),
+            )
+
+            result = selector.select_latest(dist)
+
+            self.assertIsNone(result["selected"])
+            self.assertIn(
+                "reviewer action checklist blocker-action matrix does not match JSON: "
+                "business UAT decision must be recorded outside this automated status "
+                "mismatch covered",
+                result["checked_candidates"][0]["errors"],
+            )
+
+
+_DEFAULT_ACTION_MARKDOWN = (
+    "# checklist\n\n"
+    "## Owner Summary\n\n"
+    "### business_reviewer\n\n"
+    "- Action count: `1`\n"
+    "- Action keys: `business_uat_decision`\n"
+    "- Addresses blockers: `business UAT decision must be recorded outside this automated status`\n\n"
+    "## Blocker-To-Action Matrix\n\n"
+    "### business UAT decision must be recorded outside this automated status\n\n"
+    "- Covered: `True`\n"
+    "- Action keys: `business_uat_decision`\n\n"
+    "## Required Actions\n\n"
+    "### business_uat_decision\n\n"
+    "- Owner: `business_reviewer`\n"
+    "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
+    "- Required evidence: Completed checklist.\n"
+    "- Reviewer:\n"
+    "- Decision:\n"
+    "- Date:\n"
+    "- Evidence reference:\n"
+    "- Notes:\n"
+)
+
 
 def _candidate(
     dist: Path,
@@ -469,28 +548,7 @@ def _candidate(
     packet_manifest_aggregate_sha256: str | None = None,
     actions_bundle_sha256: str | None = None,
     actions_manifest_aggregate_sha256: str | None = None,
-    action_markdown: str = (
-        "# checklist\n\n"
-        "## Owner Summary\n\n"
-        "### business_reviewer\n\n"
-        "- Action count: `1`\n"
-        "- Action keys: `business_uat_decision`\n"
-        "- Addresses blockers: `business UAT decision must be recorded outside this automated status`\n\n"
-        "## Blocker-To-Action Matrix\n\n"
-        "### business UAT decision must be recorded outside this automated status\n\n"
-        "- Covered: `True`\n"
-        "- Action keys: `business_uat_decision`\n\n"
-        "## Required Actions\n\n"
-        "### business_uat_decision\n\n"
-        "- Owner: `business_reviewer`\n"
-        "- Acceptable decisions: `accepted, accepted_with_limitations`\n"
-        "- Required evidence: Completed checklist.\n"
-        "- Reviewer:\n"
-        "- Decision:\n"
-        "- Date:\n"
-        "- Evidence reference:\n"
-        "- Notes:\n"
-    ),
+    action_markdown: str = _DEFAULT_ACTION_MARKDOWN,
 ) -> None:
     paths = selector._candidate_paths(dist, number)
     tag = f"m{number}"
