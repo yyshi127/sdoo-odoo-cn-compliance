@@ -3819,6 +3819,17 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             "China translation catalog entries must declare an Odoo code "
             "occurrence so the runtime importer does not silently skip them"
         )
+    translation_entries_without_python_marker = [
+        block
+        for block in translation_blocks
+        if re.search(r'^msgid "(?!")', block, flags=re.MULTILINE)
+        and "#. odoo-python" not in block
+    ]
+    if translation_entries_without_python_marker:
+        fail(
+            "China Python translation entries must declare '#. odoo-python' "
+            "so Odoo includes them in the runtime translation dictionary"
+        )
     for required in (
         '"Language: zh_CN\\n"',
         'msgid "Risks: %(high)s high / %(total)s total; %(pending)s pending review. Remediation: %(open)s open / %(overdue)s overdue. Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',

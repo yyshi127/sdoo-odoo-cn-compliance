@@ -1,6 +1,6 @@
 {
   "schema": "sdoo.cn.signoff-evidence.v1",
-  "version": "19.0.1.138.0",
+  "version": "19.0.1.139.0",
   "source_commit": "replace-with-signoff-packet-source-commit",
   "bundle_sha256": "replace-with-signoff-packet-bundle-sha256",
   "manifest_aggregate_sha256": "replace-with-signoff-packet-manifest-aggregate-sha256",

@@ -3,7 +3,11 @@ from pathlib import Path
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
-from odoo.tools.translate import PoFileReader
+from odoo.tools.translate import (
+    PYTHON_TRANSLATION_COMMENT,
+    CodeTranslations,
+    PoFileReader,
+)
 
 
 @tagged("post_install", "-at_install")
@@ -68,7 +72,13 @@ class TestChinaComplianceWorkbench(TransactionCase):
             Path(__file__).resolve().parents[1] / "i18n" / "zh_CN.po"
         )
         rows = list(PoFileReader(str(translation_path)))
-        translations = {row["src"]: row["value"] for row in rows}
+        with translation_path.open("rb") as catalog:
+            translations = CodeTranslations._read_code_translations_file(
+                catalog,
+                lambda row: row.get("value")
+                and PYTHON_TRANSLATION_COMMENT in row.get("comments", ""),
+            )
+        self.assertEqual(len(translations), len(rows))
         self.assertEqual(
             translations["Review unresolved compliance risks"],
             "复核未解决合规风险",
