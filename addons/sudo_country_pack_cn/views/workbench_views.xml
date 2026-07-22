@@ -296,7 +296,7 @@
                                             <field name="cn_workbench_next_best_action_label"/>
                                         </div>
                                     </div>
-                                    <i class="fa fa-arrow-right"/>
+                                    <i class="fa fa-arrow-right" title="打开下一步动作"/>
                                 </div>
                             </button>
 

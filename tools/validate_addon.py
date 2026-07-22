@@ -3775,6 +3775,11 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     workbench_view_root = ElementTree.parse(
         ADDON_ROOT / "views" / "workbench_views.xml"
     ).getroot()
+    for icon in workbench_view_root.findall(".//i"):
+        if "fa-arrow-right" in icon.attrib.get("class", "") and not icon.attrib.get(
+            "title"
+        ):
+            fail("China workbench action icons must provide an accessible title")
 
     def workbench_view_field_names(record_id: str) -> set[str]:
         arch = workbench_view_root.find(
