@@ -4557,6 +4557,27 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         if required not in risk_model_content:
             fail(f"China risk action guidance model is missing {required}")
     for required in (
+        "translate=self.env._",
+        "finding.env._",
+        "task.env._",
+        '_("Next: %(action)s"',
+        '"Evidence: %(verified)s/%(total)s verified"',
+        '"Blocked before sign-off: %(items)s."',
+        '"Next before sign-off: %(items)s."',
+    ):
+        if required not in risk_model_content:
+            fail(f"China risk/remediation localization contract is missing {required}")
+    for required in (
+        'msgid "Risk Action Summary"',
+        'msgstr "风险行动摘要"',
+        'msgid "Blocked before sign-off: %(items)s."',
+        'msgstr "签核前受阻：%(items)s。"',
+        'msgid "Remediation Action Summary"',
+        'msgstr "整改行动摘要"',
+    ):
+        if required not in translation_content:
+            fail(f"China risk/remediation translation catalog is missing {required}")
+    for required in (
         "cn_cross_border_fact_state",
         "cn_cross_border_pending_count",
         "cn_cross_border_reviewed_count",
@@ -4830,6 +4851,14 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in filing_model_content:
             fail(f"China filing center model is missing {required}")
+    if "filing.env._" not in filing_model_content:
+        fail("China filing center period label must use the active Odoo language")
+    for required in (
+        'msgid "Filing Blockers"',
+        'msgstr "申报缴款阻断"',
+    ):
+        if required not in translation_content:
+            fail(f"China filing center translation catalog is missing {required}")
 
     filing_view_content = (
         ADDON_ROOT / "views" / "filing_center_views.xml"

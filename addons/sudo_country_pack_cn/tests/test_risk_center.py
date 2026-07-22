@@ -457,6 +457,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
     def test_finding_closure_summary_distinguishes_ready_and_action_required(self):
         self.assertEqual(
             _closure_summary_values(
+                translate=self.env._,
                 data_basis_state="ready",
                 rule_basis_state="ready",
                 result="fail",
@@ -470,6 +471,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
 
         state, summary = _closure_summary_values(
+            translate=self.env._,
             data_basis_state="ready",
             rule_basis_state="ready",
             result="fail",

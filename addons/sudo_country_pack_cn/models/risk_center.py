@@ -281,6 +281,7 @@ class SudoChinaRiskCenterFinding(models.Model):
             finding.cn_risk_period_label = _period_label(
                 assessment.period_start,
                 assessment.period_end,
+                finding.env._,
             )
             evidence_domain = [("finding_id", "=", finding.id)]
             if finding.current_task_id:
@@ -327,7 +328,10 @@ class SudoChinaRiskCenterFinding(models.Model):
             (
                 finding.cn_risk_remediation_urgency,
                 finding.cn_risk_responsibility_summary,
-            ) = _remediation_responsibility_values(finding.current_task_id)
+            ) = _remediation_responsibility_values(
+                finding.current_task_id,
+                finding.env._,
+            )
             (
                 finding.cn_traceability_state,
                 finding.cn_traceability_gap_count,
@@ -658,6 +662,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         self.ensure_one()
         task = self.current_task_id
         return _closure_summary_values(
+            translate=self.env._,
             data_basis_state=self.cn_risk_data_basis_state,
             rule_basis_state=self.cn_risk_rule_basis_state,
             result=self.result,
@@ -672,24 +677,29 @@ class SudoChinaRiskCenterFinding(models.Model):
         self.ensure_one()
         parts = []
         if self.cn_risk_next_action:
-            parts.append("Next: %s" % self.cn_risk_next_action)
+            parts.append(_("Next: %(action)s", action=self.cn_risk_next_action))
         if self.cn_risk_responsibility_summary:
-            parts.append("Owner/due: %s" % self.cn_risk_responsibility_summary)
+            parts.append(
+                _(
+                    "Owner/due: %(responsibility)s",
+                    responsibility=self.cn_risk_responsibility_summary,
+                )
+            )
         elif not self.current_task_id and self.review_state == "correction_required":
-            parts.append("Owner/due: no remediation task")
+            parts.append(_("Owner/due: no remediation task"))
         if self.cn_risk_evidence_count:
             parts.append(
-                "Evidence: %s/%s verified"
-                % (
-                    self.cn_risk_verified_evidence_count,
-                    self.cn_risk_evidence_count,
+                _(
+                    "Evidence: %(verified)s/%(total)s verified",
+                    verified=self.cn_risk_verified_evidence_count,
+                    total=self.cn_risk_evidence_count,
                 )
             )
         else:
-            parts.append("Evidence: none")
+            parts.append(_("Evidence: none"))
         if self.cn_closure_summary:
-            parts.append("Closure: %s" % self.cn_closure_summary)
-        return " | ".join(parts)
+            parts.append(_("Closure: %(summary)s", summary=self.cn_closure_summary))
+        return " · ".join(parts)
 
     def _cn_cross_border_fact_summary(self):
         self.ensure_one()
@@ -918,6 +928,7 @@ class SudoChinaRiskCenterTask(models.Model):
             task.cn_remediation_period_label = _period_label(
                 assessment.period_start,
                 assessment.period_end,
+                task.env._,
             )
             evidence_domain = [("task_id", "=", task.id)]
             evidence_count = Evidence.search_count(evidence_domain)
@@ -979,7 +990,7 @@ class SudoChinaRiskCenterTask(models.Model):
             (
                 task.cn_remediation_urgency,
                 task.cn_remediation_responsibility_summary,
-            ) = _remediation_responsibility_values(task)
+            ) = _remediation_responsibility_values(task, task.env._)
             task.cn_remediation_action_summary = (
                 task._cn_remediation_action_summary()
             )
@@ -1134,26 +1145,41 @@ class SudoChinaRiskCenterTask(models.Model):
         self.ensure_one()
         parts = []
         if self.cn_remediation_next_action:
-            parts.append("Next: %s" % self.cn_remediation_next_action)
+            parts.append(
+                _("Next: %(action)s", action=self.cn_remediation_next_action)
+            )
         if self.cn_remediation_responsibility_summary:
             parts.append(
-                "Owner/due: %s" % self.cn_remediation_responsibility_summary
+                _(
+                    "Owner/due: %(responsibility)s",
+                    responsibility=self.cn_remediation_responsibility_summary,
+                )
             )
         if self.cn_remediation_blocker_summary:
-            parts.append("Blockers: %s" % self.cn_remediation_blocker_summary)
+            parts.append(
+                _(
+                    "Blockers: %(summary)s",
+                    summary=self.cn_remediation_blocker_summary,
+                )
+            )
         if self.cn_remediation_evidence_count:
             parts.append(
-                "Evidence: %s/%s verified"
-                % (
-                    self.cn_remediation_verified_evidence_count,
-                    self.cn_remediation_evidence_count,
+                _(
+                    "Evidence: %(verified)s/%(total)s verified",
+                    verified=self.cn_remediation_verified_evidence_count,
+                    total=self.cn_remediation_evidence_count,
                 )
             )
         else:
-            parts.append("Evidence: none")
-        parts.append("Rescan: %s" % (self.cn_remediation_rescan_stage or "unknown"))
-        parts.append("Progress: %s%%" % (self.cn_remediation_progress or 0))
-        return " | ".join(parts)
+            parts.append(_("Evidence: none"))
+        rescan_label = dict(
+            self._fields["cn_remediation_rescan_stage"]._description_selection(
+                self.env
+            )
+        ).get(self.cn_remediation_rescan_stage, _("Unknown"))
+        parts.append(_("Rescan: %(state)s", state=rescan_label))
+        parts.append(_("Progress: %(progress)s%%", progress=self.cn_remediation_progress or 0))
+        return " · ".join(parts)
 
     def _cn_remediation_blocker_summary(self):
         self.ensure_one()
@@ -1183,10 +1209,14 @@ class SudoChinaRiskCenterTask(models.Model):
         return _("Blocked by: %(blockers)s") % {"blockers": "; ".join(blockers)}
 
 
-def _period_label(period_start, period_end):
+def _period_label(period_start, period_end, translate):
     if period_start and period_end:
-        return f"{period_start} to {period_end}"
-    return "No period recorded"
+        return translate(
+            "%(start)s to %(end)s",
+            start=period_start,
+            end=period_end,
+        )
+    return translate("No period recorded")
 
 
 def _evidence_state(evidence_count, verified_evidence_count):
@@ -1197,19 +1227,24 @@ def _evidence_state(evidence_count, verified_evidence_count):
     return "partial"
 
 
-def _remediation_responsibility_values(task):
+def _remediation_responsibility_values(task, translate):
     if not task:
-        return ("no_task", "No remediation task has been created.")
+        return ("no_task", translate("No remediation task has been created."))
 
-    assignee = task.assignee_id.display_name if task.assignee_id else "Unassigned"
+    assignee = (
+        task.assignee_id.display_name if task.assignee_id else translate("Unassigned")
+    )
     due_date = task.due_date
     today = fields.Date.context_today(task)
 
     if task.state in ("done", "cancelled"):
         return (
             "closed",
-            "Closed by %(assignee)s; due %(due)s"
-            % {"assignee": assignee, "due": due_date or "-"},
+            translate(
+                "Closed by %(assignee)s; due %(due)s",
+                assignee=assignee,
+                due=due_date or "-",
+            ),
         )
     if task.is_overdue:
         urgency = "overdue"
@@ -1224,19 +1259,26 @@ def _remediation_responsibility_values(task):
     else:
         urgency = "on_track"
 
-    summary = (
-        "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s"
-    ) % {
-        "assignee": assignee,
-        "due": due_date or "-",
-        "state": task.state or "-",
-        "verification": task.verification_state or "-",
-    }
+    task_state = dict(task._fields["state"]._description_selection(task.env)).get(
+        task.state,
+        task.state or "-",
+    )
+    verification_state = dict(
+        task._fields["verification_state"]._description_selection(task.env)
+    ).get(task.verification_state, task.verification_state or "-")
+    summary = translate(
+        "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s",
+        assignee=assignee,
+        due=due_date or "-",
+        state=task_state,
+        verification=verification_state,
+    )
     return (urgency, summary)
 
 
 def _closure_summary_values(
     *,
+    translate,
     data_basis_state,
     rule_basis_state,
     result,
@@ -1250,47 +1292,55 @@ def _closure_summary_values(
     actions = []
     has_task = bool(task_state)
     if data_basis_state in ("no_period", "missing", "blocked"):
-        blockers.append("data basis")
+        blockers.append(translate("data basis"))
     elif data_basis_state == "warning":
-        actions.append("review data basis warning")
+        actions.append(translate("review data basis warning"))
     if rule_basis_state != "ready":
-        blockers.append("rule/source basis")
+        blockers.append(translate("rule/source basis"))
     if result in ("unknown", "error"):
-        blockers.append("scan result")
+        blockers.append(translate("scan result"))
     if review_state == "pending":
-        blockers.append("human review")
+        blockers.append(translate("human review"))
     elif review_state == "correction_required" and not has_task:
-        actions.append("create remediation task")
+        actions.append(translate("create remediation task"))
     if has_task:
         if task_state not in ("done", "cancelled"):
-            actions.append("close remediation task")
+            actions.append(translate("close remediation task"))
         if task_verification_state in ("pending_rescan", "failed"):
-            blockers.append("verification rescan")
+            blockers.append(translate("verification rescan"))
         elif task_verification_state not in ("verified", "not_required"):
-            actions.append("verify remediation")
+            actions.append(translate("verify remediation"))
     if tax_impact_state in ("pending", "integrity_issue"):
-        blockers.append("tax impact review")
+        blockers.append(translate("tax impact review"))
     elif tax_impact_state in ("none", "unquantifiable") and result in (
         "fail",
         "unknown",
         "error",
     ):
-        actions.append("document tax impact")
+        actions.append(translate("document tax impact"))
     if evidence_state != "verified":
-        actions.append("verify evidence")
+        actions.append(translate("verify evidence"))
     if blockers:
         return (
             "blocked",
-            _("Blocked before sign-off: %s.") % ", ".join(blockers[:4]),
+            translate(
+                "Blocked before sign-off: %(items)s.",
+                items=", ".join(blockers[:4]),
+            ),
         )
     if actions:
         return (
             "action_required",
-            _("Next before sign-off: %s.") % ", ".join(actions[:4]),
+            translate(
+                "Next before sign-off: %(items)s.",
+                items=", ".join(actions[:4]),
+            ),
         )
     return (
         "ready",
-        _("Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."),
+        translate(
+            "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."
+        ),
     )
 
 

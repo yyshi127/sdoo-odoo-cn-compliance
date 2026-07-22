@@ -524,3 +524,387 @@ msgstr "下一步最佳动作目标"
 
 msgid "Next Best Action"
 msgstr "下一步最佳动作"
+
+msgid "Blocked"
+msgstr "受阻"
+
+msgid "Action Required"
+msgstr "需要处理"
+
+msgid "Complete"
+msgstr "完整"
+
+msgid "Ready"
+msgstr "就绪"
+
+msgid "No Period"
+msgstr "无期间"
+
+msgid "Missing"
+msgstr "缺失"
+
+msgid "Warning"
+msgstr "需关注"
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Difference Review"
+msgstr "差异待复核"
+
+msgid "Disclosure Review"
+msgstr "披露待复核"
+
+msgid "Aligned"
+msgstr "已一致"
+
+msgid "None"
+msgstr "无"
+
+msgid "Pending Review"
+msgstr "待复核"
+
+msgid "Integrity Issue"
+msgstr "完整性异常"
+
+msgid "Unquantifiable"
+msgstr "暂无法量化"
+
+msgid "Reviewed"
+msgstr "已复核"
+
+msgid "No Task"
+msgstr "无整改任务"
+
+msgid "Overdue"
+msgstr "已逾期"
+
+msgid "Due Soon"
+msgstr "即将到期"
+
+msgid "Waiting Rescan"
+msgstr "等待复扫"
+
+msgid "On Track"
+msgstr "进度正常"
+
+msgid "Closed"
+msgstr "已关闭"
+
+msgid "No Transactions"
+msgstr "无交易"
+
+msgid "Limited"
+msgstr "范围受限"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "%(start)s to %(end)s"
+msgstr "%(start)s 至 %(end)s"
+
+msgid "No period recorded"
+msgstr "未记录期间"
+
+msgid "No remediation task has been created."
+msgstr "尚未创建整改任务。"
+
+msgid "Unassigned"
+msgstr "未分配责任人"
+
+msgid "Closed by %(assignee)s; due %(due)s"
+msgstr "由 %(assignee)s 关闭；截止日 %(due)s"
+
+msgid "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s"
+msgstr "责任人 %(assignee)s；截止日 %(due)s；任务 %(state)s；验证 %(verification)s"
+
+msgid "data basis"
+msgstr "数据依据"
+
+msgid "review data basis warning"
+msgstr "复核数据依据提示"
+
+msgid "rule/source basis"
+msgstr "规则或来源依据"
+
+msgid "scan result"
+msgstr "扫描结果"
+
+msgid "human review"
+msgstr "人工复核"
+
+msgid "create remediation task"
+msgstr "创建整改任务"
+
+msgid "close remediation task"
+msgstr "关闭整改任务"
+
+msgid "verify remediation"
+msgstr "验证整改结果"
+
+msgid "tax impact review"
+msgstr "税务影响复核"
+
+msgid "document tax impact"
+msgstr "记录税务影响"
+
+msgid "verify evidence"
+msgstr "验证证据"
+
+msgid "Blocked before sign-off: %(items)s."
+msgstr "签核前受阻：%(items)s。"
+
+msgid "Next before sign-off: %(items)s."
+msgstr "签核前下一步：%(items)s。"
+
+msgid "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."
+msgstr "可进行报告签核：风险复核、整改、证据、税务影响和复扫控制已衔接。"
+
+msgid "Next: %(action)s"
+msgstr "下一步：%(action)s"
+
+msgid "Owner/due: %(responsibility)s"
+msgstr "责任与期限：%(responsibility)s"
+
+msgid "Owner/due: no remediation task"
+msgstr "责任与期限：尚无整改任务"
+
+msgid "Evidence: %(verified)s/%(total)s verified"
+msgstr "证据：%(verified)s/%(total)s 已验证"
+
+msgid "Evidence: none"
+msgstr "证据：无"
+
+msgid "Closure: %(summary)s"
+msgstr "闭环：%(summary)s"
+
+msgid "Blockers: %(summary)s"
+msgstr "阻断：%(summary)s"
+
+msgid "Rescan: %(state)s"
+msgstr "复扫：%(state)s"
+
+msgid "Progress: %(progress)s%%"
+msgstr "进度：%(progress)s%%"
+
+msgid "Complete the assessment data basis before relying on this risk conclusion."
+msgstr "使用该风险结论前，请先补齐评估数据依据。"
+
+msgid "Review incomplete period data before report sign-off."
+msgstr "报告签核前，请复核期间数据不完整问题。"
+
+msgid "Close remediation, tax impact and verified evidence gaps."
+msgstr "请关闭整改、税务影响和已验证证据缺口。"
+
+msgid "No cross-border transactions were captured for this period."
+msgstr "当前期间未采集到跨境交易。"
+
+msgid "Traceability Evidence"
+msgstr "可追溯证据"
+
+msgid "Complete the assessment data basis before closing remediation."
+msgstr "关闭整改前，请先补齐评估数据依据。"
+
+msgid "Review incomplete period data before verification rescan."
+msgstr "验证复扫前，请复核期间数据不完整问题。"
+
+msgid "Close the task and verify remediation evidence."
+msgstr "请关闭任务并验证整改证据。"
+
+msgid "No blocker: remediation is ready for report sign-off."
+msgstr "无阻断：整改已可用于报告签核。"
+
+msgid "Blocked by: %(blockers)s"
+msgstr "受阻原因：%(blockers)s"
+
+msgid "No rule fact snapshots are attached."
+msgstr "尚未关联规则事实快照。"
+
+msgid "No reconciliation risk summary is attached."
+msgstr "尚未关联勾稽风险摘要。"
+
+msgid "No tax impact review case is linked."
+msgstr "尚未关联税务影响复核事项。"
+
+msgid "Traceability is complete for reporting."
+msgstr "报告所需可追溯链已完整。"
+
+msgid "Complete data basis, rule basis, scan result and human review before reporting."
+msgstr "出具报告前，请补齐数据依据、规则依据、扫描结果和人工复核。"
+
+msgid "No cross-border fact snapshot is attached to this finding."
+msgstr "该风险事项尚未关联跨境事实快照。"
+
+msgid "Open the rule scan facts and confirm the cross-border snapshot."
+msgstr "请打开规则扫描事实并确认跨境快照。"
+
+msgid "Open Cross-Border register and finish controlled review before reporting."
+msgstr "出具报告前，请打开跨境业务台账并完成受控复核。"
+
+msgid "Reviewed cross-border facts are available for professional analysis."
+msgstr "已复核跨境事实可用于专业分析。"
+
+msgid "Remediation traceability is complete."
+msgstr "整改可追溯链已完整。"
+
+msgid "Resolve data basis and verification rescan before report sign-off."
+msgstr "报告签核前，请解决数据依据和验证复扫问题。"
+
+msgid "overdue"
+msgstr "逾期"
+
+msgid "missing data basis"
+msgstr "缺少数据依据"
+
+msgid "incomplete data basis"
+msgstr "数据依据不完整"
+
+msgid "task blocked"
+msgstr "任务受阻"
+
+msgid "task not closed"
+msgstr "任务未关闭"
+
+msgid "no verified evidence"
+msgstr "无已验证证据"
+
+msgid "evidence pending verification"
+msgstr "证据待验证"
+
+msgid "verification rescan pending"
+msgstr "验证复扫待完成"
+
+msgid "verification rescan failed"
+msgstr "验证复扫未通过"
+
+msgid "verification not completed"
+msgstr "验证未完成"
+
+msgid "+%s more"
+msgstr "另有 %s 项"
+
+msgid "missing %s"
+msgstr "缺少 %s"
+
+msgid "Missing required facts: %s"
+msgstr "缺少必要事实：%s"
+
+msgid "Risk Action Summary"
+msgstr "风险行动摘要"
+
+msgid "Remediation Urgency"
+msgstr "整改紧迫度"
+
+msgid "Responsibility Summary"
+msgstr "责任摘要"
+
+msgid "Fact Snapshots"
+msgstr "事实快照"
+
+msgid "Fact Issues"
+msgstr "事实问题"
+
+msgid "Fact Summary"
+msgstr "事实摘要"
+
+msgid "Reconciliation Risk"
+msgstr "勾稽风险"
+
+msgid "Reconciliation Summary"
+msgstr "勾稽摘要"
+
+msgid "Reconciliation Next Action"
+msgstr "勾稽下一步"
+
+msgid "Data Basis"
+msgstr "数据依据"
+
+msgid "Required Data Types"
+msgstr "必需数据类型"
+
+msgid "Ready Data Types"
+msgstr "已就绪数据类型"
+
+msgid "Missing Data Types"
+msgstr "缺失数据类型"
+
+msgid "Missing Data Type Summary"
+msgstr "缺失数据类型摘要"
+
+msgid "Data Basis Next Action"
+msgstr "数据依据下一步"
+
+msgid "Traceability"
+msgstr "可追溯性"
+
+msgid "Traceability Gaps"
+msgstr "可追溯缺口"
+
+msgid "Traceability Next Action"
+msgstr "可追溯下一步"
+
+msgid "Closure Status"
+msgstr "闭环状态"
+
+msgid "Closure Summary"
+msgstr "闭环摘要"
+
+msgid "Cross-Border Facts"
+msgstr "跨境事实"
+
+msgid "Cross-Border Pending"
+msgstr "跨境待复核"
+
+msgid "Cross-Border Reviewed"
+msgstr "跨境已复核"
+
+msgid "Cross-Border Total"
+msgstr "跨境交易合计"
+
+msgid "Cross-Border Next Action"
+msgstr "跨境下一步"
+
+msgid "Currency"
+msgstr "币种"
+
+msgid "Tax Impact"
+msgstr "税务影响"
+
+msgid "Pending Tax Impact"
+msgstr "待复核税务影响"
+
+msgid "Unquantifiable Tax Impact"
+msgstr "暂无法量化税务影响"
+
+msgid "Tax Impact Integrity Issues"
+msgstr "税务影响完整性问题"
+
+msgid "Reviewed Underpayment"
+msgstr "已复核潜在少缴"
+
+msgid "Reviewed Overpayment"
+msgstr "已复核潜在多缴"
+
+msgid "Reviewed Timing Difference"
+msgstr "已复核时间性差异"
+
+msgid "Tax Impact Summary"
+msgstr "税务影响摘要"
+
+msgid "Remediation Action Summary"
+msgstr "整改行动摘要"
+
+msgid "Remediation Tax Impact"
+msgstr "整改税务影响"
+
+msgid "Remediation Progress"
+msgstr "整改进度"
+
+msgid "Remediation Summary"
+msgstr "整改摘要"
+
+msgid "Remediation Blockers"
+msgstr "整改阻断"
+
+msgid "Filing Blockers"
+msgstr "申报缴款阻断"

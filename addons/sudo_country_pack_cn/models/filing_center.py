@@ -67,6 +67,7 @@ class SudoChinaFilingCenterFiling(models.Model):
             filing.cn_filing_center_period_label = _period_label(
                 filing.period_start,
                 filing.period_end,
+                filing.env._,
             )
             evidence = (
                 filing.cn_submission_evidence_ids | filing.cn_payment_evidence_ids
@@ -237,10 +238,14 @@ class SudoChinaFilingCenterProfile(models.Model):
         }
 
 
-def _period_label(period_start, period_end):
+def _period_label(period_start, period_end, translate):
     if period_start and period_end:
-        return _("%(start)s 至 %(end)s", start=period_start, end=period_end)
-    return _("未记录期间")
+        return translate(
+            "%(start)s 至 %(end)s",
+            start=period_start,
+            end=period_end,
+        )
+    return translate("未记录期间")
 
 
 def _evidence_state(evidence_count, verified_evidence_count):
