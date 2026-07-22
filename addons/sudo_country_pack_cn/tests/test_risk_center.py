@@ -382,11 +382,18 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         )
         self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")
         self.assertEqual(task.cn_remediation_progress, 0)
-        self.assertIn("ready_for_rescan", task.cn_remediation_summary)
+        stage_labels = dict(
+            task._fields["cn_remediation_rescan_stage"]._description_selection(
+                task.env
+            )
+        )
+        self.assertIn(
+            stage_labels["ready_for_rescan"], task.cn_remediation_summary
+        )
 
         self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_rescan_stage, "pending_rescan")
-        self.assertIn("pending_rescan", task.cn_remediation_summary)
+        self.assertIn(stage_labels["pending_rescan"], task.cn_remediation_summary)
 
         action = task.action_cn_open_remediation_verification_assessment()
         self.assertEqual(action["res_model"], "sudo.compliance.assessment")
