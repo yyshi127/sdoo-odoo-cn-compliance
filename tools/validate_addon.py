@@ -5080,6 +5080,8 @@ def validate_delivery_objective_coverage() -> None:
         "tools/render_cn_signoff_evidence_template.py",
         "docs/MILESTONE_70_CHINA_BLOCKER_SUMMARY_VISIBILITY.md",
         "docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md",
+        "owner summary",
+        "blocker-to-action coverage matrix",
     ):
         if required not in delivery_index_content:
             fail(f"China delivery index is missing {required}")
@@ -5101,6 +5103,9 @@ def validate_delivery_objective_coverage() -> None:
         "audit_cn_objective_completion.py",
         "build_cn_signoff_evidence_chain.py",
         "CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md",
+        "cn_delivery_mNNN_chain_latest_signoff_candidate.md",
+        "owner summary",
+        "blocker-to-action matrix",
         "cn_objective_completion_audit_mNNN.json",
         "render_cn_signoff_evidence_template.py",
         "cn_signoff_evidence_draft_mNNN.json",
@@ -5140,6 +5145,8 @@ def validate_delivery_objective_coverage() -> None:
         "tools/select_cn_latest_signoff_candidate.py",
         "--require-highest-status-complete",
         "tools/export_cn_production_signoff_actions.py",
+        "owner summary",
+        "blocker-to-action matrix",
         "dist/sdoo-cn-compliance-delivery-mNNN.tgz",
         "dist/cn_delivery_mNNN_chain_signoff_packet.md",
         "business UAT ready: `true`",
@@ -5542,6 +5549,12 @@ def validate_delivery_objective_coverage() -> None:
     latest_selector_content = (
         REPOSITORY_ROOT / "tools" / "select_cn_latest_signoff_candidate.py"
     ).read_text(encoding="utf-8")
+    latest_selector_test_content = (
+        REPOSITORY_ROOT / "tools" / "test_latest_signoff_candidate.py"
+    ).read_text(encoding="utf-8")
+    production_actions_tool_content = (
+        REPOSITORY_ROOT / "tools" / "export_cn_production_signoff_actions.py"
+    ).read_text(encoding="utf-8")
     for required in (
         'preview_database = status.get("preview_database")',
         "status preview database is missing",
@@ -5556,9 +5569,33 @@ def validate_delivery_objective_coverage() -> None:
         "Preview database",
         "Bundle SHA-256",
         "Packet Binding Checks",
+        "owner_summary",
+        "blocker_action_matrix",
+        "## Owner Summary",
+        "## Blocker-To-Action Matrix",
+        "action checklist owner summary is missing",
+        "action checklist blocker-action matrix does not cover blockers",
     ):
         if required not in latest_selector_content:
             fail(f"China latest sign-off selector is missing {required}")
+    for required in (
+        "test_rejects_action_checklist_without_owner_summary",
+        "test_rejects_action_checklist_without_blocker_matrix_coverage",
+        "omit_owner_summary",
+        "matrix_covered",
+    ):
+        if required not in latest_selector_test_content:
+            fail(f"China latest sign-off selector tests are missing {required}")
+    for required in (
+        "owner_summary",
+        "_owner_summary",
+        "blocker_action_matrix",
+        "## Owner Summary",
+        "## Blocker-To-Action Matrix",
+        "Addresses blockers",
+    ):
+        if required not in production_actions_tool_content:
+            fail(f"China production sign-off action exporter is missing {required}")
     for required in (
         "--require-production-signoff-ready",
         "production sign-off readiness gate failed",
