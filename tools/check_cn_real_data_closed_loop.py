@@ -1006,9 +1006,9 @@ ux_view_clarity_contracts = [
         [
             'widget="badge"',
             "border-start border-4",
-            "Blockers",
-            "Traceability",
-            "Fact basis",
+            "阻断事项",
+            "可追溯性",
+            "事实依据",
             "action_cn_open_report_findings",
         ],
     ),

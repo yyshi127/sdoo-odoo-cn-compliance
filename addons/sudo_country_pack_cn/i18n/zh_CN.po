@@ -1802,3 +1802,519 @@ msgstr "整改阻断"
 #: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "Filing Blockers"
 msgstr "申报缴款阻断"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/risk_center.py:1
+msgid "Stage %(stage)s; task %(task)s; verification %(verification)s; evidence %(verified)s/%(total)s; gaps %(gaps)s"
+msgstr "阶段 %(stage)s；任务 %(task)s；验证 %(verification)s；证据 %(verified)s/%(total)s；缺口 %(gaps)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Yes"
+msgstr "是"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "No"
+msgstr "否"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Blockers: %(blockers)s"
+msgstr "阻断：%(blockers)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Issues: %(issues)s; Open tasks: %(tasks)s; Limitations: %(limitations)s"
+msgstr "问题 %(issues)s 项；未关闭整改 %(tasks)s 项；限制 %(limitations)s 项"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Rescan: %(rescan)s (%(pending)s pending, %(failed)s failed); Archive: %(archive)s (%(sealed)s/%(archives)s sealed); AI: %(ai)s (%(current)s/%(findings)s current); Can prepare: %(can_prepare)s"
+msgstr "复扫：%(rescan)s（待复扫 %(pending)s，未通过 %(failed)s）；档案：%(archive)s（已封存 %(sealed)s/%(archives)s）；AI：%(ai)s（有效 %(current)s/%(findings)s）；可编制：%(can_prepare)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Regenerate controlled AI guidance for risks whose input facts, tax impact, or remediation state changed before report reliance."
+msgstr "报告引用前，请重新生成输入事实、税务影响或整改状态已变化风险的受控 AI 指引。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Controlled AI guidance is current for every unresolved China risk."
+msgstr "所有未解决中国合规风险的受控 AI 指引均为最新。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Generate controlled AI guidance for remaining unresolved risks and disclose limited inputs in the report."
+msgstr "为其余未解决风险生成受控 AI 指引，并在报告中披露输入限制。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "No controlled filing/payment archive exists for this assessment period."
+msgstr "当前评估期间尚无受控申报缴款档案。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Seal filing/payment archives and verify receipt/payment evidence before relying on report conclusions."
+msgstr "报告引用结论前，请封存申报缴款档案并核验回执和缴款证据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Controlled filing/payment archives are sealed for the report period."
+msgstr "报告期间的受控申报缴款档案已封存。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Review filing/payment archive evidence before report sign-off."
+msgstr "报告签核前，请复核申报缴款档案证据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "No remediation tasks require verification rescan."
+msgstr "当前没有需要验证复扫的整改任务。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Review failed verification rescans, reopen remediation, and rerun the exact-period scan before report preparation."
+msgstr "复核未通过的验证复扫，重新打开整改，并对原期间再次扫描后再编制报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Wait for verification rescans to finish before preparing the formal report."
+msgstr "正式报告编制前，请等待验证复扫完成。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Close remediation tasks and submit them for verification rescan."
+msgstr "关闭整改任务并提交验证复扫。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Verify completed remediation evidence or document the verification basis before report sign-off."
+msgstr "报告签核前，请核验已完成整改的证据或记录验证依据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "All remediation tasks have verified rescan evidence for report reliance."
+msgstr "所有整改任务均具备可供报告引用的验证复扫证据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Review remediation verification status before relying on the report."
+msgstr "报告引用前，请复核整改验证状态。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Review the issued report and retained audit trail."
+msgstr "复核已签发报告及保留的审计轨迹。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Wait for independent report approval."
+msgstr "等待独立报告批准。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Complete the draft report and submit it for approval."
+msgstr "完善报告草稿并提交批准。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Complete the rule scan before preparing a formal report."
+msgstr "编制正式报告前，请完成规则扫描。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Complete manual review, source review, and professional sign-off checks first."
+msgstr "请先完成人工复核、来源复核和专业签核。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Regenerate stale controlled AI guidance before preparing the formal report."
+msgstr "编制正式报告前，请重新生成已过期的受控 AI 指引。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Verification rescan failed; complete remediation again before preparing the formal report."
+msgstr "验证复扫未通过；请重新完成整改后再编制正式报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Verification rescan is pending; wait for the exact-period rescan result before preparing the report."
+msgstr "验证复扫正在进行；请等待原期间复扫结果后再编制报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Completed remediation still needs verified evidence or a documented verification basis."
+msgstr "已完成整改仍需核验正式证据或记录验证依据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Close all remediation tasks before preparing the formal report."
+msgstr "编制正式报告前，请关闭全部整改任务。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Prepare the report only with explicit limitations and uncertainty disclosure."
+msgstr "仅可在明确披露限制和不确定性的前提下编制报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "The assessment is ready for formal compliance report preparation."
+msgstr "当前评估已具备正式合规报告编制条件。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "rule scan not completed"
+msgstr "规则扫描未完成"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "manual review or source sign-off pending"
+msgstr "人工复核或来源签核待完成"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "%(count)s remediation task(s) still open"
+msgstr "仍有 %(count)s 个整改任务未关闭"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "%(count)s verification rescan(s) failed"
+msgstr "%(count)s 个验证复扫未通过"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "%(count)s verification rescan(s) pending"
+msgstr "%(count)s 个验证复扫待完成"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "filing/payment archive not audit-ready"
+msgstr "申报缴款档案尚不具备审计可追溯性"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "controlled AI guidance is stale"
+msgstr "受控 AI 指引已过期"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "required tax data basis is incomplete"
+msgstr "必需税务数据依据不完整"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Odoo accounting basis is incomplete"
+msgstr "Odoo 账务基础不完整"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "tax obligation applicability is not confirmed"
+msgstr "纳税义务适用性尚未确认"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "%(count)s tax impact case(s) need quantification"
+msgstr "%(count)s 个税务影响事项待量化"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "Limited: prepare the report with explicit limitations."
+msgstr "受限：请在明确披露限制后编制报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/report_readiness.py:1
+msgid "No blocker: assessment is ready for report preparation."
+msgstr "无阻断：评估已可编制报告。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Register and seal ready data for this period: %(types)s."
+msgstr "登记并封存本期间以下可用数据：%(types)s。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Current data is usable but incomplete. Add ready data for: %(types)s."
+msgstr "当前数据可用但不完整，请补充：%(types)s。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Seed China candidate obligations before treating the assessment perimeter as complete."
+msgstr "将评估范围视为完整前，请先建立中国候选纳税义务。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Confirm obligation applicability and link official sources before relying on scan results as complete."
+msgstr "将扫描结果视为完整前，请确认纳税义务适用性并关联官方来源。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Obligation applicability is reviewed; keep official sources current and rescan when the profile changes."
+msgstr "纳税义务适用性已复核；请保持官方来源有效，并在档案变化时重新扫描。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Set an assessment period before evaluating the Odoo accounting ledger basis."
+msgstr "评估 Odoo 账务基础前，请先设置评估期间。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "No posted Odoo accounting entries exist for this assessment period; scan results cannot represent ledger-based compliance."
+msgstr "当前评估期间没有已过账 Odoo 凭证，扫描结果不能代表基于账务的合规结论。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Review and either post or explicitly exclude draft accounting entries before relying on the assessment."
+msgstr "引用评估结论前，请复核草稿凭证并将其过账或明确排除。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Posted Odoo accounting entries are available for this period; keep draft entries reviewed before report sign-off."
+msgstr "本期间已有已过账 Odoo 凭证；报告签核前请持续复核草稿凭证。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "Odoo accounting basis"
+msgstr "Odoo 账务基础"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/assessment_data_basis.py:1
+msgid "China obligation basis"
+msgstr "中国纳税义务基础"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Review missing, stale or incomplete fact snapshots before relying on the report."
+msgstr "引用报告前，请复核缺失、过期或不完整的事实快照。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Report findings are linked to controlled fact snapshots."
+msgstr "报告风险事项已关联受控事实快照。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "No controlled fact snapshots are attached to this report."
+msgstr "当前报告尚未关联受控事实快照。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Filing/payment archives are not sealed; verify filing receipts, payment evidence and checksums before submitting the formal report."
+msgstr "申报缴款档案尚未封存；提交正式报告前，请核验申报回执、缴款证据和校验和。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Tax obligation applicability is not fully confirmed; disclose this limitation before submitting the report."
+msgstr "纳税义务适用性尚未完全确认；提交报告前请披露此项限制。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Assessment data basis is incomplete; disclose missing data types and uncertainty before submitting the report."
+msgstr "评估数据依据不完整；提交报告前请披露缺失数据类型和不确定性。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Odoo accounting ledger basis is incomplete; disclose draft or missing ledger coverage before submitting the report."
+msgstr "Odoo 账务基础不完整；提交报告前请披露草稿凭证或账务覆盖缺口。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Report traceability is complete."
+msgstr "报告可追溯链路完整。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Refresh the report snapshot and close source, finding traceability or risk closure gaps."
+msgstr "刷新报告快照，并关闭来源、风险追溯或风险闭环缺口。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Confirm tax obligation applicability or keep the report limitation visible before relying on distribution."
+msgstr "分发报告前，请确认纳税义务适用性或持续明确披露报告限制。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Complete remediation verification rescans or document why verification is not required."
+msgstr "完成整改验证复扫，或记录无需验证的依据。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Close remediation, evidence and tax impact gaps before distribution."
+msgstr "分发报告前，请关闭整改、证据和税务影响缺口。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "unsealed snapshot"
+msgstr "快照未封存"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "source changed after submission"
+msgstr "提交后来源已变化"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "approval integrity issue"
+msgstr "批准记录完整性异常"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "PDF integrity issue"
+msgstr "PDF 完整性异常"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "open remediation tasks"
+msgstr "存在未关闭整改任务"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "overdue remediation tasks"
+msgstr "存在逾期整改任务"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "blocked risk closure"
+msgstr "风险闭环受阻"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "risk closure needs action"
+msgstr "风险闭环需要处理"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "remediation verification pending"
+msgstr "整改验证待完成"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "evidence not fully verified"
+msgstr "证据尚未全部验证"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "tax impact review pending"
+msgstr "税务影响待复核"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "fact basis incomplete"
+msgstr "事实依据不完整"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "current rule governance changed"
+msgstr "当前规则治理已变化"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "tax obligation applicability not confirmed"
+msgstr "纳税义务适用性未确认"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "risk traceability gaps"
+msgstr "风险追溯存在缺口"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "remediation traceability gaps"
+msgstr "整改追溯存在缺口"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "No blocker: report traceability is ready."
+msgstr "无阻断：报告追溯链路已就绪。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/compliance_report.py:1
+msgid "Report Evidence"
+msgstr "报告证据"

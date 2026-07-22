@@ -89,6 +89,18 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready.",
             translations,
         )
+        self.assertEqual(
+            translations[
+                "Complete the draft report and submit it for approval."
+            ],
+            "完善报告草稿并提交批准。",
+        )
+        self.assertEqual(
+            translations[
+                "Report findings are linked to controlled fact snapshots."
+            ],
+            "报告风险事项已关联受控事实快照。",
+        )
 
     def _finding(self, suffix="default"):
         assessment = self.env["sudo.compliance.assessment"].with_company(

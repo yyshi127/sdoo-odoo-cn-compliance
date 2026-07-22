@@ -3793,6 +3793,23 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China workbench Simplified Chinese translation catalog is missing")
     translation_content = translation_path.read_text(encoding="utf-8")
     translation_blocks = re.split(r"\n\s*\n", translation_content)
+    translation_msgids = re.findall(
+        r'^msgid "([^"\\]*(?:\\.[^"\\]*)*)"$',
+        translation_content,
+        flags=re.MULTILINE,
+    )
+    duplicate_translation_msgids = sorted(
+        {
+            msgid
+            for msgid in translation_msgids
+            if msgid and translation_msgids.count(msgid) > 1
+        }
+    )
+    if duplicate_translation_msgids:
+        fail(
+            "China translation catalog contains duplicate msgids: "
+            f"{duplicate_translation_msgids}"
+        )
     unscoped_translation_entries = [
         block
         for block in translation_blocks
@@ -3838,6 +3855,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'msgstr "复核未解决合规风险"',
         'msgid "Conclusion Boundary Summary"',
         'msgstr "结论边界摘要"',
+        'msgid "Complete the draft report and submit it for approval."',
+        'msgstr "完善报告草稿并提交批准。"',
+        'msgid "Report findings are linked to controlled fact snapshots."',
+        'msgstr "报告风险事项已关联受控事实快照。"',
     ):
         if required not in translation_content:
             fail(f"China workbench translation catalog is missing {required}")

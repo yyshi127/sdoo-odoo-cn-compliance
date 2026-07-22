@@ -229,20 +229,19 @@ def ensure_demo_rule(profile):
             "authority_source_ids": command_set(source.ids),
             "required_fact_ids": command_set(facts.ids),
             "legal_basis_summary": (
-                "CODEX-DEMO ONLY: validates workflow wiring against controlled "
-                "VAT reconciliation facts; replace with signed Chinese tax rule "
-                "source before production."
+                "仅限 CODEX-DEMO：依据受控增值税勾稽事实验证闭环流程；"
+                "生产使用前必须替换为经中国财税专业人员签核的规则与官方来源。"
             ),
-            "failure_message": "VAT reconciliation is not aligned or has blocking data gaps.",
-            "pass_message": "VAT reconciliation is aligned within the controlled scope.",
-            "unknown_message": "VAT reconciliation facts are missing or stale.",
+            "failure_message": "增值税勾稽未对齐，或存在阻断性数据缺口。",
+            "pass_message": "增值税勾稽在受控范围内已对齐。",
+            "unknown_message": "增值税勾稽事实缺失或已过期。",
             "recommended_actions": (
-                "Review missing tax invoice, filing and payment evidence; assign "
-                "remediation and rescan the exact period."
+                "复核缺失的发票、申报和缴款证据，分派整改任务，"
+                "并对相同期间执行验证复扫。"
             ),
             "evidence_required": (
-                "VAT reconciliation run, issue list, source data snapshots, reviewer "
-                "workpaper and remediation evidence."
+                "保留增值税勾稽批次、问题清单、源数据快照、"
+                "复核工作底稿和整改证据。"
             ),
             "requires_human_review": True,
         }})

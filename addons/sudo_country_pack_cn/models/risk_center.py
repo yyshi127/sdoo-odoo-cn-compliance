@@ -10,25 +10,25 @@ EVIDENCE_STATES = [
 
 
 TRACEABILITY_STATES = [
-    ("blocked", "Blocked"),
-    ("action_required", "Action Required"),
-    ("complete", "Complete"),
+    ("blocked", "受阻"),
+    ("action_required", "需要处理"),
+    ("complete", "完整"),
 ]
 
 
 CLOSURE_STATES = [
-    ("blocked", "Blocked"),
-    ("action_required", "Action Required"),
-    ("ready", "Ready"),
+    ("blocked", "受阻"),
+    ("action_required", "需要处理"),
+    ("ready", "就绪"),
 ]
 
 
 DATA_BASIS_STATES = [
-    ("no_period", "No Period"),
-    ("missing", "Missing"),
-    ("blocked", "Blocked"),
-    ("warning", "Warning"),
-    ("ready", "Ready"),
+    ("no_period", "未设置期间"),
+    ("missing", "缺失"),
+    ("blocked", "受阻"),
+    ("warning", "需关注"),
+    ("ready", "就绪"),
 ]
 
 RECONCILIATION_RISK_SUMMARY_KEYS = {
@@ -38,30 +38,30 @@ RECONCILIATION_RISK_SUMMARY_KEYS = {
 }
 
 RECONCILIATION_RISK_STATES = [
-    ("unavailable", "Unavailable"),
-    ("blocked", "Blocked"),
-    ("difference_review_required", "Difference Review"),
-    ("aligned_with_disclosure_required", "Disclosure Review"),
-    ("aligned", "Aligned"),
+    ("unavailable", "不可用"),
+    ("blocked", "受阻"),
+    ("difference_review_required", "差异待复核"),
+    ("aligned_with_disclosure_required", "披露待复核"),
+    ("aligned", "已勾稽"),
 ]
 
 TAX_IMPACT_STATES = [
-    ("none", "None"),
-    ("pending", "Pending Review"),
-    ("integrity_issue", "Integrity Issue"),
-    ("unquantifiable", "Unquantifiable"),
-    ("reviewed", "Reviewed"),
+    ("none", "无"),
+    ("pending", "待复核"),
+    ("integrity_issue", "完整性异常"),
+    ("unquantifiable", "暂无法量化"),
+    ("reviewed", "已复核"),
 ]
 
 REMEDIATION_URGENCY_STATES = [
-    ("no_task", "No Task"),
-    ("overdue", "Overdue"),
-    ("due_soon", "Due Soon"),
-    ("pending_review", "Pending Review"),
-    ("waiting_rescan", "Waiting Rescan"),
-    ("blocked", "Blocked"),
-    ("on_track", "On Track"),
-    ("closed", "Closed"),
+    ("no_task", "未建任务"),
+    ("overdue", "已逾期"),
+    ("due_soon", "即将到期"),
+    ("pending_review", "待复核"),
+    ("waiting_rescan", "等待复扫"),
+    ("blocked", "受阻"),
+    ("on_track", "正常推进"),
+    ("closed", "已关闭"),
 ]
 
 
@@ -1128,17 +1128,27 @@ class SudoChinaRiskCenterTask(models.Model):
         if self.verification_state in ("verified", "not_required"):
             checkpoints += 1
         progress = int(round(checkpoints * 100 / 3.0))
-        summary = (
-            "stage %(stage)s; task %(task)s; verification %(verification)s; "
-            "evidence %(verified)s/%(total)s; gaps %(gaps)s"
-        ) % {
-            "stage": self.cn_remediation_rescan_stage or "unknown",
-            "task": self.state or "unknown",
-            "verification": self.verification_state or "unknown",
-            "verified": self.cn_remediation_verified_evidence_count,
-            "total": self.cn_remediation_evidence_count,
-            "gaps": self.cn_remediation_traceability_gap_count,
-        }
+        stage_label = dict(
+            self._fields["cn_remediation_rescan_stage"]._description_selection(
+                self.env
+            )
+        ).get(self.cn_remediation_rescan_stage, _("Unknown"))
+        task_label = dict(
+            self._fields["state"]._description_selection(self.env)
+        ).get(self.state, _("Unknown"))
+        verification_label = dict(
+            self._fields["verification_state"]._description_selection(self.env)
+        ).get(self.verification_state, _("Unknown"))
+        summary = _(
+            "Stage %(stage)s; task %(task)s; verification %(verification)s; "
+            "evidence %(verified)s/%(total)s; gaps %(gaps)s",
+            stage=stage_label,
+            task=task_label,
+            verification=verification_label,
+            verified=self.cn_remediation_verified_evidence_count,
+            total=self.cn_remediation_evidence_count,
+            gaps=self.cn_remediation_traceability_gap_count,
+        )
         return (progress, summary)
 
     def _cn_remediation_action_summary(self):

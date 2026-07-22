@@ -92,12 +92,12 @@ class SudoChinaAssessmentDataBasis(models.Model):
     )
     cn_accounting_basis_state = fields.Selection(
         [
-            ("no_period", "No Period"),
-            ("missing", "No Posted Ledger"),
-            ("warning", "Draft Entries Present"),
-            ("ready", "Ledger Available"),
+            ("no_period", "未设置期间"),
+            ("missing", "无已过账账务"),
+            ("warning", "存在草稿凭证"),
+            ("ready", "账务可用"),
         ],
-        string="Odoo Accounting Basis",
+        string="Odoo 账务基础",
         compute="_compute_cn_data_basis",
     )
     cn_accounting_basis_posted_move_count = fields.Integer(
@@ -118,11 +118,11 @@ class SudoChinaAssessmentDataBasis(models.Model):
     )
     cn_obligation_basis_state = fields.Selection(
         [
-            ("missing", "No candidate obligations"),
-            ("attention", "Needs obligation review"),
-            ("ready", "Obligations reviewed"),
+            ("missing", "无候选纳税义务"),
+            ("attention", "纳税义务待复核"),
+            ("ready", "纳税义务已复核"),
         ],
-        string="China Obligation Basis",
+        string="中国纳税义务基础",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_candidate_count = fields.Integer(

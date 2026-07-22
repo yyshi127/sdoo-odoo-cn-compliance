@@ -120,16 +120,16 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="text-muted small">下一步</div>
                                 <div class="fw-semibold"><field name="cn_report_center_next_action"/></div>
-                                <div class="text-muted small mt-1">Blockers</div>
+                                <div class="text-muted small mt-1">阻断事项</div>
                                 <div class="small"><field name="cn_report_blocker_summary"/></div>
                             </div>
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Traceability</div>
+                                        <div class="text-muted small">可追溯性</div>
                                         <div class="fw-semibold"><field name="cn_report_traceability_next_action"/></div>
                                         <div class="text-muted small">
-                                            Gaps <field name="cn_report_traceability_gap_count"/>
+                                            缺口 <field name="cn_report_traceability_gap_count"/>
                                         </div>
                                     </div>
                                     <field name="cn_report_traceability_state" widget="badge"
@@ -141,7 +141,7 @@
                             <div class="mt-3 border rounded p-2">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="text-muted small">Fact basis</div>
+                                        <div class="text-muted small">事实依据</div>
                                         <div class="fw-semibold"><field name="cn_report_fact_basis_next_action"/></div>
                                         <div class="text-muted small">
                                             <field name="fact_snapshot_count"/>
@@ -169,8 +169,8 @@
                                             <field name="high_count"/>
                                         </div>
                                         <div class="text-muted small">
-                                            Closure blocked <field name="finding_closure_blocked_count"/>
-                                            <span> / action </span>
+                                            闭环受阻 <field name="finding_closure_blocked_count"/>
+                                            <span> / 待处理 </span>
                                             <field name="finding_closure_action_required_count"/>
                                         </div>
                                     </button>
@@ -185,8 +185,8 @@
                                             <field name="overdue_task_count"/>
                                         </div>
                                         <div class="text-muted small">
-                                            Verified <field name="remediation_verified_count"/>
-                                            <span> / Pending </span>
+                                            已验证 <field name="remediation_verified_count"/>
+                                            <span> / 待验证 </span>
                                             <field name="remediation_pending_verification_count"/>
                                         </div>
                                     </button>
@@ -463,7 +463,7 @@
                                    decoration-danger="cn_report_traceability_state == 'blocked'"/>
                             <field name="cn_report_traceability_gap_count"/>
                         </group>
-                        <group string="Fact basis">
+                        <group string="事实依据">
                             <field name="cn_report_fact_basis_state" widget="badge"
                                    decoration-success="cn_report_fact_basis_state == 'ready'"
                                    decoration-danger="cn_report_fact_basis_state == 'blocked'"

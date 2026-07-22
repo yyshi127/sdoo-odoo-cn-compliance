@@ -49,11 +49,11 @@ class SudoChinaReportReadinessAssessment(models.Model):
         compute="_compute_cn_report_readiness",
     )
     cn_report_action_summary = fields.Char(
-        string="Report Action Summary",
+        string="报告行动摘要",
         compute="_compute_cn_report_readiness",
     )
     cn_report_readiness_blocker_summary = fields.Char(
-        string="Report Blockers",
+        string="报告阻断事项",
         compute="_compute_cn_report_readiness",
     )
     cn_report_issue_count = fields.Integer(
@@ -74,14 +74,14 @@ class SudoChinaReportReadinessAssessment(models.Model):
     )
     cn_report_rescan_state = fields.Selection(
         [
-            ("not_applicable", "No remediation"),
-            ("in_progress", "Remediation in progress"),
-            ("pending_rescan", "Pending verification rescan"),
-            ("failed", "Verification failed"),
-            ("verified", "Verified remediation"),
-            ("evidence_gap", "Evidence gap"),
+            ("not_applicable", "无需整改"),
+            ("in_progress", "整改进行中"),
+            ("pending_rescan", "等待验证复扫"),
+            ("failed", "验证复扫未通过"),
+            ("verified", "整改已验证"),
+            ("evidence_gap", "证据缺口"),
         ],
-        string="Report Rescan Gate",
+        string="报告复扫门禁",
         compute="_compute_cn_report_readiness",
         search="_search_cn_report_rescan_state",
     )
@@ -103,12 +103,12 @@ class SudoChinaReportReadinessAssessment(models.Model):
     )
     cn_report_filing_archive_state = fields.Selection(
         [
-            ("not_started", "No controlled archive"),
-            ("ready", "Archive sealed"),
-            ("attention", "Archive needs attention"),
-            ("blocked", "Archive blocked"),
+            ("not_started", "无受控档案"),
+            ("ready", "档案已封存"),
+            ("attention", "档案待复核"),
+            ("blocked", "档案受阻"),
         ],
-        string="Filing Archive Gate",
+        string="申报缴款档案门禁",
         compute="_compute_cn_report_readiness",
         search="_search_cn_report_filing_archive_state",
     )
@@ -130,12 +130,12 @@ class SudoChinaReportReadinessAssessment(models.Model):
     )
     cn_report_ai_guidance_state = fields.Selection(
         [
-            ("not_started", "No AI guidance needed"),
-            ("ready", "AI guidance current"),
-            ("attention", "AI guidance incomplete"),
-            ("blocked", "AI guidance stale"),
+            ("not_started", "无需 AI 指引"),
+            ("ready", "AI 指引有效"),
+            ("attention", "AI 指引待补齐"),
+            ("blocked", "AI 指引已过期"),
         ],
-        string="Report AI Guidance Gate",
+        string="报告 AI 指引门禁",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_next_action = fields.Char(
@@ -636,45 +636,55 @@ class SudoChinaReportReadinessAssessment(models.Model):
         self.ensure_one()
         parts = []
         if self.cn_report_next_action:
-            parts.append("Next: %s" % self.cn_report_next_action)
+            parts.append(_("Next: %(action)s", action=self.cn_report_next_action))
         if self.cn_report_readiness_blocker_summary:
-            parts.append("Blockers: %s" % self.cn_report_readiness_blocker_summary)
+            parts.append(
+                _(
+                    "Blockers: %(blockers)s",
+                    blockers=self.cn_report_readiness_blocker_summary,
+                )
+            )
         parts.append(
-            "Issues: %s | Open tasks: %s | Limitations: %s"
-            % (
-                self.cn_report_issue_count or 0,
-                self.cn_report_open_task_count or 0,
-                self.cn_report_limitation_count or 0,
+            _(
+                "Issues: %(issues)s; Open tasks: %(tasks)s; "
+                "Limitations: %(limitations)s",
+                issues=self.cn_report_issue_count or 0,
+                tasks=self.cn_report_open_task_count or 0,
+                limitations=self.cn_report_limitation_count or 0,
             )
         )
+        rescan_label = dict(
+            self._fields["cn_report_rescan_state"]._description_selection(self.env)
+        ).get(self.cn_report_rescan_state, _("Unknown"))
+        archive_label = dict(
+            self._fields["cn_report_filing_archive_state"]._description_selection(
+                self.env
+            )
+        ).get(self.cn_report_filing_archive_state, _("Unknown"))
+        ai_label = dict(
+            self._fields["cn_report_ai_guidance_state"]._description_selection(
+                self.env
+            )
+        ).get(self.cn_report_ai_guidance_state, _("Unknown"))
         parts.append(
-            "Rescan: %s (%s pending, %s failed)"
-            % (
-                self.cn_report_rescan_state or "unknown",
-                self.cn_report_pending_rescan_count or 0,
-                self.cn_report_failed_rescan_count or 0,
+            _(
+                "Rescan: %(rescan)s (%(pending)s pending, %(failed)s failed); "
+                "Archive: %(archive)s (%(sealed)s/%(archives)s sealed); "
+                "AI: %(ai)s (%(current)s/%(findings)s current); "
+                "Can prepare: %(can_prepare)s",
+                rescan=rescan_label,
+                pending=self.cn_report_pending_rescan_count or 0,
+                failed=self.cn_report_failed_rescan_count or 0,
+                archive=archive_label,
+                sealed=self.cn_report_sealed_filing_archive_count or 0,
+                archives=self.cn_report_filing_archive_count or 0,
+                ai=ai_label,
+                current=self.cn_report_ai_guidance_current_count or 0,
+                findings=self.cn_report_ai_guidance_finding_count or 0,
+                can_prepare=_("Yes") if self.cn_report_can_prepare else _("No"),
             )
         )
-        parts.append(
-            "Archive: %s (%s/%s sealed)"
-            % (
-                self.cn_report_filing_archive_state or "unknown",
-                self.cn_report_sealed_filing_archive_count or 0,
-                self.cn_report_filing_archive_count or 0,
-            )
-        )
-        parts.append(
-            "AI: %s (%s/%s current)"
-            % (
-                self.cn_report_ai_guidance_state or "unknown",
-                self.cn_report_ai_guidance_current_count or 0,
-                self.cn_report_ai_guidance_finding_count or 0,
-            )
-        )
-        parts.append(
-            "Can prepare: %s" % ("yes" if self.cn_report_can_prepare else "no")
-        )
-        return " | ".join(parts)
+        return " · ".join(parts)
 
     def action_cn_open_report_readiness_findings(self):
         self.ensure_one()

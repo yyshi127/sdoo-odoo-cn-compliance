@@ -58,9 +58,9 @@ _CONCLUSION_LABELS = {
     "limited_action_required": "存在限制且需要整改",
 }
 _CLOSURE_LABELS = {
-    "blocked": "Blocked",
-    "action_required": "Action Required",
-    "ready": "Ready",
+    "blocked": "受阻",
+    "action_required": "需要处理",
+    "ready": "就绪",
 }
 
 
@@ -135,15 +135,15 @@ def _fact_basis_summary(payload):
     )
     if issue_count or findings_without_facts:
         state = "blocked"
-        next_action = (
+        next_action = _(
             "Review missing, stale or incomplete fact snapshots before relying on the report."
         )
     elif facts:
         state = "ready"
-        next_action = "Report findings are linked to controlled fact snapshots."
+        next_action = _("Report findings are linked to controlled fact snapshots.")
     else:
         state = "not_started"
-        next_action = "No controlled fact snapshots are attached to this report."
+        next_action = _("No controlled fact snapshots are attached to this report.")
     return {
         "state": state,
         "next_action": next_action,
@@ -671,7 +671,7 @@ class SudoChinaComplianceReport(models.Model):
         compute="_compute_cn_report_center_display",
     )
     cn_report_blocker_summary = fields.Char(
-        string="Report Blockers",
+        string="报告阻断事项",
         compute="_compute_cn_report_traceability",
     )
     cn_report_rule_governance_state = fields.Selection(
@@ -701,32 +701,32 @@ class SudoChinaComplianceReport(models.Model):
 
     cn_report_traceability_state = fields.Selection(
         [
-            ("blocked", "Blocked"),
-            ("action_required", "Action Required"),
-            ("complete", "Complete"),
+            ("blocked", "受阻"),
+            ("action_required", "需要处理"),
+            ("complete", "完整"),
         ],
-        string="Traceability",
+        string="可追溯性",
         compute="_compute_cn_report_traceability",
     )
     cn_report_traceability_gap_count = fields.Integer(
-        string="Traceability Gaps",
+        string="追溯缺口",
         compute="_compute_cn_report_traceability",
     )
     cn_report_traceability_next_action = fields.Char(
-        string="Traceability Next Action",
+        string="追溯下一步",
         compute="_compute_cn_report_traceability",
     )
     cn_report_fact_basis_state = fields.Selection(
         [
-            ("not_started", "Not Started"),
-            ("ready", "Ready"),
-            ("blocked", "Blocked"),
+            ("not_started", "未开始"),
+            ("ready", "就绪"),
+            ("blocked", "受阻"),
         ],
-        string="Fact Basis",
+        string="事实依据",
         compute="_compute_cn_report_fact_basis",
     )
     cn_report_fact_basis_next_action = fields.Char(
-        string="Fact Basis Next Action",
+        string="事实依据下一步",
         compute="_compute_cn_report_fact_basis",
     )
 
