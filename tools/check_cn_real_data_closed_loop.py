@@ -960,7 +960,8 @@ ux_view_clarity_contracts = [
         ],
         [
             'widget="badge"',
-            "border-start border-4",
+            "o_cn_remediation_card",
+            "查看整改详情",
             "行动摘要",
             "阻断事项",
             "税务影响",

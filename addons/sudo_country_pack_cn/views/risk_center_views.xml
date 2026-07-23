@@ -717,8 +717,8 @@
         <field name="name">sudo.compliance.task.cn.remediation.tracker.kanban</field>
         <field name="model">sudo.compliance.task</field>
         <field name="arch" type="xml">
-            <kanban string="中国整改跟踪" class="o_kanban_dashboard"
-                    create="0" quick_create="0" sample="0" default_group_by="state">
+            <kanban string="中国整改跟踪" class="o_kanban_dashboard o_cn_remediation_tracker_kanban"
+                    create="0" quick_create="0" sample="0">
                 <field name="name"/>
                 <field name="company_id"/>
                 <field name="risk_level"/>
@@ -758,17 +758,17 @@
                 <field name="is_overdue"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.is_overdue.raw_value ? 'border-danger' : record.state.raw_value == 'pending_review' ? 'border-info' : record.state.raw_value == 'blocked' ? 'border-warning' : 'border-secondary'}">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="fw-bold"><field name="name"/></div>
-                                    <div class="text-muted small">
+                        <div t-attf-class="o_cn_remediation_card oe_kanban_global_click #{record.is_overdue.raw_value ? 'is-critical' : record.state.raw_value == 'blocked' ? 'is-warning' : record.state.raw_value == 'done' ? 'is-complete' : ''}">
+                            <div class="o_cn_remediation_header">
+                                <div class="o_cn_remediation_identity">
+                                    <div class="o_cn_remediation_title"><field name="name"/></div>
+                                    <div class="o_cn_remediation_meta">
                                         <field name="company_id"/>
                                         <span> · </span>
                                         <field name="cn_remediation_period_label"/>
                                     </div>
                                 </div>
-                                <div class="d-flex flex-column align-items-end gap-1">
+                                <div class="o_cn_remediation_badges">
                                     <field name="risk_level" widget="badge"
                                            decoration-danger="risk_level in ('critical', 'high')"
                                            decoration-warning="risk_level == 'medium'"
@@ -776,138 +776,144 @@
                                     <field name="priority" widget="badge"
                                            decoration-danger="priority in ('critical', 'high')"
                                            decoration-warning="priority == 'medium'"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'done'"
+                                           decoration-warning="state in ('waiting', 'blocked')"
+                                           decoration-info="state == 'pending_review'"/>
                                 </div>
                             </div>
-                            <div class="mt-3 small text-muted">
-                                <field name="recommendation_snapshot"/>
-                            </div>
-                            <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">下一步</div>
-                                <div class="fw-semibold"><field name="cn_remediation_next_action"/></div>
-                                <div class="text-muted small mt-1">行动摘要</div>
-                                <div class="small"><field name="cn_remediation_action_summary"/></div>
-                                <div class="text-muted small mt-1">阻断事项</div>
-                                <div class="small"><field name="cn_remediation_blocker_summary"/></div>
-                                <div class="text-muted small">
-                                    进度 <field name="cn_remediation_progress"/>%
-                                    <span> · </span>
-                                    <field name="cn_remediation_summary"/>
-                                </div>
-                            </div>
-                            <div class="mt-3 border rounded p-2">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div>
-                                        <div class="text-muted small">数据基础</div>
-                                        <div class="fw-semibold"><field name="cn_remediation_data_basis_next_action"/></div>
-                                        <div class="text-muted small">
-                                            缺失 <field name="cn_remediation_data_basis_missing_type_count"/>
-                                            <span> </span>
-                                            <field name="cn_remediation_data_basis_missing_type_summary"/>
-                                        </div>
+
+                            <div class="o_cn_remediation_body">
+                                <div class="o_cn_remediation_focus">
+                                    <div class="o_cn_remediation_label">下一步</div>
+                                    <div class="o_cn_remediation_next o_cn_line_clamp_2">
+                                        <field name="cn_remediation_next_action"/>
                                     </div>
-                                    <field name="cn_remediation_data_basis_state" widget="badge"
-                                           decoration-success="cn_remediation_data_basis_state == 'ready'"
-                                           decoration-warning="cn_remediation_data_basis_state == 'warning'"
-                                           decoration-danger="cn_remediation_data_basis_state in ('no_period', 'missing', 'blocked')"/>
-                                </div>
-                            </div>
-                            <div class="mt-3 border rounded p-2">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div>
-                                        <div class="text-muted small">税务影响</div>
-                                        <div class="fw-semibold"><field name="cn_remediation_tax_impact_summary"/></div>
-                                        <div class="text-muted small">
-                                            待复核 <field name="cn_remediation_tax_impact_pending_review_count"/>
-                                            <span> / 少缴情形 </span>
-                                            <field name="cn_remediation_tax_impact_reviewed_underpayment_amount"/>
-                                            <span> / 多缴情形 </span>
-                                            <field name="cn_remediation_tax_impact_reviewed_overpayment_amount"/>
-                                            <span> / 时间性差异 </span>
-                                            <field name="cn_remediation_tax_impact_reviewed_timing_amount"/>
-                                        </div>
+                                    <div class="o_cn_remediation_recommendation o_cn_line_clamp_2">
+                                        <field name="recommendation_snapshot"/>
                                     </div>
-                                    <field name="cn_remediation_tax_impact_state" widget="badge"
-                                           decoration-success="cn_remediation_tax_impact_state == 'reviewed'"
-                                           decoration-warning="cn_remediation_tax_impact_state in ('pending', 'unquantifiable')"
-                                           decoration-danger="cn_remediation_tax_impact_state == 'integrity_issue'"
-                                           decoration-muted="cn_remediation_tax_impact_state == 'none'"/>
+                                    <div class="o_cn_remediation_progress_row">
+                                        <progress max="100"
+                                                  t-att-value="record.cn_remediation_progress.raw_value || 0"/>
+                                        <strong><field name="cn_remediation_progress"/>%</strong>
+                                        <span class="text-muted small o_cn_line_clamp_2">
+                                            <field name="cn_remediation_summary"/>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row g-2 mt-3">
-                                <div class="col-6">
-                                    <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">负责人</div>
-                                        <div class="fw-semibold"><field name="cn_remediation_responsibility_summary"/></div>
-                                        <div class="mt-1">
+
+                                <div class="o_cn_remediation_controls">
+                                    <div class="o_cn_remediation_control">
+                                        <div class="o_cn_remediation_label">责任与期限</div>
+                                        <div class="fw-semibold o_cn_line_clamp_2">
+                                            <field name="cn_remediation_responsibility_summary"/>
+                                        </div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                             <field name="cn_remediation_urgency" widget="badge"
                                                    decoration-danger="cn_remediation_urgency == 'overdue'"
                                                    decoration-warning="cn_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
                                                    decoration-info="cn_remediation_urgency == 'waiting_rescan'"
                                                    decoration-success="cn_remediation_urgency == 'closed'"/>
+                                            <span class="small"><field name="due_date"/></span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">截止日期</div>
-                                        <div class="fw-semibold"><field name="due_date"/></div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">整改证据</div>
-                                        <div class="fw-semibold">
+
+                                    <div class="o_cn_remediation_control">
+                                        <div class="o_cn_remediation_label">整改证据</div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
                                             <field name="cn_remediation_evidence_state" widget="badge"
                                                    decoration-success="cn_remediation_evidence_state == 'verified'"
                                                    decoration-warning="cn_remediation_evidence_state == 'partial'"
                                                    decoration-muted="cn_remediation_evidence_state == 'none'"/>
-                                            <span> </span>
-                                            <field name="cn_remediation_verified_evidence_count"/>
-                                            <span>/</span>
-                                            <field name="cn_remediation_evidence_count"/>
+                                            <span class="fw-semibold">
+                                                <field name="cn_remediation_verified_evidence_count"/>
+                                                <span>/</span>
+                                                <field name="cn_remediation_evidence_count"/>
+                                                <span> 已验证</span>
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="border rounded p-2 h-100">
-                                        <div class="d-flex justify-content-between align-items-start gap-2">
-                                            <div>
-                                                <div class="text-muted small">证据追溯</div>
-                                                <div class="fw-semibold"><field name="cn_remediation_traceability_next_action"/></div>
-                                                <div class="text-muted small">
-                                                    缺口 <field name="cn_remediation_traceability_gap_count"/>
-                                                </div>
-                                            </div>
-                                            <field name="cn_remediation_traceability_state" widget="badge"
-                                                   decoration-success="cn_remediation_traceability_state == 'complete'"
-                                                   decoration-warning="cn_remediation_traceability_state == 'action_required'"
-                                                   decoration-danger="cn_remediation_traceability_state == 'blocked'"/>
+
+                                    <div class="o_cn_remediation_control">
+                                        <div class="o_cn_remediation_label">复扫验证</div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <field name="cn_remediation_rescan_stage" widget="badge"
+                                                   decoration-success="cn_remediation_rescan_stage == 'verified'"
+                                                   decoration-info="cn_remediation_rescan_stage in ('ready_for_rescan', 'pending_rescan')"
+                                                   decoration-warning="cn_remediation_rescan_stage in ('in_progress', 'overdue', 'evidence_gap')"
+                                                   decoration-danger="cn_remediation_rescan_stage in ('blocked', 'failed')"/>
+                                            <field name="verification_state" widget="badge"
+                                                   decoration-success="verification_state in ('verified', 'not_required')"
+                                                   decoration-warning="verification_state in ('pending_rescan', 'failed')"/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <field name="state" widget="badge"
-                                       decoration-success="state == 'done'"
-                                       decoration-warning="state in ('waiting', 'blocked')"
-                                       decoration-info="state == 'pending_review'"/>
-                                <field name="cn_remediation_rescan_stage" widget="badge"
-                                       decoration-success="cn_remediation_rescan_stage == 'verified'"
-                                       decoration-info="cn_remediation_rescan_stage in ('ready_for_rescan', 'pending_rescan')"
-                                       decoration-warning="cn_remediation_rescan_stage in ('in_progress', 'overdue', 'evidence_gap')"
-                                       decoration-danger="cn_remediation_rescan_stage in ('blocked', 'failed')"/>
+
+                            <div class="o_cn_remediation_status_strip">
+                                <div class="o_cn_remediation_status">
+                                    <div class="o_cn_remediation_label">数据基础</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_remediation_data_basis_state" widget="badge"
+                                               decoration-success="cn_remediation_data_basis_state == 'ready'"
+                                               decoration-warning="cn_remediation_data_basis_state == 'warning'"
+                                               decoration-danger="cn_remediation_data_basis_state in ('no_period', 'missing', 'blocked')"/>
+                                        <span class="small">
+                                            缺失 <field name="cn_remediation_data_basis_missing_type_count"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_remediation_status">
+                                    <div class="o_cn_remediation_label">税务影响</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_remediation_tax_impact_state" widget="badge"
+                                               decoration-success="cn_remediation_tax_impact_state == 'reviewed'"
+                                               decoration-warning="cn_remediation_tax_impact_state in ('pending', 'unquantifiable')"
+                                               decoration-danger="cn_remediation_tax_impact_state == 'integrity_issue'"
+                                               decoration-muted="cn_remediation_tax_impact_state == 'none'"/>
+                                        <span class="small">
+                                            待复核 <field name="cn_remediation_tax_impact_pending_review_count"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_remediation_status">
+                                    <div class="o_cn_remediation_label">证据追溯</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_remediation_traceability_state" widget="badge"
+                                               decoration-success="cn_remediation_traceability_state == 'complete'"
+                                               decoration-warning="cn_remediation_traceability_state == 'action_required'"
+                                               decoration-danger="cn_remediation_traceability_state == 'blocked'"/>
+                                        <span class="small">
+                                            缺口 <field name="cn_remediation_traceability_gap_count"/>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="d-flex flex-wrap gap-2 mt-3">
-                                <button name="action_queue_verification_scan" type="object"
-                                        class="btn btn-primary btn-sm"
-                                        invisible="cn_remediation_rescan_stage != 'ready_for_rescan'">
-                                    发起复扫
-                                </button>
-                                <button name="action_cn_open_remediation_verification_assessment" type="object"
-                                        class="btn btn-outline-secondary btn-sm"
-                                        invisible="not verification_assessment_id">
-                                    查看复扫
-                                </button>
+
+                            <div class="o_cn_remediation_footer">
+                                <div class="o_cn_remediation_blocker">
+                                    <span class="o_cn_remediation_label">行动摘要 / 阻断事项</span>
+                                    <span class="o_cn_line_clamp_2">
+                                        <field name="cn_remediation_action_summary"/>
+                                        <span> · </span>
+                                        <field name="cn_remediation_blocker_summary"/>
+                                    </span>
+                                </div>
+                                <div class="o_cn_remediation_actions">
+                                    <button type="open" class="btn btn-primary btn-sm">
+                                        查看整改详情
+                                    </button>
+                                    <button name="action_queue_verification_scan" type="object"
+                                            class="btn btn-outline-primary btn-sm"
+                                            invisible="cn_remediation_rescan_stage != 'ready_for_rescan'">
+                                        发起复扫
+                                    </button>
+                                    <button name="action_cn_open_remediation_verification_assessment" type="object"
+                                            class="btn btn-outline-secondary btn-sm"
+                                            invisible="not verification_assessment_id">
+                                        查看复扫
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </t>
@@ -956,7 +962,7 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_cn_remediation_tracker_task_search"/>
         <field name="domain">[('assessment_id.profile_id.country_id.code', '=', 'CN'), ('task_type', '=', 'remediation')]</field>
-        <field name="context">{'search_default_cn_remediation': 1, 'search_default_open': 1, 'search_default_group_state': 1}</field>
+        <field name="context">{'search_default_cn_remediation': 1, 'search_default_open': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">当前没有中国整改任务</p>
             <p>从风险事项创建整改任务后，可以在这里跟踪负责人、期限、复核和复扫验证。</p>

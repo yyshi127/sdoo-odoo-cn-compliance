@@ -5308,7 +5308,9 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "task_verification_state",
         "cn_tax_impact_case_count",
         "verification_state",
-        "default_group_by=\"state\"",
+        "o_cn_remediation_tracker_kanban",
+        "o_cn_remediation_card",
+        "查看整改详情",
         "cn_risk_period_label",
         "cn_risk_next_action",
         "cn_risk_evidence_state",
@@ -5355,6 +5357,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "current_date",
         "('cn_workbench_status'",
         "group_by': 'cn_workbench_status'",
+        "search_default_group_state",
     ):
         if forbidden in risk_view_content:
             fail(f"China risk center has unsafe UI expression: {forbidden}")
