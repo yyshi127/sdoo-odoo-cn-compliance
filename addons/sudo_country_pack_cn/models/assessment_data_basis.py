@@ -2,12 +2,12 @@ from odoo import _, api, fields, models
 
 
 _CN_REQUIRED_DATASET_LABELS = {
-    "electronic_invoice": "Electronic invoices",
-    "vat_filing": "VAT filings",
-    "cit_filing": "CIT filings",
-    "iit_withholding": "IIT withholding",
-    "payroll_summary": "Payroll summaries",
-    "tax_payment": "Tax payments",
+    "electronic_invoice": "电子发票",
+    "vat_filing": "增值税申报",
+    "cit_filing": "企业所得税申报",
+    "iit_withholding": "个人所得税代扣代缴",
+    "payroll_summary": "工资汇总",
+    "tax_payment": "税款缴纳",
 }
 
 _CN_BASE_REQUIRED_DATASET_TYPES = {

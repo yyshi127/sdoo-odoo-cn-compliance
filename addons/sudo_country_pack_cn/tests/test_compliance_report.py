@@ -469,6 +469,10 @@ class TestChinaFormalComplianceReport(TransactionCase):
         )
         self.assertEqual(report.snapshot_json["filing_archive"]["state"], "not_started")
         self.assertEqual(report.snapshot_json["filing_archive"]["archive_count"], 0)
+        self.assertIn(
+            "尚无受控申报缴款档案",
+            report.snapshot_json["filing_archive"]["next_action"],
+        )
         self.assertEqual(report.snapshot_json["rule_governance"]["state"], "ready")
         self.assertEqual(report.snapshot_json["rule_governance"]["issue_count"], 0)
         self.assertIn("authority_sources", report.snapshot_json["rules"][0])
@@ -478,7 +482,7 @@ class TestChinaFormalComplianceReport(TransactionCase):
             0,
         )
         self.assertIn(
-            "Electronic invoices",
+            "电子发票",
             report.snapshot_json["data_basis"]["missing_type_summary"],
         )
         self.assertEqual(report.snapshot_json["fact_basis"]["state"], "blocked")
@@ -715,6 +719,10 @@ class TestChinaFormalComplianceReport(TransactionCase):
         self.assertEqual(payload["filing_archive"]["archive_count"], 1)
         self.assertEqual(payload["filing_archive"]["issue_count"], 1)
         self.assertEqual(payload["filing_archive"]["state"], "blocked")
+        self.assertIn(
+            "封存申报缴款档案",
+            payload["filing_archive"]["next_action"],
+        )
         self.assertEqual(payload["filing_archive"]["archives"][0]["id"], filing.id)
         self.assertEqual(report._derive_conclusion(payload)[0], "limited_action_required")
         action = self.env.ref(

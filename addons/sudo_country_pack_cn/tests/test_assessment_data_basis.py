@@ -244,7 +244,7 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         self.assertEqual(assessment.cn_data_basis_ready_type_count, 0)
         self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
         self.assertIn(
-            "Electronic invoices",
+            "电子发票",
             assessment.cn_data_basis_missing_type_summary,
         )
         self.assertIn(

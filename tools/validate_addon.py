@@ -2957,6 +2957,10 @@ def validate_formal_compliance_report() -> None:
         'string="Fact Snapshots"',
         'string="Fact Issues"',
         'string="Findings Without Facts"',
+        "No controlled filing/payment archive exists for this report period.",
+        "Seal filing/payment archives and verify receipt/payment evidence before relying on the report.",
+        "Controlled filing/payment archives are sealed.",
+        "Review filing/payment archive evidence before sign-off.",
     ):
         if forbidden in model_content:
             fail(f"formal compliance report exposes retired English label {forbidden}")
@@ -5059,6 +5063,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'string="Obligations Needing Review"',
         'string="Applicable Filing Obligations"',
         'string="Obligation Basis Next Action"',
+        '"Electronic invoices"',
+        '"VAT filings"',
+        '"CIT filings"',
+        '"IIT withholding"',
+        '"Payroll summaries"',
+        '"Tax payments"',
     ):
         if forbidden in data_basis_model_content:
             fail(f"China assessment data basis exposes retired English label {forbidden}")
@@ -5102,7 +5112,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "cn_workbench_pending_obligation_count",
         "cn_workbench_filing_archive_state",
         "cn_workbench_filing_archive_next_action",
-        "Filing/payment archive",
+        "申报缴款档案",
         "_cn_ai_guidance_input",
         "_cn_ai_guidance_text",
         "action_generate_cn_ai_guidance",
@@ -5112,6 +5122,18 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in ai_model_content:
             fail(f"China controlled AI guidance contract is missing {required}")
+    for forbidden in (
+        "Assessment data basis is incomplete; disclose missing data types",
+        "Filing/payment archive:",
+        "Data basis:",
+        "Fact basis:",
+        "Remediation evidence:",
+        "Reconciliation risk:",
+        "Tax impact:",
+        "Remediation progress:",
+    ):
+        if forbidden in ai_model_content:
+            fail(f"China controlled AI guidance exposes retired English text {forbidden}")
 
     ai_view_content = (
         ADDON_ROOT / "views" / "ai_guidance_views.xml"
@@ -5341,7 +5363,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "china_ai_filing_archive_context",
         "obligation_readiness",
         "filing_archive",
-        "Filing/payment archive",
+        "申报缴款档案",
         "pending_review_count",
         "_reset_obligations",
     ):

@@ -383,7 +383,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_risk_data_basis_state, "missing")
         self.assertGreater(finding.cn_risk_data_basis_missing_type_count, 0)
         self.assertIn(
-            "Electronic invoices",
+            "电子发票",
             finding.cn_risk_data_basis_missing_type_summary,
         )
         self.assertIn(
@@ -406,7 +406,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(task.cn_remediation_data_basis_state, "missing")
         self.assertGreater(task.cn_remediation_data_basis_missing_type_count, 0)
         self.assertIn(
-            "Electronic invoices",
+            "电子发票",
             task.cn_remediation_data_basis_missing_type_summary,
         )
         self.assertEqual(task.cn_remediation_rescan_stage, "ready_for_rescan")

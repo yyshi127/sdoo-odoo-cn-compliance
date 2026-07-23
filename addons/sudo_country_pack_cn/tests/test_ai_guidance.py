@@ -210,15 +210,25 @@ class TestChinaControlledAiGuidance(TransactionCase):
             analysis.input_snapshot_json["data_basis"]["missing_type_count"],
             0,
         )
-        self.assertIn("Data basis: state=missing", analysis.analysis)
-        self.assertIn("Electronic invoices", analysis.analysis)
+        self.assertIn("数据基础：状态 缺失", analysis.analysis)
+        self.assertIn("电子发票", analysis.analysis)
         self.assertEqual(
             analysis.input_snapshot_json["obligation_readiness"][
                 "pending_review_count"
             ],
             len(self.profile.obligation_ids),
         )
-        self.assertIn("Filing/payment archive", analysis.analysis)
+        self.assertIn("申报缴款档案", analysis.analysis)
+        for retired_prefix in (
+            "Filing/payment archive:",
+            "Data basis:",
+            "Fact basis:",
+            "Remediation evidence:",
+            "Reconciliation risk:",
+            "Tax impact:",
+            "Remediation progress:",
+        ):
+            self.assertNotIn(retired_prefix, analysis.analysis)
         self.assertEqual(finding.cn_ai_guidance_state, "generated")
         self.assertEqual(
             finding.cn_ai_guidance_input_checksum,
@@ -298,14 +308,14 @@ class TestChinaControlledAiGuidance(TransactionCase):
         analysis = self.env["sudo.compliance.ai.analysis"].browse(
             action["res_id"]
         )
-        self.assertIn("Fact basis: state=ready", analysis.analysis)
-        self.assertIn("Reconciliation risk: state=difference_review_required", analysis.analysis)
-        self.assertIn("Tax impact: state=none", analysis.analysis)
+        self.assertIn("事实依据：状态 已就绪", analysis.analysis)
+        self.assertIn("勾稽风险：状态 差异待复核", analysis.analysis)
+        self.assertIn("税务影响：状态 无", analysis.analysis)
         self.assertIn(
-            "Remediation evidence: state=verified",
+            "整改证据：状态 已验证",
             analysis.analysis,
         )
-        self.assertIn("Remediation progress: progress=33%", analysis.analysis)
+        self.assertIn("整改进度：进度 33%", analysis.analysis)
         self.assertEqual(
             analysis.input_snapshot_json["remediation_evidence"]["state"],
             "verified",

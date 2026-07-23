@@ -1144,20 +1144,20 @@ class SudoChinaComplianceReport(models.Model):
             )
         if not filings:
             state = "not_started"
-            next_action = (
-                "No controlled filing/payment archive exists for this report period."
+            next_action = _(
+                "本报告期间尚无受控申报缴款档案。"
             )
         elif issue_count:
             state = "blocked"
-            next_action = (
-                "Seal filing/payment archives and verify receipt/payment evidence before relying on the report."
+            next_action = _(
+                "在引用报告结论前，请先封存申报缴款档案并核验申报回执和缴款证据。"
             )
         elif sealed_count == len(filings):
             state = "ready"
-            next_action = "Controlled filing/payment archives are sealed."
+            next_action = _("本报告期间的受控申报缴款档案均已封存。")
         else:
             state = "attention"
-            next_action = "Review filing/payment archive evidence before sign-off."
+            next_action = _("报告签核前请复核申报缴款档案证据。")
         return {
             "state": state,
             "next_action": next_action,

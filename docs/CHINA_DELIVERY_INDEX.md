@@ -272,7 +272,7 @@ python tools/check_cn_real_data_closed_loop.py \
   --odoo-bin /opt/odoo/odoo19/odoo-server/odoo-bin \
   --config /path/to/odoo.conf \
   --database copied_real_data_db \
-  --expected-version 19.0.1.154.0 \
+  --expected-version 19.0.1.155.0 \
   --json-output dist/cn_real_data_closed_loop.json \
   --require-demo-ready
 ```

@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.154.0`
+Delivery version: `19.0.1.155.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -138,6 +138,13 @@ workflow transitions are unchanged.
 Version `19.0.1.154.0` fixes the five-step workbench status badge container so
 the complete Chinese state remains visible at laptop and mobile breakpoints.
 The responsive layout and workflow behavior are otherwise unchanged.
+
+Version `19.0.1.155.0` removes unlocalized English from controlled AI guidance
+and formal report filing/payment archive snapshots. Required dataset names,
+risk and workflow states, data/fact/reconciliation/tax/remediation summaries
+and filing archive next actions now render as clear Chinese reviewer text.
+Runtime and static tests reject the retired English prefixes while preserving
+the underlying rule results, audit payload keys and workflow behavior.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes

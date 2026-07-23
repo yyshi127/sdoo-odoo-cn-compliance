@@ -9,6 +9,52 @@ AI_GUIDANCE_PROVIDER = "sdoo_cn_controlled_guidance"
 AI_GUIDANCE_MODEL = "sdoo-cn-guidance-fallback-v1"
 AI_GUIDANCE_PROMPT_VERSION = "cn-compliance-guidance-v1"
 
+_CN_GUIDANCE_VALUE_LABELS = {
+    "action_required": "需处理",
+    "attention": "需关注",
+    "blocked": "受阻",
+    "complete": "完整",
+    "critical": "严重",
+    "difference_review_required": "差异待复核",
+    "done": "已完成",
+    "error": "执行错误",
+    "fail": "未通过",
+    "failed": "复扫未通过",
+    "generated": "已生成",
+    "high": "高",
+    "in_progress": "处理中",
+    "incomplete": "不完整",
+    "integrity_issue": "完整性异常",
+    "limited": "受限",
+    "low": "低",
+    "medium": "中",
+    "missing": "缺失",
+    "no_period": "未设置期间",
+    "none": "无",
+    "not_applicable": "不适用",
+    "not_started": "未开始",
+    "open": "待处理",
+    "partial": "部分完成",
+    "pass": "通过",
+    "passed": "复扫通过",
+    "pending": "待处理",
+    "pending_rescan": "待复扫",
+    "ready": "已就绪",
+    "ready_for_rescan": "可复扫",
+    "review_required": "待复核",
+    "reviewed": "已复核",
+    "stale": "已过期",
+    "unavailable": "不适用",
+    "unquantifiable": "无法量化",
+    "unknown": "待确认",
+    "verified": "已验证",
+    "warning": "待补齐",
+}
+
+
+def _guidance_value_label(value):
+    return _CN_GUIDANCE_VALUE_LABELS.get(value, value or "-")
+
 
 def _checksum(payload):
     return hashlib.sha256(
@@ -337,7 +383,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
         data_basis = payload.get("data_basis", {})
         if data_basis.get("state") in ("no_period", "missing", "warning", "blocked"):
             warning_lines.append(
-                "- Assessment data basis is incomplete; disclose missing data types and keep report limitations visible."
+                "- 评估数据基础不完整；请披露缺失数据类型，并在报告中持续显示限制事项。"
             )
         if not warning_lines:
             warning_lines.append("- 当前未发现来源、签核或事实缺口警示。")
@@ -345,7 +391,7 @@ class SudoChinaAiGuidanceFinding(models.Model):
         task = payload["task"]
         obligation_line = _(
             "状态 %(state)s；候选 %(candidate)s；已适用 %(applicable)s；待确认 %(pending)s；申报类 %(filing)s；下一步：%(next_action)s",
-            state=obligation_readiness.get("state") or "-",
+            state=_guidance_value_label(obligation_readiness.get("state")),
             candidate=obligation_readiness.get("candidate_count") or 0,
             applicable=obligation_readiness.get("applicable_count") or 0,
             pending=obligation_readiness.get("pending_review_count") or 0,
@@ -353,82 +399,72 @@ class SudoChinaAiGuidanceFinding(models.Model):
             next_action=obligation_readiness.get("next_action") or "-",
         )
         filing_archive = payload.get("filing_archive", {})
-        filing_archive_line = (
-            "Filing/payment archive: state=%s; archives=%s; sealed=%s; "
-            "issues=%s; next=%s"
-            % (
-                filing_archive.get("state") or "-",
-                filing_archive.get("archive_count") or 0,
-                filing_archive.get("sealed_count") or 0,
-                filing_archive.get("issue_count") or 0,
-                filing_archive.get("next_action") or "-",
-            )
+        filing_archive_line = _(
+            "申报缴款档案：状态 %(state)s；档案 %(archives)s；已封存 %(sealed)s；"
+            "问题 %(issues)s；下一步：%(next_action)s",
+            state=_guidance_value_label(filing_archive.get("state")),
+            archives=filing_archive.get("archive_count") or 0,
+            sealed=filing_archive.get("sealed_count") or 0,
+            issues=filing_archive.get("issue_count") or 0,
+            next_action=filing_archive.get("next_action") or "-",
         )
         due_line = task["due_date"] or "尚未设置"
-        data_basis_line = (
-            "Data basis: state=%s; datasets=%s; ready_types=%s/%s; missing=%s; missing_types=%s; next=%s"
-            % (
-                data_basis.get("state") or "-",
-                data_basis.get("dataset_count") or 0,
-                data_basis.get("ready_type_count") or 0,
-                data_basis.get("required_type_count") or 0,
-                data_basis.get("missing_type_count") or 0,
-                data_basis.get("missing_type_summary") or "-",
-                data_basis.get("next_action") or "-",
-            )
+        data_basis_line = _(
+            "数据基础：状态 %(state)s；数据集 %(datasets)s；就绪类型 %(ready)s/%(required)s；"
+            "缺失 %(missing)s；缺失类型 %(missing_types)s；下一步：%(next_action)s",
+            state=_guidance_value_label(data_basis.get("state")),
+            datasets=data_basis.get("dataset_count") or 0,
+            ready=data_basis.get("ready_type_count") or 0,
+            required=data_basis.get("required_type_count") or 0,
+            missing=data_basis.get("missing_type_count") or 0,
+            missing_types=data_basis.get("missing_type_summary") or "-",
+            next_action=data_basis.get("next_action") or "-",
         )
         fact_basis = payload.get("fact_basis", {})
-        fact_basis_line = (
-            "Fact basis: state=%s; snapshots=%s; issues=%s; missing=%s"
-            % (
-                fact_basis.get("state") or "-",
-                fact_basis.get("snapshot_count") or 0,
-                fact_basis.get("issue_count") or 0,
-                fact_basis.get("missing_fact_count") or 0,
-            )
+        fact_basis_line = _(
+            "事实依据：状态 %(state)s；快照 %(snapshots)s；问题 %(issues)s；缺失事实 %(missing)s",
+            state=_guidance_value_label(fact_basis.get("state")),
+            snapshots=fact_basis.get("snapshot_count") or 0,
+            issues=fact_basis.get("issue_count") or 0,
+            missing=fact_basis.get("missing_fact_count") or 0,
         )
         remediation_evidence = payload.get("remediation_evidence", {})
-        remediation_evidence_line = (
-            "Remediation evidence: state=%s; verified=%s/%s"
-            % (
-                remediation_evidence.get("state") or "-",
-                remediation_evidence.get("verified_evidence_count") or 0,
-                remediation_evidence.get("evidence_count") or 0,
-            )
+        remediation_evidence_line = _(
+            "整改证据：状态 %(state)s；已验证 %(verified)s/%(total)s",
+            state=_guidance_value_label(remediation_evidence.get("state")),
+            verified=remediation_evidence.get("verified_evidence_count") or 0,
+            total=remediation_evidence.get("evidence_count") or 0,
         )
         reconciliation_risk = payload.get("reconciliation_risk", {})
-        reconciliation_risk_line = (
-            "Reconciliation risk: state=%s; summary=%s; next=%s"
-            % (
-                reconciliation_risk.get("state") or "-",
-                reconciliation_risk.get("summary") or "-",
-                reconciliation_risk.get("next_action") or "-",
-            )
+        reconciliation_risk_line = _(
+            "勾稽风险：状态 %(state)s；摘要 %(summary)s；下一步：%(next_action)s",
+            state=_guidance_value_label(reconciliation_risk.get("state")),
+            summary=reconciliation_risk.get("summary") or "-",
+            next_action=reconciliation_risk.get("next_action") or "-",
         )
         tax_impact = payload.get("tax_impact", {})
-        tax_impact_line = (
-            "Tax impact: state=%s; cases=%s; pending=%s; underpayment=%s; "
-            "overpayment=%s; timing=%s"
-            % (
-                tax_impact.get("state") or "-",
-                tax_impact.get("case_count") or 0,
-                tax_impact.get("pending_count") or 0,
-                tax_impact.get("reviewed_underpayment_amount") or 0.0,
-                tax_impact.get("reviewed_overpayment_amount") or 0.0,
-                tax_impact.get("reviewed_timing_amount") or 0.0,
-            )
+        tax_impact_line = _(
+            "税务影响：状态 %(state)s；事项 %(cases)s；待量化 %(pending)s；"
+            "少缴情形 %(underpayment)s；多缴情形 %(overpayment)s；时间性差异 %(timing)s",
+            state=_guidance_value_label(tax_impact.get("state")),
+            cases=tax_impact.get("case_count") or 0,
+            pending=tax_impact.get("pending_count") or 0,
+            underpayment=tax_impact.get("reviewed_underpayment_amount") or 0.0,
+            overpayment=tax_impact.get("reviewed_overpayment_amount") or 0.0,
+            timing=tax_impact.get("reviewed_timing_amount") or 0.0,
         )
         remediation_progress = payload.get("remediation_progress", {})
-        remediation_progress_line = (
-            "Remediation progress: progress=%s%%; stage=%s; traceability=%s; summary=%s"
-            % (
-                remediation_progress.get("progress")
-                if remediation_progress.get("progress") is not None
-                else "-",
-                remediation_progress.get("rescan_stage") or "-",
-                remediation_progress.get("traceability_state") or "-",
-                remediation_progress.get("summary") or "-",
-            )
+        remediation_progress_line = _(
+            "整改进度：进度 %(progress)s%%；阶段 %(stage)s；追溯状态 %(traceability)s；"
+            "摘要 %(summary)s",
+            progress=remediation_progress.get("progress")
+            if remediation_progress.get("progress") is not None
+            else "-",
+            stage=_guidance_value_label(remediation_progress.get("rescan_stage")),
+            traceability=_guidance_value_label(
+                remediation_progress.get("traceability_state")
+            ),
+            summary=remediation_progress.get("summary") or "-",
         )
         assignee_line = (
             self.current_task_id.assignee_id.display_name
@@ -468,8 +504,8 @@ class SudoChinaAiGuidanceFinding(models.Model):
             "5. 若需要整改，按整改任务推进并在完成后发起验证复扫。\n"
             "6. 编制正式报告前，确认所有限制、不确定性和管理层回应已记录。\n\n"
             "整改跟踪：负责人 %(assignee)s；截止日期 %(due)s；当前状态 %(task_state)s；验证状态 %(verification)s。",
-            risk=payload["risk_level"],
-            result=payload["result"],
+            risk=_guidance_value_label(payload["risk_level"]),
+            result=_guidance_value_label(payload["result"]),
             title=payload["title"],
             period_start=payload["period_start"] or "-",
             period_end=payload["period_end"] or "-",
@@ -488,8 +524,12 @@ class SudoChinaAiGuidanceFinding(models.Model):
             warnings="\n".join(warning_lines),
             assignee=assignee_line,
             due=due_line,
-            task_state=task["state"] or "尚未创建整改任务",
-            verification=task["verification_state"] or "尚未提交验证",
+            task_state=_guidance_value_label(task["state"])
+            if task["state"]
+            else "尚未创建整改任务",
+            verification=_guidance_value_label(task["verification_state"])
+            if task["verification_state"]
+            else "尚未提交验证",
         )
 
     def action_generate_cn_ai_guidance(self):
