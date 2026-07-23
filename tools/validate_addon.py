@@ -5148,6 +5148,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'msgstr "CODEX-DEMO 增值税申报回执证据 %(suffix)s"',
         'msgid "CODEX-DEMO controlled tax authority evidence issuer"',
         'msgstr "CODEX-DEMO 受控税务凭证出具方"',
+        'msgid "CODEX-DEMO VAT remediation verification evidence"',
+        'msgstr "CODEX-DEMO 增值税整改验证证据"',
+        'msgid "CODEX-DEMO controlled evidence issuer"',
+        'msgstr "CODEX-DEMO 受控证据出具方"',
     ):
         if required not in translation_content:
             fail(f"China center translation catalog is missing {required}")
@@ -5721,6 +5725,8 @@ def validate_delivery_objective_coverage() -> None:
         "CODEX-DEMO 增值税申报回执证据",
         "CODEX-DEMO 增值税缴税凭证",
         "CODEX-DEMO 受控税务凭证出具方",
+        "CODEX-DEMO 增值税整改验证证据",
+        "CODEX-DEMO 受控证据出具方",
         'evidence.state in ("draft", "rejected")',
     ):
         if required not in demo_closed_loop_content:
@@ -5729,6 +5735,8 @@ def validate_delivery_objective_coverage() -> None:
         "CODEX-DEMO VAT filing/payment archive evidence",
         "CODEX-DEMO controlled tax authority evidence issuer",
         "CODEX-DEMO ONLY: verified against the controlled VAT filing or payment source record",
+        '"name": "CODEX-DEMO VAT remediation verification evidence"',
+        '"issuer": "CODEX-DEMO controlled evidence issuer"',
     ):
         if forbidden in demo_closed_loop_content:
             fail(f"China controlled demo evidence still exposes English text: {forbidden}")

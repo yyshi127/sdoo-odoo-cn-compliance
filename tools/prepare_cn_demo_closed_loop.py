@@ -889,13 +889,13 @@ def ensure_remediation_verification(profile, source_run, task):
         evidence = env["sudo.compliance.evidence"].with_company(
             profile.company_id
         ).create({{
-            "name": "CODEX-DEMO VAT remediation verification evidence",
+            "name": "CODEX-DEMO 增值税整改验证证据",
             "company_id": profile.company_id.id,
             "task_id": task.id,
             "evidence_type": "remediation_proof",
             "external_reference": "CODEX-DEMO/CN/VAT-REMEDIATION/VERIFIED-2026-06",
             "evidence_date": "2026-07-12",
-            "issuer": "CODEX-DEMO controlled evidence issuer",
+            "issuer": "CODEX-DEMO 受控证据出具方",
         }})
         changed = True
     if getattr(evidence, "state", False) == "draft":
@@ -904,8 +904,8 @@ def ensure_remediation_verification(profile, source_run, task):
     if getattr(evidence, "state", False) == "submitted":
         evidence.write({{
             "review_notes": (
-                "CODEX-DEMO ONLY: replacement reconciliation, exact period, "
-                "source scope and pass finding were checked for UAT."
+                "仅用于 CODEX-DEMO：已为用户验收复核替代勾稽结果、准确期间、"
+                "来源范围和通过结论。"
             )
         }})
         evidence.action_verify()

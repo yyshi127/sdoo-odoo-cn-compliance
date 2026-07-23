@@ -53,6 +53,12 @@ class SudoChinaEvidenceCenterEvidence(models.Model):
 
     def _cn_evidence_display_name(self):
         self.ensure_one()
+        if (
+            self.external_reference
+            == "CODEX-DEMO/CN/VAT-REMEDIATION/VERIFIED-2026-06"
+            and self.name == "CODEX-DEMO VAT remediation verification evidence"
+        ):
+            return _("CODEX-DEMO VAT remediation verification evidence")
         reference_prefix = "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/"
         legacy_name_prefix = "CODEX-DEMO VAT filing/payment archive evidence "
         if (
@@ -72,6 +78,8 @@ class SudoChinaEvidenceCenterEvidence(models.Model):
 
     def _cn_evidence_display_issuer(self):
         self.ensure_one()
+        if self.issuer == "CODEX-DEMO controlled evidence issuer":
+            return _("CODEX-DEMO controlled evidence issuer")
         if self.issuer == "CODEX-DEMO controlled tax authority evidence issuer":
             return _("CODEX-DEMO controlled tax authority evidence issuer")
         return self.issuer

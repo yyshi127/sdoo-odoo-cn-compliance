@@ -977,6 +977,33 @@ class TestChinaComplianceWorkbench(TransactionCase):
             "CODEX-DEMO VAT filing/payment archive evidence RECEIPT-9",
         )
 
+        remediation_evidence = self.env["sudo.compliance.evidence"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "CODEX-DEMO VAT remediation verification evidence",
+                "company_id": self.company.id,
+                "assessment_id": assessment.id,
+                "evidence_type": "remediation_proof",
+                "external_reference": (
+                    "CODEX-DEMO/CN/VAT-REMEDIATION/VERIFIED-2026-06"
+                ),
+                "issuer": "CODEX-DEMO controlled evidence issuer",
+            }
+        ).with_context(lang="zh_CN")
+        self.assertEqual(
+            remediation_evidence.cn_evidence_display_name,
+            "CODEX-DEMO 增值税整改验证证据",
+        )
+        self.assertEqual(
+            remediation_evidence.cn_evidence_display_issuer,
+            "CODEX-DEMO 受控证据出具方",
+        )
+        self.assertEqual(
+            remediation_evidence.name,
+            "CODEX-DEMO VAT remediation verification evidence",
+        )
+
     def test_evidence_center_search_view_exposes_audit_gap_filters(self):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company
