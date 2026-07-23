@@ -111,9 +111,10 @@
         border-top: 3px solid #c94a45;
     }
 
-    .badge {
+    > .o_field_badge {
         grid-column: 1 / -1;
         justify-self: start;
+        min-width: max-content;
     }
 }
 

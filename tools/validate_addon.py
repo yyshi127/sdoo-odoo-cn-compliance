@@ -3597,6 +3597,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "--KanbanRecord-width: min(1040px, calc(100vw - 64px))",
         ".o_cn_workbench_flow",
         "grid-template-columns: repeat(5, minmax(0, 1fr))",
+        "> .o_field_badge {",
+        "min-width: max-content;",
     ):
         if required not in workbench_style_content:
             fail(f"China workbench responsive stylesheet is missing {required}")

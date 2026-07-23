@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.153.0`
+Delivery version: `19.0.1.154.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -134,6 +134,10 @@ controlled cross-border register. Runtime tests now verify the core field labels
 next-action copy and cross-border form architecture, while static acceptance
 rejects the retired English labels. The underlying calculations, rules and
 workflow transitions are unchanged.
+
+Version `19.0.1.154.0` fixes the five-step workbench status badge container so
+the complete Chinese state remains visible at laptop and mobile breakpoints.
+The responsive layout and workflow behavior are otherwise unchanged.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes
