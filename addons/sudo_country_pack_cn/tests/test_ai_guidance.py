@@ -292,7 +292,7 @@ class TestChinaControlledAiGuidance(TransactionCase):
         self.assertIn("VAT-AI-DIFF", payload["reconciliation_risk"]["summary"])
         self.assertEqual(payload["tax_impact"]["state"], "none")
         self.assertEqual(payload["remediation_progress"]["progress"], 33)
-        self.assertIn("evidence 1/1", payload["remediation_progress"]["summary"])
+        self.assertIn("证据已验证 1/1", payload["remediation_progress"]["summary"])
 
         action = finding.with_user(self.user).action_generate_cn_ai_guidance()
         analysis = self.env["sudo.compliance.ai.analysis"].browse(
