@@ -936,6 +936,10 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
         else "CODEX-DEMO 增值税缴税凭证 "
     ) + suffix
     issuer = "CODEX-DEMO 受控税务凭证出具方"
+    review_notes = (
+        "仅用于 CODEX-DEMO：封存档案前，已与受控的增值税申报或缴税"
+        "来源记录完成核验。"
+    )
     if not evidence:
         evidence = env["sudo.compliance.evidence"].with_company(
             profile.company_id
@@ -954,6 +958,10 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
         demo_backfill["name"] = evidence_name
     if evidence.issuer != issuer and (evidence.issuer or "").startswith("CODEX-DEMO"):
         demo_backfill["issuer"] = issuer
+    if evidence.review_notes != review_notes and (
+        evidence.review_notes or ""
+    ).startswith("CODEX-DEMO ONLY: verified against the controlled VAT"):
+        demo_backfill["review_notes"] = review_notes
     if demo_backfill:
         evidence.write(demo_backfill)
         changed = True
@@ -962,10 +970,7 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
         changed = True
     if getattr(evidence, "state", False) == "submitted":
         evidence.write({{
-            "review_notes": (
-                "仅用于 CODEX-DEMO：封存档案前，已与受控的增值税申报或缴税"
-                "来源记录完成核验。"
-            )
+            "review_notes": review_notes
         }})
         evidence.action_verify()
         changed = True

@@ -5717,6 +5717,7 @@ def validate_delivery_objective_coverage() -> None:
     for forbidden in (
         "CODEX-DEMO VAT filing/payment archive evidence",
         "CODEX-DEMO controlled tax authority evidence issuer",
+        "CODEX-DEMO ONLY: verified against the controlled VAT filing or payment source record",
     ):
         if forbidden in demo_closed_loop_content:
             fail(f"China controlled demo evidence still exposes English text: {forbidden}")
