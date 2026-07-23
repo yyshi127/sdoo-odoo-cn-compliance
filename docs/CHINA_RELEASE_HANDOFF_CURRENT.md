@@ -155,12 +155,17 @@ unchanged until the replacement succeeds and formally supersedes it.
 
 Version `19.0.1.157.0` makes accounting-scope integrity checks and invoice,
 VAT, CIT and IIT reconciliation source fingerprints independent of the active
-Odoo interface language. Audit snapshots now use a fixed canonical language,
-so Chinese user sessions and English cron sessions cannot create false source
+Odoo interface language and active company. Audit snapshots now use a fixed
+canonical language and explicitly evaluate company-dependent accounting fields
+in the controlled profile's company, so Chinese user sessions, English cron
+sessions and cross-company background contexts cannot create false source
 changes or alternating replacement runs. The upgrade migration only converts a
 legacy verification checksum when that checksum still matches the same
-controlled payload in a known Odoo language, and records the old checksum,
-matched language and canonical checksum in the audit log.
+controlled payload in a known active Odoo language, and records the old
+checksum, matched language and canonical checksum in the audit log. Remote
+acceptance covers `360` test methods and `406` reported tests for both clean
+installation and upgrade, plus a real-data migration fixture whose profile
+company differs from the shell's active company.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes
