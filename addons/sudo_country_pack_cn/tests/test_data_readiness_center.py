@@ -86,6 +86,7 @@ class TestChinaDataReadinessCenter(TransactionCase):
         self.assertIn("no normalized records", dataset.cn_data_readiness_blocker_summary)
 
     def test_dataset_readiness_labels_translate_in_chinese_context(self):
+        self.env["res.lang"]._activate_lang("zh_CN")
         dataset = self.env["sudo.cn.external.dataset"].create(
             {
                 "profile_id": self.profile.id,
