@@ -1199,6 +1199,84 @@ msgstr "未记录期间"
 
 #. module: sudo_country_pack_cn
 #. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "Data Readiness Blockers"
+msgstr "数据准备阻断"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Evidence Source"
+msgstr "证据来源"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Evidence Blockers"
+msgstr "证据阻断"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "superseded dataset"
+msgstr "数据集已被替代"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "dataset not sealed"
+msgstr "数据集未封存"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "integrity checksum mismatch"
+msgstr "完整性校验值不一致"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "integrity not verified"
+msgstr "完整性尚未核验"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "authenticity verification failed"
+msgstr "真实性验证失败"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "authenticity not verified"
+msgstr "真实性尚未验证"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "independent review pending"
+msgstr "独立复核待完成"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "review control exception"
+msgstr "复核控制存在例外"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "no normalized records"
+msgstr "无规范化记录"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
+msgid "No blocker: dataset is ready for controlled scans."
+msgstr "无阻断：数据集可用于受控扫描。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
 #: code:addons/sudo_country_pack_cn/models/workbench.py:1
 msgid "No remediation task has been created."
 msgstr "尚未创建整改任务。"

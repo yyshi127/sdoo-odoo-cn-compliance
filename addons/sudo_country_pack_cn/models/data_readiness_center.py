@@ -33,6 +33,7 @@ class SudoChinaDataReadinessDataset(models.Model):
         compute="_compute_cn_data_readiness_display",
     )
 
+    @api.depends_context("lang")
     @api.depends(
         "period_start",
         "period_end",
@@ -55,6 +56,7 @@ class SudoChinaDataReadinessDataset(models.Model):
             dataset.cn_data_readiness_period_label = _period_label(
                 dataset.period_start,
                 dataset.period_end,
+                dataset.env._,
             )
             normalized_count = dataset._cn_data_readiness_normalized_count()
             dataset.cn_data_readiness_record_count = normalized_count
@@ -186,7 +188,11 @@ _NORMALIZED_DATASET_TYPES = {
 }
 
 
-def _period_label(period_start, period_end):
+def _period_label(period_start, period_end, translate):
     if period_start and period_end:
-        return f"{period_start} to {period_end}"
-    return "No period recorded"
+        return translate(
+            "%(start)s to %(end)s",
+            start=period_start,
+            end=period_end,
+        )
+    return translate("No period recorded")

@@ -84,3 +84,52 @@ class TestChinaDataReadinessCenter(TransactionCase):
             dataset.cn_data_readiness_blocker_summary,
         )
         self.assertIn("no normalized records", dataset.cn_data_readiness_blocker_summary)
+
+    def test_dataset_readiness_labels_translate_in_chinese_context(self):
+        dataset = self.env["sudo.cn.external.dataset"].create(
+            {
+                "profile_id": self.profile.id,
+                "dataset_type": "vat_filing",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "coverage_scope": "partial",
+                "declared_record_count": 0,
+                "currency_id": self.currency.id,
+            }
+        ).with_context(lang="zh_CN")
+
+        self.assertEqual(
+            dataset.cn_data_readiness_period_label,
+            "2026-06-01 至 2026-06-30",
+        )
+        summary = dataset.cn_data_readiness_blocker_summary
+        for expected in (
+            "受阻原因：",
+            "数据集未封存",
+            "完整性尚未核验",
+            "真实性尚未验证",
+            "独立复核待完成",
+            "无规范化记录",
+        ):
+            self.assertIn(expected, summary)
+        for forbidden in (
+            "Blocked by:",
+            "dataset not sealed",
+            "integrity not verified",
+            "authenticity not verified",
+            "independent review pending",
+            "no normalized records",
+        ):
+            self.assertNotIn(forbidden, summary)
+        self.assertEqual(
+            dataset.env._("review control exception"),
+            "复核控制存在例外",
+        )
+
+        field_labels = dataset.fields_get(
+            ["cn_data_readiness_blocker_summary"]
+        )
+        self.assertEqual(
+            field_labels["cn_data_readiness_blocker_summary"]["string"],
+            "数据准备阻断",
+        )

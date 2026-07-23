@@ -4909,6 +4909,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in evidence_view_content:
             fail(f"China evidence center UI is missing {required}")
+    for required in ("来源", "阻断事项"):
+        if required not in evidence_view_content:
+            fail(f"China evidence center display label is missing {required}")
+    for forbidden in (">Source<", ">Blockers<"):
+        if forbidden in evidence_view_content:
+            fail(f"China evidence center must not expose English label {forbidden}")
 
     filing_model_content = (
         ADDON_ROOT / "models" / "filing_center.py"
@@ -4968,6 +4974,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             fail(f"China filing center UI is missing {required}")
     if 'default_group_by="cn_filing_center_kind"' in filing_view_content:
         fail("China filing center must not default-group by computed filing kind")
+    if "阻断事项" not in filing_view_content:
+        fail("China filing center must expose a Chinese blocker label")
+    if ">Blockers<" in filing_view_content:
+        fail("China filing center must not expose an English blocker label")
 
     if "from . import test_ai_guidance" not in tests_init:
         fail("China controlled AI guidance runtime tests must be imported")
@@ -5098,6 +5108,28 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in data_readiness_model_content:
             fail(f"China data readiness center model is missing {required}")
+    for required in (
+        '@api.depends_context("lang")',
+        "dataset.env._",
+        'translate("No period recorded")',
+        '"%(start)s to %(end)s"',
+    ):
+        if required not in data_readiness_model_content:
+            fail(f"China data readiness localization is missing {required}")
+    for required in (
+        'msgid "Data Readiness Blockers"',
+        'msgstr "数据准备阻断"',
+        'msgid "review control exception"',
+        'msgstr "复核控制存在例外"',
+        'msgid "no normalized records"',
+        'msgstr "无规范化记录"',
+        'msgid "Evidence Source"',
+        'msgstr "证据来源"',
+        'msgid "Evidence Blockers"',
+        'msgstr "证据阻断"',
+    ):
+        if required not in translation_content:
+            fail(f"China center translation catalog is missing {required}")
 
     data_readiness_view_content = (
         ADDON_ROOT / "views" / "data_readiness_center_views.xml"
@@ -5121,6 +5153,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in data_readiness_view_content:
             fail(f"China data readiness center UI is missing {required}")
+    if "阻断事项" not in data_readiness_view_content:
+        fail("China data readiness center must expose a Chinese blocker label")
+    if ">Blockers<" in data_readiness_view_content:
+        fail("China data readiness center must not expose an English blocker label")
 
     if "domain=\"[('integrity_state'" in data_readiness_view_content:
         fail("China data readiness search view must not filter on non-searchable integrity_state")
@@ -5147,6 +5183,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_data_readiness_center",
         "test_workbench_opens_profile_scoped_data_readiness_center",
         "test_dataset_exposes_readiness_next_action",
+        "test_dataset_readiness_labels_translate_in_chinese_context",
         "china_data_readiness_center",
         "china_data_readiness_badge_clarity",
         "action_cn_open_workbench_data_readiness",
