@@ -445,6 +445,8 @@ def _run_odoo_checks(args: argparse.Namespace) -> None:
     if args.http_port:
         command.extend(["--http-port", str(args.http_port)])
     if args.logfile:
+        args.logfile.parent.mkdir(parents=True, exist_ok=True)
+        args.logfile.unlink(missing_ok=True)
         command.extend(["--logfile", str(args.logfile)])
     _run(command)
 

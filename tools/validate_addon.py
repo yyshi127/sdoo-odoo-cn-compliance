@@ -6188,6 +6188,7 @@ def validate_delivery_objective_coverage() -> None:
         'ROOT / "tools" / "test_signoff_validation.py"',
         '"/sudo_country_pack_cn:TestChinaFilingCenter"',
         '"summarize_cn_delivery_status.py"',
+        "args.logfile.unlink(missing_ok=True)",
     ):
         if required not in acceptance_tool:
             fail(f"China delivery manifest coverage is missing {required}")
