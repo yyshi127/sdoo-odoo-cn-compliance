@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_cn_operations"
+              name="风险与整改"
+              parent="sudo_global_finance.menu_global_finance_root"
+              sequence="10"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <menuitem id="menu_cn_reports_archive"
+              name="报告与档案"
+              parent="sudo_global_finance.menu_global_finance_root"
+              sequence="20"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <menuitem id="menu_cn_expert_tools"
+              name="专业工具"
+              parent="sudo_global_finance.menu_global_finance_root"
+              sequence="80"
+              groups="sudo_global_finance.group_compliance_user"/>
+
+    <record id="menu_cn_compliance_workbench" model="ir.ui.menu">
+        <field name="name">合规工作台</field>
+        <field name="sequence">5</field>
+    </record>
+
+    <record id="menu_cn_risk_center" model="ir.ui.menu">
+        <field name="name">风险中心</field>
+        <field name="parent_id" ref="menu_cn_operations"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_cn_remediation_tracker" model="ir.ui.menu">
+        <field name="name">整改跟踪</field>
+        <field name="parent_id" ref="menu_cn_operations"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="menu_cn_report_readiness" model="ir.ui.menu">
+        <field name="name">报告准备度</field>
+        <field name="parent_id" ref="menu_cn_reports_archive"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_cn_formal_compliance_reports" model="ir.ui.menu">
+        <field name="name">正式合规报告</field>
+        <field name="parent_id" ref="menu_cn_reports_archive"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_cn_evidence_center" model="ir.ui.menu">
+        <field name="name">证据中心</field>
+        <field name="parent_id" ref="menu_cn_reports_archive"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_cn_filing_center" model="ir.ui.menu">
+        <field name="name">申报缴款档案</field>
+        <field name="parent_id" ref="menu_cn_reports_archive"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="menu_cn_data_readiness_center" model="ir.ui.menu">
+        <field name="name">数据准备</field>
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_cn_cross_border_transactions" model="ir.ui.menu">
+        <field name="name">跨境事项</field>
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="sudo_global_finance.menu_compliance_overview" model="ir.ui.menu">
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="sudo_global_finance.menu_compliance_professional_reviews" model="ir.ui.menu">
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="sudo_global_finance.menu_compliance_management" model="ir.ui.menu">
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="sudo_global_finance.menu_compliance_findings" model="ir.ui.menu">
+        <field name="name">底层风险记录</field>
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">60</field>
+    </record>
+    <record id="sudo_global_finance.menu_compliance_tasks" model="ir.ui.menu">
+        <field name="name">底层整改任务</field>
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">70</field>
+    </record>
+    <record id="sudo_global_finance.menu_compliance_reports" model="ir.ui.menu">
+        <field name="name">底层报告记录</field>
+        <field name="parent_id" ref="menu_cn_expert_tools"/>
+        <field name="sequence">80</field>
+    </record>
+
+    <record id="sudo_global_finance.menu_compliance_configuration" model="ir.ui.menu">
+        <field name="sequence">90</field>
+    </record>
+</odoo>

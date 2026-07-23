@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.145.0`
+Delivery version: `19.0.1.146.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -92,6 +92,27 @@ status shows all of the following:
 - the Chinese workbench uses concise risk, remediation and closed-loop summaries,
   with translated conclusion, rule-basis and next-action guidance;
 - `Business UAT ready: True`
+
+### Current UX Reset
+
+The previous candidate did not pass business usability review because the
+workbench exposed too many fields and actions at once, while sixteen root menu
+entries made the intended operating path unclear. Version `19.0.1.146.0`
+therefore resets the reviewer experience without removing the governed
+compliance records underneath it:
+
+- the root navigation is limited to `合规工作台`, `风险与整改`, `报告与档案`,
+  `专业工具` and `规则与配置`;
+- the workbench presents one primary next action and the five-step path
+  `数据准备 → 规则扫描 → 风险复核 → 整改复扫 → 报告归档`;
+- specialist rule, obligation, evidence, filing, tax-impact and cross-border
+  entries remain available under a collapsed `专业详情` section;
+- the workbench card no longer has an ambiguous global click target;
+- desktop, laptop and mobile layouts use explicit responsive grid breakpoints.
+
+Automated acceptance proves installation, upgrade, security and closed-loop
+contracts only. Business usability is not accepted until a reviewer completes
+the walkthrough again on this simplified candidate.
 
 The sign-off packet should expose automated evidence for delivery integrity,
 runtime acceptance, preview health, real-data closed-loop evidence, UAT

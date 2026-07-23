@@ -3494,6 +3494,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     data_files = set(manifest.get("data", []))
     if "views/workbench_views.xml" not in data_files:
         fail("China compliance workbench view must be loaded")
+    if "views/workbench_simplified_views.xml" not in data_files:
+        fail("China simplified compliance workbench view must be loaded")
+    if "views/navigation_views.xml" not in data_files:
+        fail("China simplified compliance navigation must be loaded")
     if "views/risk_center_views.xml" not in data_files:
         fail("China risk center view must be loaded")
     if "views/report_readiness_views.xml" not in data_files:
@@ -3520,10 +3524,37 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     workbench_style_content = workbench_stylesheet.read_text(encoding="utf-8")
     for required in (
         ".o_cn_compliance_workbench_kanban",
-        "--KanbanRecord-width: 640px",
+        "--KanbanRecord-width: min(1040px, calc(100vw - 64px))",
+        ".o_cn_workbench_flow",
+        "grid-template-columns: repeat(5, minmax(0, 1fr))",
     ):
         if required not in workbench_style_content:
             fail(f"China workbench responsive stylesheet is missing {required}")
+
+    simplified_view_content = (
+        ADDON_ROOT / "views" / "workbench_simplified_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "view_cn_compliance_workbench_kanban_simplified",
+        "现在要做什么",
+        "数据准备",
+        "规则扫描",
+        "风险复核",
+        "整改复扫",
+        "报告归档",
+        "专业详情",
+    ):
+        if required not in simplified_view_content:
+            fail(f"China simplified workbench is missing {required}")
+    if (
+        simplified_view_content.count(
+            'name="action_cn_open_workbench_next_best_action"'
+        )
+        != 1
+    ):
+        fail("China simplified workbench must expose exactly one primary next action")
+    if "oe_kanban_global_click" in simplified_view_content:
+        fail("China simplified workbench must not use an ambiguous global card click")
 
     model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
         encoding="utf-8"
@@ -4129,6 +4160,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_country_pack_advertises_china_workbench_feature",
         "test_workbench_status_is_searchable",
         "test_workbench_search_view_exposes_status_filters",
+        "test_simplified_workbench_exposes_one_guided_five_step_flow",
+        "test_china_compliance_navigation_has_five_clear_root_entries",
         "test_workbench_summarizes_profile_setup_state",
         "test_workbench_summarizes_pending_data_readiness",
         "test_workbench_summarizes_remediation_rescan_status",
@@ -6395,6 +6428,14 @@ def validate_china_native_menu_integration() -> None:
         "sudo_global_finance.menu_global_finance_root",
         "sudo_global_finance.menu_compliance_management",
         "sudo_global_finance.menu_compliance_configuration",
+        "menu_cn_operations",
+        "menu_cn_reports_archive",
+        "menu_cn_expert_tools",
+    }
+    container_menu_ids = {
+        "menu_cn_operations",
+        "menu_cn_reports_archive",
+        "menu_cn_expert_tools",
     }
     allowed_group_prefixes = (
         "sudo_global_finance.group_compliance_",
@@ -6415,7 +6456,7 @@ def validate_china_native_menu_integration() -> None:
                     f"finance compliance menus: {menu_id} parent={parent!r}"
                 )
             action = menu.attrib.get("action")
-            if not action:
+            if not action and menu_id not in container_menu_ids:
                 fail(f"China menu entry must point to a native action: {menu_id}")
             groups = [
                 group.strip()
@@ -6434,6 +6475,23 @@ def validate_china_native_menu_integration() -> None:
                 )
     if menu_count < 30:
         fail("China native menu integration unexpectedly lost menu coverage")
+
+    navigation_content = (
+        ADDON_ROOT / "views" / "navigation_views.xml"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'id="menu_cn_operations"',
+        'id="menu_cn_reports_archive"',
+        'id="menu_cn_expert_tools"',
+        'id="sudo_global_finance.menu_compliance_overview"',
+        'id="sudo_global_finance.menu_compliance_findings"',
+        'id="sudo_global_finance.menu_compliance_tasks"',
+        'id="sudo_global_finance.menu_compliance_reports"',
+        'id="sudo_global_finance.menu_compliance_professional_reviews"',
+        'id="sudo_global_finance.menu_compliance_management"',
+    ):
+        if required not in navigation_content:
+            fail(f"China simplified navigation is missing {required}")
 
 
 def validate_china_company_security_contract() -> None:

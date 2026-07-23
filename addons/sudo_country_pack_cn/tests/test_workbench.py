@@ -450,6 +450,85 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("o_cn_compliance_workbench_kanban", arch)
         self.assertIn("flex-shrink-0", arch)
 
+    def test_simplified_workbench_exposes_one_guided_five_step_flow(self):
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_compliance_workbench_kanban_simplified"
+        )
+        arch = view.arch_db
+
+        self.assertEqual(
+            arch.count('name="action_cn_open_workbench_next_best_action"'),
+            1,
+        )
+        for label in (
+            "现在要做什么",
+            "数据准备",
+            "规则扫描",
+            "风险复核",
+            "整改复扫",
+            "报告归档",
+            "专业详情",
+        ):
+            self.assertIn(label, arch)
+        for action_name in (
+            "action_cn_open_workbench_data_readiness",
+            "action_cn_open_workbench_assessments",
+            "action_cn_open_workbench_findings",
+            "action_cn_open_workbench_tasks",
+            "action_cn_open_workbench_report_readiness",
+        ):
+            self.assertEqual(arch.count(f'name="{action_name}"'), 1)
+        self.assertNotIn("oe_kanban_global_click", arch)
+
+    def test_china_compliance_navigation_has_five_clear_root_entries(self):
+        root = self.env.ref("sudo_global_finance.menu_global_finance_root")
+        expected_root_menus = (
+            "menu_cn_compliance_workbench",
+            "menu_cn_operations",
+            "menu_cn_reports_archive",
+            "menu_cn_expert_tools",
+        )
+        for xml_id in expected_root_menus:
+            self.assertEqual(self.env.ref(f"sudo_country_pack_cn.{xml_id}").parent_id, root)
+        self.assertEqual(
+            self.env.ref(
+                "sudo_global_finance.menu_compliance_configuration"
+            ).parent_id,
+            root,
+        )
+
+        operations = self.env.ref("sudo_country_pack_cn.menu_cn_operations")
+        self.assertEqual(
+            self.env.ref("sudo_country_pack_cn.menu_cn_risk_center").parent_id,
+            operations,
+        )
+        self.assertEqual(
+            self.env.ref(
+                "sudo_country_pack_cn.menu_cn_remediation_tracker"
+            ).parent_id,
+            operations,
+        )
+
+        reports = self.env.ref("sudo_country_pack_cn.menu_cn_reports_archive")
+        for xml_id in (
+            "menu_cn_report_readiness",
+            "menu_cn_formal_compliance_reports",
+            "menu_cn_evidence_center",
+            "menu_cn_filing_center",
+        ):
+            self.assertEqual(self.env.ref(f"sudo_country_pack_cn.{xml_id}").parent_id, reports)
+
+        expert = self.env.ref("sudo_country_pack_cn.menu_cn_expert_tools")
+        for xml_id in (
+            "sudo_global_finance.menu_compliance_overview",
+            "sudo_global_finance.menu_compliance_professional_reviews",
+            "sudo_global_finance.menu_compliance_management",
+            "sudo_global_finance.menu_compliance_findings",
+            "sudo_global_finance.menu_compliance_tasks",
+            "sudo_global_finance.menu_compliance_reports",
+        ):
+            self.assertEqual(self.env.ref(xml_id).parent_id, expert)
+
     def test_workbench_summarizes_profile_setup_state(self):
         self.profile.invalidate_recordset()
 

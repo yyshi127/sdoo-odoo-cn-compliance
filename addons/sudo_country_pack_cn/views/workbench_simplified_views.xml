@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cn_compliance_workbench_kanban_simplified" model="ir.ui.view">
+        <field name="name">sudo.compliance.profile.cn.workbench.kanban.simplified</field>
+        <field name="model">sudo.compliance.profile</field>
+        <field name="inherit_id" ref="view_cn_compliance_workbench_kanban"/>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-name='card']" position="replace">
+                <t t-name="card">
+                    <div t-attf-class="o_cn_workbench_card #{record.cn_workbench_status.raw_value == 'action_required' ? 'is-critical' : record.cn_workbench_status.raw_value == 'healthy' ? 'is-healthy' : 'is-attention'}">
+                        <header class="o_cn_workbench_header">
+                            <div class="o_cn_workbench_identity">
+                                <div class="text-muted small">
+                                    <field name="cn_workbench_package_label"/>
+                                </div>
+                                <div class="fw-bold fs-4">
+                                    <field name="company_id"/>
+                                </div>
+                                <div class="text-muted small">
+                                    <field name="cn_workbench_period_label"/>
+                                    <span class="mx-1">·</span>
+                                    <field name="cn_workbench_scope_label"/>
+                                </div>
+                            </div>
+                            <field name="cn_workbench_status" widget="badge"
+                                   decoration-success="cn_workbench_status == 'healthy'"
+                                   decoration-warning="cn_workbench_status in ('warning', 'limited', 'setup_required')"
+                                   decoration-danger="cn_workbench_status == 'action_required'"/>
+                        </header>
+
+                        <section class="o_cn_workbench_focus">
+                            <div class="o_cn_workbench_focus_copy">
+                                <div class="text-muted small fw-semibold">现在要做什么</div>
+                                <div class="fw-bold fs-5 mt-1">
+                                    <field name="cn_workbench_next_action"/>
+                                </div>
+                                <div class="text-muted mt-1">
+                                    <field name="cn_workbench_action_summary"/>
+                                </div>
+                            </div>
+                            <button type="object"
+                                    name="action_cn_open_workbench_next_best_action"
+                                    class="btn btn-primary o_cn_workbench_primary_action">
+                                <span><field name="cn_workbench_next_best_action_label"/></span>
+                                <i class="fa fa-arrow-right ms-2" title="打开下一步"/>
+                            </button>
+                        </section>
+
+                        <section class="o_cn_workbench_journey">
+                            <div class="d-flex justify-content-between align-items-end gap-2 mb-2">
+                                <div>
+                                    <div class="fw-bold">合规闭环</div>
+                                    <div class="text-muted small">按顺序完成五步，系统会持续显示当前状态和下一步。</div>
+                                </div>
+                                <field name="cn_workbench_closed_loop_state" widget="badge"
+                                       decoration-success="cn_workbench_closed_loop_state == 'ready'"
+                                       decoration-warning="cn_workbench_closed_loop_state == 'attention'"
+                                       decoration-danger="cn_workbench_closed_loop_state == 'blocked'"
+                                       decoration-muted="cn_workbench_closed_loop_state == 'not_started'"/>
+                            </div>
+                            <div class="o_cn_workbench_flow">
+                                <button type="object" name="action_cn_open_workbench_data_readiness"
+                                        t-attf-class="o_cn_workbench_stage #{record.cn_workbench_data_state.raw_value == 'ready' ? 'is-ready' : record.cn_workbench_data_state.raw_value == 'blocked' ? 'is-blocked' : 'is-attention'}">
+                                    <span class="o_cn_workbench_step_number">1</span>
+                                    <span class="o_cn_workbench_step_copy">
+                                        <span class="fw-bold">数据准备</span>
+                                        <span class="text-muted small">确认账务、发票和申报数据</span>
+                                    </span>
+                                    <field name="cn_workbench_data_state" widget="badge"
+                                           decoration-success="cn_workbench_data_state == 'ready'"
+                                           decoration-warning="cn_workbench_data_state == 'attention'"
+                                           decoration-danger="cn_workbench_data_state == 'blocked'"
+                                           decoration-muted="cn_workbench_data_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_assessments"
+                                        t-attf-class="o_cn_workbench_stage #{record.cn_workbench_scan_state.raw_value == 'ready' ? 'is-ready' : record.cn_workbench_scan_state.raw_value == 'blocked' ? 'is-blocked' : 'is-attention'}">
+                                    <span class="o_cn_workbench_step_number">2</span>
+                                    <span class="o_cn_workbench_step_copy">
+                                        <span class="fw-bold">规则扫描</span>
+                                        <span class="text-muted small">运行规则并形成评估结果</span>
+                                    </span>
+                                    <field name="cn_workbench_scan_state" widget="badge"
+                                           decoration-success="cn_workbench_scan_state == 'ready'"
+                                           decoration-warning="cn_workbench_scan_state == 'attention'"
+                                           decoration-danger="cn_workbench_scan_state == 'blocked'"
+                                           decoration-muted="cn_workbench_scan_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_findings"
+                                        t-attf-class="o_cn_workbench_stage #{record.cn_workbench_risk_state.raw_value == 'ready' ? 'is-ready' : record.cn_workbench_risk_state.raw_value == 'blocked' ? 'is-blocked' : 'is-attention'}">
+                                    <span class="o_cn_workbench_step_number">3</span>
+                                    <span class="o_cn_workbench_step_copy">
+                                        <span class="fw-bold">风险复核</span>
+                                        <span class="text-muted small">确认风险、依据和影响范围</span>
+                                    </span>
+                                    <field name="cn_workbench_risk_state" widget="badge"
+                                           decoration-success="cn_workbench_risk_state == 'ready'"
+                                           decoration-warning="cn_workbench_risk_state == 'attention'"
+                                           decoration-danger="cn_workbench_risk_state == 'blocked'"
+                                           decoration-muted="cn_workbench_risk_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_tasks"
+                                        t-attf-class="o_cn_workbench_stage #{record.cn_workbench_remediation_state.raw_value == 'ready' ? 'is-ready' : record.cn_workbench_remediation_state.raw_value == 'blocked' ? 'is-blocked' : 'is-attention'}">
+                                    <span class="o_cn_workbench_step_number">4</span>
+                                    <span class="o_cn_workbench_step_copy">
+                                        <span class="fw-bold">整改复扫</span>
+                                        <span class="text-muted small">完成任务并重新扫描验证</span>
+                                    </span>
+                                    <field name="cn_workbench_remediation_state" widget="badge"
+                                           decoration-success="cn_workbench_remediation_state == 'ready'"
+                                           decoration-warning="cn_workbench_remediation_state == 'attention'"
+                                           decoration-danger="cn_workbench_remediation_state == 'blocked'"
+                                           decoration-muted="cn_workbench_remediation_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_report_readiness"
+                                        t-attf-class="o_cn_workbench_stage #{record.cn_workbench_report_state.raw_value == 'ready' ? 'is-ready' : record.cn_workbench_report_state.raw_value == 'blocked' ? 'is-blocked' : 'is-attention'}">
+                                    <span class="o_cn_workbench_step_number">5</span>
+                                    <span class="o_cn_workbench_step_copy">
+                                        <span class="fw-bold">报告归档</span>
+                                        <span class="text-muted small">核对证据并形成正式报告</span>
+                                    </span>
+                                    <field name="cn_workbench_report_state" widget="badge"
+                                           decoration-success="cn_workbench_report_state == 'ready'"
+                                           decoration-warning="cn_workbench_report_state == 'attention'"
+                                           decoration-danger="cn_workbench_report_state == 'blocked'"
+                                           decoration-muted="cn_workbench_report_state == 'not_started'"/>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="o_cn_workbench_metrics" aria-label="关键指标">
+                            <div>
+                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_high_risk_count"/></span>
+                                <span class="text-muted small">高风险</span>
+                            </div>
+                            <div>
+                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_pending_review_count"/></span>
+                                <span class="text-muted small">待复核</span>
+                            </div>
+                            <div>
+                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_open_task_count"/></span>
+                                <span class="text-muted small">整改中</span>
+                            </div>
+                            <div>
+                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_overdue_task_count"/></span>
+                                <span class="text-muted small">已逾期</span>
+                            </div>
+                            <div>
+                                <span class="o_cn_workbench_metric_value">
+                                    <field name="cn_workbench_ready_dataset_count"/>
+                                    <span class="text-muted">/</span>
+                                    <field name="cn_workbench_dataset_count"/>
+                                </span>
+                                <span class="text-muted small">数据就绪</span>
+                            </div>
+                            <div>
+                                <span class="o_cn_workbench_metric_value">
+                                    <field name="cn_workbench_verified_evidence_count"/>
+                                    <span class="text-muted">/</span>
+                                    <field name="cn_workbench_evidence_count"/>
+                                </span>
+                                <span class="text-muted small">证据核验</span>
+                            </div>
+                        </section>
+
+                        <t t-if="record.cn_workbench_conclusion_boundary_state.raw_value != 'ready'">
+                            <section class="o_cn_workbench_boundary">
+                                <i class="fa fa-exclamation-triangle" title="当前结论受限"/>
+                                <div>
+                                    <div class="fw-semibold">当前结论仍受限制</div>
+                                    <div class="small"><field name="cn_workbench_conclusion_boundary_summary"/></div>
+                                    <div class="small text-muted"><field name="cn_workbench_conclusion_boundary_next_action"/></div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <details class="o_cn_workbench_expert">
+                            <summary>专业详情</summary>
+                            <div class="o_cn_workbench_expert_grid">
+                                <button type="object" name="action_cn_open_workbench_rule_basis"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">规则依据</span>
+                                    <field name="cn_workbench_rule_basis_state" widget="badge"
+                                           decoration-success="cn_workbench_rule_basis_state == 'ready'"
+                                           decoration-warning="cn_workbench_rule_basis_state == 'attention'"
+                                           decoration-danger="cn_workbench_rule_basis_state == 'blocked'"
+                                           decoration-muted="cn_workbench_rule_basis_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_obligations"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">纳税义务</span>
+                                    <field name="cn_workbench_obligation_state" widget="badge"
+                                           decoration-success="cn_workbench_obligation_state == 'ready'"
+                                           decoration-warning="cn_workbench_obligation_state == 'attention'"
+                                           decoration-danger="cn_workbench_obligation_state == 'blocked'"
+                                           decoration-muted="cn_workbench_obligation_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_evidence_center"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">证据中心</span>
+                                    <field name="cn_workbench_evidence_state" widget="badge"
+                                           decoration-success="cn_workbench_evidence_state == 'ready'"
+                                           decoration-warning="cn_workbench_evidence_state == 'attention'"
+                                           decoration-danger="cn_workbench_evidence_state == 'blocked'"
+                                           decoration-muted="cn_workbench_evidence_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_filing_center"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">申报缴款档案</span>
+                                    <field name="cn_workbench_filing_archive_state" widget="badge"
+                                           decoration-success="cn_workbench_filing_archive_state == 'ready'"
+                                           decoration-warning="cn_workbench_filing_archive_state == 'attention'"
+                                           decoration-danger="cn_workbench_filing_archive_state == 'blocked'"
+                                           decoration-muted="cn_workbench_filing_archive_state == 'not_started'"/>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_tax_impacts"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">税务影响</span>
+                                    <span class="badge text-bg-light"><field name="cn_workbench_pending_tax_impact_count"/></span>
+                                </button>
+                                <button type="object" name="action_cn_open_workbench_cross_border_transactions"
+                                        class="btn btn-light border text-start">
+                                    <span class="fw-semibold">跨境与扣缴</span>
+                                    <field name="cn_workbench_cross_border_state" widget="badge"
+                                           decoration-success="cn_workbench_cross_border_state == 'ready'"
+                                           decoration-warning="cn_workbench_cross_border_state == 'attention'"
+                                           decoration-danger="cn_workbench_cross_border_state == 'blocked'"
+                                           decoration-muted="cn_workbench_cross_border_state == 'not_started'"/>
+                                </button>
+                            </div>
+                        </details>
+                    </div>
+                </t>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,5 +1,226 @@
 .o_cn_compliance_workbench_kanban {
     .o_kanban_renderer {
-        --KanbanRecord-width: 640px;
+        --KanbanRecord-width: min(1040px, calc(100vw - 64px));
+        justify-content: center;
+    }
+
+    .o_kanban_record {
+        max-width: 1040px;
+    }
+}
+
+.o_cn_workbench_card {
+    background: var(--o-view-background-color, #fff);
+    border: 1px solid #d8dee4;
+    border-inline-start: 4px solid #d49b24;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(26, 42, 58, 0.08);
+    color: var(--body-color, #1f2933);
+    overflow: hidden;
+
+    &.is-critical {
+        border-inline-start-color: #c94a45;
+    }
+
+    &.is-healthy {
+        border-inline-start-color: #26845f;
+    }
+}
+
+.o_cn_workbench_header,
+.o_cn_workbench_focus,
+.o_cn_workbench_journey,
+.o_cn_workbench_metrics,
+.o_cn_workbench_boundary,
+.o_cn_workbench_expert {
+    padding: 18px 22px;
+}
+
+.o_cn_workbench_header {
+    align-items: flex-start;
+    border-bottom: 1px solid #e5e9ed;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.o_cn_workbench_identity {
+    min-width: 0;
+}
+
+.o_cn_workbench_focus {
+    align-items: center;
+    background: #f4faf8;
+    border-bottom: 1px solid #d9ebe5;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+}
+
+.o_cn_workbench_focus_copy {
+    min-width: 0;
+}
+
+.o_cn_workbench_primary_action {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    min-height: 48px;
+    text-align: start;
+    white-space: normal;
+}
+
+.o_cn_workbench_journey {
+    border-bottom: 1px solid #e5e9ed;
+}
+
+.o_cn_workbench_flow {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.o_cn_workbench_stage {
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid #cfd6dc;
+    border-radius: 6px;
+    color: inherit;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 28px minmax(0, 1fr);
+    min-height: 116px;
+    padding: 12px;
+    text-align: start;
+
+    &:hover,
+    &:focus-visible {
+        background: #f6f8fa;
+        border-color: #71808e;
+    }
+
+    &.is-ready {
+        border-top: 3px solid #26845f;
+    }
+
+    &.is-attention {
+        border-top: 3px solid #d49b24;
+    }
+
+    &.is-blocked {
+        border-top: 3px solid #c94a45;
+    }
+
+    .badge {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
+.o_cn_workbench_step_number {
+    align-items: center;
+    background: #e9f5f1;
+    border-radius: 50%;
+    color: #17694f;
+    display: inline-flex;
+    font-weight: 700;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+}
+
+.o_cn_workbench_step_copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.o_cn_workbench_metrics {
+    border-bottom: 1px solid #e5e9ed;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+
+    > div {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+}
+
+.o_cn_workbench_metric_value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.o_cn_workbench_boundary {
+    align-items: flex-start;
+    background: #fff8e8;
+    border-bottom: 1px solid #ead8ae;
+    color: #5b4617;
+    display: flex;
+    gap: 12px;
+}
+
+.o_cn_workbench_expert {
+    summary {
+        color: #405261;
+        cursor: pointer;
+        font-weight: 600;
+    }
+}
+
+.o_cn_workbench_expert_grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 14px;
+
+    .btn {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        min-height: 44px;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 1100px) {
+    .o_cn_compliance_workbench_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 40px);
+    }
+
+    .o_cn_workbench_flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_cn_workbench_metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .o_cn_compliance_workbench_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 24px);
+    }
+
+    .o_cn_workbench_header,
+    .o_cn_workbench_focus,
+    .o_cn_workbench_journey,
+    .o_cn_workbench_metrics,
+    .o_cn_workbench_boundary,
+    .o_cn_workbench_expert {
+        padding: 14px;
+    }
+
+    .o_cn_workbench_focus {
+        grid-template-columns: 1fr;
+    }
+
+    .o_cn_workbench_flow,
+    .o_cn_workbench_metrics,
+    .o_cn_workbench_expert_grid {
+        grid-template-columns: 1fr;
     }
 }
