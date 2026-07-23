@@ -230,7 +230,7 @@
                   decoration-warning="state == 'submitted' or has_material_limitations"
                   decoration-muted="state == 'superseded'">
                 <field name="name"/>
-                <field name="revision"/>
+                <field name="revision" optional="hide"/>
                 <field name="title"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="period_start"/>
@@ -239,34 +239,34 @@
                        decoration-success="cn_report_center_stage == 'issued'"
                        decoration-info="cn_report_center_stage in ('draft', 'approval')"
                        decoration-muted="cn_report_center_stage in ('withdrawn', 'superseded')"/>
-                <field name="cn_report_center_next_action" optional="show"/>
-                <field name="cn_report_blocker_summary" optional="show"/>
+                <field name="cn_report_center_next_action" optional="hide"/>
+                <field name="cn_report_blocker_summary" optional="hide"/>
                 <field name="cn_report_rule_governance_state" widget="badge" optional="show"
                        decoration-success="cn_report_rule_governance_state == 'ready'"
                        decoration-danger="cn_report_rule_governance_state == 'blocked'"/>
-                <field name="cn_report_rule_governance_issue_count" optional="show"
+                <field name="cn_report_rule_governance_issue_count" optional="hide"
                        decoration-danger="cn_report_rule_governance_issue_count &gt; 0"/>
                 <field name="cn_report_rule_governance_next_action" optional="hide"/>
                 <field name="cn_report_traceability_state" widget="badge" optional="show"
                        decoration-success="cn_report_traceability_state == 'complete'"
                        decoration-warning="cn_report_traceability_state == 'action_required'"
                        decoration-danger="cn_report_traceability_state == 'blocked'"/>
-                <field name="cn_report_traceability_gap_count" optional="show"/>
+                <field name="cn_report_traceability_gap_count" optional="hide"/>
                 <field name="cn_report_traceability_next_action" optional="hide"/>
                 <field name="cn_report_fact_basis_state" widget="badge" optional="show"
                        decoration-success="cn_report_fact_basis_state == 'ready'"
                        decoration-danger="cn_report_fact_basis_state == 'blocked'"
                        decoration-muted="cn_report_fact_basis_state == 'not_started'"/>
-                <field name="fact_snapshot_count" optional="show"/>
-                <field name="fact_issue_count" optional="show"
+                <field name="fact_snapshot_count" optional="hide"/>
+                <field name="fact_issue_count" optional="hide"
                        decoration-danger="fact_issue_count &gt; 0"/>
-                <field name="finding_without_fact_count" optional="show"
+                <field name="finding_without_fact_count" optional="hide"
                        decoration-danger="finding_without_fact_count &gt; 0"/>
                 <field name="critical_count" decoration-danger="critical_count &gt; 0"/>
                 <field name="high_count" decoration-danger="high_count &gt; 0"/>
-                <field name="finding_closure_blocked_count" optional="show"
+                <field name="finding_closure_blocked_count" optional="hide"
                        decoration-danger="finding_closure_blocked_count &gt; 0"/>
-                <field name="finding_closure_action_required_count" optional="show"
+                <field name="finding_closure_action_required_count" optional="hide"
                        decoration-warning="finding_closure_action_required_count &gt; 0"/>
                 <field name="finding_closure_ready_count" optional="hide"/>
                 <field name="open_task_count" decoration-warning="open_task_count &gt; 0"/>
@@ -284,7 +284,7 @@
                        decoration-danger="state == 'withdrawn'"
                        decoration-muted="state == 'superseded'"/>
                 <field name="reviewer_id" widget="many2one_avatar_user"/>
-                <field name="issued_at"/>
+                <field name="issued_at" optional="hide"/>
                 <field name="cn_report_center_integrity_state" widget="badge" optional="show"
                        decoration-success="cn_report_center_integrity_state == 'verified'"
                        decoration-warning="cn_report_center_integrity_state == 'warning'"
@@ -594,7 +594,7 @@
     <record id="action_cn_formal_compliance_reports" model="ir.actions.act_window">
         <field name="name">正式报告</field>
         <field name="res_model">sudo.cn.compliance.report</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id"
                ref="view_cn_formal_compliance_report_search"/>
         <field name="context">{'search_default_active_lifecycle': 1}</field>
@@ -602,6 +602,30 @@
             <p class="o_view_nocontent_smiling_face">尚未编制正式报告</p>
             <p>从已完成的合规评估进入，冻结来源快照并完成独立批准后签发。</p>
         </field>
+    </record>
+
+    <record id="action_cn_formal_compliance_reports_kanban_view"
+            model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_cn_formal_compliance_report_kanban"/>
+        <field name="act_window_id" ref="action_cn_formal_compliance_reports"/>
+    </record>
+
+    <record id="action_cn_formal_compliance_reports_list_view"
+            model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_cn_formal_compliance_report_list"/>
+        <field name="act_window_id" ref="action_cn_formal_compliance_reports"/>
+    </record>
+
+    <record id="action_cn_formal_compliance_reports_form_view"
+            model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_cn_formal_compliance_report_form"/>
+        <field name="act_window_id" ref="action_cn_formal_compliance_reports"/>
     </record>
 
     <menuitem id="menu_cn_formal_compliance_reports"

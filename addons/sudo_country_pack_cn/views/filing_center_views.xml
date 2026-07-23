@@ -70,7 +70,8 @@
                        decoration-success="cn_filing_center_evidence_state == 'verified'"
                        decoration-warning="cn_filing_center_evidence_state == 'partial'"/>
                 <field name="cn_filing_center_next_action" optional="show"/>
-                <field name="cn_filing_center_blocker_summary" optional="show"/>
+                <field name="cn_filing_center_blocker_summary"
+                       string="申报缴款阻断事项" optional="show"/>
                 <field name="filing_code" optional="hide"/>
                 <field name="profile_id" optional="hide"/>
             </list>

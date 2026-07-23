@@ -3212,6 +3212,33 @@ def validate_formal_compliance_report() -> None:
     report_form_fields = report_view_field_names(
         "view_cn_formal_compliance_report_form"
     )
+    report_list_arch = report_view_root.find(
+        ".//record[@id='view_cn_formal_compliance_report_list']"
+        "/field[@name='arch']"
+    )
+    report_list_optional = {
+        element.attrib["name"]: element.attrib.get("optional")
+        for element in report_list_arch.iter("field")
+        if element.attrib.get("name")
+    }
+    for field_name in (
+        "revision",
+        "cn_report_center_next_action",
+        "cn_report_blocker_summary",
+        "cn_report_rule_governance_issue_count",
+        "cn_report_traceability_gap_count",
+        "fact_snapshot_count",
+        "fact_issue_count",
+        "finding_without_fact_count",
+        "finding_closure_blocked_count",
+        "finding_closure_action_required_count",
+        "issued_at",
+    ):
+        if report_list_optional.get(field_name) != "hide":
+            fail(
+                "formal report list must keep long or technical detail optional "
+                f"by default: {field_name}"
+            )
     required_report_summary_fields = {
         "cn_report_center_stage",
         "cn_report_center_next_action",
@@ -3278,7 +3305,10 @@ def validate_formal_compliance_report() -> None:
         'id="view_cn_formal_compliance_report_form"',
         'id="action_cn_formal_compliance_reports"',
         'id="menu_cn_formal_compliance_reports"',
-        "list,kanban,form",
+        "kanban,list,form",
+        'id="action_cn_formal_compliance_reports_kanban_view"',
+        'id="action_cn_formal_compliance_reports_list_view"',
+        'id="action_cn_formal_compliance_reports_form_view"',
         "cn_report_center_stage",
         "cn_report_center_integrity_state",
         "cn_report_center_next_action",
@@ -4968,6 +4998,38 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             "China risk center list must expose clear risk, cause, impact, "
             f"period, owner, due date, status and next action fields: {sorted(missing_risk_fields)}"
         )
+    risk_list_arch = risk_view_root.find(
+        ".//record[@id='view_cn_risk_center_finding_list']"
+        "/field[@name='arch']"
+    )
+    risk_list_optional = {
+        element.attrib["name"]: element.attrib.get("optional")
+        for element in risk_list_arch.iter("field")
+        if element.attrib.get("name")
+    }
+    for field_name in (
+        "cn_closure_summary",
+        "cn_risk_fact_snapshot_count",
+        "cn_risk_fact_issue_count",
+        "cn_risk_fact_summary",
+        "cn_reconciliation_risk_state",
+        "cn_reconciliation_risk_summary",
+        "cn_risk_data_basis_ready_type_count",
+        "cn_risk_data_basis_required_type_count",
+        "cn_risk_action_summary",
+        "cn_risk_rule_source_count",
+        "cn_traceability_gap_count",
+        "cn_cross_border_fact_state",
+        "cn_ai_guidance_state",
+        "cn_tax_impact_case_count",
+        "cn_tax_impact_reviewed_underpayment_amount",
+        "cn_tax_impact_pending_review_count",
+    ):
+        if risk_list_optional.get(field_name) != "hide":
+            fail(
+                "China risk list must keep long or specialist detail optional "
+                f"by default: {field_name}"
+            )
     required_risk_kanban_fields = {
         "risk_level",
         "result",
@@ -5438,6 +5500,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for required in ("来源", "阻断事项"):
         if required not in evidence_view_content:
             fail(f"China evidence center display label is missing {required}")
+    for required in (
+        'string="证据来源"',
+        'string="证据阻断事项"',
+    ):
+        if required not in evidence_view_content:
+            fail(f"China evidence center list label is missing {required}")
     for forbidden in (">Source<", ">Blockers<"):
         if forbidden in evidence_view_content:
             fail(f"China evidence center must not expose English label {forbidden}")
@@ -5510,6 +5578,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         fail("China filing center must not default-group by computed filing kind")
     if "阻断事项" not in filing_view_content:
         fail("China filing center must expose a Chinese blocker label")
+    if 'string="申报缴款阻断事项"' not in filing_view_content:
+        fail("China filing center list must expose a Chinese blocker column")
     if ">Blockers<" in filing_view_content:
         fail("China filing center must not expose an English blocker label")
 

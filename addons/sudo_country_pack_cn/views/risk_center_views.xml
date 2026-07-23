@@ -80,26 +80,26 @@
                        decoration-success="cn_closure_state == 'ready'"
                        decoration-warning="cn_closure_state == 'action_required'"
                        decoration-danger="cn_closure_state == 'blocked'"/>
-                <field name="cn_closure_summary" optional="show"/>
-                <field name="cn_risk_fact_snapshot_count" optional="show"/>
-                <field name="cn_risk_fact_issue_count" optional="show"/>
-                <field name="cn_risk_fact_summary" optional="show"/>
-                <field name="cn_reconciliation_risk_state" widget="badge" optional="show"
+                <field name="cn_closure_summary" optional="hide"/>
+                <field name="cn_risk_fact_snapshot_count" optional="hide"/>
+                <field name="cn_risk_fact_issue_count" optional="hide"/>
+                <field name="cn_risk_fact_summary" optional="hide"/>
+                <field name="cn_reconciliation_risk_state" widget="badge" optional="hide"
                        decoration-success="cn_reconciliation_risk_state == 'aligned'"
                        decoration-warning="cn_reconciliation_risk_state in ('difference_review_required', 'aligned_with_disclosure_required')"
                        decoration-danger="cn_reconciliation_risk_state == 'blocked'"
                        decoration-muted="cn_reconciliation_risk_state == 'unavailable'"/>
-                <field name="cn_reconciliation_risk_summary" optional="show"/>
+                <field name="cn_reconciliation_risk_summary" optional="hide"/>
                 <field name="cn_reconciliation_risk_next_action" optional="hide"/>
                 <field name="cn_risk_data_basis_state" widget="badge" optional="show"
                        decoration-success="cn_risk_data_basis_state == 'ready'"
                        decoration-warning="cn_risk_data_basis_state == 'warning'"
                        decoration-danger="cn_risk_data_basis_state in ('no_period', 'missing', 'blocked')"/>
-                <field name="cn_risk_data_basis_ready_type_count" optional="show"/>
-                <field name="cn_risk_data_basis_required_type_count" optional="show"/>
+                <field name="cn_risk_data_basis_ready_type_count" optional="hide"/>
+                <field name="cn_risk_data_basis_required_type_count" optional="hide"/>
                 <field name="cn_risk_data_basis_missing_type_summary" optional="hide"/>
                 <field name="cn_risk_next_action" optional="show"/>
-                <field name="cn_risk_action_summary" optional="show"/>
+                <field name="cn_risk_action_summary" optional="hide"/>
                 <field name="cn_risk_remediation_urgency" widget="badge" optional="show"
                        decoration-danger="cn_risk_remediation_urgency == 'overdue'"
                        decoration-warning="cn_risk_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
@@ -112,7 +112,7 @@
                        decoration-success="cn_risk_rule_basis_state == 'ready'"
                        decoration-warning="cn_risk_rule_basis_state in ('source_warning', 'professional_pending', 'active_attention')"
                        decoration-danger="cn_risk_rule_basis_state == 'missing'"/>
-                <field name="cn_risk_rule_source_count" optional="show"/>
+                <field name="cn_risk_rule_source_count" optional="hide"/>
                 <field name="cn_risk_rule_release_state" widget="badge" optional="hide"/>
                 <field name="cn_risk_rule_professional_state" widget="badge" optional="hide"/>
                 <button name="action_cn_open_risk_rule_version" type="object"
@@ -134,9 +134,9 @@
                        decoration-success="cn_traceability_state == 'complete'"
                        decoration-warning="cn_traceability_state == 'action_required'"
                        decoration-danger="cn_traceability_state == 'blocked'"/>
-                <field name="cn_traceability_gap_count" optional="show"/>
+                <field name="cn_traceability_gap_count" optional="hide"/>
                 <field name="cn_traceability_next_action" optional="hide"/>
-                <field name="cn_cross_border_fact_state" widget="badge" optional="show"
+                <field name="cn_cross_border_fact_state" widget="badge" optional="hide"
                        decoration-success="cn_cross_border_fact_state == 'reviewed'"
                        decoration-warning="cn_cross_border_fact_state in ('pending_review', 'limited')"
                        decoration-muted="cn_cross_border_fact_state in ('unavailable', 'no_transactions')"/>
@@ -146,21 +146,21 @@
                 <field name="cn_cross_border_next_action" optional="hide"/>
                 <button name="action_cn_open_traceability_evidence" type="object"
                         string="证据链" class="btn-link"/>
-                <field name="cn_ai_guidance_state" widget="badge" optional="show"
+                <field name="cn_ai_guidance_state" widget="badge" optional="hide"
                        decoration-success="cn_ai_guidance_state == 'generated'"
                        decoration-info="cn_ai_guidance_state == 'ready'"
                        decoration-warning="cn_ai_guidance_state == 'limited'"/>
                 <field name="cn_ai_guidance_next_action" optional="hide"/>
-                <field name="cn_tax_impact_case_count" optional="show"/>
+                <field name="cn_tax_impact_case_count" optional="hide"/>
                 <field name="cn_tax_impact_state" widget="badge" optional="show"
                        decoration-success="cn_tax_impact_state == 'reviewed'"
                        decoration-warning="cn_tax_impact_state in ('pending', 'unquantifiable')"
                        decoration-danger="cn_tax_impact_state == 'integrity_issue'"
                        decoration-muted="cn_tax_impact_state == 'none'"/>
-                <field name="cn_tax_impact_reviewed_underpayment_amount" optional="show"/>
+                <field name="cn_tax_impact_reviewed_underpayment_amount" optional="hide"/>
                 <field name="cn_tax_impact_reviewed_overpayment_amount" optional="hide"/>
                 <field name="cn_tax_impact_reviewed_timing_amount" optional="hide"/>
-                <field name="cn_tax_impact_pending_review_count" optional="show"/>
+                <field name="cn_tax_impact_pending_review_count" optional="hide"/>
                 <field name="cn_tax_impact_summary" optional="hide"/>
                 <field name="task_is_overdue" invisible="1"/>
             </list>

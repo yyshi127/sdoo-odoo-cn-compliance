@@ -69,8 +69,10 @@
                        decoration-success="state == 'verified'"
                        decoration-warning="state == 'submitted'"
                        decoration-danger="state == 'rejected'"/>
-                <field name="cn_evidence_source_summary" optional="show"/>
-                <field name="cn_evidence_blocker_summary" optional="show"/>
+                <field name="cn_evidence_source_summary" string="证据来源"
+                       optional="show"/>
+                <field name="cn_evidence_blocker_summary" string="证据阻断事项"
+                       optional="show"/>
                 <field name="assessment_id" optional="hide"/>
                 <field name="finding_id" optional="hide"/>
                 <field name="task_id" optional="show"/>

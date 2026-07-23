@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.157.0`
+Delivery version: `19.0.1.158.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -166,6 +166,12 @@ checksum, matched language and canonical checksum in the audit log. Remote
 acceptance covers `360` test methods and `406` reported tests for both clean
 installation and upgrade, plus a real-data migration fixture whose profile
 company differs from the shell's active company.
+
+Version `19.0.1.158.0` applies the final business-UAT visual polish. Formal
+reports now open in the reader-oriented card view, risk and report list views
+keep long technical fields available but hidden by default, and the evidence
+and filing archive lists use explicit Chinese source and blocker labels. The
+underlying controlled records, rule outcomes and audit fields are unchanged.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes
