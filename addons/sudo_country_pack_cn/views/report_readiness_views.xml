@@ -533,28 +533,29 @@
         <field name="inherit_id" ref="sudo_global_finance.view_compliance_assessment_form"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="cn_is_china_assessment" invisible="1"/>
                 <button name="action_prepare_cn_formal_report" type="object"
                         class="oe_stat_button" icon="fa-file-text-o"
-                        invisible="country_id.code != 'CN' or not cn_report_can_prepare">
+                        invisible="not cn_is_china_assessment or not cn_report_can_prepare">
                     <field name="cn_report_readiness_state" widget="statinfo"
                            string="报告准备度"/>
                 </button>
                 <button name="action_cn_open_assessment_data_basis" type="object"
                         class="oe_stat_button" icon="fa-database"
-                        invisible="country_id.code != 'CN'">
+                        invisible="not cn_is_china_assessment">
                     <field name="cn_data_basis_dataset_count" widget="statinfo"
                            string="数据来源"/>
                 </button>
                 <button name="action_cn_open_assessment_obligation_basis" type="object"
                         class="oe_stat_button" icon="fa-check-square-o"
-                        invisible="country_id.code != 'CN'">
+                        invisible="not cn_is_china_assessment">
                     <field name="cn_obligation_basis_pending_count" widget="statinfo"
                            string="义务"/>
                 </button>
             </xpath>
             <xpath expr="//notebook" position="before">
                 <group string="中国报告准备度" col="4"
-                       invisible="country_id.code != 'CN'">
+                       invisible="not cn_is_china_assessment">
                     <group>
                         <field name="cn_report_readiness_state" widget="badge"
                                decoration-success="cn_report_readiness_state in ('ready', 'issued')"

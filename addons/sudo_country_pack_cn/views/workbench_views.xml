@@ -161,6 +161,9 @@
                 <field name="cn_workbench_vat_domain_state"/>
                 <field name="cn_workbench_cit_domain_state"/>
                 <field name="cn_workbench_iit_domain_state"/>
+                <field name="cn_workbench_vat_issue_count"/>
+                <field name="cn_workbench_cit_issue_count"/>
+                <field name="cn_workbench_iit_issue_count"/>
                 <field name="cn_workbench_vat_next_action"/>
                 <field name="cn_workbench_cit_next_action"/>
                 <field name="cn_workbench_iit_next_action"/>

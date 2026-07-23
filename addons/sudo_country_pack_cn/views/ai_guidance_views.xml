@@ -6,10 +6,11 @@
         <field name="inherit_id" ref="sudo_global_finance.view_compliance_finding_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header/field[@name='review_state']" position="before">
+                <field name="cn_ai_guidance_state" invisible="1"/>
                 <button name="action_generate_cn_ai_guidance" type="object"
                         string="生成受控 AI 引导"
                         groups="sudo_global_finance.group_compliance_user"
-                        invisible="assessment_id.country_id.code != 'CN' or result not in ('fail', 'unknown', 'error')"/>
+                        invisible="cn_ai_guidance_state == 'unavailable'"/>
             </xpath>
             <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
                 <div class="oe_button_box" name="cn_ai_guidance_button_box">

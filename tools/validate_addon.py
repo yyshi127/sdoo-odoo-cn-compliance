@@ -466,10 +466,47 @@ def validate_text_and_syntax() -> None:
             json.loads(content)
         elif path.suffix == ".xml":
             root = ElementTree.parse(path).getroot()
+            active_view_roots = {
+                ADDON_ROOT / "views",
+                XBRL_ADDON_ROOT / "views",
+            }
+            is_active_view = any(
+                view_root in path.parents for view_root in active_view_roots
+            )
+            if is_active_view:
+                for element in root.iter():
+                    for attribute in ("invisible", "readonly", "required"):
+                        expression = element.attrib.get(attribute, "")
+                        if re.search(
+                            r"\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+",
+                            expression,
+                        ):
+                            fail(
+                                "client-side view modifiers must use direct fields, "
+                                f"not relational chains, in {path}: "
+                                f"{attribute}={expression!r}"
+                            )
             for kanban in root.findall(".//kanban"):
                 templates = kanban.find("templates")
                 if templates is None:
                     continue
+                if is_active_view:
+                    declared_fields = {
+                        field.attrib.get("name")
+                        for field in kanban.findall("field")
+                        if field.attrib.get("name")
+                    }
+                    template_fields = {
+                        field.attrib.get("name")
+                        for field in templates.findall(".//field")
+                        if field.attrib.get("name")
+                    }
+                    missing_fields = sorted(template_fields - declared_fields)
+                    if missing_fields:
+                        fail(
+                            "kanban template fields must be declared before templates "
+                            f"in {path}: {missing_fields}"
+                        )
                 template_names = {
                     template.attrib.get("t-name")
                     for template in templates.findall(".//t")

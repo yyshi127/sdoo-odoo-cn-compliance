@@ -12,15 +12,15 @@
                         <header class="o_cn_workbench_header">
                             <div class="o_cn_workbench_identity">
                                 <div class="text-muted small">
-                                    <field name="cn_workbench_package_label"/>
+                                    <t t-out="record.cn_workbench_package_label.value"/>
                                 </div>
                                 <div class="fw-bold fs-4">
-                                    <field name="company_id"/>
+                                    <t t-out="record.company_id.value"/>
                                 </div>
                                 <div class="text-muted small">
-                                    <field name="cn_workbench_period_label"/>
+                                    <t t-out="record.cn_workbench_period_label.value"/>
                                     <span class="mx-1">·</span>
-                                    <field name="cn_workbench_scope_label"/>
+                                    <t t-out="record.cn_workbench_scope_label.value"/>
                                 </div>
                             </div>
                             <field name="cn_workbench_status" widget="badge"
@@ -33,16 +33,16 @@
                             <div class="o_cn_workbench_focus_copy">
                                 <div class="text-muted small fw-semibold">现在要做什么</div>
                                 <div class="fw-bold fs-5 mt-1">
-                                    <field name="cn_workbench_next_action"/>
+                                    <t t-out="record.cn_workbench_next_action.value"/>
                                 </div>
                                 <div class="text-muted mt-1">
-                                    <field name="cn_workbench_action_summary"/>
+                                    <t t-out="record.cn_workbench_action_summary.value"/>
                                 </div>
                             </div>
                             <button type="object"
                                     name="action_cn_open_workbench_next_best_action"
                                     class="btn btn-primary o_cn_workbench_primary_action">
-                                <span><field name="cn_workbench_next_best_action_label"/></span>
+                                <span t-out="record.cn_workbench_next_best_action_label.value"/>
                                 <i class="fa fa-arrow-right ms-2" title="打开下一步"/>
                             </button>
                         </section>
@@ -130,34 +130,38 @@
 
                         <section class="o_cn_workbench_metrics" aria-label="关键指标">
                             <div>
-                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_high_risk_count"/></span>
+                                <span class="o_cn_workbench_metric_value"
+                                      t-out="record.cn_workbench_high_risk_count.value"/>
                                 <span class="text-muted small">本次高风险</span>
                             </div>
                             <div>
-                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_pending_review_count"/></span>
+                                <span class="o_cn_workbench_metric_value"
+                                      t-out="record.cn_workbench_pending_review_count.value"/>
                                 <span class="text-muted small">本次待复核</span>
                             </div>
                             <div>
-                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_open_task_count"/></span>
+                                <span class="o_cn_workbench_metric_value"
+                                      t-out="record.cn_workbench_open_task_count.value"/>
                                 <span class="text-muted small">整改中</span>
                             </div>
                             <div>
-                                <span class="o_cn_workbench_metric_value"><field name="cn_workbench_overdue_task_count"/></span>
+                                <span class="o_cn_workbench_metric_value"
+                                      t-out="record.cn_workbench_overdue_task_count.value"/>
                                 <span class="text-muted small">已逾期</span>
                             </div>
                             <div>
                                 <span class="o_cn_workbench_metric_value">
-                                    <field name="cn_workbench_ready_dataset_count"/>
+                                    <t t-out="record.cn_workbench_ready_dataset_count.value"/>
                                     <span class="text-muted">/</span>
-                                    <field name="cn_workbench_dataset_count"/>
+                                    <t t-out="record.cn_workbench_dataset_count.value"/>
                                 </span>
                                 <span class="text-muted small">数据就绪</span>
                             </div>
                             <div>
                                 <span class="o_cn_workbench_metric_value">
-                                    <field name="cn_workbench_verified_evidence_count"/>
+                                    <t t-out="record.cn_workbench_verified_evidence_count.value"/>
                                     <span class="text-muted">/</span>
-                                    <field name="cn_workbench_evidence_count"/>
+                                    <t t-out="record.cn_workbench_evidence_count.value"/>
                                 </span>
                                 <span class="text-muted small">证据核验</span>
                             </div>
@@ -168,8 +172,10 @@
                                 <i class="fa fa-exclamation-triangle" title="当前结论受限"/>
                                 <div>
                                     <div class="fw-semibold">当前结论仍受限制</div>
-                                    <div class="small"><field name="cn_workbench_conclusion_boundary_summary"/></div>
-                                    <div class="small text-muted"><field name="cn_workbench_conclusion_boundary_next_action"/></div>
+                                    <div class="small"
+                                         t-out="record.cn_workbench_conclusion_boundary_summary.value"/>
+                                    <div class="small text-muted"
+                                         t-out="record.cn_workbench_conclusion_boundary_next_action.value"/>
                                 </div>
                             </section>
                         </t>
@@ -216,7 +222,8 @@
                                 <button type="object" name="action_cn_open_workbench_tax_impacts"
                                         class="btn btn-light border text-start">
                                     <span class="fw-semibold">税务影响</span>
-                                    <span class="badge text-bg-light"><field name="cn_workbench_pending_tax_impact_count"/></span>
+                                    <span class="badge text-bg-light"
+                                          t-out="record.cn_workbench_pending_tax_impact_count.value"/>
                                 </button>
                                 <button type="object" name="action_cn_open_workbench_cross_border_transactions"
                                         class="btn btn-light border text-start">
