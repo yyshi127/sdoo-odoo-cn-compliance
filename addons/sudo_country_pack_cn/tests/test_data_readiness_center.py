@@ -127,10 +127,9 @@ class TestChinaDataReadinessCenter(TransactionCase):
             "复核控制存在例外",
         )
 
-        field_labels = dataset.fields_get(
-            ["cn_data_readiness_blocker_summary"]
-        )
-        self.assertEqual(
-            field_labels["cn_data_readiness_blocker_summary"]["string"],
-            "数据准备阻断",
-        )
+        for source, expected in (
+            ("Data Readiness Blockers", "数据准备阻断"),
+            ("Evidence Source", "证据来源"),
+            ("Evidence Blockers", "证据阻断"),
+        ):
+            self.assertEqual(dataset.env._(source), expected)
