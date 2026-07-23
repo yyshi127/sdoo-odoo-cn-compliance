@@ -1729,6 +1729,7 @@ def validate_reconciliation_source_change_monitoring() -> None:
         "locale_independent_checksum_upgrade",
         "matched_legacy_language",
         "canonical_checksum_migrated",
+        'env["res.lang"].search([]).mapped("code")',
     ):
         if required not in migration_content:
             fail(

@@ -20,13 +20,8 @@ CHECKSUM_MODELS = (
 
 
 def _language_codes(env):
-    codes = {"en_US", "zh_CN"}
-    codes.update(
-        env["res.lang"]
-        .with_context(active_test=False)
-        .search([])
-        .mapped("code")
-    )
+    codes = {"en_US"}
+    codes.update(env["res.lang"].search([]).mapped("code"))
     return sorted(code for code in codes if code)
 
 
