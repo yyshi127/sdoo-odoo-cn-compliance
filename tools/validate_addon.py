@@ -4825,6 +4825,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         '_inherit = "sudo.compliance.evidence"',
         "cn_evidence_source_summary",
         "cn_evidence_blocker_summary",
+        '@api.depends_context("lang")',
         "assessment_id.profile_id",
         "finding_id.assessment_id.profile_id",
         "task_id.assessment_id.profile_id",
@@ -4915,6 +4916,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for forbidden in (">Source<", ">Blockers<"):
         if forbidden in evidence_view_content:
             fail(f"China evidence center must not expose English label {forbidden}")
+
+    workbench_test_content = (
+        ADDON_ROOT / "tests" / "test_workbench.py"
+    ).read_text(encoding="utf-8")
+    if "test_evidence_center_source_and_blockers_translate_in_chinese_context" not in workbench_test_content:
+        fail("China evidence center must test runtime Chinese source and blocker text")
 
     filing_model_content = (
         ADDON_ROOT / "models" / "filing_center.py"
@@ -5127,6 +5134,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'msgstr "证据来源"',
         'msgid "Evidence Blockers"',
         'msgstr "证据阻断"',
+        'msgid "Filing: %(name)s"',
+        'msgstr "申报缴款档案：%(name)s"',
+        'msgid "No blocker: evidence is verified and traceable."',
+        'msgstr "无阻断：证据已核验且可追溯。"',
     ):
         if required not in translation_content:
             fail(f"China center translation catalog is missing {required}")
@@ -5697,9 +5708,18 @@ def validate_delivery_objective_coverage() -> None:
         "cn_payment_integrity_state",
         "sudo.cn.compliance.report",
         "China demo closed loop ready",
+        "CODEX-DEMO 增值税申报回执证据",
+        "CODEX-DEMO 增值税缴税凭证",
+        "CODEX-DEMO 受控税务凭证出具方",
     ):
         if required not in demo_closed_loop_content:
             fail(f"China controlled demo closed-loop preparer is missing {required}")
+    for forbidden in (
+        "CODEX-DEMO VAT filing/payment archive evidence",
+        "CODEX-DEMO controlled tax authority evidence issuer",
+    ):
+        if forbidden in demo_closed_loop_content:
+            fail(f"China controlled demo evidence still exposes English text: {forbidden}")
 
     coverage_path = REPOSITORY_ROOT / "docs" / "CHINA_DELIVERY_OBJECTIVE_COVERAGE.md"
     if not coverage_path.is_file():

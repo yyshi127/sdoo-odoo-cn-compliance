@@ -23,6 +23,7 @@ class SudoChinaEvidenceCenterEvidence(models.Model):
         "verified_by_id",
         "verified_at",
     )
+    @api.depends_context("lang")
     def _compute_cn_evidence_center_display(self):
         for evidence in self:
             evidence.cn_evidence_source_summary = (

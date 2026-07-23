@@ -1217,6 +1217,78 @@ msgstr "证据阻断"
 
 #. module: sudo_country_pack_cn
 #. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Task: %(name)s"
+msgstr "整改任务：%(name)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Filing: %(name)s"
+msgstr "申报缴款档案：%(name)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Finding: %(name)s"
+msgstr "风险事项：%(name)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "Assessment: %(name)s"
+msgstr "合规评估：%(name)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "No source linked"
+msgstr "未关联来源"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "no linked source"
+msgstr "未关联来源"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "verification pending"
+msgstr "等待核验"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "evidence rejected"
+msgstr "证据已驳回"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "evidence not submitted"
+msgstr "证据尚未提交"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "checksum not frozen"
+msgstr "校验值尚未固化"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "verification metadata incomplete"
+msgstr "核验元数据不完整"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "No blocker: evidence is verified and traceable."
+msgstr "无阻断：证据已核验且可追溯。"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
 #: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
 msgid "superseded dataset"
 msgstr "数据集已被替代"

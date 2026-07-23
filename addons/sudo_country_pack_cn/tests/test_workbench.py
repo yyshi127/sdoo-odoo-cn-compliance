@@ -898,6 +898,44 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertIn("evidence not submitted", evidence.cn_evidence_blocker_summary)
         self.assertIn("checksum not frozen", evidence.cn_evidence_blocker_summary)
 
+    def test_evidence_center_source_and_blockers_translate_in_chinese_context(self):
+        self.env["res.lang"]._activate_lang("zh_CN")
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-01",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(self.rule_version.ids)],
+            }
+        )
+        evidence = self.env["sudo.compliance.evidence"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "证据中心中文显示测试",
+                "company_id": self.company.id,
+                "assessment_id": assessment.id,
+                "evidence_type": "external_reference",
+                "external_reference": "DMS/CN/EVIDENCE-CENTER-ZH-CN",
+            }
+        ).with_context(lang="zh_CN")
+
+        self.assertIn("合规评估：", evidence.cn_evidence_source_summary)
+        self.assertIn(assessment.display_name, evidence.cn_evidence_source_summary)
+        self.assertIn("受阻原因：", evidence.cn_evidence_blocker_summary)
+        self.assertIn("证据尚未提交", evidence.cn_evidence_blocker_summary)
+        self.assertIn("校验值尚未固化", evidence.cn_evidence_blocker_summary)
+        self.assertNotIn("Assessment:", evidence.cn_evidence_source_summary)
+        for forbidden in (
+            "Blocked by:",
+            "evidence not submitted",
+            "checksum not frozen",
+        ):
+            self.assertNotIn(forbidden, evidence.cn_evidence_blocker_summary)
+
     def test_evidence_center_search_view_exposes_audit_gap_filters(self):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company

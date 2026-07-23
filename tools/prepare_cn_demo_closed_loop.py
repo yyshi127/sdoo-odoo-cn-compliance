@@ -930,18 +930,32 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
         ("external_reference", "=", "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/" + suffix),
     ], limit=1)
     changed = False
+    evidence_name = (
+        "CODEX-DEMO 增值税申报回执证据 "
+        if evidence_type == "filing_receipt"
+        else "CODEX-DEMO 增值税缴税凭证 "
+    ) + suffix
+    issuer = "CODEX-DEMO 受控税务凭证出具方"
     if not evidence:
         evidence = env["sudo.compliance.evidence"].with_company(
             profile.company_id
         ).sudo().create({{
-            "name": "CODEX-DEMO VAT filing/payment archive evidence " + suffix,
+            "name": evidence_name,
             "company_id": profile.company_id.id,
             "filing_id": filing.id,
             "evidence_type": evidence_type,
             "external_reference": "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/" + suffix,
             "evidence_date": "2026-07-12",
-            "issuer": "CODEX-DEMO controlled tax authority evidence issuer",
+            "issuer": issuer,
         }})
+        changed = True
+    demo_backfill = {{}}
+    if evidence.name != evidence_name and evidence.name.startswith("CODEX-DEMO"):
+        demo_backfill["name"] = evidence_name
+    if evidence.issuer != issuer and (evidence.issuer or "").startswith("CODEX-DEMO"):
+        demo_backfill["issuer"] = issuer
+    if demo_backfill:
+        evidence.write(demo_backfill)
         changed = True
     if getattr(evidence, "state", False) == "draft":
         evidence.action_submit()
@@ -949,8 +963,8 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
     if getattr(evidence, "state", False) == "submitted":
         evidence.write({{
             "review_notes": (
-                "CODEX-DEMO ONLY: verified against the controlled VAT filing "
-                "or payment source record before sealing the archive."
+                "仅用于 CODEX-DEMO：封存档案前，已与受控的增值税申报或缴税"
+                "来源记录完成核验。"
             )
         }})
         evidence.action_verify()

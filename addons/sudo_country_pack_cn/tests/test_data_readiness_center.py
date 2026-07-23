@@ -131,5 +131,10 @@ class TestChinaDataReadinessCenter(TransactionCase):
             ("Data Readiness Blockers", "数据准备阻断"),
             ("Evidence Source", "证据来源"),
             ("Evidence Blockers", "证据阻断"),
+            ("Filing: %(name)s", "申报缴款档案：%(name)s"),
+            (
+                "No blocker: evidence is verified and traceable.",
+                "无阻断：证据已核验且可追溯。",
+            ),
         ):
             self.assertEqual(dataset.env._(source), expected)
