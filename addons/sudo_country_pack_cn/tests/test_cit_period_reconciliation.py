@@ -744,6 +744,47 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(len(replacement), 1)
         self.assertEqual(run.state, "succeeded")
 
+    def test_reconciliation_snapshot_is_independent_of_ui_language(self):
+        self.env["res.lang"]._activate_lang("zh_CN")
+        sources = self._seed_complete_sources("locale-stable")
+        account = self.company_data["default_account_revenue"]
+        canonical_name = account.with_context(lang="en_US").name
+        account.with_context(lang="zh_CN").write(
+            {"name": "仅用于测试的中文主营业务收入"}
+        )
+
+        self.assertEqual(
+            sources["scope"]
+            .with_context(lang="zh_CN")
+            ._current_integrity_state(),
+            "verified",
+        )
+        run = self._queue()
+        self.assertTrue(
+            run.with_user(self.reviewer)
+            .with_context(lang="zh_CN")
+            ._process()
+        )
+        run.invalidate_recordset()
+
+        account_snapshot = next(
+            item
+            for item in run.accounting_snapshot_json["accounts"]
+            if item["account_id"] == account.id
+        )
+        self.assertEqual(account_snapshot["account_name"], canonical_name)
+        self.assertEqual(
+            run.with_context(lang="zh_CN")._cn_current_source_checksums(),
+            run._cn_stored_source_checksums(),
+        )
+        model = (
+            self.env[run._name]
+            .with_user(self.reviewer)
+            .with_company(self.company)
+            .with_context(lang="zh_CN")
+        )
+        self.assertEqual(model._cn_monitor_current_results(limit=1), 0)
+
     def test_missing_external_sources_is_insufficient_not_aligned(self):
         self._ledger_profit()
         self._verified_scope("missing-sources")

@@ -6,6 +6,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 _CIT_SCOPE_TRANSITION_MARKER = object()
+_CIT_ACCOUNTING_CHECKSUM_LANG = "en_US"
 _PROFIT_INCREASE_ACCOUNT_TYPES = {"income", "income_other"}
 _PROFIT_DECREASE_ACCOUNT_TYPES = {
     "expense",
@@ -234,7 +235,11 @@ class SudoChinaCitAccountingScope(models.Model):
 
     def _current_checksum(self):
         self.ensure_one()
-        return _checksum(self._checksum_payload())
+        return self._checksum_for_language(_CIT_ACCOUNTING_CHECKSUM_LANG)
+
+    def _checksum_for_language(self, lang):
+        self.ensure_one()
+        return _checksum(self.with_context(lang=lang)._checksum_payload())
 
     def _current_integrity_state(self):
         self.ensure_one()

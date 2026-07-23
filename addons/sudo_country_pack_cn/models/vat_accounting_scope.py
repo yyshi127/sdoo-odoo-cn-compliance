@@ -7,6 +7,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 _MAPPING_TRANSITION_MARKER = object()
 _ADJUSTMENT_TRANSITION_MARKER = object()
+_VAT_ACCOUNTING_CHECKSUM_LANG = "en_US"
 
 
 def _attachment_manifest(attachments):
@@ -196,7 +197,13 @@ class SudoChinaVatAccountMapping(models.Model):
 
     def _current_checksum(self):
         self.ensure_one()
-        return _payload_checksum(self._checksum_payload())
+        return self._checksum_for_language(_VAT_ACCOUNTING_CHECKSUM_LANG)
+
+    def _checksum_for_language(self, lang):
+        self.ensure_one()
+        return _payload_checksum(
+            self.with_context(lang=lang)._checksum_payload()
+        )
 
     def _current_integrity_state(self):
         self.ensure_one()
@@ -431,7 +438,9 @@ class SudoChinaVatAccountMapping(models.Model):
                 )
             if mapping._overlapping_verified():
                 raise UserError(_("同一期间已有该控制科目的已核验映射。"))
-            payload = mapping._checksum_payload()
+            payload = mapping.with_context(
+                lang=_VAT_ACCOUNTING_CHECKSUM_LANG
+            )._checksum_payload()
             checksum = _payload_checksum(payload)
             mapping.with_context(
                 cn_vat_mapping_transition=_MAPPING_TRANSITION_MARKER

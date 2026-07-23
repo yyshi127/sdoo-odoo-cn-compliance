@@ -10,7 +10,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools import SQL
 
 
-RECONCILIATION_ENGINE_VERSION = "19.0.1"
+RECONCILIATION_ENGINE_VERSION = "19.0.2"
+_RECONCILIATION_SNAPSHOT_LANG = "en_US"
 MAX_SOURCE_DOCUMENTS = 50000
 MAX_LEDGER_MOVES = 100000
 _RECONCILIATION_TRANSITION_MARKER = object()
@@ -1162,7 +1163,9 @@ class SudoChinaEinvoiceReconciliationRun(models.Model):
         )
         try:
             with self.env.cr.savepoint():
-                counts = self._build_results()
+                counts = self.with_context(
+                    lang=_RECONCILIATION_SNAPSHOT_LANG
+                )._build_results()
         except (UserError, ValidationError) as exc:
             return self._mark_failed("RECONCILIATION_INPUT_ERROR", exc)
         except Exception as exc:

@@ -9,7 +9,8 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 
-VAT_PERIOD_ENGINE_VERSION = "19.0.2"
+VAT_PERIOD_ENGINE_VERSION = "19.0.3"
+_VAT_PERIOD_SNAPSHOT_LANG = "en_US"
 MAX_ACCOUNTING_MOVES = 100000
 MAX_ACCOUNTING_LINES = 200000
 MAX_EINVOICE_DOCUMENTS = 50000
@@ -2133,7 +2134,9 @@ class SudoChinaVatPeriodReconciliationRun(models.Model):
         )
         try:
             with self.env.cr.savepoint():
-                result_values = self._build_results()
+                result_values = self.with_context(
+                    lang=_VAT_PERIOD_SNAPSHOT_LANG
+                )._build_results()
                 previous_runs = self.search(
                     [
                         ("profile_id", "=", self.profile_id.id),

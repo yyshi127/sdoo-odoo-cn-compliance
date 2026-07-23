@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.156.0`
+Delivery version: `19.0.1.157.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -152,6 +152,15 @@ recomputes the same controlled source fingerprints used by each reconciliation
 engine. When accounting or normalized tax sources change, it queues one
 replacement run, records an audit event and leaves the historical result
 unchanged until the replacement succeeds and formally supersedes it.
+
+Version `19.0.1.157.0` makes accounting-scope integrity checks and invoice,
+VAT, CIT and IIT reconciliation source fingerprints independent of the active
+Odoo interface language. Audit snapshots now use a fixed canonical language,
+so Chinese user sessions and English cron sessions cannot create false source
+changes or alternating replacement runs. The upgrade migration only converts a
+legacy verification checksum when that checksum still matches the same
+controlled payload in a known Odoo language, and records the old checksum,
+matched language and canonical checksum in the audit log.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes

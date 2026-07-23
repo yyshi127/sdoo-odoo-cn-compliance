@@ -1673,6 +1673,68 @@ def validate_reconciliation_source_change_monitoring() -> None:
             "source monitoring must queue a replacement instead of rewriting "
             "historical run state"
         )
+    locale_contracts = {
+        "invoice_reconciliation.py": "_RECONCILIATION_SNAPSHOT_LANG",
+        "vat_period_reconciliation.py": "_VAT_PERIOD_SNAPSHOT_LANG",
+        "cit_period_reconciliation.py": "_CIT_PERIOD_SNAPSHOT_LANG",
+        "iit_period_reconciliation.py": "_IIT_PERIOD_SNAPSHOT_LANG",
+    }
+    for filename, constant_name in locale_contracts.items():
+        content = (ADDON_ROOT / "models" / filename).read_text(
+            encoding="utf-8"
+        )
+        if f'{constant_name} = "en_US"' not in content:
+            fail(
+                "reconciliation snapshots require a canonical audit language: "
+                f"{filename}"
+            )
+        if f"lang={constant_name}" not in content:
+            fail(
+                "reconciliation processing must use its canonical audit "
+                f"language: {filename}"
+            )
+        if constant_name not in model_content:
+            fail(
+                "source monitoring must reuse the reconciliation canonical "
+                f"language: {constant_name}"
+            )
+
+    accounting_checksum_contracts = {
+        "vat_accounting_scope.py": "_VAT_ACCOUNTING_CHECKSUM_LANG",
+        "cit_accounting_scope.py": "_CIT_ACCOUNTING_CHECKSUM_LANG",
+        "iit_accounting_scope.py": "_IIT_ACCOUNTING_CHECKSUM_LANG",
+    }
+    for filename, constant_name in accounting_checksum_contracts.items():
+        content = (ADDON_ROOT / "models" / filename).read_text(
+            encoding="utf-8"
+        )
+        for required in (
+            f'{constant_name} = "en_US"',
+            "def _checksum_for_language(",
+            f"self._checksum_for_language({constant_name})",
+        ):
+            if required not in content:
+                fail(
+                    "accounting-scope integrity must be locale independent: "
+                    f"{filename}:{required}"
+                )
+
+    migration_content = (
+        ADDON_ROOT
+        / "migrations"
+        / "19.0.1.157.0"
+        / "post-migration.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "locale_independent_checksum_upgrade",
+        "matched_legacy_language",
+        "canonical_checksum_migrated",
+    ):
+        if required not in migration_content:
+            fail(
+                "locale-independent checksum migration is missing "
+                f"{required}"
+            )
 
     cron_content = (ADDON_ROOT / cron_path).read_text(encoding="utf-8")
     if "_cron_monitor_cn_reconciliation_sources(limit=20)" not in cron_content:
@@ -1685,12 +1747,15 @@ def validate_reconciliation_source_change_monitoring() -> None:
         ),
         "test_vat_period_reconciliation.py": (
             "test_source_change_monitor_queues_one_recalculation",
+            "test_reconciliation_snapshot_is_independent_of_ui_language",
         ),
         "test_cit_period_reconciliation.py": (
             "test_source_change_monitor_queues_one_recalculation",
+            "test_reconciliation_snapshot_is_independent_of_ui_language",
         ),
         "test_iit_period_reconciliation.py": (
             "test_source_change_monitor_queues_one_recalculation",
+            "test_reconciliation_snapshot_is_independent_of_ui_language",
         ),
     }
     for filename, method_names in test_contracts.items():

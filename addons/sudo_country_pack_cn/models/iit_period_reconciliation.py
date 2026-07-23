@@ -6,7 +6,8 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 
-IIT_PERIOD_ENGINE_VERSION = "19.0.1"
+IIT_PERIOD_ENGINE_VERSION = "19.0.2"
+_IIT_PERIOD_SNAPSHOT_LANG = "en_US"
 MAX_ACCOUNTING_LINES = 200000
 MAX_SOURCE_RECORDS = 100
 MAX_PAYMENT_RECORDS = 10000
@@ -2036,7 +2037,9 @@ class SudoChinaIitPeriodReconciliationRun(models.Model):
         previous_runs = self.browse()
         try:
             with self.env.cr.savepoint():
-                result_values = self._build_results()
+                result_values = self.with_context(
+                    lang=_IIT_PERIOD_SNAPSHOT_LANG
+                )._build_results()
                 previous_runs = self.search(
                     [
                         ("profile_id", "=", self.profile_id.id),

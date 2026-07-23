@@ -4,18 +4,22 @@ from odoo import api, fields, models
 
 from .cit_period_reconciliation import (
     _CIT_PERIOD_TRANSITION_MARKER,
+    _CIT_PERIOD_SNAPSHOT_LANG,
     _checksum as _cit_checksum,
 )
 from .iit_period_reconciliation import (
     _IIT_PERIOD_TRANSITION_MARKER,
+    _IIT_PERIOD_SNAPSHOT_LANG,
     _checksum as _iit_checksum,
 )
 from .invoice_reconciliation import (
     _RECONCILIATION_TRANSITION_MARKER,
+    _RECONCILIATION_SNAPSHOT_LANG,
     _checksum as _invoice_checksum,
 )
 from .vat_period_reconciliation import (
     _VAT_PERIOD_TRANSITION_MARKER,
+    _VAT_PERIOD_SNAPSHOT_LANG,
     _checksum as _vat_checksum,
 )
 
@@ -134,13 +138,14 @@ class SudoChinaEinvoiceReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
-        documents = self._source_documents()
+        run = self.with_context(lang=_RECONCILIATION_SNAPSHOT_LANG)
+        documents = run._source_documents()
         moves = (
-            self._ledger_moves()
+            run._ledger_moves()
             if documents
-            else self.env["account.move"].browse()
+            else run.env["account.move"].browse()
         )
-        _indexes, _move_count, ledger_checksum = self._build_move_indexes(
+        _indexes, _move_count, ledger_checksum = run._build_move_indexes(
             moves
         )
         source_checksum = _invoice_checksum(
@@ -200,11 +205,12 @@ class SudoChinaVatPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
+        run = self.with_context(lang=_VAT_PERIOD_SNAPSHOT_LANG)
         issues = {}
-        accounting = self._collect_accounting(issues)
-        einvoices = self._collect_einvoices(issues)
-        filing = self._collect_filing(issues)
-        payments = self._collect_payments(issues)
+        accounting = run._collect_accounting(issues)
+        einvoices = run._collect_einvoices(issues)
+        filing = run._collect_filing(issues)
+        payments = run._collect_payments(issues)
         return {
             "accounting_snapshot_checksum": _vat_checksum(
                 accounting["snapshot"]
@@ -271,10 +277,11 @@ class SudoChinaCitPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
+        run = self.with_context(lang=_CIT_PERIOD_SNAPSHOT_LANG)
         issues = []
-        accounting = self._collect_accounting(issues)
-        filing = self._collect_filing(issues)
-        payments = self._collect_payments(issues)
+        accounting = run._collect_accounting(issues)
+        filing = run._collect_filing(issues)
+        payments = run._collect_payments(issues)
         return {
             "accounting_scope_snapshot_checksum": _cit_checksum(
                 accounting["scope_snapshot"]
@@ -336,12 +343,13 @@ class SudoChinaIitPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
+        run = self.with_context(lang=_IIT_PERIOD_SNAPSHOT_LANG)
         issues = []
-        scope = self._collect_scope(issues)
-        payroll = self._collect_payroll(issues, scope)
-        filing = self._collect_filing(issues, scope)
-        payments = self._collect_payments(issues)
-        accounting = self._collect_accounting(issues, scope, payments)
+        scope = run._collect_scope(issues)
+        payroll = run._collect_payroll(issues, scope)
+        filing = run._collect_filing(issues, scope)
+        payments = run._collect_payments(issues)
+        accounting = run._collect_accounting(issues, scope, payments)
         return {
             "accounting_scope_snapshot_checksum": _iit_checksum(
                 scope["snapshot"]
