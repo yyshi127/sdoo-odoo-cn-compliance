@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.146.0`
+Delivery version: `19.0.1.147.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -97,7 +97,7 @@ status shows all of the following:
 
 The previous candidate did not pass business usability review because the
 workbench exposed too many fields and actions at once, while sixteen root menu
-entries made the intended operating path unclear. Version `19.0.1.146.0`
+entries made the intended operating path unclear. Version `19.0.1.147.0`
 therefore resets the reviewer experience without removing the governed
 compliance records underneath it:
 
@@ -107,6 +107,8 @@ compliance records underneath it:
   `数据准备 → 规则扫描 → 风险复核 → 整改复扫 → 报告归档`;
 - specialist rule, obligation, evidence, filing, tax-impact and cross-border
   entries remain available under a collapsed `专业详情` section;
+- the risk center opens on each profile's latest scan by default, while
+  `最新扫描` and `历史扫描` filters preserve a clear audit-history switch;
 - the workbench card no longer has an ambiguous global click target;
 - desktop, laptop and mobile layouts use explicit responsive grid breakpoints.
 

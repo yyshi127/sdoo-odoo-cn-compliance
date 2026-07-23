@@ -10,6 +10,11 @@
                 <field name="rule_id"/>
                 <field name="assessment_id"/>
                 <field name="task_assignee_id"/>
+                <filter name="cn_latest_scan" string="最新扫描"
+                        domain="[('cn_is_latest_assessment', '=', True)]"/>
+                <filter name="cn_historical_scan" string="历史扫描"
+                        domain="[('cn_is_latest_assessment', '=', False)]"/>
+                <separator/>
                 <filter name="cn_actionable" string="需关注"
                         domain="[('assessment_id.profile_id.country_id.code', '=', 'CN'), ('result', 'in', ('fail', 'unknown', 'error'))]"/>
                 <filter name="cn_high_risk" string="高风险"
@@ -42,6 +47,8 @@
                         context="{'group_by': 'task_assignee_id'}"/>
                 <filter name="group_company" string="按公司"
                         context="{'group_by': 'company_id'}"/>
+                <filter name="group_assessment" string="按扫描批次"
+                        context="{'group_by': 'assessment_id'}"/>
                 <filter name="group_rule" string="按规则"
                         context="{'group_by': 'rule_id'}"/>
             </search>
@@ -110,7 +117,7 @@
                 <field name="cn_risk_rule_professional_state" widget="badge" optional="hide"/>
                 <button name="action_cn_open_risk_rule_version" type="object"
                         string="规则版本" class="btn-link"/>
-                <field name="assessment_id" optional="hide"/>
+                <field name="assessment_id" string="扫描批次" optional="show"/>
                 <field name="task_assignee_id" widget="many2one_avatar_user"/>
                 <field name="task_due_date"/>
                 <field name="task_state" widget="badge"
@@ -168,6 +175,8 @@
                     create="0" quick_create="0" sample="0">
                 <field name="title"/>
                 <field name="company_id"/>
+                <field name="assessment_id"/>
+                <field name="cn_is_latest_assessment"/>
                 <field name="rule_id"/>
                 <field name="rule_version_id"/>
                 <field name="result"/>
@@ -238,12 +247,17 @@
                                     <div class="text-muted small">
                                         <field name="company_id"/>
                                         <span> · </span>
+                                        <span>扫描 </span>
+                                        <field name="assessment_id"/>
+                                        <span> · </span>
                                         <field name="rule_id"/>
                                         <span> · </span>
                                         <field name="cn_risk_period_label"/>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column align-items-end gap-1">
+                                    <span t-if="record.cn_is_latest_assessment.raw_value"
+                                          class="badge text-bg-success">最新扫描</span>
                                     <field name="risk_level" widget="badge"
                                            decoration-danger="risk_level in ('critical', 'high')"
                                            decoration-warning="risk_level == 'medium'"
@@ -833,7 +847,7 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_cn_risk_center_finding_search"/>
         <field name="domain">[('assessment_id.profile_id.country_id.code', '=', 'CN'), ('result', 'in', ('fail', 'unknown', 'error'))]</field>
-        <field name="context">{'search_default_cn_actionable': 1, 'search_default_group_risk': 1}</field>
+        <field name="context">{'search_default_cn_latest_scan': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">当前没有需要关注的中国合规风险</p>
             <p>运行规则扫描后，失败、待确认或执行错误的结果会在这里集中展示。</p>

@@ -747,12 +747,38 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(domain[0][0], "id")
         self.assertEqual(domain[0][1], "in")
 
+    def test_risk_center_can_filter_latest_and_historical_scans(self):
+        historical = self._finding()
+        latest = self._finding()
+
+        historical.invalidate_recordset()
+        latest.invalidate_recordset()
+
+        self.assertFalse(historical.cn_is_latest_assessment)
+        self.assertTrue(latest.cn_is_latest_assessment)
+        latest_results = self.env["sudo.compliance.finding"].search(
+            [
+                ("id", "in", (historical.id, latest.id)),
+                ("cn_is_latest_assessment", "=", True),
+            ]
+        )
+        historical_results = self.env["sudo.compliance.finding"].search(
+            [
+                ("id", "in", (historical.id, latest.id)),
+                ("cn_is_latest_assessment", "=", False),
+            ]
+        )
+        self.assertEqual(latest_results, latest)
+        self.assertEqual(historical_results, historical)
+
     def test_risk_center_search_view_exposes_closure_filters(self):
         view = self.env.ref(
             "sudo_country_pack_cn.view_cn_risk_center_finding_search"
         )
         arch = view.arch_db
 
+        self.assertIn("cn_latest_scan", arch)
+        self.assertIn("cn_historical_scan", arch)
         self.assertIn("cn_closure_ready", arch)
         self.assertIn("cn_closure_action_required", arch)
         self.assertIn("cn_closure_blocked", arch)

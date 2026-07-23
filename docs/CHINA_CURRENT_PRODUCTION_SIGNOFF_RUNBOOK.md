@@ -30,7 +30,7 @@ professional judgment.
 
 Pick one candidate number and use it consistently:
 
-- Delivery version: `19.0.1.146.0`
+- Delivery version: `19.0.1.147.0`
 - Git commit: read from `dist/cn_delivery_mNNN_chain_status.md`
 - Release branch: read from `dist/cn_delivery_mNNN_chain_status.md`
 - Delivery package: `dist/sdoo-cn-compliance-delivery-mNNN.tgz`

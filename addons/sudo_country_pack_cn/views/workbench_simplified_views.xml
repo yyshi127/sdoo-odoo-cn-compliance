@@ -131,11 +131,11 @@
                         <section class="o_cn_workbench_metrics" aria-label="关键指标">
                             <div>
                                 <span class="o_cn_workbench_metric_value"><field name="cn_workbench_high_risk_count"/></span>
-                                <span class="text-muted small">高风险</span>
+                                <span class="text-muted small">本次高风险</span>
                             </div>
                             <div>
                                 <span class="o_cn_workbench_metric_value"><field name="cn_workbench_pending_review_count"/></span>
-                                <span class="text-muted small">待复核</span>
+                                <span class="text-muted small">本次待复核</span>
                             </div>
                             <div>
                                 <span class="o_cn_workbench_metric_value"><field name="cn_workbench_open_task_count"/></span>

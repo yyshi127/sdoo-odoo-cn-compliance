@@ -68,6 +68,11 @@ REMEDIATION_URGENCY_STATES = [
 class SudoChinaRiskCenterFinding(models.Model):
     _inherit = "sudo.compliance.finding"
 
+    cn_is_latest_assessment = fields.Boolean(
+        string="最新扫描",
+        compute="_compute_cn_is_latest_assessment",
+        search="_search_cn_is_latest_assessment",
+    )
     cn_risk_period_label = fields.Char(
         string="适用期间",
         compute="_compute_cn_risk_center_display",
@@ -273,6 +278,61 @@ class SudoChinaRiskCenterFinding(models.Model):
         string="Tax Impact Summary",
         compute="_compute_cn_risk_center_display",
     )
+
+    def _compute_cn_is_latest_assessment(self):
+        latest_by_profile = {}
+        profiles = self.mapped("assessment_id.profile_id")
+        Assessment = self.env["sudo.compliance.assessment"]
+        for profile in profiles:
+            latest_by_profile[profile.id] = Assessment.search(
+                [("profile_id", "=", profile.id)],
+                order="period_end desc, create_date desc, id desc",
+                limit=1,
+            ).id
+        for finding in self:
+            finding.cn_is_latest_assessment = (
+                finding.assessment_id.id
+                == latest_by_profile.get(finding.assessment_id.profile_id.id)
+            )
+
+    def _search_cn_is_latest_assessment(self, operator, value):
+        if operator in ("=", "!="):
+            accepted = {bool(value)}
+            if operator == "!=":
+                accepted = {True, False} - accepted
+        elif operator in ("in", "not in"):
+            accepted = {bool(item) for item in (value or [])}
+            if operator == "not in":
+                accepted = {True, False} - accepted
+        else:
+            return [("id", "=", 0)]
+        if accepted == {True, False}:
+            return []
+        if not accepted:
+            return [("id", "=", 0)]
+        profiles = self.env["sudo.compliance.profile"].search(
+            [("country_id.code", "=", "CN")]
+        )
+        Assessment = self.env["sudo.compliance.assessment"]
+        latest_assessment_ids = [
+            assessment.id
+            for profile in profiles
+            if (
+                assessment := Assessment.search(
+                    [("profile_id", "=", profile.id)],
+                    order="period_end desc, create_date desc, id desc",
+                    limit=1,
+                )
+            )
+        ]
+        positive = True in accepted
+        return [
+            (
+                "assessment_id",
+                "in" if positive else "not in",
+                latest_assessment_ids,
+            )
+        ]
 
     def _compute_cn_risk_center_display(self):
         Evidence = self.env["sudo.compliance.evidence"].sudo()
