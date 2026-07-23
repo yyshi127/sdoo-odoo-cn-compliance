@@ -186,8 +186,229 @@
     }
 }
 
+.o_cn_risk_center_kanban {
+    .o_kanban_renderer {
+        --KanbanRecord-width: min(1280px, calc(100vw - 64px));
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .o_kanban_record {
+        max-width: 1280px;
+    }
+}
+
+.o_cn_risk_card {
+    background: var(--o-view-background-color, #fff);
+    border: 1px solid #d8dee4;
+    border-inline-start: 4px solid #4a8996;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(26, 42, 58, 0.08);
+    color: var(--body-color, #1f2933);
+    overflow: hidden;
+
+    &.is-critical {
+        border-inline-start-color: #c94a45;
+    }
+
+    &.is-warning {
+        border-inline-start-color: #d49b24;
+    }
+}
+
+.o_cn_risk_header {
+    align-items: flex-start;
+    border-bottom: 1px solid #e5e9ed;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    padding: 18px 22px;
+}
+
+.o_cn_risk_identity {
+    min-width: 0;
+}
+
+.o_cn_risk_meta,
+.o_cn_risk_badges,
+.o_cn_risk_actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.o_cn_risk_meta,
+.o_cn_risk_rule {
+    color: #647583;
+    font-size: 0.875rem;
+}
+
+.o_cn_risk_title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 4px 0;
+    overflow-wrap: anywhere;
+}
+
+.o_cn_risk_badges {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+}
+
+.o_cn_risk_conclusion {
+    align-items: start;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+    padding: 18px 22px;
+}
+
+.o_cn_risk_label {
+    color: #647583;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.o_cn_risk_conclusion_text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+.o_cn_risk_closure {
+    border-inline-start: 1px solid #d8dee4;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-inline-start: 22px;
+
+    .o_cn_risk_label {
+        margin: 0;
+    }
+
+    .small {
+        grid-column: 1 / -1;
+    }
+}
+
+.o_cn_risk_next_action {
+    align-items: start;
+    background: #f1f8f6;
+    border-block: 1px solid #d6e9e3;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    padding: 16px 22px;
+}
+
+.o_cn_risk_next_icon {
+    align-items: center;
+    background: #dcefe9;
+    border-radius: 50%;
+    color: #17694f;
+    display: flex;
+    height: 32px;
+    justify-content: center;
+    width: 32px;
+}
+
+.o_cn_risk_overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 20px 22px;
+}
+
+.o_cn_risk_column {
+    border-inline-start: 1px solid #e0e5e9;
+    min-width: 0;
+    padding: 0 22px;
+
+    &:first-child {
+        border-inline-start: 0;
+        padding-inline-start: 0;
+    }
+
+    &:last-child {
+        padding-inline-end: 0;
+    }
+}
+
+.o_cn_risk_column_title {
+    align-items: center;
+    color: #263b49;
+    display: flex;
+    font-weight: 700;
+    gap: 8px;
+    margin-bottom: 14px;
+
+    i {
+        color: #18816b;
+        width: 16px;
+    }
+}
+
+.o_cn_risk_item {
+    border-top: 1px solid #edf0f2;
+    overflow-wrap: anywhere;
+    padding: 12px 0;
+
+    &:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+    }
+}
+
+.o_cn_risk_details {
+    background: #f7f9fa;
+    border-top: 1px solid #dfe5e9;
+
+    .o_cn_risk_details_header {
+        align-items: center;
+        display: flex;
+        font-weight: 700;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 14px 22px;
+    }
+}
+
+.o_cn_risk_detail_grid {
+    border-top: 1px solid #e3e8eb;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 4px 22px 18px;
+}
+
+.o_cn_risk_detail_item {
+    border-bottom: 1px solid #e3e8eb;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: 16px;
+
+    &:nth-child(3n + 2),
+    &:nth-child(3n + 3) {
+        border-inline-start: 1px solid #e3e8eb;
+    }
+}
+
+.o_cn_risk_footer {
+    align-items: center;
+    border-top: 1px solid #dfe5e9;
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    padding: 14px 22px;
+}
+
 @media (max-width: 1100px) {
     .o_cn_compliance_workbench_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 40px);
+    }
+
+    .o_cn_risk_center_kanban .o_kanban_renderer {
         --KanbanRecord-width: calc(100vw - 40px);
     }
 
@@ -200,8 +421,37 @@
     }
 }
 
+@media (max-width: 960px) {
+    .o_cn_risk_overview,
+    .o_cn_risk_detail_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_cn_risk_column {
+        border-bottom: 1px solid #e0e5e9;
+
+        &:nth-child(3) {
+            border-inline-start: 0;
+            grid-column: 1 / -1;
+            padding: 18px 0 0;
+        }
+    }
+
+    .o_cn_risk_detail_item:nth-child(n) {
+        border-inline-start: 0;
+    }
+
+    .o_cn_risk_detail_item:nth-child(even) {
+        border-inline-start: 1px solid #e3e8eb;
+    }
+}
+
 @media (max-width: 720px) {
     .o_cn_compliance_workbench_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 24px);
+    }
+
+    .o_cn_risk_center_kanban .o_kanban_renderer {
         --KanbanRecord-width: calc(100vw - 24px);
     }
 
@@ -222,5 +472,59 @@
     .o_cn_workbench_metrics,
     .o_cn_workbench_expert_grid {
         grid-template-columns: 1fr;
+    }
+
+    .o_cn_risk_header,
+    .o_cn_risk_footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .o_cn_risk_badges,
+    .o_cn_risk_actions {
+        justify-content: flex-start;
+    }
+
+    .o_cn_risk_conclusion,
+    .o_cn_risk_overview,
+    .o_cn_risk_detail_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .o_cn_risk_header,
+    .o_cn_risk_conclusion,
+    .o_cn_risk_next_action,
+    .o_cn_risk_overview,
+    .o_cn_risk_details_header,
+    .o_cn_risk_footer {
+        padding-inline: 14px;
+    }
+
+    .o_cn_risk_closure {
+        border-inline-start: 0;
+        border-top: 1px solid #d8dee4;
+        padding-block-start: 14px;
+        padding-inline-start: 0;
+    }
+
+    .o_cn_risk_column,
+    .o_cn_risk_column:nth-child(3) {
+        border-bottom: 1px solid #e0e5e9;
+        border-inline-start: 0;
+        grid-column: auto;
+        padding: 16px 0;
+    }
+
+    .o_cn_risk_detail_item:nth-child(n) {
+        border-inline-start: 0;
+        padding-inline: 0;
+    }
+
+    .o_cn_risk_detail_grid {
+        padding-inline: 14px;
+    }
+
+    .o_cn_risk_actions .btn {
+        flex: 1 1 auto;
     }
 }
