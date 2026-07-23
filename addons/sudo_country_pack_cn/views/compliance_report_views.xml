@@ -594,7 +594,7 @@
     <record id="action_cn_formal_compliance_reports" model="ir.actions.act_window">
         <field name="name">正式报告</field>
         <field name="res_model">sudo.cn.compliance.report</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id"
                ref="view_cn_formal_compliance_report_search"/>
         <field name="context">{'search_default_active_lifecycle': 1}</field>

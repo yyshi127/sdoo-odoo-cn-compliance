@@ -302,7 +302,65 @@
                                 </div>
                             </div>
 
-                            <div class="o_cn_risk_overview">
+                            <div class="o_cn_risk_compact_status">
+                                <div class="o_cn_risk_status_item">
+                                    <div class="o_cn_risk_label">数据基础</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_risk_data_basis_state" widget="badge"
+                                               decoration-success="cn_risk_data_basis_state == 'ready'"
+                                               decoration-warning="cn_risk_data_basis_state == 'warning'"
+                                               decoration-danger="cn_risk_data_basis_state in ('no_period', 'missing', 'blocked')"/>
+                                        <span class="small">
+                                            <field name="cn_risk_data_basis_ready_type_count"/>
+                                            <span>/</span>
+                                            <field name="cn_risk_data_basis_required_type_count"/>
+                                            <span> 类就绪</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_risk_status_item">
+                                    <div class="o_cn_risk_label">规则依据</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_risk_rule_basis_state" widget="badge"
+                                               decoration-success="cn_risk_rule_basis_state == 'ready'"
+                                               decoration-warning="cn_risk_rule_basis_state in ('source_warning', 'professional_pending', 'active_attention')"
+                                               decoration-danger="cn_risk_rule_basis_state == 'missing'"/>
+                                        <span class="small">
+                                            <field name="cn_risk_rule_source_count"/>
+                                            <span> 个来源</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_risk_status_item">
+                                    <div class="o_cn_risk_label">证据状态</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_risk_evidence_state" widget="badge"
+                                               decoration-success="cn_risk_evidence_state == 'verified'"
+                                               decoration-warning="cn_risk_evidence_state == 'partial'"
+                                               decoration-muted="cn_risk_evidence_state == 'none'"/>
+                                        <span class="small">
+                                            <field name="cn_risk_verified_evidence_count"/>
+                                            <span>/</span>
+                                            <field name="cn_risk_evidence_count"/>
+                                            <span> 已验证</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_risk_status_item">
+                                    <div class="o_cn_risk_label">责任与期限</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="cn_risk_remediation_urgency" widget="badge"
+                                               decoration-danger="cn_risk_remediation_urgency == 'overdue'"
+                                               decoration-warning="cn_risk_remediation_urgency in ('due_soon', 'pending_review', 'blocked')"
+                                               decoration-info="cn_risk_remediation_urgency == 'waiting_rescan'"
+                                               decoration-success="cn_risk_remediation_urgency == 'closed'"
+                                               decoration-muted="cn_risk_remediation_urgency == 'no_task'"/>
+                                        <span class="small"><field name="task_due_date"/></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_cn_risk_overview" t-if="False">
                                 <div class="o_cn_risk_column">
                                     <div class="o_cn_risk_column_title">
                                         <i class="fa fa-database" title="事实与数据"/>
@@ -408,7 +466,7 @@
                                 </div>
                             </div>
 
-                            <div class="o_cn_risk_details">
+                            <div class="o_cn_risk_details" t-if="False">
                                 <div class="o_cn_risk_details_header">
                                     <span>专业分析与审计信息</span>
                                     <span class="text-muted small">勾稽、税务影响、AI、跨境与证据追溯</span>

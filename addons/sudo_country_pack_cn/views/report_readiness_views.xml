@@ -9,8 +9,14 @@
                 <field name="company_id"/>
                 <field name="period_start"/>
                 <field name="period_end"/>
+                <filter name="cn_report_latest_scan" string="最新扫描"
+                        domain="[('cn_report_is_latest_assessment', '=', True)]"/>
+                <filter name="cn_report_historical_scan" string="历史扫描"
+                        domain="[('cn_report_is_latest_assessment', '=', False)]"/>
+                <separator/>
                 <filter name="cn_assessments" string="中国评估"
                         domain="[('country_id.code', '=', 'CN')]"/>
+                <separator/>
                 <filter name="completed" string="扫描完成"
                         domain="[('state', '=', 'completed')]"/>
                 <separator/>
@@ -123,10 +129,13 @@
         <field name="name">sudo.compliance.assessment.cn.report.readiness.kanban</field>
         <field name="model">sudo.compliance.assessment</field>
         <field name="arch" type="xml">
-            <kanban string="中国报告准备度" class="o_kanban_dashboard"
-                    create="0" quick_create="0" sample="0">
+            <kanban string="中国报告准备度"
+                    class="o_kanban_dashboard o_cn_review_queue_kanban o_cn_report_readiness_kanban"
+                    create="0" quick_create="0" sample="0"
+                    default_order="period_end desc, id desc">
                 <field name="profile_id"/>
                 <field name="company_id"/>
+                <field name="cn_report_is_latest_assessment"/>
                 <field name="period_start"/>
                 <field name="period_end"/>
                 <field name="state"/>
@@ -181,7 +190,7 @@
                 <field name="cn_obligation_basis_next_action"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.cn_report_readiness_state.raw_value == 'ready' || record.cn_report_readiness_state.raw_value == 'issued' ? 'border-success' : record.cn_report_readiness_state.raw_value == 'needs_review' || record.cn_report_readiness_state.raw_value == 'needs_remediation' ? 'border-danger' : 'border-warning'}">
+                        <div t-attf-class="o_cn_report_card oe_kanban_global_click #{record.cn_report_readiness_state.raw_value == 'ready' || record.cn_report_readiness_state.raw_value == 'issued' ? 'is-ready' : record.cn_report_readiness_state.raw_value == 'needs_review' || record.cn_report_readiness_state.raw_value == 'needs_remediation' ? 'is-blocked' : 'is-warning'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
                                     <div class="fw-bold fs-5">
@@ -198,6 +207,134 @@
                                        decoration-danger="cn_report_readiness_state in ('needs_review', 'needs_remediation')"
                                        decoration-warning="cn_report_readiness_state in ('needs_scan', 'limited', 'draft_report', 'submitted')"/>
                             </div>
+                            <div class="o_cn_report_summary">
+                                <div>
+                                    <div class="o_cn_review_label">现在要做什么</div>
+                                    <div class="fw-semibold o_cn_line_clamp_2">
+                                        <field name="cn_report_next_action"/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="o_cn_review_label">报告阻断事项</div>
+                                    <div class="o_cn_line_clamp_2">
+                                        <field name="cn_report_readiness_blocker_summary"/>
+                                    </div>
+                                </div>
+                                <div class="o_cn_report_metrics">
+                                    <button type="object" name="action_cn_open_report_readiness_findings"
+                                            class="o_cn_metric_link">
+                                        <span>问题</span>
+                                        <strong><field name="cn_report_issue_count"/></strong>
+                                    </button>
+                                    <button type="object" name="action_cn_open_report_readiness_tasks"
+                                            class="o_cn_metric_link">
+                                        <span>未关闭整改</span>
+                                        <strong><field name="cn_report_open_task_count"/></strong>
+                                    </button>
+                                    <div class="o_cn_metric_link">
+                                        <span>限制项</span>
+                                        <strong><field name="cn_report_limitation_count"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_cn_report_gate_grid">
+                                <div class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">数据基础</div>
+                                    <field name="cn_data_basis_state" widget="badge"
+                                           decoration-success="cn_data_basis_state == 'ready'"
+                                           decoration-warning="cn_data_basis_state in ('missing', 'warning', 'no_period')"
+                                           decoration-danger="cn_data_basis_state == 'blocked'"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_data_basis_ready_type_count"/>
+                                        <span>/</span>
+                                        <field name="cn_data_basis_required_type_count"/>
+                                        <span> 类就绪</span>
+                                    </div>
+                                </div>
+                                <button type="object" name="action_cn_open_assessment_accounting_basis"
+                                        class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">账务基础</div>
+                                    <field name="cn_accounting_basis_state" widget="badge"
+                                           decoration-success="cn_accounting_basis_state == 'ready'"
+                                           decoration-warning="cn_accounting_basis_state == 'warning'"
+                                           decoration-danger="cn_accounting_basis_state in ('no_period', 'missing')"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_accounting_basis_posted_move_count"/>
+                                        <span> 张已过账凭证</span>
+                                    </div>
+                                </button>
+                                <button type="object" name="action_cn_open_assessment_obligation_basis"
+                                        class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">纳税义务</div>
+                                    <field name="cn_obligation_basis_state" widget="badge"
+                                           decoration-success="cn_obligation_basis_state == 'ready'"
+                                           decoration-warning="cn_obligation_basis_state in ('missing', 'attention')"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_obligation_basis_pending_count"/>
+                                        <span> 项待确认</span>
+                                    </div>
+                                </button>
+                                <div class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">整改复扫</div>
+                                    <field name="cn_report_rescan_state" widget="badge"
+                                           decoration-success="cn_report_rescan_state == 'verified'"
+                                           decoration-danger="cn_report_rescan_state == 'failed'"
+                                           decoration-warning="cn_report_rescan_state in ('in_progress', 'pending_rescan', 'evidence_gap')"
+                                           decoration-muted="cn_report_rescan_state == 'not_applicable'"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_report_pending_rescan_count"/>
+                                        <span> 待复扫 · </span>
+                                        <field name="cn_report_failed_rescan_count"/>
+                                        <span> 未通过</span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">申报缴款档案</div>
+                                    <field name="cn_report_filing_archive_state" widget="badge"
+                                           decoration-success="cn_report_filing_archive_state == 'ready'"
+                                           decoration-warning="cn_report_filing_archive_state in ('attention', 'not_started')"
+                                           decoration-danger="cn_report_filing_archive_state == 'blocked'"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_report_sealed_filing_archive_count"/>
+                                        <span>/</span>
+                                        <field name="cn_report_filing_archive_count"/>
+                                        <span> 已封存</span>
+                                    </div>
+                                </div>
+                                <div class="o_cn_report_gate">
+                                    <div class="o_cn_review_label">受控 AI 指引</div>
+                                    <field name="cn_report_ai_guidance_state" widget="badge"
+                                           decoration-success="cn_report_ai_guidance_state == 'ready'"
+                                           decoration-warning="cn_report_ai_guidance_state in ('attention', 'not_started')"
+                                           decoration-danger="cn_report_ai_guidance_state == 'blocked'"/>
+                                    <div class="small mt-1">
+                                        <field name="cn_report_ai_guidance_current_count"/>
+                                        <span> 份当前有效</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_cn_report_footer">
+                                <span class="text-muted small"
+                                      t-if="record.cn_report_is_latest_assessment.raw_value">
+                                    当前最新扫描
+                                </span>
+                                <div class="d-flex flex-wrap gap-2 ms-auto">
+                                    <button name="action_prepare_cn_formal_report" type="object"
+                                            class="btn btn-primary btn-sm"
+                                            invisible="not cn_report_can_prepare">
+                                        编制正式报告
+                                    </button>
+                                    <button name="action_open_cn_formal_reports" type="object"
+                                            class="btn btn-outline-secondary btn-sm"
+                                            invisible="not cn_report_latest_report_id">
+                                        查看正式报告
+                                    </button>
+                                    <button type="open" class="btn btn-outline-primary btn-sm">
+                                        查看准备度详情
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="o_cn_report_legacy_detail" t-if="False">
                             <div class="mt-3 text-muted">
                                 <field name="cn_report_next_action"/>
                             </div>
@@ -382,6 +519,7 @@
                                     查看正式报告
                                 </button>
                             </div>
+                            </div>
                         </div>
                     </t>
                 </templates>
@@ -493,7 +631,7 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_cn_report_readiness_search"/>
         <field name="domain">[('country_id.code', '=', 'CN')]</field>
-        <field name="context">{'search_default_cn_assessments': 1, 'search_default_completed': 1}</field>
+        <field name="context">{'search_default_cn_report_latest_scan': 1, 'search_default_cn_assessments': 1, 'search_default_completed': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">还没有中国合规评估</p>
             <p>完成规则扫描后，可以在这里判断是否具备正式报告编制条件。</p>

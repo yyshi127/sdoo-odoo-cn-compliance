@@ -191,11 +191,37 @@ class TestChinaReportReadiness(TransactionCase):
 
         self.assertIn(assessment, assessments)
 
+    def test_report_readiness_can_filter_latest_and_historical_scans(self):
+        historical = self._assessment()
+        latest = self._assessment()
+
+        historical.invalidate_recordset()
+        latest.invalidate_recordset()
+
+        self.assertFalse(historical.cn_report_is_latest_assessment)
+        self.assertTrue(latest.cn_report_is_latest_assessment)
+        latest_results = self.env["sudo.compliance.assessment"].search(
+            [
+                ("id", "in", (historical.id, latest.id)),
+                ("cn_report_is_latest_assessment", "=", True),
+            ]
+        )
+        historical_results = self.env["sudo.compliance.assessment"].search(
+            [
+                ("id", "in", (historical.id, latest.id)),
+                ("cn_report_is_latest_assessment", "=", False),
+            ]
+        )
+        self.assertEqual(latest_results, latest)
+        self.assertEqual(historical_results, historical)
+
     def test_report_readiness_search_view_exposes_status_filters(self):
         view = self.env.ref("sudo_country_pack_cn.view_cn_report_readiness_search")
         arch = view.arch_db
 
         for required in (
+            "cn_report_latest_scan",
+            "cn_report_historical_scan",
             "cn_report_needs_review",
             "cn_report_needs_remediation",
             "cn_report_limited",

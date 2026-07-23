@@ -184,7 +184,7 @@
     <record id="action_cn_evidence_center" model="ir.actions.act_window">
         <field name="name">中国证据中心</field>
         <field name="res_model">sudo.compliance.evidence</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_cn_evidence_center_search"/>
         <field name="domain">['|', '|', '|', ('assessment_id.country_id.code', '=', 'CN'), ('finding_id.assessment_id.country_id.code', '=', 'CN'), ('task_id.assessment_id.country_id.code', '=', 'CN'), ('filing_id.country_id.code', '=', 'CN')]</field>
         <field name="context">{'search_default_cn_related': 1, 'search_default_group_state': 1}</field>
@@ -195,14 +195,14 @@
     </record>
 
     <record id="action_cn_evidence_center_kanban_view" model="ir.actions.act_window.view">
-        <field name="sequence" eval="1"/>
+        <field name="sequence" eval="2"/>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="view_cn_evidence_center_kanban"/>
         <field name="act_window_id" ref="action_cn_evidence_center"/>
     </record>
 
     <record id="action_cn_evidence_center_list_view" model="ir.actions.act_window.view">
-        <field name="sequence" eval="2"/>
+        <field name="sequence" eval="1"/>
         <field name="view_mode">list</field>
         <field name="view_id" ref="view_cn_evidence_center_list"/>
         <field name="act_window_id" ref="action_cn_evidence_center"/>

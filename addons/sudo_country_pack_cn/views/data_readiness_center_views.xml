@@ -215,7 +215,7 @@
     <record id="action_cn_data_readiness_center" model="ir.actions.act_window">
         <field name="name">中国数据准备中心</field>
         <field name="res_model">sudo.cn.external.dataset</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_cn_data_readiness_center_search"/>
         <field name="context">{'search_default_group_dataset_type': 1}</field>
         <field name="help" type="html">
@@ -225,14 +225,14 @@
     </record>
 
     <record id="action_cn_data_readiness_center_kanban_view" model="ir.actions.act_window.view">
-        <field name="sequence" eval="1"/>
+        <field name="sequence" eval="2"/>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="view_cn_data_readiness_center_kanban"/>
         <field name="act_window_id" ref="action_cn_data_readiness_center"/>
     </record>
 
     <record id="action_cn_data_readiness_center_list_view" model="ir.actions.act_window.view">
-        <field name="sequence" eval="2"/>
+        <field name="sequence" eval="1"/>
         <field name="view_mode">list</field>
         <field name="view_id" ref="view_cn_data_readiness_center_list"/>
         <field name="act_window_id" ref="action_cn_data_readiness_center"/>

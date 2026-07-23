@@ -29,6 +29,11 @@ def _controlled_filing_domain(assessment):
 class SudoChinaReportReadinessAssessment(models.Model):
     _inherit = "sudo.compliance.assessment"
 
+    cn_report_is_latest_assessment = fields.Boolean(
+        string="最新扫描",
+        compute="_compute_cn_report_is_latest_assessment",
+        search="_search_cn_report_is_latest_assessment",
+    )
     cn_report_readiness_state = fields.Selection(
         [
             ("needs_scan", "扫描未完成"),
@@ -171,6 +176,59 @@ class SudoChinaReportReadinessAssessment(models.Model):
         string="可编制报告",
         compute="_compute_cn_report_readiness",
     )
+
+    def _compute_cn_report_is_latest_assessment(self):
+        latest_by_profile = {}
+        Assessment = self.env["sudo.compliance.assessment"]
+        for profile in self.mapped("profile_id"):
+            latest_by_profile[profile.id] = Assessment.search(
+                [("profile_id", "=", profile.id)],
+                order="period_end desc, create_date desc, id desc",
+                limit=1,
+            ).id
+        for assessment in self:
+            assessment.cn_report_is_latest_assessment = (
+                assessment.id == latest_by_profile.get(assessment.profile_id.id)
+            )
+
+    def _search_cn_report_is_latest_assessment(self, operator, value):
+        if operator in ("=", "!="):
+            accepted = {bool(value)}
+            if operator == "!=":
+                accepted = {True, False} - accepted
+        elif operator in ("in", "not in"):
+            accepted = {bool(item) for item in (value or [])}
+            if operator == "not in":
+                accepted = {True, False} - accepted
+        else:
+            return [("id", "=", 0)]
+        if accepted == {True, False}:
+            return []
+        if not accepted:
+            return [("id", "=", 0)]
+
+        profiles = self.env["sudo.compliance.profile"].search(
+            [("country_id.code", "=", "CN")]
+        )
+        Assessment = self.env["sudo.compliance.assessment"]
+        latest_assessment_ids = [
+            assessment.id
+            for profile in profiles
+            if (
+                assessment := Assessment.search(
+                    [("profile_id", "=", profile.id)],
+                    order="period_end desc, create_date desc, id desc",
+                    limit=1,
+                )
+            )
+        ]
+        return [
+            (
+                "id",
+                "in" if True in accepted else "not in",
+                latest_assessment_ids,
+            )
+        ]
 
     def _compute_cn_report_readiness(self):
         Report = self.env["sudo.cn.compliance.report"].sudo()

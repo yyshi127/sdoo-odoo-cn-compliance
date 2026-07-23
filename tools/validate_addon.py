@@ -3032,7 +3032,7 @@ def validate_formal_compliance_report() -> None:
         'id="view_cn_formal_compliance_report_form"',
         'id="action_cn_formal_compliance_reports"',
         'id="menu_cn_formal_compliance_reports"',
-        "kanban,list,form",
+        "list,kanban,form",
         "cn_report_center_stage",
         "cn_report_center_integrity_state",
         "cn_report_center_next_action",

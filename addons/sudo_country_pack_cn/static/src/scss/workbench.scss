@@ -403,12 +403,209 @@
     padding: 14px 22px;
 }
 
+.o_cn_line_clamp_2 {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    overflow: hidden;
+}
+
+.o_cn_risk_card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+    .o_cn_risk_header,
+    .o_cn_risk_compact_status,
+    .o_cn_risk_footer {
+        grid-column: 1 / -1;
+    }
+
+    .o_cn_risk_header,
+    .o_cn_risk_conclusion {
+        padding-block: 12px;
+    }
+
+    .o_cn_risk_conclusion {
+        border-bottom: 1px solid #d6e9e3;
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 210px);
+    }
+
+    .o_cn_risk_next_action {
+        border-block: 0 1px solid #d6e9e3;
+        border-inline-start: 1px solid #d6e9e3;
+        padding-block: 12px;
+
+        .fw-semibold,
+        .small {
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            display: -webkit-box;
+            overflow: hidden;
+        }
+    }
+
+    .o_cn_risk_overview,
+    .o_cn_risk_details {
+        display: none;
+    }
+
+    .o_cn_risk_footer {
+        padding-block: 10px;
+    }
+}
+
+.o_cn_risk_compact_status {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 0 22px;
+}
+
+.o_cn_risk_status_item {
+    border-inline-start: 1px solid #e0e5e9;
+    min-width: 0;
+    padding: 12px 18px;
+
+    &:first-child {
+        border-inline-start: 0;
+        padding-inline-start: 0;
+    }
+
+    &:last-child {
+        padding-inline-end: 0;
+    }
+}
+
+.o_cn_review_queue_kanban {
+    .o_kanban_renderer {
+        --KanbanRecord-width: min(1280px, calc(100vw - 64px));
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .o_kanban_record {
+        max-width: 1280px;
+    }
+}
+
+.o_cn_report_card {
+    background: var(--o-view-background-color, #fff);
+    border: 1px solid #d8dee4;
+    border-inline-start: 4px solid #d49b24;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(26, 42, 58, 0.07);
+    color: var(--body-color, #1f2933);
+    overflow: hidden;
+    padding: 0;
+
+    &.is-ready {
+        border-inline-start-color: #2e9b63;
+    }
+
+    &.is-blocked {
+        border-inline-start-color: #c94a45;
+    }
+
+    > .d-flex:first-child {
+        border-bottom: 1px solid #e5e9ed;
+        padding: 14px 20px 12px;
+    }
+}
+
+.o_cn_report_summary {
+    align-items: start;
+    display: grid;
+    gap: 22px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    padding: 14px 20px;
+}
+
+.o_cn_review_label {
+    color: #647583;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.o_cn_report_metrics {
+    align-self: stretch;
+    display: flex;
+    gap: 18px;
+}
+
+.o_cn_metric_link {
+    align-items: flex-start;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    min-width: 62px;
+    padding: 0;
+    text-align: start;
+
+    span {
+        color: #647583;
+        font-size: 0.75rem;
+    }
+
+    strong {
+        color: #1e3948;
+        font-size: 1.15rem;
+    }
+}
+
+button.o_cn_metric_link:hover strong,
+button.o_cn_report_gate:hover .o_cn_review_label {
+    color: #08765f;
+}
+
+.o_cn_report_gate_grid {
+    border-block: 1px solid #e1e6e9;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    padding: 0 20px;
+}
+
+.o_cn_report_gate {
+    background: transparent;
+    border: 0;
+    border-inline-start: 1px solid #e1e6e9;
+    color: inherit;
+    min-width: 0;
+    padding: 13px 14px;
+    text-align: start;
+
+    &:first-child {
+        border-inline-start: 0;
+        padding-inline-start: 0;
+    }
+
+    &:last-child {
+        padding-inline-end: 0;
+    }
+}
+
+.o_cn_report_footer {
+    align-items: center;
+    display: flex;
+    min-height: 48px;
+    padding: 9px 20px;
+}
+
+.o_cn_report_legacy_detail {
+    display: none;
+}
+
 @media (max-width: 1100px) {
     .o_cn_compliance_workbench_kanban .o_kanban_renderer {
         --KanbanRecord-width: calc(100vw - 40px);
     }
 
     .o_cn_risk_center_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 40px);
+    }
+
+    .o_cn_review_queue_kanban .o_kanban_renderer {
         --KanbanRecord-width: calc(100vw - 40px);
     }
 
@@ -419,12 +616,45 @@
     .o_cn_workbench_metrics {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .o_cn_report_gate_grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .o_cn_report_gate:nth-child(4) {
+        border-inline-start: 0;
+    }
+
+    .o_cn_risk_card {
+        grid-template-columns: 1fr;
+
+        .o_cn_risk_next_action {
+            border-block: 1px solid #d6e9e3;
+            border-inline-start: 0;
+        }
+    }
 }
 
 @media (max-width: 960px) {
     .o_cn_risk_overview,
     .o_cn_risk_detail_grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_cn_risk_compact_status {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_cn_risk_status_item:nth-child(3) {
+        border-inline-start: 0;
+    }
+
+    .o_cn_report_summary {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .o_cn_report_metrics {
+        grid-column: 1 / -1;
     }
 
     .o_cn_risk_column {
@@ -452,6 +682,10 @@
     }
 
     .o_cn_risk_center_kanban .o_kanban_renderer {
+        --KanbanRecord-width: calc(100vw - 24px);
+    }
+
+    .o_cn_review_queue_kanban .o_kanban_renderer {
         --KanbanRecord-width: calc(100vw - 24px);
     }
 
@@ -491,6 +725,12 @@
         grid-template-columns: 1fr;
     }
 
+    .o_cn_risk_compact_status,
+    .o_cn_report_summary,
+    .o_cn_report_gate_grid {
+        grid-template-columns: 1fr;
+    }
+
     .o_cn_risk_header,
     .o_cn_risk_conclusion,
     .o_cn_risk_next_action,
@@ -522,6 +762,37 @@
 
     .o_cn_risk_detail_grid {
         padding-inline: 14px;
+    }
+
+    .o_cn_risk_compact_status {
+        padding-inline: 14px;
+    }
+
+    .o_cn_risk_status_item:nth-child(n),
+    .o_cn_report_gate:nth-child(n) {
+        border-inline-start: 0;
+        border-top: 1px solid #e1e6e9;
+        padding-inline: 0;
+    }
+
+    .o_cn_risk_status_item:first-child,
+    .o_cn_report_gate:first-child {
+        border-top: 0;
+    }
+
+    .o_cn_report_gate_grid {
+        padding-inline: 14px;
+    }
+
+    .o_cn_report_footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        padding-inline: 14px;
+
+        .ms-auto {
+            margin-inline-start: 0 !important;
+        }
     }
 
     .o_cn_risk_actions .btn {
