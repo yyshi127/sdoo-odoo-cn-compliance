@@ -53,6 +53,35 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             }
         )
 
+    def test_risk_and_remediation_labels_are_chinese(self):
+        finding_fields = self.env["sudo.compliance.finding"]._fields
+        finding_labels = {
+            "cn_risk_action_summary": "风险行动摘要",
+            "cn_risk_remediation_urgency": "整改紧迫度",
+            "cn_risk_fact_summary": "事实摘要",
+            "cn_reconciliation_risk_state": "勾稽风险",
+            "cn_risk_data_basis_state": "数据基础",
+            "cn_traceability_state": "可追溯性",
+            "cn_closure_state": "闭环状态",
+            "cn_cross_border_fact_state": "跨境事实",
+            "cn_tax_impact_state": "税务影响",
+        }
+        for field_name, expected_label in finding_labels.items():
+            self.assertEqual(finding_fields[field_name].string, expected_label)
+
+        task_fields = self.env["sudo.compliance.task"]._fields
+        task_labels = {
+            "cn_remediation_action_summary": "整改行动摘要",
+            "cn_remediation_urgency": "整改紧迫度",
+            "cn_remediation_traceability_state": "可追溯性",
+            "cn_remediation_data_basis_state": "数据基础",
+            "cn_remediation_tax_impact_state": "整改税务影响",
+            "cn_remediation_progress": "整改进度",
+            "cn_remediation_blocker_summary": "整改阻断事项",
+        }
+        for field_name, expected_label in task_labels.items():
+            self.assertEqual(task_fields[field_name].string, expected_label)
+
     def _finding(self):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company
@@ -342,15 +371,15 @@ class TestChinaRiskCenterDisplay(TransactionCase):
 
         self.assertIn("2026-06-01", finding.cn_risk_period_label)
         self.assertIn("2026-06-30", finding.cn_risk_period_label)
-        self.assertIn("data basis", finding.cn_risk_next_action)
+        self.assertIn("数据基础", finding.cn_risk_next_action)
         self.assertEqual(finding.cn_risk_evidence_state, "none")
         self.assertEqual(finding.cn_risk_evidence_count, 0)
         self.assertEqual(finding.cn_risk_verified_evidence_count, 0)
         self.assertEqual(finding.cn_closure_state, "blocked")
-        self.assertIn("data basis", finding.cn_closure_summary)
+        self.assertIn("数据基础", finding.cn_closure_summary)
         self.assertEqual(finding.cn_risk_fact_snapshot_count, 0)
         self.assertEqual(finding.cn_risk_fact_issue_count, 0)
-        self.assertIn("No rule fact snapshots", finding.cn_risk_fact_summary)
+        self.assertIn("未附加规则事实快照", finding.cn_risk_fact_summary)
         self.assertEqual(finding.cn_risk_data_basis_state, "missing")
         self.assertGreater(finding.cn_risk_data_basis_missing_type_count, 0)
         self.assertIn(
@@ -455,7 +484,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertGreater(finding.cn_traceability_gap_count, 0)
         self.assertTrue(finding.cn_traceability_next_action)
         self.assertEqual(finding.cn_closure_state, "blocked")
-        self.assertIn("Blocked before sign-off", finding.cn_closure_summary)
+        self.assertIn("签核前受阻", finding.cn_closure_summary)
 
         action = finding.action_cn_open_traceability_evidence()
         self.assertEqual(action["res_model"], "sudo.compliance.evidence")
@@ -474,7 +503,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
                 tax_impact_state="reviewed",
                 evidence_state="verified",
             )[1],
-            "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned.",
+            "已可进行报告签核：风险复核、整改、证据、税务影响和复扫控制均已对齐。",
         )
 
         state, summary = _closure_summary_values(
@@ -489,7 +518,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             evidence_state="partial",
         )
         self.assertEqual(state, "action_required")
-        self.assertIn("verify evidence", summary)
+        self.assertIn("验证证据", summary)
 
     def test_finding_exposes_fact_snapshot_summary(self):
         finding = self._finding()
@@ -539,7 +568,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             finding.cn_reconciliation_risk_state,
             "difference_review_required",
         )
-        self.assertIn("differences 2", finding.cn_reconciliation_risk_summary)
+        self.assertIn("差异 2", finding.cn_reconciliation_risk_summary)
         self.assertIn("VAT-DIFF-001", finding.cn_reconciliation_risk_summary)
         self.assertEqual(
             finding.cn_reconciliation_risk_next_action,
@@ -557,7 +586,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             finding.cn_tax_impact_reviewed_underpayment_amount,
             120.0,
         )
-        self.assertIn("underpayment 120", finding.cn_tax_impact_summary)
+        self.assertIn("少缴 120", finding.cn_tax_impact_summary)
 
     def test_remediation_task_exposes_tax_impact_summary(self):
         finding = self._finding()
@@ -570,7 +599,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             task.cn_remediation_tax_impact_reviewed_underpayment_amount,
             230.0,
         )
-        self.assertIn("underpayment 230", task.cn_remediation_tax_impact_summary)
+        self.assertIn("少缴 230", task.cn_remediation_tax_impact_summary)
 
     def test_risk_and_remediation_expose_responsibility_urgency(self):
         finding = self._finding()
@@ -593,11 +622,11 @@ class TestChinaRiskCenterDisplay(TransactionCase):
             self.env.user.display_name,
             finding.cn_risk_responsibility_summary,
         )
-        self.assertIn("Next:", finding.cn_risk_action_summary)
-        self.assertIn("Owner/due:", finding.cn_risk_action_summary)
+        self.assertIn("下一步：", finding.cn_risk_action_summary)
+        self.assertIn("责任与期限：", finding.cn_risk_action_summary)
         self.assertIn(self.env.user.display_name, finding.cn_risk_action_summary)
-        self.assertIn("Evidence:", finding.cn_risk_action_summary)
-        self.assertIn("Closure:", finding.cn_risk_action_summary)
+        self.assertIn("证据：", finding.cn_risk_action_summary)
+        self.assertIn("闭环：", finding.cn_risk_action_summary)
 
         task.write({"due_date": fields.Date.add(fields.Date.context_today(task), days=-1)})
         task.invalidate_recordset()
@@ -615,7 +644,7 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         self.assertEqual(finding.cn_cross_border_pending_count, 1)
         self.assertEqual(finding.cn_cross_border_reviewed_count, 0)
         self.assertEqual(finding.cn_cross_border_transaction_count, 1)
-        self.assertIn("Cross-Border", finding.cn_cross_border_next_action)
+        self.assertIn("跨境业务台账", finding.cn_cross_border_next_action)
         self.assertGreater(finding.cn_risk_fact_snapshot_count, 0)
         self.assertGreaterEqual(finding.cn_risk_fact_issue_count, 0)
         self.assertIn("=", finding.cn_risk_fact_summary)
@@ -638,19 +667,19 @@ class TestChinaRiskCenterDisplay(TransactionCase):
 
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")
         self.assertGreater(task.cn_remediation_traceability_gap_count, 0)
-        self.assertIn("Blocked by:", task.cn_remediation_blocker_summary)
-        self.assertIn("missing data basis", task.cn_remediation_blocker_summary)
-        self.assertIn("no verified evidence", task.cn_remediation_blocker_summary)
-        self.assertIn("Next:", task.cn_remediation_action_summary)
-        self.assertIn("Blockers:", task.cn_remediation_action_summary)
-        self.assertIn("Evidence:", task.cn_remediation_action_summary)
-        self.assertIn("Rescan:", task.cn_remediation_action_summary)
-        self.assertIn("Progress:", task.cn_remediation_action_summary)
+        self.assertIn("受阻原因：", task.cn_remediation_blocker_summary)
+        self.assertIn("数据基础缺失", task.cn_remediation_blocker_summary)
+        self.assertIn("没有已验证证据", task.cn_remediation_blocker_summary)
+        self.assertIn("下一步：", task.cn_remediation_action_summary)
+        self.assertIn("阻断事项：", task.cn_remediation_action_summary)
+        self.assertIn("证据：", task.cn_remediation_action_summary)
+        self.assertIn("复扫：", task.cn_remediation_action_summary)
+        self.assertIn("进度：", task.cn_remediation_action_summary)
 
         self._set_task_verification_state(task, "pending_rescan")
         self.assertEqual(task.cn_remediation_traceability_state, "blocked")
         self.assertIn(
-            "verification rescan pending",
+            "验证复扫待完成",
             task.cn_remediation_blocker_summary,
         )
 
@@ -680,10 +709,10 @@ class TestChinaRiskCenterDisplay(TransactionCase):
         task.invalidate_recordset()
 
         self.assertEqual(task.cn_remediation_rescan_stage, "verified")
-        self.assertIn("Blocked by:", task.cn_remediation_blocker_summary)
-        self.assertIn("missing data basis", task.cn_remediation_blocker_summary)
+        self.assertIn("受阻原因：", task.cn_remediation_blocker_summary)
+        self.assertIn("数据基础缺失", task.cn_remediation_blocker_summary)
         self.assertIn(
-            "evidence pending verification",
+            "证据待验证",
             task.cn_remediation_blocker_summary,
         )
 

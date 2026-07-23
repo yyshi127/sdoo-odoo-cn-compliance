@@ -38,6 +38,28 @@ class TestChinaReportReadiness(TransactionCase):
                 "domain_key": "CN.VAT_INVOICE",
             }
         )
+
+    def test_report_readiness_labels_are_chinese(self):
+        assessment_fields = self.env["sudo.compliance.assessment"]._fields
+        expected_labels = {
+            "cn_report_rescan_next_action": "报告复扫下一步",
+            "cn_report_pending_rescan_count": "待复扫整改",
+            "cn_report_failed_rescan_count": "复扫未通过整改",
+            "cn_report_verified_remediation_count": "已验证整改",
+            "cn_report_filing_archive_next_action": "申报缴款档案下一步",
+            "cn_report_filing_archive_count": "受控申报缴款档案",
+            "cn_report_filing_archive_issue_count": "申报缴款档案问题",
+            "cn_report_sealed_filing_archive_count": "已封存申报缴款档案",
+            "cn_report_ai_guidance_next_action": "AI 指引下一步",
+            "cn_report_ai_guidance_finding_count": "需 AI 指引的风险",
+            "cn_report_ai_guidance_generated_count": "已生成 AI 指引",
+            "cn_report_ai_guidance_current_count": "当前有效 AI 指引",
+            "cn_report_ai_guidance_limited_count": "受限 AI 指引",
+            "cn_report_ai_guidance_stale_count": "已过期 AI 指引",
+        }
+        for field_name, expected_label in expected_labels.items():
+            self.assertEqual(assessment_fields[field_name].string, expected_label)
+
     def _assessment(self, state="completed"):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company

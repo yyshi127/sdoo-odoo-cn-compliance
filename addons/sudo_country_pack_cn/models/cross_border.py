@@ -10,14 +10,14 @@ _CROSS_BORDER_TRANSITION_MARKER = object()
 
 class SudoChinaCrossBorderTransaction(models.Model):
     _name = "sudo.cn.cross.border.transaction"
-    _description = "China Controlled Cross-Border Transaction"
+    _description = "中国受控跨境业务"
     _order = "transaction_date desc, id desc"
     _check_company_auto = True
 
-    name = fields.Char(compute="_compute_name", store=True)
+    name = fields.Char(string="跨境业务编号", compute="_compute_name", store=True)
     profile_id = fields.Many2one(
         "sudo.compliance.profile",
-        string="Compliance Profile",
+        string="合规档案",
         required=True,
         ondelete="restrict",
         index=True,
@@ -25,100 +25,119 @@ class SudoChinaCrossBorderTransaction(models.Model):
     )
     company_id = fields.Many2one(
         related="profile_id.company_id",
+        string="公司",
         store=True,
         readonly=True,
         index=True,
     )
     country_id = fields.Many2one(
         related="profile_id.country_id",
+        string="适用国家/地区",
         store=True,
         readonly=True,
     )
-    period_start = fields.Date(required=True, index=True)
-    period_end = fields.Date(required=True, index=True)
-    transaction_date = fields.Date(required=True, index=True)
+    period_start = fields.Date(string="期间开始", required=True, index=True)
+    period_end = fields.Date(string="期间结束", required=True, index=True)
+    transaction_date = fields.Date(string="业务日期", required=True, index=True)
     transaction_type = fields.Selection(
         [
-            ("service_fee", "Service Fee"),
-            ("royalty", "Royalty"),
-            ("interest", "Interest"),
-            ("dividend", "Dividend"),
-            ("goods", "Goods"),
-            ("cost_recharge", "Cost Recharge"),
-            ("other", "Other"),
+            ("service_fee", "服务费"),
+            ("royalty", "特许权使用费"),
+            ("interest", "利息"),
+            ("dividend", "股息"),
+            ("goods", "货物"),
+            ("cost_recharge", "成本分摊"),
+            ("other", "其他"),
         ],
+        string="业务类型",
         required=True,
         index=True,
     )
-    counterparty_name = fields.Char(required=True)
+    counterparty_name = fields.Char(string="交易对方", required=True)
     counterparty_country_id = fields.Many2one(
         "res.country",
-        string="Counterparty Country/Region",
+        string="交易对方国家/地区",
         required=True,
         index=True,
     )
-    related_party = fields.Boolean(string="Related Party")
-    contract_reference = fields.Char()
-    payment_reference = fields.Char()
-    service_or_asset_location = fields.Char()
+    related_party = fields.Boolean(string="关联方")
+    contract_reference = fields.Char(string="合同编号")
+    payment_reference = fields.Char(string="付款凭据")
+    service_or_asset_location = fields.Char(string="服务或资产所在地")
     currency_id = fields.Many2one(
         "res.currency",
+        string="币种",
         required=True,
         default=lambda self: self.env.company.currency_id,
     )
-    amount = fields.Monetary(currency_field="currency_id", required=True)
-    withholding_considered = fields.Boolean(
-        string="Withholding Considered",
-        help="Only records whether the matter was considered. It is not a tax conclusion.",
+    amount = fields.Monetary(
+        string="金额",
+        currency_field="currency_id",
+        required=True,
     )
-    withholding_note = fields.Text()
-    limitation_note = fields.Text()
+    withholding_considered = fields.Boolean(
+        string="已考虑代扣代缴",
+        help="仅记录是否已考虑代扣代缴事项，不代表税务结论。",
+    )
+    withholding_note = fields.Text(string="代扣代缴复核说明")
+    limitation_note = fields.Text(string="限制说明")
     evidence_attachment_ids = fields.Many2many(
         "ir.attachment",
         "sudo_cn_cross_border_transaction_attachment_rel",
         "transaction_id",
         "attachment_id",
-        string="Controlled Evidence",
+        string="受控证据",
     )
     state = fields.Selection(
         [
-            ("draft", "Draft"),
-            ("submitted", "Submitted"),
-            ("reviewed", "Reviewed"),
-            ("cancelled", "Cancelled"),
+            ("draft", "草稿"),
+            ("submitted", "已提交"),
+            ("reviewed", "已复核"),
+            ("cancelled", "已取消"),
         ],
+        string="状态",
         default="draft",
         required=True,
         readonly=True,
         index=True,
     )
-    reviewer_id = fields.Many2one("res.users", readonly=True, copy=False)
-    reviewed_at = fields.Datetime(readonly=True, copy=False)
-    review_notes = fields.Text(copy=False)
-    snapshot_checksum = fields.Char(readonly=True, copy=False, index=True)
+    reviewer_id = fields.Many2one(
+        "res.users",
+        string="复核人",
+        readonly=True,
+        copy=False,
+    )
+    reviewed_at = fields.Datetime(string="复核时间", readonly=True, copy=False)
+    review_notes = fields.Text(string="复核记录", copy=False)
+    snapshot_checksum = fields.Char(
+        string="快照 SHA-256",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
     cn_cross_border_readiness_state = fields.Selection(
         [
-            ("draft", "Draft"),
-            ("needs_evidence", "Needs Evidence"),
-            ("needs_review", "Needs Review"),
-            ("reviewed", "Reviewed"),
-            ("cancelled", "Cancelled"),
+            ("draft", "草稿"),
+            ("needs_evidence", "待补证据"),
+            ("needs_review", "待复核"),
+            ("reviewed", "已复核"),
+            ("cancelled", "已取消"),
         ],
         compute="_compute_cn_cross_border_readiness",
-        string="Readiness",
+        string="准备状态",
     )
     cn_cross_border_next_action = fields.Char(
         compute="_compute_cn_cross_border_readiness",
-        string="Next Action",
+        string="下一步",
     )
 
     _period_order = models.Constraint(
         "CHECK(period_start <= period_end)",
-        "Cross-border transaction period start cannot be after period end.",
+        "跨境业务期间开始日期不能晚于结束日期。",
     )
     _amount_positive = models.Constraint(
         "CHECK(amount > 0)",
-        "Cross-border transaction amount must be greater than zero.",
+        "跨境业务金额必须大于零。",
     )
 
     @api.depends(
@@ -153,40 +172,40 @@ class SudoChinaCrossBorderTransaction(models.Model):
         for record in self:
             if record.state == "cancelled":
                 record.cn_cross_border_readiness_state = "cancelled"
-                record.cn_cross_border_next_action = _("Record is cancelled.")
+                record.cn_cross_border_next_action = _("记录已取消。")
             elif not record.evidence_attachment_ids:
                 record.cn_cross_border_readiness_state = "needs_evidence"
                 record.cn_cross_border_next_action = _(
-                    "Attach contract, payment, invoice or filing evidence."
+                    "请补充合同、付款、发票或申报证据。"
                 )
             elif record.state == "draft":
                 record.cn_cross_border_readiness_state = "draft"
                 record.cn_cross_border_next_action = _(
-                    "Submit for controlled cross-border review."
+                    "请提交受控跨境业务复核。"
                 )
             elif record.state == "submitted":
                 record.cn_cross_border_readiness_state = "needs_review"
                 record.cn_cross_border_next_action = _(
-                    "Review withholding, related-party and evidence limitations."
+                    "请复核代扣代缴、关联交易和证据限制。"
                 )
             else:
                 record.cn_cross_border_readiness_state = "reviewed"
                 record.cn_cross_border_next_action = _(
-                    "Use this reviewed fact in scans and report limitations."
+                    "可将该已复核事实用于规则扫描和报告限制披露。"
                 )
 
     @api.constrains("profile_id")
     def _check_china_profile(self):
         for record in self:
             if record.country_id.code != "CN":
-                raise ValidationError(_("Cross-border facts must use a China profile."))
+                raise ValidationError(_("跨境业务事实必须关联中国合规档案。"))
 
     @api.constrains("period_start", "period_end", "transaction_date")
     def _check_transaction_date_period(self):
         for record in self:
             if not (record.period_start <= record.transaction_date <= record.period_end):
                 raise ValidationError(
-                    _("Transaction date must be inside the declared period.")
+                    _("业务日期必须位于所声明的期间内。")
                 )
 
     @api.constrains("counterparty_country_id")
@@ -195,7 +214,7 @@ class SudoChinaCrossBorderTransaction(models.Model):
         for record in self:
             if china and record.counterparty_country_id == china:
                 raise ValidationError(
-                    _("Counterparty country/region must be outside China.")
+                    _("交易对方国家/地区必须位于中国境外。")
                 )
 
     def _snapshot_payload(self):
@@ -252,7 +271,7 @@ class SudoChinaCrossBorderTransaction(models.Model):
 
     def _require_manager(self):
         if not self.env.user.has_group("sudo_global_finance.group_compliance_manager"):
-            raise AccessError(_("Only compliance managers can control this record."))
+            raise AccessError(_("只有合规经理可以控制此记录。"))
 
     def _transition_write(self, values):
         return self.with_context(
@@ -279,25 +298,25 @@ class SudoChinaCrossBorderTransaction(models.Model):
         )
         protected = {"state", "reviewer_id", "reviewed_at", "snapshot_checksum"}
         if protected & set(values) and not transition:
-            raise AccessError(_("Use controlled actions to update review state."))
+            raise AccessError(_("请使用受控操作更新复核状态。"))
         if not transition and any(record.state == "reviewed" for record in self):
-            raise AccessError(_("Reviewed cross-border facts cannot be changed."))
+            raise AccessError(_("已复核的跨境业务事实不可修改。"))
         return super().write(values)
 
     def unlink(self):
         if any(record.state != "draft" for record in self):
-            raise UserError(_("Only draft cross-border facts can be deleted."))
+            raise UserError(_("只有草稿状态的跨境业务事实可以删除。"))
         return super().unlink()
 
     def action_submit(self):
         self._require_manager()
         for record in self:
             if record.state != "draft":
-                raise UserError(_("Only draft records can be submitted."))
+                raise UserError(_("只有草稿记录可以提交复核。"))
             if not record.evidence_attachment_ids:
-                raise UserError(_("Attach controlled evidence before submitting."))
+                raise UserError(_("提交前请附加受控证据。"))
             if not record.withholding_considered:
-                raise UserError(_("Record whether withholding was considered."))
+                raise UserError(_("请记录是否已考虑代扣代缴事项。"))
             record._transition_write({"state": "submitted"})
         return True
 
@@ -305,9 +324,9 @@ class SudoChinaCrossBorderTransaction(models.Model):
         self._require_manager()
         for record in self:
             if record.state != "submitted":
-                raise UserError(_("Only submitted records can be reviewed."))
+                raise UserError(_("只有已提交记录可以执行复核。"))
             if len((record.review_notes or "").strip()) < 20:
-                raise UserError(_("Review notes must contain at least 20 characters."))
+                raise UserError(_("复核记录至少需要 20 个字符。"))
             record._transition_write(
                 {
                     "state": "reviewed",
@@ -342,7 +361,7 @@ class SudoChinaCrossBorderWorkbenchProfile(models.Model):
             return result
         return {
             "type": "ir.actions.act_window",
-            "name": _("Cross-Border Transactions"),
+            "name": _("跨境业务"),
             "res_model": "sudo.cn.cross.border.transaction",
             "view_mode": "list,form",
             "domain": [("profile_id", "=", self.id)],

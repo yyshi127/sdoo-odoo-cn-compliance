@@ -91,19 +91,19 @@ class SudoChinaReportReadinessAssessment(models.Model):
         search="_search_cn_report_rescan_state",
     )
     cn_report_rescan_next_action = fields.Char(
-        string="Rescan Next Action",
+        string="报告复扫下一步",
         compute="_compute_cn_report_readiness",
     )
     cn_report_pending_rescan_count = fields.Integer(
-        string="Pending Rescans",
+        string="待复扫整改",
         compute="_compute_cn_report_readiness",
     )
     cn_report_failed_rescan_count = fields.Integer(
-        string="Failed Rescans",
+        string="复扫未通过整改",
         compute="_compute_cn_report_readiness",
     )
     cn_report_verified_remediation_count = fields.Integer(
-        string="Verified Remediations",
+        string="已验证整改",
         compute="_compute_cn_report_readiness",
     )
     cn_report_filing_archive_state = fields.Selection(
@@ -118,19 +118,19 @@ class SudoChinaReportReadinessAssessment(models.Model):
         search="_search_cn_report_filing_archive_state",
     )
     cn_report_filing_archive_next_action = fields.Char(
-        string="Filing Archive Next Action",
+        string="申报缴款档案下一步",
         compute="_compute_cn_report_readiness",
     )
     cn_report_filing_archive_count = fields.Integer(
-        string="Controlled Filing Archives",
+        string="受控申报缴款档案",
         compute="_compute_cn_report_readiness",
     )
     cn_report_filing_archive_issue_count = fields.Integer(
-        string="Filing Archive Issues",
+        string="申报缴款档案问题",
         compute="_compute_cn_report_readiness",
     )
     cn_report_sealed_filing_archive_count = fields.Integer(
-        string="Sealed Filing Archives",
+        string="已封存申报缴款档案",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_state = fields.Selection(
@@ -144,27 +144,27 @@ class SudoChinaReportReadinessAssessment(models.Model):
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_next_action = fields.Char(
-        string="AI Guidance Next Action",
+        string="AI 指引下一步",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_finding_count = fields.Integer(
-        string="AI Guidance Findings",
+        string="需 AI 指引的风险",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_generated_count = fields.Integer(
-        string="AI Guidance Generated",
+        string="已生成 AI 指引",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_current_count = fields.Integer(
-        string="AI Guidance Current",
+        string="当前有效 AI 指引",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_limited_count = fields.Integer(
-        string="AI Guidance Limited",
+        string="受限 AI 指引",
         compute="_compute_cn_report_readiness",
     )
     cn_report_ai_guidance_stale_count = fields.Integer(
-        string="AI Guidance Stale",
+        string="已过期 AI 指引",
         compute="_compute_cn_report_readiness",
     )
     cn_report_latest_report_id = fields.Many2one(

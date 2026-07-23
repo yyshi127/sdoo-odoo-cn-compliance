@@ -71,19 +71,19 @@ class SudoChinaAssessmentDataBasis(models.Model):
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_required_type_count = fields.Integer(
-        string="Required Data Types",
+        string="必需数据类型",
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_ready_type_count = fields.Integer(
-        string="Ready Data Types",
+        string="已就绪数据类型",
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_missing_type_count = fields.Integer(
-        string="Missing Data Types",
+        string="缺失数据类型",
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_missing_type_summary = fields.Char(
-        string="Missing Data Type Summary",
+        string="缺失数据类型摘要",
         compute="_compute_cn_data_basis",
     )
     cn_data_basis_next_action = fields.Char(
@@ -101,19 +101,19 @@ class SudoChinaAssessmentDataBasis(models.Model):
         compute="_compute_cn_data_basis",
     )
     cn_accounting_basis_posted_move_count = fields.Integer(
-        string="Posted Accounting Entries",
+        string="已过账会计凭证",
         compute="_compute_cn_data_basis",
     )
     cn_accounting_basis_draft_move_count = fields.Integer(
-        string="Draft Accounting Entries",
+        string="草稿会计凭证",
         compute="_compute_cn_data_basis",
     )
     cn_accounting_basis_posted_invoice_count = fields.Integer(
-        string="Posted Accounting Invoices",
+        string="已过账发票",
         compute="_compute_cn_data_basis",
     )
     cn_accounting_basis_next_action = fields.Char(
-        string="Accounting Basis Next Action",
+        string="账务基础下一步",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_state = fields.Selection(
@@ -126,23 +126,23 @@ class SudoChinaAssessmentDataBasis(models.Model):
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_candidate_count = fields.Integer(
-        string="Candidate Obligations",
+        string="候选纳税义务",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_applicable_count = fields.Integer(
-        string="Applicable Obligations",
+        string="适用纳税义务",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_pending_count = fields.Integer(
-        string="Obligations Needing Review",
+        string="待复核纳税义务",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_filing_count = fields.Integer(
-        string="Applicable Filing Obligations",
+        string="适用申报义务",
         compute="_compute_cn_data_basis",
     )
     cn_obligation_basis_next_action = fields.Char(
-        string="Obligation Basis Next Action",
+        string="纳税义务下一步",
         compute="_compute_cn_data_basis",
     )
 

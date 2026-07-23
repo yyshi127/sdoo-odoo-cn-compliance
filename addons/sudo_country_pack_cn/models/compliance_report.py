@@ -596,22 +596,22 @@ class SudoChinaComplianceReport(models.Model):
     open_task_count = fields.Integer(string="未关闭整改", readonly=True, copy=False)
     overdue_task_count = fields.Integer(string="逾期整改", readonly=True, copy=False)
     finding_closure_blocked_count = fields.Integer(
-        string="Blocked Risk Closures", readonly=True, copy=False
+        string="受阻风险闭环", readonly=True, copy=False
     )
     finding_closure_action_required_count = fields.Integer(
-        string="Risk Closures Needing Action", readonly=True, copy=False
+        string="待处理风险闭环", readonly=True, copy=False
     )
     finding_closure_ready_count = fields.Integer(
-        string="Report-Ready Risk Closures", readonly=True, copy=False
+        string="报告就绪风险闭环", readonly=True, copy=False
     )
     remediation_task_count = fields.Integer(
-        string="Remediation Tasks", readonly=True, copy=False
+        string="整改任务", readonly=True, copy=False
     )
     remediation_verified_count = fields.Integer(
-        string="Verified Remediation", readonly=True, copy=False
+        string="已验证整改", readonly=True, copy=False
     )
     remediation_pending_verification_count = fields.Integer(
-        string="Remediation Pending Verification", readonly=True, copy=False
+        string="待验证整改", readonly=True, copy=False
     )
     evidence_count = fields.Integer(string="证据记录", readonly=True, copy=False)
     verified_evidence_count = fields.Integer(
@@ -640,13 +640,13 @@ class SudoChinaComplianceReport(models.Model):
     )
 
     fact_snapshot_count = fields.Integer(
-        string="Fact Snapshots", readonly=True, copy=False
+        string="事实快照", readonly=True, copy=False
     )
     fact_issue_count = fields.Integer(
-        string="Fact Issues", readonly=True, copy=False
+        string="事实问题", readonly=True, copy=False
     )
     finding_without_fact_count = fields.Integer(
-        string="Findings Without Facts", readonly=True, copy=False
+        string="未关联事实的风险", readonly=True, copy=False
     )
 
     cn_report_center_stage = fields.Selection(

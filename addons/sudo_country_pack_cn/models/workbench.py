@@ -14,17 +14,17 @@ FLOW_STATES = [
     ("blocked", "受限"),
 ]
 NEXT_STEP_KEYS = [
-    ("profile", "Profile Setup"),
-    ("rule_basis", "Rule Basis"),
-    ("data_readiness", "Data Readiness"),
-    ("obligations", "Tax Obligations"),
-    ("scan", "Rule Scan"),
-    ("risks", "Risk Review"),
-    ("remediation", "Remediation"),
-    ("report_readiness", "Report Readiness"),
-    ("evidence", "Evidence"),
-    ("filing", "Filing Archive"),
-    ("ai_guidance", "AI Guidance"),
+    ("profile", "完善合规档案"),
+    ("rule_basis", "维护规则依据"),
+    ("data_readiness", "准备受控数据"),
+    ("obligations", "复核纳税义务"),
+    ("scan", "执行规则扫描"),
+    ("risks", "复核风险"),
+    ("remediation", "推进整改"),
+    ("report_readiness", "检查报告准备度"),
+    ("evidence", "核验证据"),
+    ("filing", "完善申报缴款档案"),
+    ("ai_guidance", "生成 AI 指引"),
 ]
 
 
@@ -75,30 +75,30 @@ def _closed_loop_values(profile):
             "not_started",
             1,
             translate(
-                "Activate the China compliance profile before evaluating the closed loop."
+                "评估闭环前，请先启用中国合规档案。"
             ),
         )
 
     stages = [
-        (translate("rule basis"), profile.cn_workbench_rule_basis_state),
-        (translate("obligations"), profile.cn_workbench_obligation_state),
-        (translate("data"), profile.cn_workbench_data_state),
-        (translate("scan"), profile.cn_workbench_scan_state),
-        (translate("risk review"), profile.cn_workbench_risk_state),
-        (translate("remediation"), profile.cn_workbench_remediation_state),
-        (translate("verification rescan"), profile.cn_workbench_rescan_state),
-        (translate("report"), profile.cn_workbench_report_state),
-        (translate("evidence"), profile.cn_workbench_evidence_state),
+        (translate("规则依据"), profile.cn_workbench_rule_basis_state),
+        (translate("纳税义务"), profile.cn_workbench_obligation_state),
+        (translate("数据"), profile.cn_workbench_data_state),
+        (translate("扫描"), profile.cn_workbench_scan_state),
+        (translate("风险复核"), profile.cn_workbench_risk_state),
+        (translate("整改"), profile.cn_workbench_remediation_state),
+        (translate("验证复扫"), profile.cn_workbench_rescan_state),
+        (translate("报告"), profile.cn_workbench_report_state),
+        (translate("证据"), profile.cn_workbench_evidence_state),
     ]
     if (
         profile.cn_workbench_filing_obligation_count
         or profile.cn_workbench_filing_archive_count
     ):
         stages.append(
-            (translate("filing archive"), profile.cn_workbench_filing_archive_state)
+            (translate("申报缴款档案"), profile.cn_workbench_filing_archive_state)
         )
     if profile.cn_workbench_ai_guidance_finding_count:
-        stages.append((translate("AI guidance"), profile.cn_workbench_ai_guidance_state))
+        stages.append((translate("AI 指引"), profile.cn_workbench_ai_guidance_state))
 
     blocked = [label for label, state in stages if state == "blocked"]
     gaps = [
@@ -110,19 +110,19 @@ def _closed_loop_values(profile):
         return (
             "blocked",
             len(gaps),
-            translate("Closed loop blocked: %(stages)s.", stages=", ".join(gaps[:6])),
+            translate("闭环受阻：%(stages)s。", stages="、".join(gaps[:6])),
         )
     if gaps:
         return (
             "attention",
             len(gaps),
-            translate("Closed loop gaps: %(stages)s.", stages=", ".join(gaps[:6])),
+            translate("闭环存在缺口：%(stages)s。", stages="、".join(gaps[:6])),
         )
     return (
         "ready",
         0,
         translate(
-            "Closed loop is ready: data, scan, risk review, remediation, evidence and report controls are aligned."
+            "闭环已就绪：数据、扫描、风险复核、整改、证据和报告控制已对齐。"
         ),
     )
 
@@ -135,15 +135,15 @@ def _conclusion_boundary_values(profile):
         return (
             "blocked",
             translate(
-                "Not usable as a compliance conclusion until the China profile is active."
+                "中国合规档案启用前，不能将结果作为合规结论。"
             ),
-            translate("Complete and activate the China compliance profile first."),
+            translate("请先完善并启用中国合规档案。"),
         )
     if profile.cn_workbench_data_state in ("blocked", "not_started"):
         return (
             "blocked",
             translate(
-                "Not usable as a compliance conclusion because controlled accounting/tax data is not ready."
+                "受控账务或税务数据尚未就绪，不能将结果作为合规结论。"
             ),
             profile.cn_workbench_data_next_action,
         )
@@ -151,7 +151,7 @@ def _conclusion_boundary_values(profile):
         return (
             "blocked",
             translate(
-                "Not usable as a compliance conclusion because China rule sources or rule governance require attention."
+                "中国规则来源或规则治理需要处理，不能将结果作为合规结论。"
             ),
             profile.cn_workbench_rule_basis_next_action,
         )
@@ -159,7 +159,7 @@ def _conclusion_boundary_values(profile):
         return (
             "attention",
             translate(
-                "Conclusion is limited until China rule source freshness and professional sign-off gaps are reviewed."
+                "在完成中国规则来源时效性和专业签核缺口复核前，结论受到限制。"
             ),
             profile.cn_workbench_rule_basis_next_action,
         )
@@ -167,17 +167,17 @@ def _conclusion_boundary_values(profile):
         return (
             "blocked",
             translate(
-                "Only a limited conclusion is possible because scope, evidence or report limitations exist."
+                "存在范围、证据或报告限制，当前只能形成受限结论。"
             ),
             translate(
-                "Resolve or explicitly document all limitations before final sign-off."
+                "最终签核前，请解决所有限制或对其作出明确记录。"
             ),
         )
     if profile.cn_workbench_obligation_state != "ready":
         return (
             "attention",
             translate(
-                "Conclusion is incomplete until China tax obligation applicability has been reviewed."
+                "中国纳税义务适用性复核完成前，结论不完整。"
             ),
             profile.cn_workbench_obligation_next_action,
         )
@@ -185,79 +185,79 @@ def _conclusion_boundary_values(profile):
         return (
             "attention",
             translate(
-                "Conclusion is not current because no completed rule scan is available for this profile."
+                "当前档案没有已完成的规则扫描，结论不是最新状态。"
             ),
-            translate("Run and complete a rule scan for the target period."),
+            translate("请针对目标期间执行并完成规则扫描。"),
         )
     if profile.cn_workbench_risk_state in ("blocked", "attention"):
         return (
             "attention",
             translate(
-                "Conclusion requires review because unresolved or high-risk findings remain."
+                "仍有未解决或高风险事项，结论需要复核。"
             ),
             translate(
-                "Review risks, quantify tax impact, and create remediation tasks where needed."
+                "请复核风险、量化税务影响，并按需创建整改任务。"
             ),
         )
     if profile.cn_workbench_remediation_state in ("blocked", "attention"):
         return (
             "attention",
             translate(
-                "Conclusion requires remediation follow-through before it can support management sign-off."
+                "结论用于管理层签核前，需要完成后续整改。"
             ),
-            translate("Complete open remediation tasks and verify them with evidence."),
+            translate("请完成未关闭整改任务，并使用证据验证。"),
         )
     if profile.cn_workbench_rescan_state in ("blocked", "attention"):
         return (
             "attention",
-            translate("Conclusion is waiting for remediation verification rescans."),
+            translate("结论正在等待整改验证复扫。"),
             profile.cn_workbench_rescan_next_action,
         )
     if profile.cn_workbench_report_state != "ready":
         return (
             "attention",
             translate(
-                "Conclusion is not yet packaged as an issued formal compliance report."
+                "结论尚未形成已签发的正式合规报告。"
             ),
             translate(
-                "Generate and issue the formal China compliance report after review gates pass."
+                "通过复核门槛后，请生成并签发正式中国合规报告。"
             ),
         )
     if profile.cn_workbench_evidence_state != "ready":
         return (
             "attention",
             translate(
-                "Conclusion is not fully supportable until evidence is attached and verified."
+                "证据附加并验证前，结论缺少充分支持。"
             ),
             translate(
-                "Verify supporting evidence for the report, risks, remediation and filing archives."
+                "请验证报告、风险、整改和申报缴款档案的支持性证据。"
             ),
         )
     if profile.cn_workbench_ai_guidance_limited_count:
         return (
             "attention",
             translate(
-                "AI guidance is available only as controlled assistance and still has limited inputs to disclose."
+                "AI 指引仅作为受控辅助，仍需披露其输入限制。"
             ),
             translate(
-                "Review AI guidance disclosures before using them in remediation instructions."
+                "将 AI 指引用于整改说明前，请先复核相关披露。"
             ),
         )
     if profile.cn_workbench_closed_loop_state != "ready":
         return (
             "attention",
             translate(
-                "Conclusion is close but the closed-loop control summary still has open gaps."
+                "结论已接近就绪，但闭环控制摘要仍存在未解决缺口。"
             ),
             profile.cn_workbench_closed_loop_summary,
         )
     return (
         "ready",
         translate(
-            "Ready for management review: data, scan, risk review, remediation, evidence and issued report are aligned."
+            "已可提交管理层复核：数据、扫描、风险复核、整改、证据和已签发报告均已对齐。"
         ),
         translate(
-            "Keep rules, source references and period data current before the next scan."
+            "下次扫描前，请保持规则、来源依据和期间数据为最新状态。"
         ),
     )
 
@@ -267,41 +267,41 @@ def _next_best_action_values(profile):
         return (False, False)
     translate = profile.env._
     if profile.status != "active":
-        return ("profile", translate("Complete and activate the China profile"))
+        return ("profile", translate("完善并启用中国合规档案"))
     if profile.cn_workbench_rule_basis_state == "blocked":
         return (
             "rule_basis",
-            translate("Review China rule source and sign-off basis"),
+            translate("复核中国规则来源和签核依据"),
         )
     if profile.cn_workbench_data_state in ("blocked", "not_started"):
         return (
             "data_readiness",
-            translate("Prepare controlled accounting and tax data"),
+            translate("准备受控账务和税务数据"),
         )
     if profile.cn_workbench_obligation_state != "ready":
-        return ("obligations", translate("Review China tax obligations"))
+        return ("obligations", translate("复核中国纳税义务"))
     if profile.cn_workbench_scan_state != "ready":
-        return ("scan", translate("Run or review the rule scan"))
+        return ("scan", translate("执行或复核规则扫描"))
     if profile.cn_workbench_risk_state in ("blocked", "attention"):
-        return ("risks", translate("Review unresolved compliance risks"))
+        return ("risks", translate("复核未解决合规风险"))
     if profile.cn_workbench_remediation_state in ("blocked", "attention"):
-        return ("remediation", translate("Work remediation tasks"))
+        return ("remediation", translate("推进整改任务"))
     if profile.cn_workbench_rescan_state in ("blocked", "attention"):
-        return ("remediation", translate("Verify remediation with rescans"))
+        return ("remediation", translate("通过复扫验证整改"))
     if profile.cn_workbench_report_state != "ready":
         return (
             "report_readiness",
-            translate("Prepare the formal compliance report"),
+            translate("准备正式合规报告"),
         )
     if profile.cn_workbench_evidence_state != "ready":
-        return ("evidence", translate("Verify supporting evidence"))
+        return ("evidence", translate("验证支持性证据"))
     if profile.cn_workbench_filing_archive_state in ("blocked", "attention"):
-        return ("filing", translate("Seal filing and payment archives"))
+        return ("filing", translate("封存申报缴款档案"))
     if profile.cn_workbench_ai_guidance_state in ("blocked", "attention"):
-        return ("ai_guidance", translate("Review controlled AI guidance"))
+        return ("ai_guidance", translate("复核受控 AI 指引"))
     return (
         "report_readiness",
-        translate("Review the ready compliance report package"),
+        translate("复核已就绪的合规报告包"),
     )
 
 
@@ -325,7 +325,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_action_summary = fields.Char(
-        string="Workbench Action Summary",
+        string="工作台行动摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_period_label = fields.Char(
@@ -368,15 +368,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_posted_move_count = fields.Integer(
-        string="Posted Accounting Entries",
+        string="已过账会计凭证",
         compute="_compute_cn_workbench",
     )
     cn_workbench_draft_move_count = fields.Integer(
-        string="Draft Accounting Entries",
+        string="草稿会计凭证",
         compute="_compute_cn_workbench",
     )
     cn_workbench_posted_invoice_count = fields.Integer(
-        string="Posted Accounting Invoices",
+        string="已过账发票",
         compute="_compute_cn_workbench",
     )
     cn_workbench_currency_id = fields.Many2one(
@@ -397,7 +397,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_historical_unresolved_finding_count = fields.Integer(
-        string="Historical Unresolved Findings",
+        string="历史未解决风险",
         compute="_compute_cn_workbench",
     )
     cn_workbench_open_task_count = fields.Integer(
@@ -409,7 +409,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_historical_blocked_task_count = fields.Integer(
-        string="Historical Blocked Tasks",
+        string="历史受阻整改",
         compute="_compute_cn_workbench",
     )
     cn_workbench_tax_impact_case_count = fields.Integer(
@@ -470,27 +470,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_obligation_state = fields.Selection(
         FLOW_STATES,
-        string="Tax Obligation Readiness",
+        string="纳税义务准备度",
         compute="_compute_cn_workbench",
     )
     cn_workbench_obligation_next_action = fields.Char(
-        string="Tax Obligation Next Action",
+        string="纳税义务下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_obligation_count = fields.Integer(
-        string="Candidate Obligations",
+        string="候选纳税义务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_applicable_obligation_count = fields.Integer(
-        string="Applicable Obligations",
+        string="适用纳税义务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_pending_obligation_count = fields.Integer(
-        string="Obligations Needing Review",
+        string="待复核纳税义务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_filing_obligation_count = fields.Integer(
-        string="Applicable Filing Obligations",
+        string="适用申报义务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_cross_border_state = fields.Selection(
@@ -507,48 +507,48 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_cross_border_transaction_count = fields.Integer(
-        string="Cross-Border Transactions",
+        string="跨境业务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_cross_border_pending_count = fields.Integer(
-        string="Cross-Border Pending Review",
+        string="待复核跨境业务",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_basis_state = fields.Selection(
         FLOW_STATES,
-        string="Rule Basis Readiness",
+        string="规则依据准备度",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_basis_summary = fields.Char(
-        string="Rule Basis Summary",
+        string="规则依据摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_basis_next_action = fields.Char(
-        string="Rule Basis Next Action",
+        string="规则依据下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_version_count = fields.Integer(
-        string="China Rule Versions",
+        string="中国规则版本",
         compute="_compute_cn_workbench",
     )
     cn_workbench_active_rule_version_count = fields.Integer(
-        string="Active China Rule Versions",
+        string="已生效中国规则版本",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_governance_issue_count = fields.Integer(
-        string="Rule Governance Issues",
+        string="规则治理问题",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rule_pending_professional_count = fields.Integer(
-        string="Rules Pending Professional Sign-off",
+        string="待专业签核规则",
         compute="_compute_cn_workbench",
     )
     cn_workbench_source_review_overdue_count = fields.Integer(
-        string="Official Sources Review Overdue",
+        string="官方来源复核逾期",
         compute="_compute_cn_workbench",
     )
     cn_workbench_source_monitor_issue_count = fields.Integer(
-        string="Official Source Monitor Issues",
+        string="官方来源监控问题",
         compute="_compute_cn_workbench",
     )
     cn_workbench_limitation_count = fields.Integer(
@@ -556,15 +556,15 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         compute="_compute_cn_workbench",
     )
     cn_workbench_limitation_summary = fields.Char(
-        string="Limitations Summary",
+        string="限制摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_uncertainty_summary = fields.Char(
-        string="Uncertainty Summary",
+        string="不确定性摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_limitation_next_action = fields.Char(
-        string="Limitations Next Action",
+        string="限制事项下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_scan_state = fields.Selection(
@@ -584,23 +584,23 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     )
     cn_workbench_rescan_state = fields.Selection(
         FLOW_STATES,
-        string="Verification Rescan State",
+        string="验证复扫状态",
         compute="_compute_cn_workbench",
     )
     cn_workbench_pending_rescan_count = fields.Integer(
-        string="Pending Verification Rescans",
+        string="待完成验证复扫",
         compute="_compute_cn_workbench",
     )
     cn_workbench_failed_rescan_count = fields.Integer(
-        string="Failed Verification Rescans",
+        string="未通过验证复扫",
         compute="_compute_cn_workbench",
     )
     cn_workbench_verified_remediation_count = fields.Integer(
-        string="Verified Remediations",
+        string="已验证整改",
         compute="_compute_cn_workbench",
     )
     cn_workbench_rescan_next_action = fields.Char(
-        string="Verification Rescan Next Action",
+        string="验证复扫下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_report_state = fields.Selection(
@@ -624,87 +624,87 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
 
     cn_workbench_filing_archive_state = fields.Selection(
         FLOW_STATES,
-        string="Filing Archive State",
+        string="申报缴款档案状态",
         compute="_compute_cn_workbench",
     )
     cn_workbench_filing_archive_next_action = fields.Char(
-        string="Filing Archive Next Action",
+        string="申报缴款档案下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_filing_archive_count = fields.Integer(
-        string="Controlled Filing Archives",
+        string="受控申报缴款档案",
         compute="_compute_cn_workbench",
     )
     cn_workbench_sealed_filing_archive_count = fields.Integer(
-        string="Sealed Filing Archives",
+        string="已封存申报缴款档案",
         compute="_compute_cn_workbench",
     )
     cn_workbench_filing_archive_issue_count = fields.Integer(
-        string="Filing Archive Issues",
+        string="申报缴款档案问题",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_state = fields.Selection(
         FLOW_STATES,
-        string="AI Guidance State",
+        string="AI 指引状态",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_next_action = fields.Char(
-        string="AI Guidance Next Action",
+        string="AI 指引下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_finding_count = fields.Integer(
-        string="AI Guidance Findings",
+        string="需 AI 指引的风险",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_generated_count = fields.Integer(
-        string="Generated AI Guidance",
+        string="已生成 AI 指引",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_current_count = fields.Integer(
-        string="Current AI Guidance",
+        string="当前有效 AI 指引",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_limited_count = fields.Integer(
-        string="Limited AI Guidance Inputs",
+        string="受限 AI 指引输入",
         compute="_compute_cn_workbench",
     )
     cn_workbench_ai_guidance_stale_count = fields.Integer(
-        string="Stale AI Guidance Inputs",
+        string="已过期 AI 指引输入",
         compute="_compute_cn_workbench",
     )
     cn_workbench_closed_loop_state = fields.Selection(
         FLOW_STATES,
-        string="Closed Loop Readiness",
+        string="闭环准备度",
         compute="_compute_cn_workbench",
     )
     cn_workbench_closed_loop_gap_count = fields.Integer(
-        string="Closed Loop Gaps",
+        string="闭环缺口",
         compute="_compute_cn_workbench",
     )
     cn_workbench_closed_loop_summary = fields.Char(
-        string="Closed Loop Summary",
+        string="闭环摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_conclusion_boundary_state = fields.Selection(
         FLOW_STATES,
-        string="Conclusion Boundary",
+        string="结论边界",
         compute="_compute_cn_workbench",
     )
     cn_workbench_conclusion_boundary_summary = fields.Char(
-        string="Conclusion Boundary Summary",
+        string="结论边界摘要",
         compute="_compute_cn_workbench",
     )
     cn_workbench_conclusion_boundary_next_action = fields.Char(
-        string="Conclusion Boundary Next Action",
+        string="结论边界下一步",
         compute="_compute_cn_workbench",
     )
     cn_workbench_next_best_action_key = fields.Selection(
         NEXT_STEP_KEYS,
-        string="Next Best Action Target",
+        string="下一优先行动目标",
         compute="_compute_cn_workbench",
     )
     cn_workbench_next_best_action_label = fields.Char(
-        string="Next Best Action",
+        string="下一优先行动",
         compute="_compute_cn_workbench",
     )
 
@@ -737,9 +737,9 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     def _cn_workbench_action_summary(self):
         self.ensure_one()
         return _(
-            "Risks: %(high)s high / %(total)s total; %(pending)s pending review. "
-            "Remediation: %(open)s open / %(overdue)s overdue. "
-            "Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready.",
+            "风险：高风险 %(high)s / 总计 %(total)s，待复核 %(pending)s。"
+            "整改：未关闭 %(open)s / 逾期 %(overdue)s。"
+            "闭环：缺口 %(gaps)s，数据就绪 %(ready)s/%(datasets)s。",
             high=self.cn_workbench_high_risk_count or 0,
             total=self.cn_workbench_finding_count or 0,
             pending=self.cn_workbench_pending_review_count or 0,
@@ -1051,7 +1051,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if latest_assessment and not posted_move_count:
                 profile.cn_workbench_data_state = "blocked"
                 profile.cn_workbench_data_next_action = _(
-                    "Post Odoo accounting entries for the scanned period before relying on compliance risk results."
+                    "使用合规风险结果前，请先过账扫描期间的 Odoo 会计凭证。"
                 )
             elif not current_datasets:
                 profile.cn_workbench_data_state = "not_started"
@@ -1106,17 +1106,17 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if not obligations:
                 profile.cn_workbench_obligation_state = "not_started"
                 profile.cn_workbench_obligation_next_action = _(
-                    "Seed the China candidate obligation list from the compliance profile."
+                    "请根据合规档案生成中国候选纳税义务清单。"
                 )
             elif pending_obligations:
                 profile.cn_workbench_obligation_state = "attention"
                 profile.cn_workbench_obligation_next_action = _(
-                    "Review candidate tax obligations, confirm applicability, and link official sources before relying on filing controls."
+                    "使用申报控制前，请复核候选纳税义务、确认适用性并关联官方来源。"
                 )
             else:
                 profile.cn_workbench_obligation_state = "ready"
                 profile.cn_workbench_obligation_next_action = _(
-                    "Obligation applicability has been reviewed; keep sources current and rescan periodically."
+                    "纳税义务适用性已复核；请保持来源为最新状态并定期复扫。"
                 )
             profile.cn_workbench_cross_border_transaction_count = (
                 CrossBorder.search_count(cross_border_domain)
@@ -1173,44 +1173,44 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if not rule_versions:
                 profile.cn_workbench_rule_basis_state = "not_started"
                 profile.cn_workbench_rule_basis_summary = _(
-                    "No China rule versions are installed or governed yet."
+                    "当前尚未安装或治理中国规则版本。"
                 )
                 profile.cn_workbench_rule_basis_next_action = _(
-                    "Install or seed China rule versions before relying on rule scans."
+                    "使用规则扫描前，请安装或初始化中国规则版本。"
                 )
             elif source_monitor_issue_count or source_review_overdue_count:
                 profile.cn_workbench_rule_basis_state = "blocked"
                 profile.cn_workbench_rule_basis_summary = _(
-                    "%(versions)s China rule versions, %(active)s active; %(overdue)s official sources overdue; %(issues)s source monitor issues.",
+                    "中国规则版本 %(versions)s 个，其中已生效 %(active)s 个；官方来源复核逾期 %(overdue)s 个；来源监控问题 %(issues)s 个。",
                     versions=len(rule_versions),
                     active=len(active_rule_versions),
                     overdue=source_review_overdue_count,
                     issues=source_monitor_issue_count,
                 )
                 profile.cn_workbench_rule_basis_next_action = _(
-                    "Review overdue or changed official sources, update affected rule versions, and rerun scans."
+                    "请复核逾期或已变化的官方来源，更新受影响规则版本并重新扫描。"
                 )
             elif governance_issue_versions or pending_professional_versions:
                 profile.cn_workbench_rule_basis_state = "attention"
                 profile.cn_workbench_rule_basis_summary = _(
-                    "%(versions)s China rule versions, %(active)s active; %(gaps)s governance gaps; %(pending)s pending professional sign-off.",
+                    "中国规则版本 %(versions)s 个，其中已生效 %(active)s 个；治理缺口 %(gaps)s 个；待专业签核 %(pending)s 个。",
                     versions=len(rule_versions),
                     active=len(active_rule_versions),
                     gaps=len(governance_issue_versions),
                     pending=len(pending_professional_versions),
                 )
                 profile.cn_workbench_rule_basis_next_action = _(
-                    "Complete source governance, review packets, tests and China tax professional sign-off for rule gaps."
+                    "请补齐规则缺口对应的来源治理、复核包、测试和中国税务专业签核。"
                 )
             else:
                 profile.cn_workbench_rule_basis_state = "ready"
                 profile.cn_workbench_rule_basis_summary = _(
-                    "%(versions)s China rule versions, %(active)s active; sources and professional sign-off gates are current.",
+                    "中国规则版本 %(versions)s 个，其中已生效 %(active)s 个；来源和专业签核门槛均为最新状态。",
                     versions=len(rule_versions),
                     active=len(active_rule_versions),
                 )
                 profile.cn_workbench_rule_basis_next_action = _(
-                    "Keep official source monitoring current and rescan when rules or data change."
+                    "请保持官方来源监控为最新状态，并在规则或数据变化时重新扫描。"
                 )
             cross_border_state = _cross_border_state(
                 current_classification,
@@ -1303,27 +1303,27 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if not ai_guidance_findings:
                 profile.cn_workbench_ai_guidance_state = "not_started"
                 profile.cn_workbench_ai_guidance_next_action = _(
-                    "No unresolved China risk currently requires controlled AI guidance."
+                    "当前没有需要受控 AI 指引的未解决中国风险。"
                 )
             elif profile.cn_workbench_ai_guidance_stale_count:
                 profile.cn_workbench_ai_guidance_state = "blocked"
                 profile.cn_workbench_ai_guidance_next_action = _(
-                    "Regenerate controlled AI guidance for risks whose input facts or remediation state changed."
+                    "输入事实或整改状态变化后，请为相关风险重新生成受控 AI 指引。"
                 )
             elif len(ai_guidance_current) == len(ai_guidance_findings):
                 profile.cn_workbench_ai_guidance_state = "ready"
                 profile.cn_workbench_ai_guidance_next_action = _(
-                    "Controlled AI guidance is current for all unresolved China risks."
+                    "全部未解决中国风险的受控 AI 指引均为最新状态。"
                 )
             elif ai_guidance_generated:
                 profile.cn_workbench_ai_guidance_state = "attention"
                 profile.cn_workbench_ai_guidance_next_action = _(
-                    "Generate controlled AI guidance for remaining unresolved risks and disclose limited inputs."
+                    "为其余未解决风险生成受控 AI 指引，并披露输入限制。"
                 )
             else:
                 profile.cn_workbench_ai_guidance_state = "attention"
                 profile.cn_workbench_ai_guidance_next_action = _(
-                    "Generate controlled AI guidance before using the report as a step-by-step remediation playbook."
+                    "将报告作为分步整改手册前，请先生成受控 AI 指引。"
                 )
 
             if limitation_count:
@@ -1347,32 +1347,32 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if limitation_count:
                 profile.cn_workbench_rescan_state = "blocked"
                 profile.cn_workbench_rescan_next_action = _(
-                    "Resolve scope, data or evidence limitations before treating remediation rescans as conclusive."
+                    "先解决范围、数据或证据限制，再将整改复扫作为结论依据。"
                 )
             elif profile.cn_workbench_failed_rescan_count:
                 profile.cn_workbench_rescan_state = "blocked"
                 profile.cn_workbench_rescan_next_action = _(
-                    "Review failed verification rescans, reopen remediation where needed, and rerun the exact-period scan."
+                    "复核未通过的验证复扫，必要时重新开启整改，并按原期间重新扫描。"
                 )
             elif profile.cn_workbench_pending_rescan_count:
                 profile.cn_workbench_rescan_state = "attention"
                 profile.cn_workbench_rescan_next_action = _(
-                    "Monitor pending verification rescans and attach the resulting assessment to the remediation evidence trail."
+                    "跟进待完成的验证复扫，并将扫描结果纳入整改证据链。"
                 )
             elif profile.cn_workbench_verified_remediation_count:
                 profile.cn_workbench_rescan_state = "ready"
                 profile.cn_workbench_rescan_next_action = _(
-                    "Verified remediation is available for report sign-off; keep evidence and rescan records sealed."
+                    "已验证整改可用于报告签核，请持续封存证据和复扫记录。"
                 )
             elif profile.cn_workbench_open_task_count:
                 profile.cn_workbench_rescan_state = "attention"
                 profile.cn_workbench_rescan_next_action = _(
-                    "Complete remediation tasks, request review, then queue verification rescans."
+                    "完成整改任务并申请复核，再发起验证复扫。"
                 )
             else:
                 profile.cn_workbench_rescan_state = "not_started"
                 profile.cn_workbench_rescan_next_action = _(
-                    "No remediation rescan has been required yet; run scans and close any confirmed risks through the remediation workflow."
+                    "当前尚无整改复扫要求；请执行扫描，并通过整改流程闭环已确认风险。"
                 )
 
             if latest_report and latest_report.state == "issued":
@@ -1392,50 +1392,50 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             if not filing_archives:
                 profile.cn_workbench_filing_archive_state = "not_started"
                 profile.cn_workbench_filing_archive_next_action = _(
-                    "Create controlled filing/payment archives from VAT, CIT and IIT reconciliation runs."
+                    "根据增值税、企业所得税和个人所得税勾稽结果创建受控申报缴款档案。"
                 )
             elif filing_archive_issues:
                 profile.cn_workbench_filing_archive_state = "attention"
                 profile.cn_workbench_filing_archive_next_action = _(
-                    "Review filing/payment archive integrity and verified evidence before relying on filings."
+                    "使用申报结果前，请复核申报缴款档案完整性和已验证证据。"
                 )
             elif len(sealed_filing_archives) == len(filing_archives):
                 profile.cn_workbench_filing_archive_state = "ready"
                 profile.cn_workbench_filing_archive_next_action = _(
-                    "Controlled filing/payment archive chain is sealed; keep receipts and payment evidence current."
+                    "受控申报缴款档案链已封存，请持续维护回执和缴款证据。"
                 )
             else:
                 profile.cn_workbench_filing_archive_state = "attention"
                 profile.cn_workbench_filing_archive_next_action = _(
-                    "Seal submission and payment evidence for all controlled filing archives."
+                    "请为全部受控申报缴款档案封存申报和缴款证据。"
                 )
 
             limitation_reasons = []
             uncertainty_reasons = []
             limitation_actions = []
             if profile.status != "active":
-                uncertainty_reasons.append(_("profile is not active"))
-                limitation_actions.append(_("Activate the China compliance profile."))
+                uncertainty_reasons.append(_("合规档案未启用"))
+                limitation_actions.append(_("请启用中国合规档案。"))
             if profile.cn_workbench_rule_basis_state == "blocked":
-                limitation_reasons.append(_("rule basis is blocked"))
-                uncertainty_reasons.append(_("official source freshness or monitor issue"))
+                limitation_reasons.append(_("规则依据受阻"))
+                uncertainty_reasons.append(_("官方来源时效性或监控存在问题"))
                 limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
             elif profile.cn_workbench_rule_basis_state == "attention":
                 uncertainty_reasons.append(
-                    _("rule governance or professional sign-off gap")
+                    _("规则治理或专业签核存在缺口")
                 )
                 limitation_actions.append(profile.cn_workbench_rule_basis_next_action)
             if profile.cn_workbench_data_state in ("blocked", "not_started"):
                 limitation_reasons.append(
-                    _("controlled accounting/tax data is not ready")
+                    _("受控账务或税务数据尚未就绪")
                 )
                 limitation_actions.append(profile.cn_workbench_data_next_action)
             elif profile.cn_workbench_data_state == "attention":
-                uncertainty_reasons.append(_("some controlled datasets need review"))
+                uncertainty_reasons.append(_("部分受控数据集需要复核"))
                 limitation_actions.append(profile.cn_workbench_data_next_action)
             if profile.cn_workbench_obligation_state != "ready":
                 uncertainty_reasons.append(
-                    _("tax obligation applicability not fully reviewed")
+                    _("纳税义务适用性尚未全部复核")
                 )
                 limitation_actions.append(profile.cn_workbench_obligation_next_action)
             if latest_assessment and "cn_jurisdiction_coverage_state" in latest_assessment._fields:
@@ -1446,7 +1446,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 ):
                     limitation_reasons.append(
                         _(
-                            "local jurisdiction coverage is %(state)s",
+                            "属地覆盖状态为 %(state)s",
                             state=latest_assessment.cn_jurisdiction_coverage_state,
                         )
                     )
@@ -1456,49 +1456,49 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             ):
                 limitation_reasons.append(
                     _(
-                        "latest report conclusion is %(state)s",
+                        "最新报告结论状态为 %(state)s",
                         state=latest_report.conclusion_state,
                     )
                 )
             if profile.cn_workbench_cross_border_state in ("blocked", "attention"):
                 uncertainty_reasons.append(
-                    _("cross-border or withholding facts need review")
+                    _("跨境或源泉扣缴事实需要复核")
                 )
                 limitation_actions.append(profile.cn_workbench_cross_border_next_action)
             if profile.cn_workbench_ai_guidance_limited_count:
                 uncertainty_reasons.append(
-                    _("controlled AI guidance has limited inputs")
+                    _("受控 AI 指引存在输入限制")
                 )
                 limitation_actions.append(profile.cn_workbench_ai_guidance_next_action)
             if profile.cn_workbench_evidence_state in ("blocked", "attention"):
                 limitation_reasons.append(
-                    _("supporting evidence is not fully verified")
+                    _("支持性证据尚未全部验证")
                 )
                 limitation_actions.append(
-                    _("Verify supporting evidence before management sign-off.")
+                    _("管理层签核前请验证支持性证据。")
                 )
             if profile.cn_workbench_report_state in ("blocked", "attention"):
-                uncertainty_reasons.append(_("formal report package is not final"))
+                uncertainty_reasons.append(_("正式报告包尚未定稿"))
                 limitation_actions.append(
                     _(
-                        "Prepare the formal report with explicit limitations and uncertainty disclosure."
+                        "请编制正式报告，并明确披露限制和不确定性。"
                     )
                 )
             profile.cn_workbench_limitation_summary = (
                 _(
-                    "Explicit limitations: %(reasons)s.",
+                    "明确限制：%(reasons)s。",
                     reasons="; ".join(limitation_reasons[:6]),
                 )
                 if limitation_reasons
-                else _("No explicit conclusion limitation is currently recorded.")
+                else _("当前未记录明确的结论限制。")
             )
             profile.cn_workbench_uncertainty_summary = (
                 _(
-                    "Uncertainty drivers: %(reasons)s.",
+                    "不确定性因素：%(reasons)s。",
                     reasons="; ".join(uncertainty_reasons[:6]),
                 )
                 if uncertainty_reasons
-                else _("No open uncertainty driver is currently recorded.")
+                else _("当前未记录未解决的不确定性因素。")
             )
             unique_actions = []
             for action in limitation_actions:
@@ -1508,7 +1508,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 " ".join(unique_actions[:3])
                 if unique_actions
                 else _(
-                    "Keep limitations and uncertainty disclosures current before each report sign-off."
+                    "每次报告签核前，请保持限制和不确定性披露为最新状态。"
                 )
             )
 
@@ -1534,12 +1534,12 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
             elif profile.cn_workbench_rule_basis_state == "blocked":
                 profile.cn_workbench_status = "limited"
                 profile.cn_workbench_next_action = _(
-                    "Review official source freshness and rule governance before relying on China compliance conclusions."
+                    "使用中国合规结论前，请复核官方来源时效性和规则治理。"
                 )
             elif profile.cn_workbench_obligation_state == "attention":
                 profile.cn_workbench_status = "warning"
                 profile.cn_workbench_next_action = _(
-                    "Confirm China tax obligation applicability before treating scan results as complete."
+                    "将扫描结果视为完整结果前，请确认中国纳税义务适用性。"
                 )
             elif limitation_count:
                 profile.cn_workbench_status = "limited"
@@ -1573,7 +1573,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
                 )
             ):
                 profile.cn_workbench_closed_loop_summary = _(
-                    "Current closed loop is ready. Historical unresolved findings: %(findings)s; historical blocked tasks: %(tasks)s.",
+                    "当前闭环已就绪。历史未解决风险：%(findings)s；历史受阻整改：%(tasks)s。",
                     findings=profile.cn_workbench_historical_unresolved_finding_count,
                     tasks=profile.cn_workbench_historical_blocked_task_count,
                 )
@@ -1624,7 +1624,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     def action_cn_open_workbench_obligations(self):
         self.ensure_one()
         return self._cn_action(
-            _("China Tax Obligations"),
+            _("中国纳税义务"),
             "sudo.compliance.obligation",
             [("profile_id", "=", self.id)],
             {"default_profile_id": self.id},
@@ -1657,7 +1657,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     def action_cn_open_workbench_ai_guidance_findings(self):
         self.ensure_one()
         action = self.action_cn_open_workbench_findings()
-        action["name"] = _("Controlled AI Guidance")
+        action["name"] = _("受控 AI 指引"),
         action["domain"] = [
             ("assessment_id.profile_id", "=", self.id),
             ("result", "in", ("fail", "unknown", "error")),
@@ -1799,7 +1799,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
     def action_cn_open_workbench_rule_basis(self):
         self.ensure_one()
         return self._cn_action(
-            _("China Rule Basis"),
+            _("中国规则依据"),
             "sudo.compliance.rule.version",
             [
                 ("rule_id.country_id.code", "=", "CN"),
@@ -1814,7 +1814,7 @@ class SudoChinaComplianceWorkbenchProfile(models.Model):
         if target == "profile":
             return {
                 "type": "ir.actions.act_window",
-                "name": _("China Compliance Profile"),
+                "name": _("中国合规档案"),
                 "res_model": self._name,
                 "res_id": self.id,
                 "view_mode": "form",

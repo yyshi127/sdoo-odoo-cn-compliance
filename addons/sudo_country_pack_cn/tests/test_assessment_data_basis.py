@@ -51,6 +51,26 @@ class TestChinaAssessmentDataBasis(TransactionCase):
             }
         )
 
+    def test_assessment_data_basis_labels_are_chinese(self):
+        assessment_fields = self.env["sudo.compliance.assessment"]._fields
+        expected_labels = {
+            "cn_data_basis_required_type_count": "必需数据类型",
+            "cn_data_basis_ready_type_count": "已就绪数据类型",
+            "cn_data_basis_missing_type_count": "缺失数据类型",
+            "cn_data_basis_missing_type_summary": "缺失数据类型摘要",
+            "cn_accounting_basis_posted_move_count": "已过账会计凭证",
+            "cn_accounting_basis_draft_move_count": "草稿会计凭证",
+            "cn_accounting_basis_posted_invoice_count": "已过账发票",
+            "cn_accounting_basis_next_action": "账务基础下一步",
+            "cn_obligation_basis_candidate_count": "候选纳税义务",
+            "cn_obligation_basis_applicable_count": "适用纳税义务",
+            "cn_obligation_basis_pending_count": "待复核纳税义务",
+            "cn_obligation_basis_filing_count": "适用申报义务",
+            "cn_obligation_basis_next_action": "纳税义务下一步",
+        }
+        for field_name, expected_label in expected_labels.items():
+            self.assertEqual(assessment_fields[field_name].string, expected_label)
+
     def _assessment(self, period_start="2026-06-01", period_end="2026-06-30"):
         return self.env["sudo.compliance.assessment"].with_company(
             self.company

@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.152.0`
+Delivery version: `19.0.1.153.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -126,6 +126,14 @@ the dedicated responsive risk and report components introduced by this reset.
 The checker now verifies the component class and the visible detail action for
 each view instead of requiring the retired border-only marker. This prevents a
 false closed-loop failure while keeping view clarity as a mandatory gate.
+
+Version `19.0.1.153.0` completes the Chinese reviewer labels and dynamic action
+messages exposed by the workbench, risk center, remediation tracker, report
+readiness, accounting/data/obligation basis, formal report summaries and the
+controlled cross-border register. Runtime tests now verify the core field labels,
+next-action copy and cross-border form architecture, while static acceptance
+rejects the retired English labels. The underlying calculations, rules and
+workflow transitions are unchanged.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes

@@ -420,7 +420,7 @@
 
                     <group string="报告快照概览" col="4"
                            invisible="state == 'draft'">
-                        <group string="Report center">
+                        <group string="报告中心">
                             <field name="cn_report_center_stage" widget="badge"
                                    decoration-success="cn_report_center_stage == 'issued'"
                                    decoration-info="cn_report_center_stage in ('draft', 'approval')"

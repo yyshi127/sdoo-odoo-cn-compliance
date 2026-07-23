@@ -82,16 +82,16 @@ class SudoChinaRiskCenterFinding(models.Model):
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_action_summary = fields.Char(
-        string="Risk Action Summary",
+        string="风险行动摘要",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_remediation_urgency = fields.Selection(
         REMEDIATION_URGENCY_STATES,
-        string="Remediation Urgency",
+        string="整改紧迫度",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_responsibility_summary = fields.Char(
-        string="Responsibility Summary",
+        string="责任摘要",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_evidence_state = fields.Selection(
@@ -109,105 +109,105 @@ class SudoChinaRiskCenterFinding(models.Model):
     )
 
     cn_risk_fact_snapshot_count = fields.Integer(
-        string="Fact Snapshots",
+        string="事实快照",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_fact_issue_count = fields.Integer(
-        string="Fact Issues",
+        string="事实问题",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_fact_summary = fields.Char(
-        string="Fact Summary",
+        string="事实摘要",
         compute="_compute_cn_risk_center_display",
     )
     cn_reconciliation_risk_state = fields.Selection(
         RECONCILIATION_RISK_STATES,
-        string="Reconciliation Risk",
+        string="勾稽风险",
         compute="_compute_cn_risk_center_display",
     )
     cn_reconciliation_risk_summary = fields.Char(
-        string="Reconciliation Summary",
+        string="勾稽摘要",
         compute="_compute_cn_risk_center_display",
     )
     cn_reconciliation_risk_next_action = fields.Char(
-        string="Reconciliation Next Action",
+        string="勾稽下一步",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_state = fields.Selection(
         DATA_BASIS_STATES,
-        string="Data Basis",
+        string="数据基础",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_required_type_count = fields.Integer(
-        string="Required Data Types",
+        string="必需数据类型",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_ready_type_count = fields.Integer(
-        string="Ready Data Types",
+        string="已就绪数据类型",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_missing_type_count = fields.Integer(
-        string="Missing Data Types",
+        string="缺失数据类型",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_missing_type_summary = fields.Char(
-        string="Missing Data Type Summary",
+        string="缺失数据类型摘要",
         compute="_compute_cn_risk_center_display",
     )
     cn_risk_data_basis_next_action = fields.Char(
-        string="Data Basis Next Action",
+        string="数据基础下一步",
         compute="_compute_cn_risk_center_display",
     )
 
     cn_traceability_state = fields.Selection(
         TRACEABILITY_STATES,
-        string="Traceability",
+        string="可追溯性",
         compute="_compute_cn_risk_center_display",
     )
     cn_traceability_gap_count = fields.Integer(
-        string="Traceability Gaps",
+        string="可追溯性缺口",
         compute="_compute_cn_risk_center_display",
     )
     cn_traceability_next_action = fields.Char(
-        string="Traceability Next Action",
+        string="可追溯性下一步",
         compute="_compute_cn_risk_center_display",
     )
     cn_closure_state = fields.Selection(
         CLOSURE_STATES,
-        string="Closure Status",
+        string="闭环状态",
         compute="_compute_cn_risk_center_display",
         search="_search_cn_closure_state",
     )
     cn_closure_summary = fields.Char(
-        string="Closure Summary",
+        string="闭环摘要",
         compute="_compute_cn_risk_center_display",
     )
 
     cn_cross_border_fact_state = fields.Selection(
         [
-            ("unavailable", "Unavailable"),
-            ("no_transactions", "No Transactions"),
-            ("pending_review", "Pending Review"),
-            ("reviewed", "Reviewed"),
-            ("limited", "Limited"),
+            ("unavailable", "不可用"),
+            ("no_transactions", "无跨境业务"),
+            ("pending_review", "待复核"),
+            ("reviewed", "已复核"),
+            ("limited", "受限"),
         ],
-        string="Cross-Border Facts",
+        string="跨境事实",
         compute="_compute_cn_risk_center_display",
     )
     cn_cross_border_pending_count = fields.Integer(
-        string="Cross-Border Pending",
+        string="待复核跨境事实",
         compute="_compute_cn_risk_center_display",
     )
     cn_cross_border_reviewed_count = fields.Integer(
-        string="Cross-Border Reviewed",
+        string="已复核跨境事实",
         compute="_compute_cn_risk_center_display",
     )
     cn_cross_border_transaction_count = fields.Integer(
-        string="Cross-Border Total",
+        string="跨境业务总数",
         compute="_compute_cn_risk_center_display",
     )
     cn_cross_border_next_action = fields.Char(
-        string="Cross-Border Next Action",
+        string="跨境事项下一步",
         compute="_compute_cn_risk_center_display",
     )
 
@@ -239,43 +239,43 @@ class SudoChinaRiskCenterFinding(models.Model):
 
     cn_risk_currency_id = fields.Many2one(
         related="company_id.currency_id",
-        string="Currency",
+        string="币种",
         readonly=True,
     )
     cn_tax_impact_state = fields.Selection(
         TAX_IMPACT_STATES,
-        string="Tax Impact",
+        string="税务影响",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_pending_review_count = fields.Integer(
-        string="Pending Tax Impact",
+        string="待复核税务影响",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_unquantifiable_review_count = fields.Integer(
-        string="Unquantifiable Tax Impact",
+        string="暂无法量化税务影响",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_integrity_issue_count = fields.Integer(
-        string="Tax Impact Integrity Issues",
+        string="税务影响完整性问题",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_reviewed_underpayment_amount = fields.Monetary(
-        string="Reviewed Underpayment",
+        string="已复核少缴金额",
         currency_field="cn_risk_currency_id",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_reviewed_overpayment_amount = fields.Monetary(
-        string="Reviewed Overpayment",
+        string="已复核多缴金额",
         currency_field="cn_risk_currency_id",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_reviewed_timing_amount = fields.Monetary(
-        string="Reviewed Timing Difference",
+        string="已复核时间性差异",
         currency_field="cn_risk_currency_id",
         compute="_compute_cn_risk_center_display",
     )
     cn_tax_impact_summary = fields.Char(
-        string="Tax Impact Summary",
+        string="税务影响摘要",
         compute="_compute_cn_risk_center_display",
     )
 
@@ -476,10 +476,10 @@ class SudoChinaRiskCenterFinding(models.Model):
                 return (
                     0,
                     missing_count,
-                    _("Missing required facts: %s")
-                    % ", ".join(self.missing_fact_keys[:3]),
+                    _("缺失必需事实：%s")
+                    % "、".join(self.missing_fact_keys[:3]),
                 )
-            return (0, 0, _("No rule fact snapshots are attached."))
+            return (0, 0, _("未附加规则事实快照。"))
 
         issue_count = missing_count
         labels = []
@@ -489,27 +489,27 @@ class SudoChinaRiskCenterFinding(models.Model):
         for snapshot in snapshots[:4]:
             label = snapshot.definition_id.label or snapshot.definition_id.key
             quality_key = snapshot.quality_state or "unknown"
-            quality_label = quality_labels.get(quality_key, _("Unknown"))
+            quality_label = quality_labels.get(quality_key, _("未知"))
             labels.append("%s=%s" % (label, quality_label))
             if quality_key in ("missing", "stale", "truncated", "error"):
                 issue_count += 1
             elif not snapshot.is_complete or not snapshot.is_full_dataset:
                 issue_count += 1
         if len(snapshots) > 4:
-            labels.append(_("+%s more") % (len(snapshots) - 4))
+            labels.append(_("另有 %s 项") % (len(snapshots) - 4))
         if missing_count:
-            labels.append(_("missing %s") % missing_count)
-        return (len(snapshots), issue_count, "; ".join(labels))
+            labels.append(_("缺失 %s 项") % missing_count)
+        return (len(snapshots), issue_count, "；".join(labels))
 
     def _cn_risk_next_action(self):
         self.ensure_one()
         task = self.current_task_id
         if self.cn_risk_data_basis_state in ("no_period", "missing", "blocked"):
             return _(
-                "Complete the assessment data basis before relying on this risk conclusion."
+                "使用该风险结论前，请先完善扫描数据基础。"
             )
         if self.cn_risk_data_basis_state == "warning":
-            return _("Review incomplete period data before report sign-off.")
+            return _("报告签核前，请复核期间数据不完整问题。")
         if (
             self.cn_reconciliation_risk_state
             and self.cn_reconciliation_risk_state != "unavailable"
@@ -552,7 +552,7 @@ class SudoChinaRiskCenterFinding(models.Model):
         if not snapshot or not isinstance(snapshot.value_json, dict):
             return (
                 "unavailable",
-                _("No reconciliation risk summary is attached."),
+                _("未附加勾稽风险摘要。"),
                 False,
             )
 
@@ -584,18 +584,19 @@ class SudoChinaRiskCenterFinding(models.Model):
             if code:
                 issue_codes.append(code)
 
+        state_label = dict(RECONCILIATION_RISK_STATES).get(state, str(state))
         summary_parts = [
-            str(state),
-            "differences %s" % counts.get("difference_count", 0),
-            "blocking %s" % counts.get("blocking_issue_count", 0),
-            "warnings %s" % counts.get("warning_issue_count", 0),
-            "material %s" % material_count,
+            state_label,
+            "差异 %s" % counts.get("difference_count", 0),
+            "阻断 %s" % counts.get("blocking_issue_count", 0),
+            "预警 %s" % counts.get("warning_issue_count", 0),
+            "重大事项 %s" % material_count,
         ]
         if issue_codes:
-            summary_parts.append("top issues %s" % ", ".join(issue_codes))
+            summary_parts.append("主要问题 %s" % "、".join(issue_codes))
         return (
             state,
-            "; ".join(summary_parts),
+            "；".join(summary_parts),
             value.get("next_action") or False,
         )
 
@@ -613,7 +614,7 @@ class SudoChinaRiskCenterFinding(models.Model):
                 0.0,
                 0.0,
                 0.0,
-                _("No tax impact review case is linked."),
+                _("未关联税务影响复核事项。"),
             )
 
         pending_count = len(cases.filtered(lambda record: record.state != "reviewed"))
@@ -656,8 +657,8 @@ class SudoChinaRiskCenterFinding(models.Model):
         else:
             state = "reviewed"
         summary = (
-            "cases %(cases)s; pending %(pending)s; underpayment %(under)s; "
-            "overpayment %(over)s; timing %(timing)s; unquantifiable %(unq)s"
+            "事项 %(cases)s；待复核 %(pending)s；少缴 %(under)s；"
+            "多缴 %(over)s；时间性差异 %(timing)s；暂无法量化 %(unq)s"
         ) % {
             "cases": len(cases),
             "pending": pending_count,
@@ -709,17 +710,17 @@ class SudoChinaRiskCenterFinding(models.Model):
         ):
             gaps.append("tax_impact")
         if not gaps:
-            return ("complete", 0, _("Traceability is complete for reporting."))
+            return ("complete", 0, _("报告可追溯性已完整。"))
         if set(gaps) & {"data_basis", "rule_basis", "scan_result", "human_review"}:
             return (
                 "blocked",
                 len(gaps),
-                _("Complete data basis, rule basis, scan result and human review before reporting."),
+                _("形成报告前，请完善数据基础、规则依据、扫描结果和人工复核。"),
             )
         return (
             "action_required",
             len(gaps),
-            _("Close remediation, tax impact and verified evidence gaps."),
+            _("请闭环整改、税务影响和证据验证缺口。"),
         )
 
     def _cn_closure_summary(self):
@@ -741,28 +742,28 @@ class SudoChinaRiskCenterFinding(models.Model):
         self.ensure_one()
         parts = []
         if self.cn_risk_next_action:
-            parts.append(_("Next: %(action)s", action=self.cn_risk_next_action))
+            parts.append(_("下一步：%(action)s", action=self.cn_risk_next_action))
         if self.cn_risk_responsibility_summary:
             parts.append(
                 _(
-                    "Owner/due: %(responsibility)s",
+                    "责任与期限：%(responsibility)s",
                     responsibility=self.cn_risk_responsibility_summary,
                 )
             )
         elif not self.current_task_id and self.review_state == "correction_required":
-            parts.append(_("Owner/due: no remediation task"))
+            parts.append(_("责任与期限：尚未创建整改任务"))
         if self.cn_risk_evidence_count:
             parts.append(
                 _(
-                    "Evidence: %(verified)s/%(total)s verified",
+                    "证据：已验证 %(verified)s/%(total)s",
                     verified=self.cn_risk_verified_evidence_count,
                     total=self.cn_risk_evidence_count,
                 )
             )
         else:
-            parts.append(_("Evidence: none"))
+            parts.append(_("证据：无"))
         if self.cn_closure_summary:
-            parts.append(_("Closure: %(summary)s", summary=self.cn_closure_summary))
+            parts.append(_("闭环：%(summary)s", summary=self.cn_closure_summary))
         return " · ".join(parts)
 
     def _cn_cross_border_fact_summary(self):
@@ -780,7 +781,7 @@ class SudoChinaRiskCenterFinding(models.Model):
                 0,
                 0,
                 0,
-                _("No cross-border fact snapshot is attached to this finding."),
+                _("该风险未附加跨境事实快照。"),
             )
 
         detail = snapshots.get("cn.cross_border.detail")
@@ -804,7 +805,7 @@ class SudoChinaRiskCenterFinding(models.Model):
                 0,
                 0,
                 0,
-                _("Open the rule scan facts and confirm the cross-border snapshot."),
+                _("请打开规则扫描事实并确认跨境快照。"),
             )
         if total is None:
             total = pending + reviewed
@@ -814,7 +815,7 @@ class SudoChinaRiskCenterFinding(models.Model):
                 pending,
                 reviewed,
                 total,
-                _("Open Cross-Border register and finish controlled review before reporting."),
+                _("形成报告前，请打开跨境业务台账并完成受控复核。"),
             )
         if reviewed:
             return (
@@ -822,21 +823,21 @@ class SudoChinaRiskCenterFinding(models.Model):
                 0,
                 reviewed,
                 total,
-                _("Reviewed cross-border facts are available for professional analysis."),
+                _("已复核跨境事实可用于专业分析。"),
             )
         return (
             "no_transactions",
             0,
             0,
             total,
-            _("No cross-border transactions were captured for this period."),
+            _("本期间未采集到跨境业务。"),
         )
 
     def action_cn_open_traceability_evidence(self):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
-            "name": _("Traceability Evidence"),
+            "name": _("可追溯性证据"),
             "res_model": "sudo.compliance.evidence",
             "view_mode": "list,form",
             "domain": [
@@ -861,16 +862,16 @@ class SudoChinaRiskCenterTask(models.Model):
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_action_summary = fields.Char(
-        string="Remediation Action Summary",
+        string="整改行动摘要",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_urgency = fields.Selection(
         REMEDIATION_URGENCY_STATES,
-        string="Remediation Urgency",
+        string="整改紧迫度",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_responsibility_summary = fields.Char(
-        string="Responsibility Summary",
+        string="责任摘要",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_evidence_state = fields.Selection(
@@ -889,69 +890,69 @@ class SudoChinaRiskCenterTask(models.Model):
 
     cn_remediation_traceability_state = fields.Selection(
         TRACEABILITY_STATES,
-        string="Traceability",
+        string="可追溯性",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_traceability_gap_count = fields.Integer(
-        string="Traceability Gaps",
+        string="可追溯性缺口",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_traceability_next_action = fields.Char(
-        string="Traceability Next Action",
+        string="可追溯性下一步",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_data_basis_state = fields.Selection(
         DATA_BASIS_STATES,
-        string="Data Basis",
+        string="数据基础",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_data_basis_missing_type_count = fields.Integer(
-        string="Missing Data Types",
+        string="缺失数据类型",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_data_basis_missing_type_summary = fields.Char(
-        string="Missing Data Type Summary",
+        string="缺失数据类型摘要",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_data_basis_next_action = fields.Char(
-        string="Data Basis Next Action",
+        string="数据基础下一步",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_state = fields.Selection(
         TAX_IMPACT_STATES,
-        string="Remediation Tax Impact",
+        string="整改税务影响",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_pending_review_count = fields.Integer(
-        string="Pending Tax Impact",
+        string="待复核税务影响",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_integrity_issue_count = fields.Integer(
-        string="Tax Impact Integrity Issues",
+        string="税务影响完整性问题",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_reviewed_underpayment_amount = fields.Monetary(
-        string="Reviewed Underpayment",
+        string="已复核少缴金额",
         currency_field="cn_remediation_currency_id",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_reviewed_overpayment_amount = fields.Monetary(
-        string="Reviewed Overpayment",
+        string="已复核多缴金额",
         currency_field="cn_remediation_currency_id",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_reviewed_timing_amount = fields.Monetary(
-        string="Reviewed Timing Difference",
+        string="已复核时间性差异",
         currency_field="cn_remediation_currency_id",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_tax_impact_summary = fields.Char(
-        string="Tax Impact Summary",
+        string="税务影响摘要",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_currency_id = fields.Many2one(
         related="company_id.currency_id",
-        string="Currency",
+        string="币种",
         readonly=True,
     )
 
@@ -973,15 +974,15 @@ class SudoChinaRiskCenterTask(models.Model):
     )
 
     cn_remediation_progress = fields.Integer(
-        string="Remediation Progress",
+        string="整改进度",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_summary = fields.Char(
-        string="Remediation Summary",
+        string="整改摘要",
         compute="_compute_cn_remediation_display",
     )
     cn_remediation_blocker_summary = fields.Char(
-        string="Remediation Blockers",
+        string="整改阻断事项",
         compute="_compute_cn_remediation_display",
     )
 
@@ -1116,9 +1117,9 @@ class SudoChinaRiskCenterTask(models.Model):
     def _cn_remediation_next_action(self):
         self.ensure_one()
         if self.cn_remediation_data_basis_state in ("no_period", "missing", "blocked"):
-            return _("Complete the assessment data basis before closing remediation.")
+            return _("关闭整改前，请先完善扫描数据基础。")
         if self.cn_remediation_data_basis_state == "warning":
-            return _("Review incomplete period data before verification rescan.")
+            return _("验证复扫前，请复核期间数据不完整问题。")
         if self.is_overdue:
             return _("任务已逾期，请优先处理并说明延期原因。")
         if self.state in ("open", "in_progress"):
@@ -1169,17 +1170,17 @@ class SudoChinaRiskCenterTask(models.Model):
         if self.cn_remediation_evidence_state != "verified":
             gaps.append("evidence")
         if not gaps:
-            return ("complete", 0, _("Remediation traceability is complete."))
+            return ("complete", 0, _("整改可追溯性已完整。"))
         if "data_basis" in gaps or "verification_rescan" in gaps:
             return (
                 "blocked",
                 len(gaps),
-                _("Resolve data basis and verification rescan before report sign-off."),
+                _("报告签核前，请解决数据基础和验证复扫问题。"),
             )
         return (
             "action_required",
             len(gaps),
-            _("Close the task and verify remediation evidence."),
+            _("请关闭任务并验证整改证据。"),
         )
 
     def _cn_remediation_progress_summary(self):
@@ -1196,16 +1197,16 @@ class SudoChinaRiskCenterTask(models.Model):
             self._fields["cn_remediation_rescan_stage"]._description_selection(
                 self.env
             )
-        ).get(self.cn_remediation_rescan_stage, _("Unknown"))
+        ).get(self.cn_remediation_rescan_stage, _("未知"))
         task_label = dict(
             self._fields["state"]._description_selection(self.env)
-        ).get(self.state, _("Unknown"))
+        ).get(self.state, _("未知"))
         verification_label = dict(
             self._fields["verification_state"]._description_selection(self.env)
-        ).get(self.verification_state, _("Unknown"))
+        ).get(self.verification_state, _("未知"))
         summary = _(
-            "Stage %(stage)s; task %(task)s; verification %(verification)s; "
-            "evidence %(verified)s/%(total)s; gaps %(gaps)s",
+            "阶段 %(stage)s；任务 %(task)s；验证 %(verification)s；"
+            "证据已验证 %(verified)s/%(total)s；缺口 %(gaps)s",
             stage=stage_label,
             task=task_label,
             verification=verification_label,
@@ -1220,77 +1221,77 @@ class SudoChinaRiskCenterTask(models.Model):
         parts = []
         if self.cn_remediation_next_action:
             parts.append(
-                _("Next: %(action)s", action=self.cn_remediation_next_action)
+                _("下一步：%(action)s", action=self.cn_remediation_next_action)
             )
         if self.cn_remediation_responsibility_summary:
             parts.append(
                 _(
-                    "Owner/due: %(responsibility)s",
+                    "责任与期限：%(responsibility)s",
                     responsibility=self.cn_remediation_responsibility_summary,
                 )
             )
         if self.cn_remediation_blocker_summary:
             parts.append(
                 _(
-                    "Blockers: %(summary)s",
+                    "阻断事项：%(summary)s",
                     summary=self.cn_remediation_blocker_summary,
                 )
             )
         if self.cn_remediation_evidence_count:
             parts.append(
                 _(
-                    "Evidence: %(verified)s/%(total)s verified",
+                    "证据：已验证 %(verified)s/%(total)s",
                     verified=self.cn_remediation_verified_evidence_count,
                     total=self.cn_remediation_evidence_count,
                 )
             )
         else:
-            parts.append(_("Evidence: none"))
+            parts.append(_("证据：无"))
         rescan_label = dict(
             self._fields["cn_remediation_rescan_stage"]._description_selection(
                 self.env
             )
-        ).get(self.cn_remediation_rescan_stage, _("Unknown"))
-        parts.append(_("Rescan: %(state)s", state=rescan_label))
-        parts.append(_("Progress: %(progress)s%%", progress=self.cn_remediation_progress or 0))
+        ).get(self.cn_remediation_rescan_stage, _("未知"))
+        parts.append(_("复扫：%(state)s", state=rescan_label))
+        parts.append(_("进度：%(progress)s%%", progress=self.cn_remediation_progress or 0))
         return " · ".join(parts)
 
     def _cn_remediation_blocker_summary(self):
         self.ensure_one()
         blockers = []
         if self.is_overdue and self.state not in ("done", "cancelled"):
-            blockers.append(_("overdue"))
+            blockers.append(_("已逾期"))
         if self.cn_remediation_data_basis_state in ("no_period", "missing", "blocked"):
-            blockers.append(_("missing data basis"))
+            blockers.append(_("数据基础缺失"))
         elif self.cn_remediation_data_basis_state == "warning":
-            blockers.append(_("incomplete data basis"))
+            blockers.append(_("数据基础不完整"))
         if self.state == "blocked":
-            blockers.append(_("task blocked"))
+            blockers.append(_("任务受阻"))
         elif self.state not in ("done", "cancelled"):
-            blockers.append(_("task not closed"))
+            blockers.append(_("任务未关闭"))
         if self.cn_remediation_evidence_state == "none":
-            blockers.append(_("no verified evidence"))
+            blockers.append(_("没有已验证证据"))
         elif self.cn_remediation_evidence_state == "partial":
-            blockers.append(_("evidence pending verification"))
+            blockers.append(_("证据待验证"))
         if self.verification_state == "pending_rescan":
-            blockers.append(_("verification rescan pending"))
+            blockers.append(_("验证复扫待完成"))
         elif self.verification_state == "failed":
-            blockers.append(_("verification rescan failed"))
+            blockers.append(_("验证复扫未通过"))
         elif self.verification_state not in ("verified", "not_required"):
-            blockers.append(_("verification not completed"))
+            blockers.append(_("验证尚未完成"))
         if not blockers:
-            return _("No blocker: remediation is ready for report sign-off.")
-        return _("Blocked by: %(blockers)s") % {"blockers": "; ".join(blockers)}
+            return _("无阻断：整改已可用于报告签核。")
+        return _("受阻原因：%(blockers)s") % {"blockers": "；".join(blockers)}
 
 
 def _period_label(period_start, period_end, translate):
     if period_start and period_end:
         return translate(
-            "%(start)s to %(end)s",
+            "%(start)s 至 %(end)s",
             start=period_start,
             end=period_end,
         )
-    return translate("No period recorded")
+    return translate("未记录期间")
 
 
 def _evidence_state(evidence_count, verified_evidence_count):
@@ -1303,10 +1304,10 @@ def _evidence_state(evidence_count, verified_evidence_count):
 
 def _remediation_responsibility_values(task, translate):
     if not task:
-        return ("no_task", translate("No remediation task has been created."))
+        return ("no_task", translate("尚未创建整改任务。"))
 
     assignee = (
-        task.assignee_id.display_name if task.assignee_id else translate("Unassigned")
+        task.assignee_id.display_name if task.assignee_id else translate("未分配")
     )
     due_date = task.due_date
     today = fields.Date.context_today(task)
@@ -1315,7 +1316,7 @@ def _remediation_responsibility_values(task, translate):
         return (
             "closed",
             translate(
-                "Closed by %(assignee)s; due %(due)s",
+                "由 %(assignee)s 关闭；截止日期 %(due)s",
                 assignee=assignee,
                 due=due_date or "-",
             ),
@@ -1341,7 +1342,7 @@ def _remediation_responsibility_values(task, translate):
         task._fields["verification_state"]._description_selection(task.env)
     ).get(task.verification_state, task.verification_state or "-")
     summary = translate(
-        "%(assignee)s; due %(due)s; task %(state)s; verification %(verification)s",
+        "%(assignee)s；截止日期 %(due)s；任务 %(state)s；验证 %(verification)s",
         assignee=assignee,
         due=due_date or "-",
         state=task_state,
@@ -1366,54 +1367,54 @@ def _closure_summary_values(
     actions = []
     has_task = bool(task_state)
     if data_basis_state in ("no_period", "missing", "blocked"):
-        blockers.append(translate("data basis"))
+        blockers.append(translate("数据基础"))
     elif data_basis_state == "warning":
-        actions.append(translate("review data basis warning"))
+        actions.append(translate("复核数据基础预警"))
     if rule_basis_state != "ready":
-        blockers.append(translate("rule/source basis"))
+        blockers.append(translate("规则或来源依据"))
     if result in ("unknown", "error"):
-        blockers.append(translate("scan result"))
+        blockers.append(translate("扫描结果"))
     if review_state == "pending":
-        blockers.append(translate("human review"))
+        blockers.append(translate("人工复核"))
     elif review_state == "correction_required" and not has_task:
-        actions.append(translate("create remediation task"))
+        actions.append(translate("创建整改任务"))
     if has_task:
         if task_state not in ("done", "cancelled"):
-            actions.append(translate("close remediation task"))
+            actions.append(translate("关闭整改任务"))
         if task_verification_state in ("pending_rescan", "failed"):
-            blockers.append(translate("verification rescan"))
+            blockers.append(translate("验证复扫"))
         elif task_verification_state not in ("verified", "not_required"):
-            actions.append(translate("verify remediation"))
+            actions.append(translate("验证整改"))
     if tax_impact_state in ("pending", "integrity_issue"):
-        blockers.append(translate("tax impact review"))
+        blockers.append(translate("税务影响复核"))
     elif tax_impact_state in ("none", "unquantifiable") and result in (
         "fail",
         "unknown",
         "error",
     ):
-        actions.append(translate("document tax impact"))
+        actions.append(translate("记录税务影响"))
     if evidence_state != "verified":
-        actions.append(translate("verify evidence"))
+        actions.append(translate("验证证据"))
     if blockers:
         return (
             "blocked",
             translate(
-                "Blocked before sign-off: %(items)s.",
-                items=", ".join(blockers[:4]),
+                "签核前受阻：%(items)s。",
+                items="、".join(blockers[:4]),
             ),
         )
     if actions:
         return (
             "action_required",
             translate(
-                "Next before sign-off: %(items)s.",
-                items=", ".join(actions[:4]),
+                "签核前下一步：%(items)s。",
+                items="、".join(actions[:4]),
             ),
         )
     return (
         "ready",
         translate(
-            "Ready for report sign-off: reviewed risk, remediation, evidence, tax impact and rescan controls are aligned."
+            "已可进行报告签核：风险复核、整改、证据、税务影响和复扫控制均已对齐。"
         ),
     )
 

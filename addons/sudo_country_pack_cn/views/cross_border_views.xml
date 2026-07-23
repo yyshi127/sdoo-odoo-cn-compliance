@@ -4,29 +4,29 @@
         <field name="name">sudo.cn.cross.border.transaction.search</field>
         <field name="model">sudo.cn.cross.border.transaction</field>
         <field name="arch" type="xml">
-            <search string="Cross-Border Transactions">
+            <search string="跨境业务">
                 <field name="name"/>
                 <field name="company_id"/>
                 <field name="profile_id"/>
                 <field name="counterparty_name"/>
                 <field name="counterparty_country_id"/>
                 <field name="transaction_type"/>
-                <filter name="needs_review" string="Needs Review"
+                <filter name="needs_review" string="待复核"
                         domain="[('state', 'in', ('draft', 'submitted'))]"/>
-                <filter name="reviewed" string="Reviewed"
+                <filter name="reviewed" string="已复核"
                         domain="[('state', '=', 'reviewed')]"/>
-                <filter name="related_party" string="Related Party"
+                <filter name="related_party" string="关联方"
                         domain="[('related_party', '=', True)]"/>
-                <filter name="withholding_not_considered" string="Withholding Not Considered"
+                <filter name="withholding_not_considered" string="未考虑代扣代缴"
                         domain="[('withholding_considered', '=', False)]"/>
                 <separator/>
-                <filter name="group_state" string="By State"
+                <filter name="group_state" string="按状态"
                         context="{'group_by': 'state'}"/>
-                <filter name="group_type" string="By Type"
+                <filter name="group_type" string="按业务类型"
                         context="{'group_by': 'transaction_type'}"/>
-                <filter name="group_country" string="By Counterparty Country"
+                <filter name="group_country" string="按交易对方国家/地区"
                         context="{'group_by': 'counterparty_country_id'}"/>
-                <filter name="group_company" string="By Company"
+                <filter name="group_company" string="按公司"
                         context="{'group_by': 'company_id'}"/>
             </search>
         </field>
@@ -36,7 +36,7 @@
         <field name="name">sudo.cn.cross.border.transaction.list</field>
         <field name="model">sudo.cn.cross.border.transaction</field>
         <field name="arch" type="xml">
-            <list string="Cross-Border Transactions"
+            <list string="跨境业务"
                   decoration-success="state == 'reviewed'"
                   decoration-warning="state in ('draft', 'submitted')"
                   decoration-muted="state == 'cancelled'">
@@ -65,7 +65,7 @@
         <field name="name">sudo.cn.cross.border.transaction.kanban</field>
         <field name="model">sudo.cn.cross.border.transaction</field>
         <field name="arch" type="xml">
-            <kanban string="Cross-Border Transactions" class="o_kanban_dashboard"
+            <kanban string="跨境业务" class="o_kanban_dashboard"
                     quick_create="0" sample="0" default_group_by="state">
                 <field name="name"/>
                 <field name="company_id"/>
@@ -97,48 +97,48 @@
                             <div class="row g-2 mt-3">
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">Type</div>
+                                        <div class="text-muted small">业务类型</div>
                                         <field name="transaction_type" widget="badge"/>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">Amount</div>
+                                        <div class="text-muted small">金额</div>
                                         <div class="fw-bold"><field name="amount"/></div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">Related Party</div>
+                                        <div class="text-muted small">关联方</div>
                                         <field name="related_party"/>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
-                                        <div class="text-muted small">Withholding</div>
+                                        <div class="text-muted small">代扣代缴</div>
                                         <field name="withholding_considered"/>
                                     </div>
                                 </div>
                             </div>
                             <div class="mt-3 border rounded p-2">
-                                <div class="text-muted small">Next Action</div>
+                                <div class="text-muted small">下一步</div>
                                 <div class="fw-semibold"><field name="cn_cross_border_next_action"/></div>
                             </div>
                             <div class="d-flex flex-wrap gap-2 mt-3">
                                 <button name="action_submit" type="object"
                                         class="btn btn-primary btn-sm"
                                         invisible="state != 'draft'">
-                                    Submit
+                                    提交复核
                                 </button>
                                 <button name="action_mark_reviewed" type="object"
                                         class="btn btn-success btn-sm"
                                         invisible="state != 'submitted'">
-                                    Mark Reviewed
+                                    标记已复核
                                 </button>
                                 <button name="action_cancel" type="object"
                                         class="btn btn-outline-secondary btn-sm"
                                         invisible="state in ('reviewed', 'cancelled')">
-                                    Cancel
+                                    取消
                                 </button>
                             </div>
                         </div>
@@ -152,18 +152,18 @@
         <field name="name">sudo.cn.cross.border.transaction.form</field>
         <field name="model">sudo.cn.cross.border.transaction</field>
         <field name="arch" type="xml">
-            <form string="Cross-Border Transaction">
+            <form string="跨境业务">
                 <header>
                     <button name="action_submit" type="object"
-                            string="Submit" class="btn-primary"
+                            string="提交复核" class="btn-primary"
                             groups="sudo_global_finance.group_compliance_manager"
                             invisible="state != 'draft'"/>
                     <button name="action_mark_reviewed" type="object"
-                            string="Mark Reviewed" class="btn-primary"
+                            string="标记已复核" class="btn-primary"
                             groups="sudo_global_finance.group_compliance_manager"
                             invisible="state != 'submitted'"/>
                     <button name="action_cancel" type="object"
-                            string="Cancel"
+                            string="取消"
                             groups="sudo_global_finance.group_compliance_manager"
                             invisible="state in ('reviewed', 'cancelled')"/>
                     <field name="state" widget="statusbar"
@@ -175,10 +175,10 @@
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <div class="alert alert-info" role="alert">
-                        This record captures controlled cross-border facts only. It does not conclude withholding tax, treaty relief, transfer pricing, customs, VAT or foreign exchange compliance.
+                        本记录仅采集受控跨境业务事实，不直接形成代扣代缴、税收协定待遇、转让定价、海关、增值税或外汇合规结论。
                     </div>
                     <group>
-                        <group string="Scope">
+                        <group string="业务范围">
                             <field name="profile_id" readonly="state != 'draft'"/>
                             <field name="company_id" readonly="1" groups="base.group_multi_company"/>
                             <field name="period_start" readonly="state != 'draft'"/>
@@ -186,7 +186,7 @@
                             <field name="transaction_date" readonly="state != 'draft'"/>
                             <field name="transaction_type" readonly="state != 'draft'"/>
                         </group>
-                        <group string="Counterparty">
+                        <group string="交易对方">
                             <field name="counterparty_name" readonly="state != 'draft'"/>
                             <field name="counterparty_country_id" readonly="state != 'draft'"/>
                             <field name="related_party" readonly="state != 'draft'"/>
@@ -194,13 +194,13 @@
                         </group>
                     </group>
                     <group>
-                        <group string="Amount and References">
+                        <group string="金额与业务凭据">
                             <field name="currency_id" readonly="state != 'draft'"/>
                             <field name="amount" readonly="state != 'draft'"/>
                             <field name="contract_reference" readonly="state != 'draft'"/>
                             <field name="payment_reference" readonly="state != 'draft'"/>
                         </group>
-                        <group string="Review">
+                        <group string="复核">
                             <field name="withholding_considered" readonly="state != 'draft'"/>
                             <field name="cn_cross_border_readiness_state" widget="badge" readonly="1"/>
                             <field name="cn_cross_border_next_action" readonly="1"/>
@@ -210,21 +210,21 @@
                         </group>
                     </group>
                     <notebook>
-                        <page name="notes" string="Notes and Limitations">
-                            <group string="Withholding Review Note">
+                        <page name="notes" string="说明与限制">
+                            <group string="代扣代缴复核说明">
                                 <field name="withholding_note" nolabel="1"
                                        readonly="state != 'draft'"/>
                             </group>
-                            <group string="Limitations">
+                            <group string="限制说明">
                                 <field name="limitation_note" nolabel="1"
                                        readonly="state != 'draft'"/>
                             </group>
-                            <group string="Review Notes">
+                            <group string="复核记录">
                                 <field name="review_notes" nolabel="1"
                                        readonly="state == 'reviewed'"/>
                             </group>
                         </page>
-                        <page name="evidence" string="Evidence">
+                        <page name="evidence" string="证据">
                             <field name="evidence_attachment_ids"
                                    widget="many2many_binary"
                                    readonly="state != 'draft'"/>
@@ -236,19 +236,19 @@
     </record>
 
     <record id="action_cn_cross_border_transactions" model="ir.actions.act_window">
-        <field name="name">Cross-Border Transactions</field>
+        <field name="name">跨境业务</field>
         <field name="res_model">sudo.cn.cross.border.transaction</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_cn_cross_border_transaction_search"/>
         <field name="context">{'search_default_needs_review': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No controlled cross-border transactions yet</p>
-            <p>Register contracts, payments, royalties, service fees and other cross-border facts before using them in compliance scans or report limitations.</p>
+            <p class="o_view_nocontent_smiling_face">还没有受控跨境业务记录</p>
+            <p>先登记合同、付款、特许权使用费、服务费等跨境事实，再用于合规扫描和报告限制披露。</p>
         </field>
     </record>
 
     <menuitem id="menu_cn_cross_border_transactions"
-              name="Cross-Border"
+              name="跨境业务"
               parent="sudo_global_finance.menu_global_finance_root"
               action="action_cn_cross_border_transactions"
               sequence="33"

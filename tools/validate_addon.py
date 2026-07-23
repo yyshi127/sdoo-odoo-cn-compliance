@@ -2934,6 +2934,39 @@ def validate_formal_compliance_report() -> None:
     ):
         if required not in model_content:
             fail(f"formal compliance report contract is missing {required}")
+    for required in (
+        'string="受阻风险闭环"',
+        'string="待处理风险闭环"',
+        'string="报告就绪风险闭环"',
+        'string="整改任务"',
+        'string="已验证整改"',
+        'string="待验证整改"',
+        'string="事实快照"',
+        'string="事实问题"',
+        'string="未关联事实的风险"',
+    ):
+        if required not in model_content:
+            fail(f"formal compliance report Chinese label contract is missing {required}")
+    for forbidden in (
+        'string="Blocked Risk Closures"',
+        'string="Risk Closures Needing Action"',
+        'string="Report-Ready Risk Closures"',
+        'string="Remediation Tasks"',
+        'string="Verified Remediation"',
+        'string="Remediation Pending Verification"',
+        'string="Fact Snapshots"',
+        'string="Fact Issues"',
+        'string="Findings Without Facts"',
+    ):
+        if forbidden in model_content:
+            fail(f"formal compliance report exposes retired English label {forbidden}")
+    report_view_label_content = (
+        ADDON_ROOT / "views" / "compliance_report_views.xml"
+    ).read_text(encoding="utf-8")
+    if 'string="报告中心"' not in report_view_label_content:
+        fail("formal compliance report UI is missing the Chinese report center label")
+    if 'string="Report center"' in report_view_label_content:
+        fail("formal compliance report UI exposes the retired English report center label")
     if "net_tax_impact" in model_content:
         fail("formal report must not publish a netted tax impact amount")
 
@@ -3855,12 +3888,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
 
     for required in (
         "translate = profile.env._",
-        'translate("Closed loop blocked: %(stages)s."',
-        'translate("Complete and activate the China profile")',
-        '"Risks: %(high)s high / %(total)s total; %(pending)s pending review. "',
-        '"Remediation: %(open)s open / %(overdue)s overdue. "',
-        '"Closed loop: %(gaps)s gaps; data %(ready)s/%(datasets)s ready."',
-        '"Explicit limitations: %(reasons)s."',
+        'translate("闭环受阻：%(stages)s。"',
+        'translate("完善并启用中国合规档案")',
+        '"风险：高风险 %(high)s / 总计 %(total)s，待复核 %(pending)s。"',
+        '"整改：未关闭 %(open)s / 逾期 %(overdue)s。"',
+        '"闭环：缺口 %(gaps)s，数据就绪 %(ready)s/%(datasets)s。"',
+        '"明确限制：%(reasons)s。"',
     ):
         if required not in model_content:
             fail(f"China workbench concise localized summary is missing {required}")
@@ -3946,6 +3979,46 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in translation_content:
             fail(f"China workbench translation catalog is missing {required}")
+
+    workbench_model_content = (
+        ADDON_ROOT / "models" / "workbench.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        'string="工作台行动摘要"',
+        'string="已过账会计凭证"',
+        'string="纳税义务准备度"',
+        'string="跨境业务"',
+        'string="规则依据准备度"',
+        'string="验证复扫状态"',
+        'string="申报缴款档案状态"',
+        'string="AI 指引状态"',
+        'string="闭环准备度"',
+        'string="结论边界"',
+        'string="下一优先行动"',
+        '("profile", "完善合规档案")',
+        '("report_readiness", "检查报告准备度")',
+        '("ai_guidance", "生成 AI 指引")',
+    ):
+        if required not in workbench_model_content:
+            fail(f"China workbench Chinese label contract is missing {required}")
+    for forbidden in (
+        'string="Workbench Action Summary"',
+        'string="Posted Accounting Entries"',
+        'string="Tax Obligation Readiness"',
+        'string="Cross-Border Transactions"',
+        'string="Rule Basis Readiness"',
+        'string="Verification Rescan State"',
+        'string="Filing Archive State"',
+        'string="AI Guidance State"',
+        'string="Closed Loop Readiness"',
+        'string="Conclusion Boundary"',
+        'string="Next Best Action"',
+        "Closed loop blocked:",
+        "Not usable as a compliance conclusion",
+        "Controlled AI Guidance",
+    ):
+        if forbidden in workbench_model_content:
+            fail(f"China workbench exposes retired English label {forbidden}")
 
     view_content = (
         ADDON_ROOT / "views" / "workbench_views.xml"
@@ -4204,6 +4277,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "test_workbench_summarizes_remediation_rescan_status",
         "test_workbench_surfaces_cross_border_identity_boundary",
         "test_workbench_surfaces_cross_border_transaction_register",
+        "test_workbench_labels_are_chinese",
+        "test_cross_border_labels_are_chinese",
         "test_cross_border_transaction_review_freezes_checksum",
         "test_cross_border_fact_provider_exposes_period_snapshot",
         "test_evidence_center_search_view_exposes_audit_gap_filters",
@@ -4294,6 +4369,32 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in cross_border_model_content:
             fail(f"China cross-border transaction model is missing {required}")
+    for required in (
+        'string="合规档案"',
+        'string="交易对方国家/地区"',
+        'string="关联方"',
+        'string="已考虑代扣代缴"',
+        'string="受控证据"',
+        'string="准备状态"',
+        'string="下一步"',
+        '"请补充合同、付款、发票或申报证据。"',
+        '"请复核代扣代缴、关联交易和证据限制。"',
+    ):
+        if required not in cross_border_model_content:
+            fail(f"China cross-border Chinese model contract is missing {required}")
+    for forbidden in (
+        'string="Compliance Profile"',
+        'string="Counterparty Country/Region"',
+        'string="Related Party"',
+        'string="Withholding Considered"',
+        'string="Controlled Evidence"',
+        'string="Readiness"',
+        'string="Next Action"',
+        '"Attach contract, payment, invoice or filing evidence."',
+        '"Review withholding, related-party and evidence limitations."',
+    ):
+        if forbidden in cross_border_model_content:
+            fail(f"China cross-border model exposes retired English text {forbidden}")
 
     cross_border_view_content = (
         ADDON_ROOT / "views" / "cross_border_views.xml"
@@ -4311,6 +4412,41 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in cross_border_view_content:
             fail(f"China cross-border transaction UI is missing {required}")
+    for required in (
+        'search string="跨境业务"',
+        'list string="跨境业务"',
+        'kanban string="跨境业务"',
+        'form string="跨境业务"',
+        'string="提交复核"',
+        'string="标记已复核"',
+        'string="说明与限制"',
+        'string="证据"',
+        '<field name="name">跨境业务</field>',
+        'name="跨境业务"',
+    ):
+        if required not in cross_border_view_content:
+            fail(f"China cross-border Chinese UI contract is missing {required}")
+    for forbidden in (
+        'string="Cross-Border Transactions"',
+        'string="Needs Review"',
+        'string="Reviewed"',
+        'string="Related Party"',
+        'string="Withholding Not Considered"',
+        'string="By State"',
+        'string="By Type"',
+        'string="By Counterparty Country"',
+        'string="By Company"',
+        'form string="Cross-Border Transaction"',
+        'string="Submit"',
+        'string="Mark Reviewed"',
+        'string="Cancel"',
+        'string="Notes and Limitations"',
+        'string="Evidence"',
+        '<field name="name">Cross-Border Transactions</field>',
+        'name="Cross-Border"',
+    ):
+        if forbidden in cross_border_view_content:
+            fail(f"China cross-border UI exposes retired English text {forbidden}")
 
     fact_content = (
         ADDON_ROOT / "data" / "compliance_fact_data.xml"
@@ -4399,6 +4535,42 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in report_model_content:
             fail(f"China report readiness contract is missing {required}")
+    for required in (
+        'string="报告复扫下一步"',
+        'string="待复扫整改"',
+        'string="复扫未通过整改"',
+        'string="已验证整改"',
+        'string="申报缴款档案下一步"',
+        'string="受控申报缴款档案"',
+        'string="申报缴款档案问题"',
+        'string="已封存申报缴款档案"',
+        'string="AI 指引下一步"',
+        'string="需 AI 指引的风险"',
+        'string="已生成 AI 指引"',
+        'string="当前有效 AI 指引"',
+        'string="受限 AI 指引"',
+        'string="已过期 AI 指引"',
+    ):
+        if required not in report_model_content:
+            fail(f"China report readiness Chinese label contract is missing {required}")
+    for forbidden in (
+        'string="Rescan Next Action"',
+        'string="Pending Rescans"',
+        'string="Failed Rescans"',
+        'string="Verified Remediations"',
+        'string="Filing Archive Next Action"',
+        'string="Controlled Filing Archives"',
+        'string="Filing Archive Issues"',
+        'string="Sealed Filing Archives"',
+        'string="AI Guidance Next Action"',
+        'string="AI Guidance Findings"',
+        'string="AI Guidance Generated"',
+        'string="AI Guidance Current"',
+        'string="AI Guidance Limited"',
+        'string="AI Guidance Stale"',
+    ):
+        if forbidden in report_model_content:
+            fail(f"China report readiness exposes retired English label {forbidden}")
 
     report_view_content = (
         ADDON_ROOT / "views" / "report_readiness_views.xml"
@@ -4534,6 +4706,45 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     risk_model_content = (
         ADDON_ROOT / "models" / "risk_center.py"
     ).read_text(encoding="utf-8")
+    for required in (
+        'string="风险行动摘要"',
+        'string="整改紧迫度"',
+        'string="事实摘要"',
+        'string="勾稽风险"',
+        'string="数据基础"',
+        'string="可追溯性"',
+        'string="闭环状态"',
+        'string="跨境事实"',
+        'string="税务影响"',
+        'string="整改行动摘要"',
+        'string="整改税务影响"',
+        'string="整改进度"',
+        'string="整改阻断事项"',
+        '"签核前受阻：%(items)s。"',
+        '"受阻原因：%(blockers)s"',
+    ):
+        if required not in risk_model_content:
+            fail(f"China risk/remediation Chinese label contract is missing {required}")
+    for forbidden in (
+        'string="Risk Action Summary"',
+        'string="Remediation Urgency"',
+        'string="Fact Summary"',
+        'string="Reconciliation Risk"',
+        'string="Data Basis"',
+        'string="Traceability"',
+        'string="Closure Status"',
+        'string="Cross-Border Facts"',
+        'string="Tax Impact"',
+        'string="Remediation Action Summary"',
+        'string="Remediation Progress"',
+        'string="Remediation Blockers"',
+        "Missing required facts:",
+        "No cross-border fact snapshot",
+        "Blocked before sign-off:",
+        "Blocked by:",
+    ):
+        if forbidden in risk_model_content:
+            fail(f"China risk/remediation exposes retired English label {forbidden}")
     risk_view_root = ElementTree.parse(
         ADDON_ROOT / "views" / "risk_center_views.xml"
     ).getroot()
@@ -4715,10 +4926,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "translate=self.env._",
         "finding.env._",
         "task.env._",
-        '_("Next: %(action)s"',
-        '"Evidence: %(verified)s/%(total)s verified"',
-        '"Blocked before sign-off: %(items)s."',
-        '"Next before sign-off: %(items)s."',
+        '_("下一步：%(action)s"',
+        '"证据：已验证 %(verified)s/%(total)s"',
+        '"签核前受阻：%(items)s。"',
+        '"签核前下一步：%(items)s。"',
     ):
         if required not in risk_model_content:
             fail(f"China risk/remediation localization contract is missing {required}")
@@ -4761,6 +4972,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     for test_name in (
         "test_completed_clean_assessment_discloses_limitations",
         "test_incomplete_assessment_requires_scan_completion",
+        "test_report_readiness_labels_are_chinese",
         "test_country_pack_advertises_report_readiness_badge_clarity",
         "test_report_readiness_state_is_searchable",
         "test_report_readiness_search_view_exposes_status_filters",
@@ -4814,6 +5026,40 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ):
         if required not in data_basis_model_content:
             fail(f"China assessment data basis model is missing {required}")
+    for required in (
+        'string="必需数据类型"',
+        'string="已就绪数据类型"',
+        'string="缺失数据类型"',
+        'string="缺失数据类型摘要"',
+        'string="已过账会计凭证"',
+        'string="草稿会计凭证"',
+        'string="已过账发票"',
+        'string="账务基础下一步"',
+        'string="候选纳税义务"',
+        'string="适用纳税义务"',
+        'string="待复核纳税义务"',
+        'string="适用申报义务"',
+        'string="纳税义务下一步"',
+    ):
+        if required not in data_basis_model_content:
+            fail(f"China assessment data basis Chinese label contract is missing {required}")
+    for forbidden in (
+        'string="Required Data Types"',
+        'string="Ready Data Types"',
+        'string="Missing Data Types"',
+        'string="Missing Data Type Summary"',
+        'string="Posted Accounting Entries"',
+        'string="Draft Accounting Entries"',
+        'string="Posted Accounting Invoices"',
+        'string="Accounting Basis Next Action"',
+        'string="Candidate Obligations"',
+        'string="Applicable Obligations"',
+        'string="Obligations Needing Review"',
+        'string="Applicable Filing Obligations"',
+        'string="Obligation Basis Next Action"',
+    ):
+        if forbidden in data_basis_model_content:
+            fail(f"China assessment data basis exposes retired English label {forbidden}")
 
     if "from . import test_assessment_data_basis" not in tests_init:
         fail("China assessment data basis runtime tests must be imported")
@@ -4822,6 +5068,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "test_country_pack_advertises_assessment_data_basis",
+        "test_assessment_data_basis_labels_are_chinese",
         "test_assessment_without_datasets_shows_missing_data_basis",
         "test_assessment_opens_period_scoped_data_basis",
         "test_assessment_opens_profile_scoped_obligation_basis",
@@ -5104,6 +5351,7 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ).read_text(encoding="utf-8")
     for required in (
         "test_finding_exposes_period_next_action_and_evidence_status",
+        "test_risk_and_remediation_labels_are_chinese",
         "test_country_pack_advertises_risk_action_guidance",
         "test_remediation_task_exposes_rescan_stage_and_navigation",
         "test_remediation_rescan_stage_is_searchable",

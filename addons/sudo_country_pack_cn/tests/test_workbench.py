@@ -617,38 +617,38 @@ class TestChinaComplianceWorkbench(TransactionCase):
             self.profile.cn_workbench_source_monitor_issue_count,
             0,
         )
-        self.assertIn("governance gaps", self.profile.cn_workbench_rule_basis_summary)
+        self.assertIn("治理缺口", self.profile.cn_workbench_rule_basis_summary)
         self.assertTrue(self.profile.cn_workbench_rule_basis_next_action)
         self.assertIn(
-            "controlled accounting/tax data",
+            "受控账务或税务数据",
             self.profile.cn_workbench_limitation_summary,
         )
-        self.assertIn("profile is not active", self.profile.cn_workbench_uncertainty_summary)
+        self.assertIn("合规档案未启用", self.profile.cn_workbench_uncertainty_summary)
         self.assertTrue(self.profile.cn_workbench_limitation_next_action)
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_gap_count, 1)
-        self.assertIn("Activate", self.profile.cn_workbench_closed_loop_summary)
+        self.assertIn("启用", self.profile.cn_workbench_closed_loop_summary)
         self.assertEqual(
             self.profile.cn_workbench_conclusion_boundary_state,
             "blocked",
         )
         self.assertIn(
-            "Not usable",
+            "不能将结果作为合规结论",
             self.profile.cn_workbench_conclusion_boundary_summary,
         )
         self.assertIn(
-            "activate",
-            self.profile.cn_workbench_conclusion_boundary_next_action.lower(),
+            "启用",
+            self.profile.cn_workbench_conclusion_boundary_next_action,
         )
         self.assertEqual(self.profile.cn_workbench_next_best_action_key, "profile")
         self.assertIn(
-            "activate",
-            self.profile.cn_workbench_next_best_action_label.lower(),
+            "启用",
+            self.profile.cn_workbench_next_best_action_label,
         )
-        self.assertIn("Risks:", self.profile.cn_workbench_action_summary)
-        self.assertIn("Remediation:", self.profile.cn_workbench_action_summary)
-        self.assertIn("Closed loop:", self.profile.cn_workbench_action_summary)
-        self.assertIn("data 0/0 ready", self.profile.cn_workbench_action_summary)
+        self.assertIn("风险：", self.profile.cn_workbench_action_summary)
+        self.assertIn("整改：", self.profile.cn_workbench_action_summary)
+        self.assertIn("闭环：", self.profile.cn_workbench_action_summary)
+        self.assertIn("数据就绪 0/0", self.profile.cn_workbench_action_summary)
         self.assertNotIn("Conclusion:", self.profile.cn_workbench_action_summary)
         self.assertNotIn("Rule basis:", self.profile.cn_workbench_action_summary)
         self.assertLessEqual(len(self.profile.cn_workbench_action_summary), 240)
@@ -687,18 +687,18 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_posted_move_count, 0)
         self.assertEqual(self.profile.cn_workbench_draft_move_count, 0)
         self.assertIn(
-            "Post Odoo accounting entries",
+            "过账扫描期间的 Odoo 会计凭证",
             self.profile.cn_workbench_data_next_action,
         )
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "blocked")
         self.assertGreater(self.profile.cn_workbench_closed_loop_gap_count, 0)
-        self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
+        self.assertIn("数据", self.profile.cn_workbench_closed_loop_summary)
         self.assertEqual(
             self.profile.cn_workbench_conclusion_boundary_state,
             "blocked",
         )
         self.assertIn(
-            "controlled accounting/tax data",
+            "受控账务或税务数据",
             self.profile.cn_workbench_conclusion_boundary_summary,
         )
         self.assertEqual(
@@ -720,13 +720,13 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_posted_invoice_count, 0)
         self.assertEqual(self.profile.cn_workbench_data_state, "not_started")
         self.assertEqual(self.profile.cn_workbench_closed_loop_state, "attention")
-        self.assertIn("data", self.profile.cn_workbench_closed_loop_summary)
+        self.assertIn("数据", self.profile.cn_workbench_closed_loop_summary)
         self.assertEqual(
             self.profile.cn_workbench_conclusion_boundary_state,
             "blocked",
         )
         self.assertIn(
-            "controlled accounting/tax data",
+            "受控账务或税务数据",
             self.profile.cn_workbench_conclusion_boundary_summary,
         )
         self.assertEqual(
@@ -773,7 +773,7 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(self.profile.cn_workbench_failed_rescan_count, 0)
         self.assertEqual(self.profile.cn_workbench_verified_remediation_count, 1)
         self.assertEqual(self.profile.cn_workbench_historical_blocked_task_count, 0)
-        self.assertIn("Verified remediation", self.profile.cn_workbench_rescan_next_action)
+        self.assertIn("已验证整改", self.profile.cn_workbench_rescan_next_action)
 
     def test_workbench_summarizes_controlled_ai_guidance_coverage(self):
         generated = self._finding("ai1")
@@ -792,7 +792,7 @@ class TestChinaComplianceWorkbench(TransactionCase):
             self.profile.cn_workbench_historical_unresolved_finding_count,
             1,
         )
-        self.assertIn("Generate", self.profile.cn_workbench_ai_guidance_next_action)
+        self.assertIn("生成", self.profile.cn_workbench_ai_guidance_next_action)
 
         action = self.profile.action_cn_open_workbench_ai_guidance_findings()
         self.assertEqual(action["res_model"], "sudo.compliance.finding")
@@ -835,6 +835,56 @@ class TestChinaComplianceWorkbench(TransactionCase):
         self.assertEqual(action["res_model"], "sudo.cn.cross.border.transaction")
         self.assertIn(("profile_id", "=", self.profile.id), action["domain"])
         self.assertEqual(transaction.cn_cross_border_readiness_state, "draft")
+
+    def test_workbench_labels_are_chinese(self):
+        profile_fields = self.env["sudo.compliance.profile"]._fields
+        expected_labels = {
+            "cn_workbench_action_summary": "工作台行动摘要",
+            "cn_workbench_posted_move_count": "已过账会计凭证",
+            "cn_workbench_obligation_state": "纳税义务准备度",
+            "cn_workbench_cross_border_transaction_count": "跨境业务",
+            "cn_workbench_rule_basis_state": "规则依据准备度",
+            "cn_workbench_rescan_state": "验证复扫状态",
+            "cn_workbench_filing_archive_state": "申报缴款档案状态",
+            "cn_workbench_ai_guidance_state": "AI 指引状态",
+            "cn_workbench_closed_loop_state": "闭环准备度",
+            "cn_workbench_conclusion_boundary_state": "结论边界",
+            "cn_workbench_next_best_action_label": "下一优先行动",
+        }
+        for field_name, expected_label in expected_labels.items():
+            self.assertEqual(profile_fields[field_name].string, expected_label)
+
+        next_step_labels = dict(
+            profile_fields["cn_workbench_next_best_action_key"]._description_selection(
+                self.env
+            )
+        )
+        self.assertEqual(next_step_labels["profile"], "完善合规档案")
+        self.assertEqual(next_step_labels["report_readiness"], "检查报告准备度")
+        self.assertEqual(next_step_labels["ai_guidance"], "生成 AI 指引")
+
+    def test_cross_border_labels_are_chinese(self):
+        transaction_fields = self.env["sudo.cn.cross.border.transaction"]._fields
+        expected_labels = {
+            "profile_id": "合规档案",
+            "transaction_type": "业务类型",
+            "counterparty_country_id": "交易对方国家/地区",
+            "related_party": "关联方",
+            "withholding_considered": "已考虑代扣代缴",
+            "evidence_attachment_ids": "受控证据",
+            "cn_cross_border_readiness_state": "准备状态",
+            "cn_cross_border_next_action": "下一步",
+        }
+        for field_name, expected_label in expected_labels.items():
+            self.assertEqual(transaction_fields[field_name].string, expected_label)
+
+        view = self.env.ref(
+            "sudo_country_pack_cn.view_cn_cross_border_transaction_form"
+        )
+        self.assertIn('string="跨境业务"', view.arch_db)
+        self.assertIn('string="提交复核"', view.arch_db)
+        self.assertIn('string="标记已复核"', view.arch_db)
+        self.assertNotIn('string="Cross-Border Transaction"', view.arch_db)
 
     def test_cross_border_transaction_review_freezes_checksum(self):
         self.profile._write_import({"status": "active"})
