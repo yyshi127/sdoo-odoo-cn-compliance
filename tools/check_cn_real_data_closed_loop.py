@@ -934,7 +934,8 @@ ux_view_clarity_contracts = [
         ],
         [
             'widget="badge"',
-            "border-start border-4",
+            "o_cn_risk_card",
+            "查看风险详情",
             'decoration-danger="risk_level',
             "税务影响",
             "事实依据",
@@ -983,7 +984,8 @@ ux_view_clarity_contracts = [
         ],
         [
             'widget="badge"',
-            "border-start border-4",
+            "o_cn_report_card",
+            "查看准备度详情",
             "报告阻断事项",
             "整改复扫门禁",
             "申报缴款档案门禁",

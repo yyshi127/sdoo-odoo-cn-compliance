@@ -4519,6 +4519,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "action_prepare_cn_formal_report",
         "action_open_cn_formal_reports",
         "action_cn_report_readiness_kanban_view",
+        "o_cn_report_card",
+        "查看准备度详情",
         'decoration-success="cn_report_readiness_state in (\'ready\', \'issued\')"',
         'decoration-danger="cn_report_readiness_state in (\'needs_review\', \'needs_remediation\')"',
         'decoration-success="cn_data_basis_state == \'ready\'"',
@@ -4606,6 +4608,12 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
             "impact, owner, due date, closure and next action fields: "
             f"{sorted(missing_risk_kanban_fields)}"
         )
+    for required in (
+        "o_cn_risk_card",
+        "查看风险详情",
+    ):
+        if required not in risk_view_content:
+            fail(f"China risk center card UX is missing {required}")
     required_remediation_list_fields = {
         "risk_level",
         "priority",
@@ -5736,9 +5744,50 @@ def validate_delivery_objective_coverage() -> None:
         "cn_workbench_uncertainty_summary",
         "--require-demo-ready",
         "--require-closed-loop-evidence",
+        "o_cn_risk_card",
+        "查看风险详情",
+        "o_cn_report_card",
+        "查看准备度详情",
     ):
         if required not in real_data_content:
             fail(f"China real-data closed-loop checker is missing {required}")
+    ux_contract_segments = (
+        (
+            "view_cn_risk_center_finding_kanban",
+            "view_cn_remediation_tracker_task_kanban",
+            ("o_cn_risk_card", "查看风险详情"),
+        ),
+        (
+            "view_cn_report_readiness_kanban",
+            "view_cn_formal_compliance_report_kanban",
+            ("o_cn_report_card", "查看准备度详情"),
+        ),
+    )
+    ux_contracts_start = real_data_content.find("ux_view_clarity_contracts =")
+    ux_contracts_end = real_data_content.find(
+        "menu_action_contracts =", ux_contracts_start
+    )
+    ux_contracts_content = real_data_content[ux_contracts_start:ux_contracts_end]
+    if ux_contracts_start < 0 or ux_contracts_end < 0:
+        fail("China real-data UX clarity contract collection is missing")
+    for view_xml_id, next_view_xml_id, required_snippets in ux_contract_segments:
+        contract_start = ux_contracts_content.find(f'"{view_xml_id}"')
+        contract_end = ux_contracts_content.find(
+            f'"{next_view_xml_id}"', contract_start
+        )
+        contract_content = ux_contracts_content[contract_start:contract_end]
+        if contract_start < 0 or contract_end < 0:
+            fail(f"China real-data UX contract segment is missing {view_xml_id}")
+        for required in required_snippets:
+            if required not in contract_content:
+                fail(
+                    f"China real-data UX contract {view_xml_id} is missing {required}"
+                )
+        if "border-start border-4" in contract_content:
+            fail(
+                f"China real-data UX contract {view_xml_id} must use its dedicated "
+                "responsive card component instead of the retired border-only marker"
+            )
     closed_loop_start = real_data_content.find(
         'readiness["closed_loop_evidence_ready"]'
     )

@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.151.0`
+Delivery version: `19.0.1.152.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -120,6 +120,12 @@ compliance records underneath it:
   scalable list views, while their kanban views remain available on demand;
 - the workbench card no longer has an ambiguous global click target;
 - desktop, laptop and mobile layouts use explicit responsive grid breakpoints.
+
+Version `19.0.1.152.0` aligns the automated real-data UX evidence contract with
+the dedicated responsive risk and report components introduced by this reset.
+The checker now verifies the component class and the visible detail action for
+each view instead of requiring the retired border-only marker. This prevents a
+false closed-loop failure while keeping view clarity as a mandatory gate.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes
