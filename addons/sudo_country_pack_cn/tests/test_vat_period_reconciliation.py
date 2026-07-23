@@ -1958,9 +1958,10 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )
         run.invalidate_recordset()
 
+        audit_run = run.sudo()
         output_snapshot = next(
             item
-            for item in run.accounting_scope_snapshot_json[
+            for item in audit_run.accounting_scope_snapshot_json[
                 "control_mappings"
             ]
             if item["mapping_id"] == mapping.id
