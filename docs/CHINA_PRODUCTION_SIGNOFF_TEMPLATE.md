@@ -25,6 +25,11 @@ source commit, manifest aggregate hash and remote runtime acceptance result.
 
 Use the Markdown files for reviewer walkthroughs and the JSON files for audit
 traceability. Do not copy placeholder text into the final sign-off evidence.
+Use the `Automated Review Prefill` in the production sign-off action checklist
+to cross-check candidate, UAT, rule/source and customer-scope facts. The prefill
+is evidence context only: reviewer, decision, date, evidence reference and
+notes must remain human-authored and must never be inferred from automated
+readiness.
 Every reviewer, date, decision and evidence reference must point to a real
 record such as a completed checklist, meeting minutes, signed review packet,
 screenshot set, recording, ticket, audit workpaper or release approval.

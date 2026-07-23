@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,6 +14,17 @@ from typing import Any
 ACTIONS_SCHEMA = "sdoo.cn.production-signoff-actions.v1"
 STATUS_SCHEMA = "sdoo.cn.delivery-status.v1"
 PACKET_SCHEMA = "sdoo.cn.signoff-packet.v1"
+PACKET_BINDING_REQUIRED_KEYS = (
+    "provided",
+    "schema_ok",
+    "version_matches_status",
+    "source_commit_matches_status",
+    "bundle_sha256_matches_status",
+    "manifest_aggregate_sha256_matches_status",
+    "preview_url_matches_status",
+    "preview_database_matches_status",
+    "action_keys_match",
+)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -40,6 +53,318 @@ def _unique_actions(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             },
         )
     return list(by_key.values())
+
+
+def _packet_evidence(
+    packet: dict[str, Any] | None,
+    key: str,
+    default: Any,
+) -> Any:
+    if packet is None:
+        return default
+    item = next(
+        (
+            item
+            for item in packet.get("automated_items") or []
+            if isinstance(item, dict) and item.get("key") == key
+        ),
+        None,
+    )
+    if not item:
+        return default
+    evidence = item.get("evidence")
+    if not isinstance(evidence, str):
+        return evidence if evidence is not None else default
+    try:
+        return json.loads(evidence)
+    except json.JSONDecodeError:
+        return evidence
+
+
+def _count_by(items: list[dict[str, Any]], field: str) -> dict[str, int]:
+    return dict(
+        sorted(
+            Counter(
+                str(item.get(field) or "not_recorded")
+                for item in items
+                if isinstance(item, dict)
+            ).items()
+        )
+    )
+
+
+def _checksum_complete(item: dict[str, Any], fields: tuple[str, ...]) -> bool:
+    return all(
+        isinstance(item.get(field), str)
+        and re.fullmatch(r"[0-9a-f]{64}", item[field]) is not None
+        for field in fields
+    )
+
+
+def _review_prefill(packet: dict[str, Any] | None) -> dict[str, Any]:
+    if packet is None:
+        return {
+            "available": False,
+            "boundary": (
+                "No sign-off packet was supplied; reviewer decisions and evidence "
+                "must remain blank."
+            ),
+        }
+
+    runtime = _packet_evidence(packet, "runtime_passed", {})
+    upgrade = _packet_evidence(packet, "upgrade_runtime_evidence", {})
+    profiles = _packet_evidence(packet, "workbench_summary_evidence", [])
+    risk_scope = _packet_evidence(packet, "risk_task_report_summary_evidence", {})
+    ai_records = _packet_evidence(packet, "controlled_ai_guidance_evidence", [])
+    rule_scope = _packet_evidence(packet, "rule_source_governance_evidence", {})
+    source_summary = _packet_evidence(
+        packet, "official_source_governance_summary", {}
+    )
+    customer_scope = _packet_evidence(
+        packet, "customer_scope_gap_review_evidence", {}
+    )
+
+    if not isinstance(profiles, list):
+        profiles = []
+    if not isinstance(risk_scope, dict):
+        risk_scope = {}
+    if not isinstance(ai_records, list):
+        ai_records = []
+    if not isinstance(rule_scope, dict):
+        rule_scope = {}
+    if not isinstance(source_summary, dict):
+        source_summary = {}
+    if not isinstance(customer_scope, dict):
+        customer_scope = {}
+
+    active_profile = next(
+        (
+            profile
+            for profile in profiles
+            if isinstance(profile, dict) and profile.get("status") == "active"
+        ),
+        profiles[0] if profiles else {},
+    )
+    findings = [
+        item
+        for item in risk_scope.get("findings") or []
+        if isinstance(item, dict)
+    ]
+    remediation_tasks = [
+        item
+        for item in risk_scope.get("remediation_tasks") or []
+        if isinstance(item, dict)
+    ]
+    reports = [
+        item
+        for item in risk_scope.get("reports") or []
+        if isinstance(item, dict)
+    ]
+    rule_versions = [
+        item
+        for item in rule_scope.get("rule_versions") or []
+        if isinstance(item, dict)
+    ]
+    source_monitor_runs = [
+        item
+        for item in rule_scope.get("source_monitor_runs") or []
+        if isinstance(item, dict)
+    ]
+    authority_sources = [
+        item
+        for item in rule_scope.get("authority_sources") or []
+        if isinstance(item, dict)
+    ]
+    customer_objects = customer_scope.get("objects") or {}
+    accounting = customer_scope.get("accounting") or {}
+    customer_evidence = [
+        item
+        for item in customer_scope.get("evidence") or []
+        if isinstance(item, dict)
+    ]
+    filing_archives = [
+        item
+        for item in customer_scope.get("filing_archives") or []
+        if isinstance(item, dict)
+    ]
+    customer_findings = [
+        item
+        for item in customer_scope.get("findings") or []
+        if isinstance(item, dict)
+    ]
+    customer_tasks = [
+        item
+        for item in customer_scope.get("remediation_tasks") or []
+        if isinstance(item, dict)
+    ]
+
+    runtime_log = runtime if isinstance(runtime, dict) else {}
+    upgrade_log = (
+        upgrade.get("log")
+        if isinstance(upgrade, dict) and isinstance(upgrade.get("log"), dict)
+        else {}
+    )
+    return {
+        "available": True,
+        "boundary": (
+            "This section is generated from automated evidence. It pre-fills "
+            "review facts only and never records a reviewer, decision, date or "
+            "approval."
+        ),
+        "candidate_acceptance": {
+            "clean_install": {
+                "failed": runtime_log.get("failed"),
+                "errors": runtime_log.get("errors"),
+                "loaded_test_count": runtime_log.get("loaded_test_count"),
+                "reported_test_count": runtime_log.get("reported_test_count"),
+            },
+            "upgrade": {
+                "failed": upgrade_log.get("failed"),
+                "errors": upgrade_log.get("errors"),
+                "loaded_test_count": upgrade_log.get("loaded_test_count"),
+                "reported_test_count": upgrade_log.get("reported_test_count"),
+            },
+        },
+        "representative_business_scope": {
+            "profile": active_profile.get("name"),
+            "company": active_profile.get("company"),
+            "period": active_profile.get("period_label"),
+            "workbench_status": active_profile.get("closed_loop_state"),
+            "workbench_action_summary": active_profile.get("action_summary"),
+            "next_action": active_profile.get("next_action"),
+            "limitation_summary": active_profile.get("limitation_summary"),
+            "uncertainty_summary": active_profile.get("uncertainty_summary"),
+            "evidence_sample_finding_count": len(findings),
+            "evidence_sample_finding_risk_levels": _count_by(
+                findings, "risk_level"
+            ),
+            "evidence_sample_finding_results": _count_by(findings, "result"),
+            "evidence_sample_finding_review_states": _count_by(
+                findings, "review_state"
+            ),
+            "evidence_sample_remediation_task_count": len(remediation_tasks),
+            "remediation_states": _count_by(remediation_tasks, "state"),
+            "verification_states": _count_by(
+                remediation_tasks, "verification_state"
+            ),
+            "evidence_sample_formal_report_count": len(reports),
+            "formal_report_states": _count_by(reports, "state"),
+        },
+        "controlled_ai": {
+            "record_count": len(ai_records),
+            "provider_keys": sorted(
+                {
+                    str(item.get("provider_key"))
+                    for item in ai_records
+                    if item.get("provider_key")
+                }
+            ),
+            "model_names": sorted(
+                {
+                    str(item.get("model_name"))
+                    for item in ai_records
+                    if item.get("model_name")
+                }
+            ),
+            "prompt_versions": sorted(
+                {
+                    str(item.get("prompt_version"))
+                    for item in ai_records
+                    if item.get("prompt_version")
+                }
+            ),
+            "checksum_complete_count": sum(
+                _checksum_complete(
+                    item,
+                    ("input_checksum", "output_checksum", "record_checksum"),
+                )
+                for item in ai_records
+                if isinstance(item, dict)
+            ),
+            "professional_warning_count": sum(
+                bool(item.get("professional_warning"))
+                for item in ai_records
+                if isinstance(item, dict)
+            ),
+        },
+        "rule_and_source_governance": {
+            "source_count": source_summary.get("source_count"),
+            "valid_source_count": (
+                source_summary.get("valid_source_count")
+                if source_summary.get("valid_source_count") is not None
+                else sum(item.get("state") == "valid" for item in authority_sources)
+            ),
+            "active_rule_version_count": (
+                source_summary.get("active_rule_version_count")
+                if source_summary.get("active_rule_version_count") is not None
+                else sum(
+                    item.get("release_state") == "active"
+                    for item in rule_versions
+                )
+            ),
+            "overdue_source_count": source_summary.get("overdue_source_count"),
+            "changed_monitor_run_count": source_summary.get(
+                "changed_monitor_run_count"
+            ),
+            "failed_monitor_run_count": source_summary.get(
+                "failed_monitor_run_count"
+            ),
+            "latest_monitor_state": source_summary.get("latest_monitor_state"),
+            "rule_versions": [
+                {
+                    "rule": item.get("rule"),
+                    "version": item.get("version"),
+                    "release_state": item.get("release_state"),
+                    "professional_review_state": item.get(
+                        "professional_review_state"
+                    ),
+                    "released_rule_checksum": item.get("released_rule_checksum"),
+                    "source_names": item.get("source_names") or [],
+                    "next_review_date": item.get("next_review_date"),
+                }
+                for item in rule_versions
+            ],
+            "source_monitor_runs": [
+                {
+                    "source": item.get("source"),
+                    "state": item.get("state"),
+                    "completed_at": item.get("completed_at"),
+                    "result_integrity_state": item.get(
+                        "result_integrity_state"
+                    ),
+                    "result_checksum": item.get("result_checksum"),
+                }
+                for item in source_monitor_runs
+            ],
+        },
+        "customer_scope_and_gaps": {
+            "accounting": accounting,
+            "object_counts": customer_objects,
+            "verified_evidence_count": sum(
+                item.get("state") == "verified" for item in customer_evidence
+            ),
+            "filing_archive_count": len(filing_archives),
+            "filing_archive_states": _count_by(filing_archives, "state"),
+            "finding_count": len(customer_findings),
+            "high_or_critical_finding_count": sum(
+                item.get("risk_level") in {"high", "critical"}
+                for item in customer_findings
+            ),
+            "finding_review_states": _count_by(
+                customer_findings, "review_state"
+            ),
+            "remediation_task_count": len(customer_tasks),
+            "remediation_states": _count_by(customer_tasks, "state"),
+            "review_flags": customer_scope.get("review") or {},
+        },
+        "human_fields": {
+            "reviewer": None,
+            "decision": None,
+            "date": None,
+            "evidence_reference": None,
+            "notes": None,
+        },
+    }
 
 
 def _owner_summary(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -112,6 +437,10 @@ def _packet_binding(
     }
 
 
+def _packet_binding_ready(binding: dict[str, Any]) -> bool:
+    return all(binding.get(key) is True for key in PACKET_BINDING_REQUIRED_KEYS)
+
+
 def export_actions(
     status: dict[str, Any],
     packet: dict[str, Any] | None = None,
@@ -154,7 +483,12 @@ def export_actions(
         )
         or [],
         "packet_binding": _packet_binding(status, packet, actions),
+        "review_prefill": _review_prefill(packet),
     }
+
+
+def _json_inline(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
 
 def _write_markdown(payload: dict[str, Any], path: Path) -> None:
@@ -205,6 +539,80 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         )
     if not payload.get("blocker_action_matrix"):
         lines.append("- None")
+    prefill = payload.get("review_prefill") or {}
+    lines.extend(["", "## Automated Review Prefill", ""])
+    lines.extend(
+        [
+            f"> {prefill.get('boundary') or ''}",
+            "",
+        ]
+    )
+    if prefill.get("available"):
+        acceptance = prefill.get("candidate_acceptance") or {}
+        scope = prefill.get("representative_business_scope") or {}
+        ai = prefill.get("controlled_ai") or {}
+        governance = prefill.get("rule_and_source_governance") or {}
+        customer = prefill.get("customer_scope_and_gaps") or {}
+        lines.extend(
+            [
+                "### Candidate Acceptance",
+                "",
+                f"- Clean install: `{_json_inline(acceptance.get('clean_install') or {})}`",
+                f"- Upgrade: `{_json_inline(acceptance.get('upgrade') or {})}`",
+                "",
+                "### Representative Business Scope",
+                "",
+                f"- Company: `{scope.get('company') or ''}`",
+                f"- Profile: `{scope.get('profile') or ''}`",
+                f"- Period: `{scope.get('period') or ''}`",
+                f"- Workbench state: `{scope.get('workbench_status') or ''}`",
+                f"- Current workbench summary: {scope.get('workbench_action_summary') or ''}",
+                f"- Next action: {scope.get('next_action') or ''}",
+                f"- Limitation summary: {scope.get('limitation_summary') or ''}",
+                f"- Uncertainty summary: {scope.get('uncertainty_summary') or ''}",
+                f"- Representative finding records included in this evidence packet (not the latest-scan count): `{scope.get('evidence_sample_finding_count')}`; risk levels `{_json_inline(scope.get('evidence_sample_finding_risk_levels') or {})}`; results `{_json_inline(scope.get('evidence_sample_finding_results') or {})}`; review states `{_json_inline(scope.get('evidence_sample_finding_review_states') or {})}`",
+                f"- Representative remediation tasks included in this evidence packet: `{scope.get('evidence_sample_remediation_task_count')}`; states `{_json_inline(scope.get('remediation_states') or {})}`; verification `{_json_inline(scope.get('verification_states') or {})}`",
+                f"- Representative formal reports included in this evidence packet: `{scope.get('evidence_sample_formal_report_count')}`; states `{_json_inline(scope.get('formal_report_states') or {})}`",
+                "",
+                "### Controlled AI Evidence",
+                "",
+                f"- Records: `{ai.get('record_count')}`",
+                f"- Providers: `{_json_inline(ai.get('provider_keys') or [])}`",
+                f"- Models: `{_json_inline(ai.get('model_names') or [])}`",
+                f"- Prompt versions: `{_json_inline(ai.get('prompt_versions') or [])}`",
+                f"- Complete input/output/record checksum sets: `{ai.get('checksum_complete_count')}`",
+                f"- Professional warnings present: `{ai.get('professional_warning_count')}`",
+                "",
+                "### Rule And Source Governance",
+                "",
+                f"- Sources: `{governance.get('source_count')}` total / `{governance.get('valid_source_count')}` valid",
+                f"- Active rule versions: `{governance.get('active_rule_version_count')}`",
+                f"- Source review state: overdue `{governance.get('overdue_source_count')}`, changed runs `{governance.get('changed_monitor_run_count')}`, failed runs `{governance.get('failed_monitor_run_count')}`, latest `{governance.get('latest_monitor_state') or ''}`",
+                f"- Released rule versions: `{_json_inline(governance.get('rule_versions') or [])}`",
+                f"- Source monitor runs: `{_json_inline(governance.get('source_monitor_runs') or [])}`",
+                "",
+                "### Customer Scope And Gaps",
+                "",
+                f"- Accounting coverage: `{_json_inline(customer.get('accounting') or {})}`",
+                f"- Controlled object counts: `{_json_inline(customer.get('object_counts') or {})}`",
+                f"- Verified evidence: `{customer.get('verified_evidence_count')}`",
+                f"- Filing archives: `{customer.get('filing_archive_count')}`; states `{_json_inline(customer.get('filing_archive_states') or {})}`",
+                f"- Findings: `{customer.get('finding_count')}`; high/critical `{customer.get('high_or_critical_finding_count')}`; review states `{_json_inline(customer.get('finding_review_states') or {})}`",
+                f"- Remediation tasks: `{customer.get('remediation_task_count')}`; states `{_json_inline(customer.get('remediation_states') or {})}`",
+                f"- Review flags: `{_json_inline(customer.get('review_flags') or {})}`",
+                "",
+                "### Human Completion Fields",
+                "",
+                "- Reviewer:",
+                "- Decision:",
+                "- Date:",
+                "- Evidence reference:",
+                "- Notes:",
+                "",
+            ]
+        )
+    else:
+        lines.extend(["- Automated prefill is unavailable.", ""])
     lines.extend(["", "## Required Actions", ""])
     for action in payload.get("actions") or []:
         lines.extend(
@@ -226,16 +634,7 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         )
     lines.extend(["## Packet Binding", ""])
     binding = payload.get("packet_binding") or {}
-    for key in (
-        "provided",
-        "schema_ok",
-        "version_matches_status",
-        "source_commit_matches_status",
-        "bundle_sha256_matches_status",
-        "manifest_aggregate_sha256_matches_status",
-        "preview_url_matches_status",
-        "action_keys_match",
-    ):
+    for key in PACKET_BINDING_REQUIRED_KEYS:
         lines.append(f"- {key}: `{binding.get(key)}`")
     lines.extend(
         [
@@ -293,14 +692,7 @@ def main() -> int:
         print("production sign-off action export failed: no actions found")
         return 2
     binding = payload["packet_binding"]
-    if args.require_packet_binding and not (
-        binding.get("provided")
-        and binding.get("schema_ok")
-        and binding.get("version_matches_status")
-        and binding.get("source_commit_matches_status")
-        and binding.get("preview_url_matches_status")
-        and binding.get("action_keys_match")
-    ):
+    if args.require_packet_binding and not _packet_binding_ready(binding):
         print(f"production sign-off action packet binding failed: {binding}")
         return 3
     return 0

@@ -1187,8 +1187,73 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertTrue(binding["schema_ok"])
         self.assertTrue(binding["version_matches_status"])
         self.assertTrue(binding["source_commit_matches_status"])
+        self.assertTrue(binding["bundle_sha256_matches_status"])
+        self.assertTrue(binding["manifest_aggregate_sha256_matches_status"])
         self.assertTrue(binding["preview_url_matches_status"])
+        self.assertTrue(binding["preview_database_matches_status"])
         self.assertTrue(binding["action_keys_match"])
+        self.assertTrue(SIGNOFF_ACTIONS._packet_binding_ready(binding))
+
+    def test_production_signoff_actions_rejects_incomplete_packet_binding(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+        packet["bundle_sha256"] = "f" * 64
+
+        export = SIGNOFF_ACTIONS.export_actions(status, packet)
+
+        self.assertFalse(
+            export["packet_binding"]["bundle_sha256_matches_status"]
+        )
+        self.assertFalse(
+            SIGNOFF_ACTIONS._packet_binding_ready(export["packet_binding"])
+        )
+
+    def test_production_signoff_actions_prefills_review_facts_without_signing(self):
+        status = delivery_status()
+        packet = PACKET._build_packet(status)
+
+        export = SIGNOFF_ACTIONS.export_actions(status, packet)
+
+        prefill = export["review_prefill"]
+        self.assertTrue(prefill["available"])
+        self.assertEqual(
+            prefill["candidate_acceptance"]["clean_install"]["failed"],
+            0,
+        )
+        self.assertEqual(
+            prefill["representative_business_scope"][
+                "evidence_sample_finding_count"
+            ],
+            1,
+        )
+        self.assertEqual(
+            prefill["representative_business_scope"][
+                "evidence_sample_remediation_task_count"
+            ],
+            1,
+        )
+        self.assertEqual(
+            prefill["representative_business_scope"][
+                "evidence_sample_formal_report_count"
+            ],
+            1,
+        )
+        self.assertEqual(
+            prefill["rule_and_source_governance"]["active_rule_version_count"],
+            1,
+        )
+        self.assertTrue(
+            all(value is None for value in prefill["human_fields"].values())
+        )
+
+    def test_production_signoff_actions_without_packet_does_not_invent_prefill(self):
+        export = SIGNOFF_ACTIONS.export_actions(delivery_status())
+
+        self.assertFalse(export["review_prefill"]["available"])
+        self.assertIn(
+            "must remain blank",
+            export["review_prefill"]["boundary"],
+        )
 
     def test_production_signoff_actions_export_summarizes_owners(self):
         status = delivery_status()
@@ -1224,6 +1289,13 @@ class TestChinaSignoffValidation(unittest.TestCase):
         self.assertIn("## Owner Summary", content)
         self.assertIn("### business_reviewer", content)
         self.assertIn("## Blocker-To-Action Matrix", content)
+        self.assertIn("## Automated Review Prefill", content)
+        self.assertIn("### Representative Business Scope", content)
+        self.assertIn("### Controlled AI Evidence", content)
+        self.assertIn("### Rule And Source Governance", content)
+        self.assertIn("### Customer Scope And Gaps", content)
+        self.assertIn("pre-fills review facts only", content)
+        self.assertIn("not the latest-scan count", content)
         self.assertIn("## Required Actions", content)
         self.assertIn("### business_uat_decision", content)
         self.assertIn("- Evidence reference:", content)
