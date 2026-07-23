@@ -4825,6 +4825,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         '_inherit = "sudo.compliance.evidence"',
         "cn_evidence_source_summary",
         "cn_evidence_blocker_summary",
+        "cn_evidence_display_name",
+        "cn_evidence_display_issuer",
         '@api.depends_context("lang")',
         "assessment_id.profile_id",
         "finding_id.assessment_id.profile_id",
@@ -4862,6 +4864,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         "state",
         "cn_evidence_source_summary",
         "cn_evidence_blocker_summary",
+        "cn_evidence_display_name",
+        "cn_evidence_display_issuer",
         "assessment_id",
         "finding_id",
         "task_id",
@@ -4922,6 +4926,8 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
     ).read_text(encoding="utf-8")
     if "test_evidence_center_source_and_blockers_translate_in_chinese_context" not in workbench_test_content:
         fail("China evidence center must test runtime Chinese source and blocker text")
+    if "test_evidence_center_localizes_immutable_controlled_demo_labels" not in workbench_test_content:
+        fail("China evidence center must test immutable controlled demo label localization")
 
     filing_model_content = (
         ADDON_ROOT / "models" / "filing_center.py"
@@ -5138,6 +5144,10 @@ def validate_china_compliance_workbench(manifest: dict[str, object]) -> None:
         'msgstr "申报缴款档案：%(name)s"',
         'msgid "No blocker: evidence is verified and traceable."',
         'msgstr "无阻断：证据已核验且可追溯。"',
+        'msgid "CODEX-DEMO VAT filing receipt evidence %(suffix)s"',
+        'msgstr "CODEX-DEMO 增值税申报回执证据 %(suffix)s"',
+        'msgid "CODEX-DEMO controlled tax authority evidence issuer"',
+        'msgstr "CODEX-DEMO 受控税务凭证出具方"',
     ):
         if required not in translation_content:
             fail(f"China center translation catalog is missing {required}")
@@ -5711,6 +5721,7 @@ def validate_delivery_objective_coverage() -> None:
         "CODEX-DEMO 增值税申报回执证据",
         "CODEX-DEMO 增值税缴税凭证",
         "CODEX-DEMO 受控税务凭证出具方",
+        'evidence.state in ("draft", "rejected")',
     ):
         if required not in demo_closed_loop_content:
             fail(f"China controlled demo closed-loop preparer is missing {required}")

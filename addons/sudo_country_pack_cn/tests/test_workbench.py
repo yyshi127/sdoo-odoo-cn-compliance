@@ -936,6 +936,47 @@ class TestChinaComplianceWorkbench(TransactionCase):
         ):
             self.assertNotIn(forbidden, evidence.cn_evidence_blocker_summary)
 
+    def test_evidence_center_localizes_immutable_controlled_demo_labels(self):
+        self.env["res.lang"]._activate_lang("zh_CN")
+        assessment = self.env["sudo.compliance.assessment"].with_company(
+            self.company
+        ).create(
+            {
+                "profile_id": self.profile.id,
+                "evaluation_date": "2026-07-01",
+                "period_start": "2026-06-01",
+                "period_end": "2026-06-30",
+                "rule_version_ids": [Command.set(self.rule_version.ids)],
+            }
+        )
+        evidence = self.env["sudo.compliance.evidence"].with_company(
+            self.company
+        ).create(
+            {
+                "name": "CODEX-DEMO VAT filing/payment archive evidence RECEIPT-9",
+                "company_id": self.company.id,
+                "assessment_id": assessment.id,
+                "evidence_type": "filing_receipt",
+                "external_reference": (
+                    "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/RECEIPT-9"
+                ),
+                "issuer": "CODEX-DEMO controlled tax authority evidence issuer",
+            }
+        ).with_context(lang="zh_CN")
+
+        self.assertEqual(
+            evidence.cn_evidence_display_name,
+            "CODEX-DEMO 增值税申报回执证据 RECEIPT-9",
+        )
+        self.assertEqual(
+            evidence.cn_evidence_display_issuer,
+            "CODEX-DEMO 受控税务凭证出具方",
+        )
+        self.assertEqual(
+            evidence.name,
+            "CODEX-DEMO VAT filing/payment archive evidence RECEIPT-9",
+        )
+
     def test_evidence_center_search_view_exposes_audit_gap_filters(self):
         assessment = self.env["sudo.compliance.assessment"].with_company(
             self.company

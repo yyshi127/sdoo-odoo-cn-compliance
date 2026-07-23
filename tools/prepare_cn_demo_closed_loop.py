@@ -954,14 +954,15 @@ def verified_filing_evidence(profile, filing, suffix, evidence_type):
         }})
         changed = True
     demo_backfill = {{}}
-    if evidence.name != evidence_name and evidence.name.startswith("CODEX-DEMO"):
-        demo_backfill["name"] = evidence_name
-    if evidence.issuer != issuer and (evidence.issuer or "").startswith("CODEX-DEMO"):
-        demo_backfill["issuer"] = issuer
-    if evidence.review_notes != review_notes and (
-        evidence.review_notes or ""
-    ).startswith("CODEX-DEMO ONLY: verified against the controlled VAT"):
-        demo_backfill["review_notes"] = review_notes
+    if evidence.state in ("draft", "rejected"):
+        if evidence.name != evidence_name and evidence.name.startswith(
+            "CODEX-DEMO"
+        ):
+            demo_backfill["name"] = evidence_name
+        if evidence.issuer != issuer and (evidence.issuer or "").startswith(
+            "CODEX-DEMO"
+        ):
+            demo_backfill["issuer"] = issuer
     if demo_backfill:
         evidence.write(demo_backfill)
         changed = True

@@ -58,11 +58,13 @@
                   decoration-success="state == 'verified'"
                   decoration-warning="state == 'submitted'"
                   decoration-danger="state == 'rejected'">
-                <field name="name"/>
+                <field name="cn_evidence_display_name"/>
+                <field name="name" optional="hide"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="evidence_type" widget="badge"/>
                 <field name="evidence_date"/>
-                <field name="issuer" optional="show"/>
+                <field name="cn_evidence_display_issuer" optional="show"/>
+                <field name="issuer" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'verified'"
                        decoration-warning="state == 'submitted'"
@@ -88,10 +90,12 @@
             <kanban string="中国证据中心" class="o_kanban_dashboard"
                     create="0" quick_create="0" sample="0" default_group_by="state">
                 <field name="name"/>
+                <field name="cn_evidence_display_name"/>
                 <field name="company_id"/>
                 <field name="evidence_type"/>
                 <field name="evidence_date"/>
                 <field name="issuer"/>
+                <field name="cn_evidence_display_issuer"/>
                 <field name="state"/>
                 <field name="assessment_id"/>
                 <field name="finding_id"/>
@@ -107,7 +111,7 @@
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click shadow-sm border-start border-4 #{record.state.raw_value == 'verified' ? 'border-success' : record.state.raw_value == 'submitted' ? 'border-warning' : record.state.raw_value == 'rejected' ? 'border-danger' : 'border-secondary'}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
-                                    <div class="fw-bold"><field name="name"/></div>
+                                    <div class="fw-bold"><field name="cn_evidence_display_name"/></div>
                                     <div class="text-muted small">
                                         <field name="company_id"/>
                                         <span> · </span>
@@ -129,7 +133,7 @@
                                 <div class="col-6">
                                     <div class="border rounded p-2 h-100">
                                         <div class="text-muted small">出具方</div>
-                                        <div class="fw-semibold"><field name="issuer"/></div>
+                                        <div class="fw-semibold"><field name="cn_evidence_display_issuer"/></div>
                                     </div>
                                 </div>
                             </div>

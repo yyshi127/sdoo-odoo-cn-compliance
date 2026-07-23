@@ -12,8 +12,20 @@ class SudoChinaEvidenceCenterEvidence(models.Model):
         string="Evidence Blockers",
         compute="_compute_cn_evidence_center_display",
     )
+    cn_evidence_display_name = fields.Char(
+        string="证据名称",
+        compute="_compute_cn_evidence_center_display",
+    )
+    cn_evidence_display_issuer = fields.Char(
+        string="出具机构或责任人",
+        compute="_compute_cn_evidence_center_display",
+    )
 
     @api.depends(
+        "name",
+        "issuer",
+        "external_reference",
+        "evidence_type",
         "state",
         "document_checksum",
         "assessment_id",
@@ -26,12 +38,43 @@ class SudoChinaEvidenceCenterEvidence(models.Model):
     @api.depends_context("lang")
     def _compute_cn_evidence_center_display(self):
         for evidence in self:
+            evidence.cn_evidence_display_name = (
+                evidence._cn_evidence_display_name()
+            )
+            evidence.cn_evidence_display_issuer = (
+                evidence._cn_evidence_display_issuer()
+            )
             evidence.cn_evidence_source_summary = (
                 evidence._cn_evidence_source_summary()
             )
             evidence.cn_evidence_blocker_summary = (
                 evidence._cn_evidence_blocker_summary()
             )
+
+    def _cn_evidence_display_name(self):
+        self.ensure_one()
+        reference_prefix = "CODEX-DEMO/CN/VAT-FILING-ARCHIVE/"
+        legacy_name_prefix = "CODEX-DEMO VAT filing/payment archive evidence "
+        if (
+            (self.external_reference or "").startswith(reference_prefix)
+            and (self.name or "").startswith(legacy_name_prefix)
+        ):
+            suffix = (self.external_reference or "")[len(reference_prefix) :]
+            if self.evidence_type == "filing_receipt":
+                return _("CODEX-DEMO VAT filing receipt evidence %(suffix)s") % {
+                    "suffix": suffix
+                }
+            if self.evidence_type == "payment_proof":
+                return _("CODEX-DEMO VAT payment evidence %(suffix)s") % {
+                    "suffix": suffix
+                }
+        return self.name
+
+    def _cn_evidence_display_issuer(self):
+        self.ensure_one()
+        if self.issuer == "CODEX-DEMO controlled tax authority evidence issuer":
+            return _("CODEX-DEMO controlled tax authority evidence issuer")
+        return self.issuer
 
     def _cn_evidence_source_summary(self):
         self.ensure_one()

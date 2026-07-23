@@ -1289,6 +1289,24 @@ msgstr "无阻断：证据已核验且可追溯。"
 
 #. module: sudo_country_pack_cn
 #. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "CODEX-DEMO VAT filing receipt evidence %(suffix)s"
+msgstr "CODEX-DEMO 增值税申报回执证据 %(suffix)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "CODEX-DEMO VAT payment evidence %(suffix)s"
+msgstr "CODEX-DEMO 增值税缴税凭证 %(suffix)s"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
+#: code:addons/sudo_country_pack_cn/models/evidence_center.py:1
+msgid "CODEX-DEMO controlled tax authority evidence issuer"
+msgstr "CODEX-DEMO 受控税务凭证出具方"
+
+#. module: sudo_country_pack_cn
+#. odoo-python
 #: code:addons/sudo_country_pack_cn/models/data_readiness_center.py:1
 msgid "superseded dataset"
 msgstr "数据集已被替代"
