@@ -202,7 +202,9 @@ class SudoChinaVatAccountMapping(models.Model):
     def _checksum_for_language(self, lang):
         self.ensure_one()
         return _payload_checksum(
-            self.with_context(lang=lang)._checksum_payload()
+            self.with_company(self.company_id)
+            .with_context(lang=lang)
+            ._checksum_payload()
         )
 
     def _current_integrity_state(self):

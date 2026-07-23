@@ -138,7 +138,9 @@ class SudoChinaEinvoiceReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
-        run = self.with_context(lang=_RECONCILIATION_SNAPSHOT_LANG)
+        run = self.with_company(self.company_id).with_context(
+            lang=_RECONCILIATION_SNAPSHOT_LANG
+        )
         documents = run._source_documents()
         moves = (
             run._ledger_moves()
@@ -205,7 +207,9 @@ class SudoChinaVatPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
-        run = self.with_context(lang=_VAT_PERIOD_SNAPSHOT_LANG)
+        run = self.with_company(self.company_id).with_context(
+            lang=_VAT_PERIOD_SNAPSHOT_LANG
+        )
         issues = {}
         accounting = run._collect_accounting(issues)
         einvoices = run._collect_einvoices(issues)
@@ -277,7 +281,9 @@ class SudoChinaCitPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
-        run = self.with_context(lang=_CIT_PERIOD_SNAPSHOT_LANG)
+        run = self.with_company(self.company_id).with_context(
+            lang=_CIT_PERIOD_SNAPSHOT_LANG
+        )
         issues = []
         accounting = run._collect_accounting(issues)
         filing = run._collect_filing(issues)
@@ -343,7 +349,9 @@ class SudoChinaIitPeriodReconciliationSourceMonitor(models.Model):
 
     def _cn_current_source_checksums(self):
         self.ensure_one()
-        run = self.with_context(lang=_IIT_PERIOD_SNAPSHOT_LANG)
+        run = self.with_company(self.company_id).with_context(
+            lang=_IIT_PERIOD_SNAPSHOT_LANG
+        )
         issues = []
         scope = run._collect_scope(issues)
         payroll = run._collect_payroll(issues, scope)

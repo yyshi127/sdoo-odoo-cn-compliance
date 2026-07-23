@@ -747,6 +747,12 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
     def test_reconciliation_snapshot_is_independent_of_ui_language(self):
         self.env["res.lang"]._activate_lang("zh_CN")
         sources = self._seed_complete_sources("locale-stable")
+        foreign_company = self.env["res.company"].create(
+            {"name": "Foreign CIT execution context"}
+        )
+        self.reviewer.write(
+            {"company_ids": [Command.link(foreign_company.id)]}
+        )
         account = self.company_data["default_account_revenue"]
         canonical_name = account.with_context(lang="en_US").name
         account.with_context(lang="zh_CN").write(
@@ -755,6 +761,7 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
 
         self.assertEqual(
             sources["scope"]
+            .with_company(foreign_company)
             .with_context(lang="zh_CN")
             ._current_integrity_state(),
             "verified",
@@ -762,6 +769,7 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         run = self._queue()
         self.assertTrue(
             run.with_user(self.reviewer)
+            .with_company(foreign_company)
             .with_context(lang="zh_CN")
             ._process()
         )
@@ -774,13 +782,19 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         )
         self.assertEqual(account_snapshot["account_name"], canonical_name)
         self.assertEqual(
-            run.with_context(lang="zh_CN")._cn_current_source_checksums(),
+            account_snapshot["account_code"],
+            account.with_company(self.company).code,
+        )
+        self.assertEqual(
+            run.with_company(foreign_company)
+            .with_context(lang="zh_CN")
+            ._cn_current_source_checksums(),
             run._cn_stored_source_checksums(),
         )
         model = (
             self.env[run._name]
             .with_user(self.reviewer)
-            .with_company(self.company)
+            .with_company(foreign_company)
             .with_context(lang="zh_CN")
         )
         self.assertEqual(model._cn_monitor_current_results(limit=1), 0)

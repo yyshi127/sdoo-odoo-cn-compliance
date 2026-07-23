@@ -1712,12 +1712,38 @@ def validate_reconciliation_source_change_monitoring() -> None:
             f'{constant_name} = "en_US"',
             "def _checksum_for_language(",
             f"self._checksum_for_language({constant_name})",
+            "self.with_company(self.company_id)",
         ):
             if required not in content:
                 fail(
                     "accounting-scope integrity must be locale independent: "
                     f"{filename}:{required}"
                 )
+    for filename in (
+        "cit_accounting_scope.py",
+        "iit_accounting_scope.py",
+    ):
+        content = (ADDON_ROOT / "models" / filename).read_text(
+            encoding="utf-8"
+        )
+        if (
+            "item.account_id.with_company(self.company_id).code"
+            not in content
+        ):
+            fail(
+                "accounting-scope line ordering must use the controlled "
+                f"company context: {filename}"
+            )
+    if (
+        model_content.count(
+            "run = self.with_company(self.company_id).with_context("
+        )
+        < 4
+    ):
+        fail(
+            "all reconciliation source monitors must use the run company "
+            "context"
+        )
 
     migration_content = (
         ADDON_ROOT
@@ -1768,6 +1794,12 @@ def validate_reconciliation_source_change_monitoring() -> None:
                 fail(
                     "reconciliation source monitoring runtime coverage is "
                     f"missing {filename}:{method_name}"
+                )
+        if "snapshot_is_independent" in " ".join(method_names):
+            if ".with_company(foreign_company)" not in content:
+                fail(
+                    "reconciliation snapshot runtime coverage must include "
+                    f"a foreign active company: {filename}"
                 )
 
 

@@ -204,7 +204,10 @@ class SudoChinaCitAccountingScope(models.Model):
         self.ensure_one()
         lines = []
         for line in self.line_ids.sorted(
-            key=lambda item: (item.account_id.code or "", item.account_id.id)
+            key=lambda item: (
+                item.account_id.with_company(self.company_id).code or "",
+                item.account_id.id,
+            )
         ):
             account = line.account_id.with_company(self.company_id)
             lines.append(
@@ -239,7 +242,11 @@ class SudoChinaCitAccountingScope(models.Model):
 
     def _checksum_for_language(self, lang):
         self.ensure_one()
-        return _checksum(self.with_context(lang=lang)._checksum_payload())
+        return _checksum(
+            self.with_company(self.company_id)
+            .with_context(lang=lang)
+            ._checksum_payload()
+        )
 
     def _current_integrity_state(self):
         self.ensure_one()

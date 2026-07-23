@@ -1933,6 +1933,12 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
     def test_reconciliation_snapshot_is_independent_of_ui_language(self):
         self.env["res.lang"]._activate_lang("zh_CN")
         sources = self._seed_complete_sources("locale-stable")
+        foreign_company = self.env["res.company"].create(
+            {"name": "Foreign VAT execution context"}
+        )
+        self.reviewer.write(
+            {"company_ids": [Command.link(foreign_company.id)]}
+        )
         scope = self._control_account_scope(
             sources["sale"],
             sources["purchase"],
@@ -1946,13 +1952,15 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )
 
         self.assertEqual(
-            mapping.with_context(lang="zh_CN")._current_integrity_state(),
+            mapping.with_company(foreign_company)
+            .with_context(lang="zh_CN")
+            ._current_integrity_state(),
             "verified",
         )
         run = self._queue()
         self.assertTrue(
             run.with_user(self.reviewer)
-            .with_company(self.company)
+            .with_company(foreign_company)
             .with_context(lang="zh_CN")
             ._process()
         )
@@ -1968,13 +1976,15 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         )
         self.assertEqual(output_snapshot["account_name"], canonical_name)
         self.assertEqual(
-            run.with_context(lang="zh_CN")._cn_current_source_checksums(),
+            run.with_company(foreign_company)
+            .with_context(lang="zh_CN")
+            ._cn_current_source_checksums(),
             run._cn_stored_source_checksums(),
         )
         model = (
             self.env[run._name]
             .with_user(self.reviewer)
-            .with_company(self.company)
+            .with_company(foreign_company)
             .with_context(lang="zh_CN")
         )
         self.assertEqual(model._cn_monitor_current_results(limit=1), 0)

@@ -6,7 +6,7 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 
-CIT_PERIOD_ENGINE_VERSION = "19.0.2"
+CIT_PERIOD_ENGINE_VERSION = "19.0.3"
 _CIT_PERIOD_SNAPSHOT_LANG = "en_US"
 MAX_ACCOUNTING_LINES = 200000
 MAX_FILING_RECORDS = 100
@@ -1600,9 +1600,11 @@ class SudoChinaCitPeriodReconciliationRun(models.Model):
         )
         try:
             with self.env.cr.savepoint():
-                result_values = self.with_context(
-                    lang=_CIT_PERIOD_SNAPSHOT_LANG
-                )._build_results()
+                result_values = (
+                    self.with_company(self.company_id)
+                    .with_context(lang=_CIT_PERIOD_SNAPSHOT_LANG)
+                    ._build_results()
+                )
                 previous_runs = self.search(
                     [
                         ("profile_id", "=", self.profile_id.id),
