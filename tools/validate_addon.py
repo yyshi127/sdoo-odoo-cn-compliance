@@ -1631,6 +1631,80 @@ def validate_invoice_reconciliation() -> None:
         fail("invoice reconciliation requires snapshot checksum compatibility coverage")
 
 
+def validate_reconciliation_source_change_monitoring() -> None:
+    manifest = ast.literal_eval(
+        (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
+    )
+    cron_path = "data/reconciliation_source_monitoring_cron.xml"
+    if cron_path not in manifest.get("data", []):
+        fail("reconciliation source monitoring cron must be loaded")
+
+    model_init = (ADDON_ROOT / "models" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+    if "from . import reconciliation_source_monitoring" not in model_init:
+        fail("reconciliation source monitoring model must be imported")
+
+    model_content = (
+        ADDON_ROOT / "models" / "reconciliation_source_monitoring.py"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "source_checked_at",
+        "_monitor_candidates",
+        "_cn_current_source_checksums",
+        "_cn_stored_source_checksums",
+        "_cn_enqueue_source_recalculation",
+        "_cn_monitor_current_results",
+        "source_change_recalculation_queued",
+        "source_monitor_failed",
+        "model.env.cr.savepoint()",
+        "sudo.cn.einvoice.reconciliation.run",
+        "sudo.cn.vat.period.reconciliation.run",
+        "sudo.cn.cit.period.reconciliation.run",
+        "sudo.cn.iit.period.reconciliation.run",
+    ):
+        if required not in model_content:
+            fail(
+                "reconciliation source monitoring contract is missing "
+                f"{required}"
+            )
+    if '"state": "stale"' in model_content:
+        fail(
+            "source monitoring must queue a replacement instead of rewriting "
+            "historical run state"
+        )
+
+    cron_content = (ADDON_ROOT / cron_path).read_text(encoding="utf-8")
+    if "_cron_monitor_cn_reconciliation_sources(limit=20)" not in cron_content:
+        fail("reconciliation source monitoring must use the bounded cron")
+
+    test_contracts = {
+        "test_invoice_reconciliation.py": (
+            "test_source_change_monitor_queues_one_recalculation",
+            "test_source_monitor_failure_is_audited_without_queueing",
+        ),
+        "test_vat_period_reconciliation.py": (
+            "test_source_change_monitor_queues_one_recalculation",
+        ),
+        "test_cit_period_reconciliation.py": (
+            "test_source_change_monitor_queues_one_recalculation",
+        ),
+        "test_iit_period_reconciliation.py": (
+            "test_source_change_monitor_queues_one_recalculation",
+        ),
+    }
+    for filename, method_names in test_contracts.items():
+        content = (ADDON_ROOT / "tests" / filename).read_text(
+            encoding="utf-8"
+        )
+        for method_name in method_names:
+            if f"def {method_name}(" not in content:
+                fail(
+                    "reconciliation source monitoring runtime coverage is "
+                    f"missing {filename}:{method_name}"
+                )
+
+
 def validate_tax_data_normalization() -> None:
     manifest = ast.literal_eval(
         (ADDON_ROOT / "__manifest__.py").read_text(encoding="utf-8")
@@ -7121,6 +7195,7 @@ def main() -> int:
     validate_external_dataset_security()
     validate_invoice_normalization_security()
     validate_invoice_reconciliation()
+    validate_reconciliation_source_change_monitoring()
     validate_tax_data_normalization()
     validate_vat_period_reconciliation()
     validate_cit_period_reconciliation()

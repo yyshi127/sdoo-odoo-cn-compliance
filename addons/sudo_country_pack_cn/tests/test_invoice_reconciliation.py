@@ -5,6 +5,9 @@ from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.addons.sudo_country_pack_cn.models.invoice_reconciliation import (
     _checksum,
 )
+from odoo.addons.sudo_country_pack_cn.models.reconciliation_source_monitoring import (
+    SudoChinaEinvoiceReconciliationSourceMonitor,
+)
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 
@@ -436,6 +439,94 @@ class TestChinaInvoiceReconciliation(AccountTestInvoicingCommon):
         self.assertEqual(streaming_checksum, _checksum(legacy_snapshots))
         self.assertEqual(empty_count, 0)
         self.assertEqual(empty_checksum, _checksum([]))
+
+    def test_source_change_monitor_queues_one_recalculation(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        self.assertEqual(
+            run._cn_current_source_checksums(),
+            run._cn_stored_source_checksums(),
+        )
+        model = self.env[run._name].with_user(self.reviewer).with_company(
+            self.company
+        )
+
+        with patch.object(
+            SudoChinaEinvoiceReconciliationSourceMonitor,
+            "_cn_current_source_checksums",
+            return_value={"changed": "invoice-source"},
+        ):
+            self.assertEqual(model._cn_monitor_current_results(limit=1), 1)
+            self.assertEqual(model._cn_monitor_current_results(limit=1), 0)
+
+        run.invalidate_recordset(["source_checked_at"])
+        replacement = model.search(
+            [
+                ("profile_id", "=", self.profile.id),
+                ("period_start", "=", run.period_start),
+                ("period_end", "=", run.period_end),
+                ("state", "=", "queued"),
+            ]
+        )
+        self.assertTrue(run.source_checked_at)
+        self.assertEqual(len(replacement), 1)
+        self.assertEqual(run.state, "succeeded")
+        self.assertEqual(
+            self.env["sudo.compliance.audit.event"].search_count(
+                [
+                    (
+                        "event_key",
+                        "=",
+                        "cn_einvoice_reconciliation."
+                        "source_change_recalculation_queued",
+                    ),
+                    ("model_name", "=", run._name),
+                    ("record_id", "=", run.id),
+                ]
+            ),
+            1,
+        )
+
+    def test_source_monitor_failure_is_audited_without_queueing(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        model = self.env[run._name].with_user(self.reviewer).with_company(
+            self.company
+        )
+
+        with patch.object(
+            SudoChinaEinvoiceReconciliationSourceMonitor,
+            "_cn_current_source_checksums",
+            side_effect=RuntimeError("controlled test failure"),
+        ):
+            self.assertEqual(model._cn_monitor_current_results(limit=1), 0)
+
+        run.invalidate_recordset(["source_checked_at"])
+        self.assertTrue(run.source_checked_at)
+        self.assertFalse(
+            model.search(
+                [
+                    ("profile_id", "=", self.profile.id),
+                    ("period_start", "=", run.period_start),
+                    ("period_end", "=", run.period_end),
+                    ("state", "=", "queued"),
+                ]
+            )
+        )
+        self.assertEqual(
+            self.env["sudo.compliance.audit.event"].search_count(
+                [
+                    (
+                        "event_key",
+                        "=",
+                        "cn_einvoice_reconciliation.source_monitor_failed",
+                    ),
+                    ("model_name", "=", run._name),
+                    ("record_id", "=", run.id),
+                ]
+            ),
+            1,
+        )
 
     def test_run_creates_explainable_high_confidence_bill_candidate(self):
         bill = self._bill("EINV-BILL-001")

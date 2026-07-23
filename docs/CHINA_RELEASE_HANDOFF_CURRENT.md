@@ -7,7 +7,7 @@ bundle is rebuilt.
 
 ## Current Release Evidence
 
-Delivery version: `19.0.1.155.0`
+Delivery version: `19.0.1.156.0`
 
 For the current production sign-off workflow, use
 `docs/CHINA_CURRENT_PRODUCTION_SIGNOFF_RUNBOOK.md` before completing
@@ -145,6 +145,13 @@ risk and workflow states, data/fact/reconciliation/tax/remediation summaries
 and filing archive next actions now render as clear Chinese reviewer text.
 Runtime and static tests reject the retired English prefixes while preserving
 the underlying rule results, audit payload keys and workflow behavior.
+
+Version `19.0.1.156.0` adds continuous source-change monitoring for the current
+successful invoice, VAT, CIT and IIT reconciliation results. The monitor
+recomputes the same controlled source fingerprints used by each reconciliation
+engine. When accounting or normalized tax sources change, it queues one
+replacement run, records an audit event and leaves the historical result
+unchanged until the replacement succeeds and formally supersedes it.
 
 Automated acceptance proves installation, upgrade, security and closed-loop
 contracts only. Business usability is not accepted until a reviewer completes

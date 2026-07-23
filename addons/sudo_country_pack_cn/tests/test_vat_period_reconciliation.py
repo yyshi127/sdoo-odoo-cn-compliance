@@ -4,6 +4,9 @@ from unittest.mock import patch
 
 from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.addons.sudo_country_pack_cn.models.reconciliation_source_monitoring import (
+    SudoChinaVatPeriodReconciliationSourceMonitor,
+)
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import new_test_user, tagged
 
@@ -1893,6 +1896,38 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
 
         run.invalidate_recordset()
         self.assertEqual(processed, 1)
+        self.assertEqual(run.state, "succeeded")
+
+    def test_source_change_monitor_queues_one_recalculation(self):
+        run = self._queue()
+        self.assertTrue(self._process(run))
+        self.assertEqual(
+            run._cn_current_source_checksums(),
+            run._cn_stored_source_checksums(),
+        )
+        model = self.env[run._name].with_user(self.reviewer).with_company(
+            self.company
+        )
+
+        with patch.object(
+            SudoChinaVatPeriodReconciliationSourceMonitor,
+            "_cn_current_source_checksums",
+            return_value={"changed": "vat-source"},
+        ):
+            self.assertEqual(model._cn_monitor_current_results(limit=1), 1)
+            self.assertEqual(model._cn_monitor_current_results(limit=1), 0)
+
+        run.invalidate_recordset(["source_checked_at"])
+        replacement = model.search(
+            [
+                ("profile_id", "=", self.profile.id),
+                ("period_start", "=", run.period_start),
+                ("period_end", "=", run.period_end),
+                ("state", "=", "queued"),
+            ]
+        )
+        self.assertTrue(run.source_checked_at)
+        self.assertEqual(len(replacement), 1)
         self.assertEqual(run.state, "succeeded")
 
     def test_read_only_access_is_company_isolated(self):
