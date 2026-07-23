@@ -335,7 +335,7 @@ class TestChinaAssessmentDataBasis(TransactionCase):
         self.assertEqual(assessment.cn_data_basis_state, "warning")
         self.assertEqual(assessment.cn_data_basis_ready_type_count, 1)
         self.assertGreater(assessment.cn_data_basis_missing_type_count, 0)
-        self.assertIn("VAT filings", assessment.cn_data_basis_missing_type_summary)
+        self.assertIn("增值税申报", assessment.cn_data_basis_missing_type_summary)
 
     def test_all_required_dataset_types_make_data_basis_ready(self):
         for dataset_type in (
