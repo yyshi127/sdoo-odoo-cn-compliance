@@ -750,8 +750,11 @@ class TestChinaCitPeriodReconciliation(AccountTestInvoicingCommon):
         foreign_company = self.env["res.company"].create(
             {"name": "Foreign CIT execution context"}
         )
-        self.reviewer.write(
+        (self.scope_author | self.reviewer).write(
             {"company_ids": [Command.link(foreign_company.id)]}
+        )
+        (self.scope_author | self.reviewer).invalidate_recordset(
+            ["company_ids"]
         )
         account = self.company_data["default_account_revenue"]
         canonical_name = account.with_context(lang="en_US").name

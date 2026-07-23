@@ -1936,8 +1936,11 @@ class TestChinaVatPeriodReconciliation(AccountTestInvoicingCommon):
         foreign_company = self.env["res.company"].create(
             {"name": "Foreign VAT execution context"}
         )
-        self.reviewer.write(
+        (self.scope_author | self.reviewer).write(
             {"company_ids": [Command.link(foreign_company.id)]}
+        )
+        (self.scope_author | self.reviewer).invalidate_recordset(
+            ["company_ids"]
         )
         scope = self._control_account_scope(
             sources["sale"],
